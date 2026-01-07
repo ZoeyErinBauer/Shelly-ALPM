@@ -3,11 +3,12 @@
         xmlns:vm="using:Shelly_UI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:icons="using:Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Shelly_UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Shelly_UI">
+        Title="Shelly">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,6 +16,36 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <SplitView IsPaneOpen="{Binding IsPaneOpen}"
+               CompactPaneLength="48"
+               DisplayMode="CompactInline"
+               OpenPaneLength="200">
+        <SplitView.Pane>
+            <StackPanel Spacing="5" Margin="5">
+                <Button Command="{Binding TogglePane}"
+                        HorizontalAlignment="Left"
+                        Background="Transparent"
+                        Padding="10">
+                    <icons:MaterialIcon Kind="Menu" Width="24" Height="24" />
+                </Button>
+                <ListBox ItemsSource="{Binding MenuItems}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MenuItemViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="15" Margin="5">
+                                <icons:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" />
+                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </SplitView.Pane>
 
+        <Grid Margin="20">
+            <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+    </SplitView>
+    
 </Window>
