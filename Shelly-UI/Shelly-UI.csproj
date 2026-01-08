@@ -4,6 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <RootNamespace>Shelly_UI</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -22,6 +23,10 @@
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" />
+        <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.1.10" />
     </ItemGroup>

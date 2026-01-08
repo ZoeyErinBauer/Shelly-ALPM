@@ -3,6 +3,8 @@
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:vm="clr-namespace:PackageManager.Alpm;assembly=PackageManager"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
+             xmlns:models="clr-namespace:Shelly_UI.Models"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
              x:Class="Shelly_UI.Views.HomeWindow"
              x:DataType="viewModels:HomeViewModel">
     <Grid>
@@ -14,32 +16,89 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Grid.Column="0" BorderThickness="1" BorderBrush="Pink" Margin="2">
-            <StackPanel Margin="3">
-                <TextBlock Text="Arch News" HorizontalAlignment="Center"></TextBlock>
-            </StackPanel>
+        <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" BorderThickness="1" BorderBrush="{DynamicResource SystemAccentColor}" Margin="2">
+            <Grid Margin="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="{x:Static lang:Resources.ArchNews}" HorizontalAlignment="Center" Margin="5" Grid.Row="0" FontWeight="Bold">
+                </TextBlock>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.Row="1">
+                    <ListBox ItemsSource="{Binding FeedItems}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             IsHitTestVisible="False"
+                             HorizontalAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:RssModel">
+                                <StackPanel Orientation="Horizontal" Spacing="1" Margin="1" IsHitTestVisible="False">
+                                    <Border
+                                        HorizontalAlignment="Stretch"
+                                        CornerRadius="8"
+                                        Padding="4"
+                                        BorderThickness="1"
+                                        Background="{DynamicResource SystemAccentColor}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="Bold" FontSize="16"
+                                                           Grid.Column="0" VerticalAlignment="Center" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding PubDate}"
+                                                       FontSize="12"
+                                                       Margin="0,4,0,8"
+                                                       Grid.Row="1" />
+                                            <TextBlock
+                                                Text="{Binding Description}"
+                                                FontSize="14"
+                                                TextWrapping="Wrap"
+                                                Grid.Row="2" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+            </Grid>
         </Border>
-        <Border Grid.Row="1" Grid.Column="0"  BorderThickness="1" BorderBrush="Pink"  Margin="2">
+      <!--  <Border Grid.Row="1" Grid.Column="0" BorderThickness="1" BorderBrush="LightSlateGray" Margin="2">
             <StackPanel Margin="3">
                 <TextBlock Text="Shelly News" HorizontalAlignment="Center"></TextBlock>
             </StackPanel>
-        </Border>
-        <Border Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" BorderThickness="1" BorderBrush="Pink"  Margin="2">
-            <StackPanel Margin="3">
-                <TextBlock Text="Installed Packages" HorizontalAlignment="Center"></TextBlock>
-                <ListBox ItemsSource="{Binding InstalledPackages}"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         IsHitTestVisible="True">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:AlpmPackage">
-                            <StackPanel Orientation="Horizontal" Spacing="15" Margin="5" IsHitTestVisible="False">
-                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-                </StackPanel>
+        </Border>-->
+        <Border Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" BorderThickness="1" BorderBrush="{DynamicResource SystemAccentColor}"
+                Margin="2">
+            <Grid Margin="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="{x:Static lang:Resources.InstalledPackages}" HorizontalAlignment="Center" Margin="5" Grid.Row="0" FontWeight="Bold"></TextBlock>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.Row="1">
+                    <ListBox ItemsSource="{Binding InstalledPackages}"
+                             Background="Transparent"
+                             IsHitTestVisible="False">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AlpmPackage">
+                            <Grid>
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{Binding Version}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

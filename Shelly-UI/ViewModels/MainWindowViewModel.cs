@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Reactive;
-using System.Windows.Input;
-using Eto.Forms;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Material.Icons;
 
@@ -19,12 +18,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
         MenuItems = new()
         {
-            new MenuItemViewModel("Home", MaterialIconKind.Home, "Home page", GoHome),
-            new MenuItemViewModel("Packages", MaterialIconKind.PackageVariantClosed, "View New Packages to Install",
+            new MenuItemViewModel( Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
+            new MenuItemViewModel(Resources.Packages,MaterialIconKind.PackageVariantClosed,"View New Packages to Install",
                 GoPackages),
-            new MenuItemViewModel("Updates", MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
-            new MenuItemViewModel("Delete", MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
-            new MenuItemViewModel("Settings", MaterialIconKind.Settings, "Application Settings", GoSetting)
+            new MenuItemViewModel(Resources.Updates, MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
+            new MenuItemViewModel(Resources.Remove, MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
+            new MenuItemViewModel(Resources.Settings, MaterialIconKind.Settings, "Application Settings", GoSetting)
         };
         
         GoHome.Execute(Unit.Default);

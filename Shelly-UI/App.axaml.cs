@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -18,8 +19,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+     
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            Assets.Resources.Culture = new CultureInfo("default");
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(),

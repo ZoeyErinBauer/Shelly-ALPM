@@ -2,10 +2,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
+             xmlns:vm="clr-namespace:PackageManager.Alpm;assembly=PackageManager"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.UpdateWindow">
+             x:Class="Shelly_UI.Views.UpdateWindow"
+             x:DataType="viewModels:UpdateViewModel">
     <StackPanel HorizontalAlignment="Center"
                 VerticalAlignment="Center">
-        <TextBlock Text="hi im the update window" />
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.Row="1">
+            <ListBox ItemsSource="{Binding PackagesForUpdating}"
+                     Background="Transparent"
+                     IsHitTestVisible="False">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AlpmPackageUpdate">
+                        <Grid>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <TextBlock Text="{Binding NewVersion }" VerticalAlignment="Center"
+                                       HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ScrollViewer>
+
     </StackPanel>
 </UserControl>
