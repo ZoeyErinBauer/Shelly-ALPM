@@ -38,6 +38,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
                 //Do nothing accept natural failure
             }
         }
+
         _handle = AlpmReference.Initialize(_config.RootDirectory, _config.DbPath, out var error);
         if (error != 0)
         {
@@ -97,146 +98,150 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
     }
 
     private int DownloadFile(IntPtr ctx, IntPtr urlPtr, IntPtr localpathPtr, int force)
+    {
+        try
         {
-            try
+            string? url = Marshal.PtrToStringUTF8(urlPtr);
+            string? localpath = Marshal.PtrToStringUTF8(localpathPtr);
+
+            // If libalpm provides no destination, we must provide one
+            if (string.IsNullOrEmpty(localpath) && !string.IsNullOrEmpty(url))
             {
-                string? url = Marshal.PtrToStringUTF8(urlPtr);
-                string? localpath = Marshal.PtrToStringUTF8(localpathPtr);
-
-                // If libalpm provides no destination, we must provide one
-                if (string.IsNullOrEmpty(localpath) && !string.IsNullOrEmpty(url))
+                // For .db files, they usually go into DbPath
+                // For .pkg files, they go into CacheDir
+                string fileName = Path.GetFileName(url);
+                if (url.EndsWith(".db") || url.EndsWith(".db.sig"))
                 {
-                    // For .db files, they usually go into DbPath
-                    // For .pkg files, they go into CacheDir
-                    string fileName = Path.GetFileName(url);
-                    if (url.EndsWith(".db") || url.EndsWith(".db.sig"))
-                    {
-                        localpath = Path.Combine(_config.DbPath, "sync", fileName);
-                    }
-                    else
-                    {
-                        localpath = Path.Combine(_config.CacheDir, fileName);
-                    }
+                    localpath = Path.Combine(_config.DbPath, "sync", fileName);
+                }
+                else
+                {
+                    localpath = Path.Combine(_config.CacheDir, fileName);
+                }
+            }
+
+            if (string.IsNullOrEmpty(localpath)) return -1;
+
+            if (File.Exists(localpath) && force == 0) return 0;
+
+            var directory = Path.GetDirectoryName(localpath);
+            if (directory != null) Directory.CreateDirectory(directory);
+
+            if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
+            {
+                return PerformDownload(absoluteUri.ToString(), localpath);
+            }
+
+            var syncDbsPtr = GetSyncDbs(_handle);
+            IntPtr targetDb = IntPtr.Zero;
+
+            // 1. Check if the URL is a database/sig file (e.g., "core.db", "core.db.sig")
+            var currentPtr = syncDbsPtr;
+            while (currentPtr != IntPtr.Zero)
+            {
+                var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                var dbName = Marshal.PtrToStringUTF8(DbGetName(node.Data));
+                if (dbName != null && url.StartsWith(dbName))
+                {
+                    targetDb = node.Data;
+                    break;
                 }
 
-                if (string.IsNullOrEmpty(localpath)) return -1;
-                    
-                if (File.Exists(localpath) && force == 0) return 0;
+                currentPtr = node.Next;
+            }
 
-                var directory = Path.GetDirectoryName(localpath);
-                if (directory != null) Directory.CreateDirectory(directory);
-                
-                if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
-                {
-                    return PerformDownload(absoluteUri.ToString(), localpath);
-                }
-
-                var syncDbsPtr = GetSyncDbs(_handle);
-                IntPtr targetDb = IntPtr.Zero;
-
-                // 1. Check if the URL is a database/sig file (e.g., "core.db", "core.db.sig")
-                var currentPtr = syncDbsPtr;
-                while (currentPtr != IntPtr.Zero)
-                {
-                    var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-                    var dbName = Marshal.PtrToStringUTF8(DbGetName(node.Data));
-                    if (dbName != null && url.StartsWith(dbName))
-                    {
-                        targetDb = node.Data;
-                        break;
-                    }
-                    currentPtr = node.Next;
-                }
-
-                // 2. If it's a package, find which DB contains a package with this exact filename
-                if (targetDb == IntPtr.Zero)
-                {
-                    currentPtr = syncDbsPtr;
-                    while (currentPtr != IntPtr.Zero)
-                    {
-                        var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-                        var pkgCachePtr = DbGetPkgCache(node.Data);
-                        var pkgNodePtr = pkgCachePtr;
-                        
-                        while (pkgNodePtr != IntPtr.Zero)
-                        {
-                            var pkgNode = Marshal.PtrToStructure<AlpmList>(pkgNodePtr);
-                            // Get the actual filename for the package in this database
-                            var pkgFilenamePtr = GetPkgFileName(pkgNode.Data);
-                            var pkgFilename = Marshal.PtrToStringUTF8(pkgFilenamePtr);
-
-                            if (pkgFilename == url)
-                            {
-                                targetDb = node.Data;
-                                break;
-                            }
-                            pkgNodePtr = pkgNode.Next;
-                        }
-                        if (targetDb != IntPtr.Zero) break;
-                        currentPtr = node.Next;
-                    }
-                }
-
-                // 3. Iterate through databases, prioritizing the identified targetDb
+            // 2. If it's a package, find which DB contains a package with this exact filename
+            if (targetDb == IntPtr.Zero)
+            {
                 currentPtr = syncDbsPtr;
                 while (currentPtr != IntPtr.Zero)
                 {
                     var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-                    
-                    // If we found a specific DB, skip the others
-                    if (targetDb != IntPtr.Zero && node.Data != targetDb)
-                    {
-                        currentPtr = node.Next;
-                        continue;
-                    }
+                    var pkgCachePtr = DbGetPkgCache(node.Data);
+                    var pkgNodePtr = pkgCachePtr;
 
-                    var serversPtr = DbGetServers(node.Data);
-                    var serverNodePtr = serversPtr;
-                    while (serverNodePtr != IntPtr.Zero)
+                    while (pkgNodePtr != IntPtr.Zero)
                     {
-                        var serverNode = Marshal.PtrToStructure<AlpmList>(serverNodePtr);
-                        var serverBaseUrl = Marshal.PtrToStringUTF8(serverNode.Data);
-                        
-                        if (!string.IsNullOrEmpty(serverBaseUrl))
+                        var pkgNode = Marshal.PtrToStructure<AlpmList>(pkgNodePtr);
+                        // Get the actual filename for the package in this database
+                        var pkgFilenamePtr = GetPkgFileName(pkgNode.Data);
+                        var pkgFilename = Marshal.PtrToStringUTF8(pkgFilenamePtr);
+
+                        if (pkgFilename == url)
                         {
-                            var fullUrl = serverBaseUrl.EndsWith('/') ? $"{serverBaseUrl}{url}" : $"{serverBaseUrl}/{url}";
-                            if (PerformDownload(fullUrl, localpath) == 0) return 0;
+                            targetDb = node.Data;
+                            break;
                         }
-                        serverNodePtr = serverNode.Next;
+
+                        pkgNodePtr = pkgNode.Next;
                     }
 
                     if (targetDb != IntPtr.Zero) break;
                     currentPtr = node.Next;
                 }
-            
-                return -1;
             }
-            catch (Exception ex)
-            {
-                var url = Marshal.PtrToStringUTF8(urlPtr);
-                Console.WriteLine($"Download logic failed for {url}: {ex.Message}");
-                return -1;
-            }
-        }
 
-        private int PerformDownload(string fullUrl, string localpath)
+            // 3. Iterate through databases, prioritizing the identified targetDb
+            currentPtr = syncDbsPtr;
+            while (currentPtr != IntPtr.Zero)
+            {
+                var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+
+                // If we found a specific DB, skip the others
+                if (targetDb != IntPtr.Zero && node.Data != targetDb)
+                {
+                    currentPtr = node.Next;
+                    continue;
+                }
+
+                var serversPtr = DbGetServers(node.Data);
+                var serverNodePtr = serversPtr;
+                while (serverNodePtr != IntPtr.Zero)
+                {
+                    var serverNode = Marshal.PtrToStructure<AlpmList>(serverNodePtr);
+                    var serverBaseUrl = Marshal.PtrToStringUTF8(serverNode.Data);
+
+                    if (!string.IsNullOrEmpty(serverBaseUrl))
+                    {
+                        var fullUrl = serverBaseUrl.EndsWith('/') ? $"{serverBaseUrl}{url}" : $"{serverBaseUrl}/{url}";
+                        if (PerformDownload(fullUrl, localpath) == 0) return 0;
+                    }
+
+                    serverNodePtr = serverNode.Next;
+                }
+
+                if (targetDb != IntPtr.Zero) break;
+                currentPtr = node.Next;
+            }
+
+            return -1;
+        }
+        catch (Exception ex)
         {
-            try
-            {
-                using var response = _httpClient.GetAsync(fullUrl).GetAwaiter().GetResult();
-                if (!response.IsSuccessStatusCode) return -1;
-
-                using var fs = new FileStream(localpath, FileMode.Create, FileAccess.Write, FileShare.None);
-                response.Content.ReadAsStream().CopyTo(fs);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
+            var url = Marshal.PtrToStringUTF8(urlPtr);
+            Console.WriteLine($"Download logic failed for {url}: {ex.Message}");
+            return -1;
         }
+    }
 
-        public void Sync()
+    private int PerformDownload(string fullUrl, string localpath)
+    {
+        try
+        {
+            using var response = _httpClient.GetAsync(fullUrl).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode) return -1;
+
+            using var fs = new FileStream(localpath, FileMode.Create, FileAccess.Write, FileShare.None);
+            response.Content.ReadAsStream().CopyTo(fs);
+            return 0;
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    public void Sync()
     {
         if (_handle == IntPtr.Zero) Initialize();
         var syncDbsPtr = GetSyncDbs(_handle);
@@ -245,19 +250,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
             // Pass the entire list pointer directly to alpm_db_update
             Update(_handle, syncDbsPtr, false);
         }
-        // // Iterate through each sync database and update it
-        // var currentPtr = syncDbsPtr;
-        // while (currentPtr != IntPtr.Zero)
-        // {
-        //     var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-        //     if (node.Data != IntPtr.Zero)
-        //     {
-        //         // Update each database individually
-        //         Update(_handle, node.Data, false);
-        //     }
-        //
-        //     currentPtr = node.Next;
-        // }
     }
 
     public List<AlpmPackage> GetInstalledPackages()
@@ -315,7 +307,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         return Marshal.PtrToStringUTF8(StrError(error)) ?? $"Unknown error ({error})";
     }
 
-    public void InstallPackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    public void InstallPackage(string packageName,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         if (_handle == IntPtr.Zero) Initialize();
 
@@ -331,6 +324,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
                 pkgPtr = DbGetPkg(node.Data, packageName);
                 if (pkgPtr != IntPtr.Zero) break;
             }
+
             currentPtr = node.Next;
         }
 
@@ -343,7 +337,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         // extraction, and signature/checksum validation to avoid requirement for the physical package file.
         if (flags.HasFlag(AlpmTransFlag.DbOnly))
         {
-            flags |= AlpmTransFlag.NoDeps | AlpmTransFlag.NoExtract | AlpmTransFlag.NoPkgSig | AlpmTransFlag.NoCheckSpace;
+            flags |= AlpmTransFlag.NoDeps | AlpmTransFlag.NoExtract | AlpmTransFlag.NoPkgSig |
+                     AlpmTransFlag.NoCheckSpace;
         }
 
         // 2. Initialize transaction
@@ -357,7 +352,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
             // 3. Add package to transaction
             if (AddPkg(_handle, pkgPtr) != 0)
             {
-                throw new Exception($"Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                throw new Exception(
+                    $"Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 4. Prepare transaction
@@ -379,7 +375,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         }
     }
 
-    public void RemovePackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    public void RemovePackage(string packageName,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         if (_handle == IntPtr.Zero) Initialize();
 
@@ -394,7 +391,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
 
         // 2. Initialize transaction
         // Using 0 for flags for now, similar to InstallPackage
-        if (TransInit(_handle,flags) != 0)
+        if (TransInit(_handle, flags) != 0)
         {
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
@@ -404,7 +401,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
             // 3. Add package to removal list
             if (RemovePkg(_handle, pkgPtr) != 0)
             {
-                throw new Exception($"Failed to add package '{packageName}' to removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                throw new Exception(
+                    $"Failed to add package '{packageName}' to removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 4. Prepare transaction
@@ -426,7 +424,49 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
         }
     }
 
-    
+    public bool UpdateAll(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        Update(_handle, syncDbsPtr, true);
+        try
+        {
+            if (TransInit(_handle, flags) != 0)
+            {
+                throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (SyncSysupgrade(_handle, false) != 0)
+            {
+                throw new Exception($"Failed to mark system upgrade: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            // Check if there are any packages to add or remove before preparing/committing
+            if (TransGetAdd(_handle) == IntPtr.Zero && TransGetRemove(_handle) == IntPtr.Zero)
+            {
+                return true; // Nothing to do, considered successful
+            }
+
+            if (TransPrepare(_handle, out var dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            if (TransCommit(_handle, out dataPtr) != 0)
+            {
+                throw new Exception(
+                    $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            return true;
+        }
+        finally
+        {
+            _ = TransRelease(_handle);
+        }
+    }
+
     public void Dispose()
     {
         if (_handle == IntPtr.Zero) return;

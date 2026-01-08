@@ -172,4 +172,16 @@ public class AlpmManagerTests
         installedPackages = _manager.GetInstalledPackages();
         Assert.That(installedPackages.Any(p => p.Name == packageName), Is.False);
     }
+
+    [Test]
+    public void UpdateAll_Succeeds()
+    {
+        _manager.Initialize();
+        
+        // We use DbOnly to avoid downloading and installing actual packages,
+        // which makes the test safe and fast while still testing the transaction flow.
+        bool result = false;
+        Assert.DoesNotThrow(() => result = _manager.UpdateAll(AlpmTransFlag.DbOnly | AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks));
+        Assert.That(result, Is.True);
+    }
 }
