@@ -18,6 +18,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable
     private static readonly HttpClient _httpClient = new();
     private AlpmDownloadCallback _downloadCallback;
 
+
+    public void IntializeWithSync()
+    {
+        Initialize();
+        Sync();
+    }
+
     public void Initialize()
     {
         if (_handle != IntPtr.Zero)
