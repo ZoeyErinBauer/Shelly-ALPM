@@ -1,0 +1,30 @@
+{
+    "GeneralSettings": {
+        "NetProjectPath": "Shelly-UI.csproj",
+        "ApplicationName": "Shelly-UI",
+        "Version": "1.0.0",
+        "PackageName": {
+            "$type": "msbuild",
+            "property": "AssemblyName"
+        },
+        "AssemblyName": {
+            "$type": "msbuild",
+            "property": "AssemblyName"
+        }
+    },
+    "LinuxSettings": {
+        "CreateBinSymlink": "True"
+    },
+    "Win32Settings": {
+        "IncludeUninstaller": "True"
+    },
+    "MacOsSettings": {
+        "CreateBundle": true,
+        "BundleIdentifier": "com.CompanyName.Shelly-UI",
+        "SigningCredentialsType": "AdHoc"
+    },
+    "PublishSettings": {
+        "PublishSingleFile": "True",
+        "ExtraBuildProperties": {}
+    }
+}

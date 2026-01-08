@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace PackageManager.Alpm
 {
-    public static partial class AlpmReference
+    internal static partial class AlpmReference
     {
         public const string LibName = "alpm";
 
