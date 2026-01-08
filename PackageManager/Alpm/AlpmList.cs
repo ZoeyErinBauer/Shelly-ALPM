@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace PackageManager.Alpm;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct AlpmList
+internal struct AlpmList
 {
     public IntPtr Data;
     public IntPtr Prev;

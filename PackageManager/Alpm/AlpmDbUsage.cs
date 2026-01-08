@@ -3,7 +3,7 @@ using System;
 namespace PackageManager.Alpm;
 
 [Flags]
-public enum AlpmDbUsage : int
+internal enum AlpmDbUsage : int
 {
     /// <summary>
     /// Enable refreshes (syncing) for this database.

@@ -1,13 +1,13 @@
 namespace PackageManager.Alpm;
 
-public enum AlpmPkgReason : int
+internal enum AlpmPkgReason : int
 {
     Explicit = 0,
     Depend = 1,
     Unknown = 2
 }
 
-public enum AlpmPkgFrom : int
+internal enum AlpmPkgFrom : int
 {
     File = 1,
     LocalDb,
@@ -15,7 +15,7 @@ public enum AlpmPkgFrom : int
 }
 
 [System.Flags]
-public enum AlpmPkgValidation : int
+internal enum AlpmPkgValidation : int
 {
     Unknown = 0,
     None = (1 << 0),

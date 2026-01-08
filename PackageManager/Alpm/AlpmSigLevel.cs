@@ -3,7 +3,7 @@ using System;
 namespace PackageManager.Alpm;
 
 [Flags]
-public enum AlpmSigLevel : uint
+internal enum AlpmSigLevel : uint
 {
     // Package settings
     Package = (1 << 0),            // Packages require a signature

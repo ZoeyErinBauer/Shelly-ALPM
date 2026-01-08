@@ -1,6 +1,6 @@
 namespace PackageManager.Alpm;
 
-public enum AlpmErrno : int
+internal enum AlpmErrno : int
 {
     Ok = 0,
     Memory,

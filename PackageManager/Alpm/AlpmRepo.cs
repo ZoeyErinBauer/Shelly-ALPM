@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace PackageManager.Alpm;
 
-public class AlpmRepo
+internal class AlpmRepo
 {
     public string Name;                  // The name of the repository (e.g., "core", "extra")
     public AlpmSigLevel SigLevel;        // The signature level for this specific repo
