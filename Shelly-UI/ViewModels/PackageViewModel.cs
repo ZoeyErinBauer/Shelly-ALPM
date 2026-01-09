@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Models;
@@ -39,6 +41,8 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
             .ObserveOn(RxApp.MainThreadScheduler)
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
+
+        AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
     }
 
     private IEnumerable<InstallModel> Search(string? searchText)
@@ -53,6 +57,34 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     
     }
     
+    private bool _showConfirmDialog;
+    public bool ShowConfirmDialog
+    {
+        get => _showConfirmDialog;
+        set => this.RaiseAndSetIfChanged(ref _showConfirmDialog, value);
+    }
+
+    public void ToggleConfirmAction()
+    {
+        ShowConfirmDialog = !ShowConfirmDialog;
+    }
+
+    private async Task AlpmInstall()
+    {
+        var selectedPackages = AvaliablePackages.Where(x => x.IsChecked).ToList();
+        if (selectedPackages.Any())
+        {
+            foreach (var package in selectedPackages)
+            {
+                _alpmManager.InstallPackage(package.Name);
+            }
+        }
+        
+        ToggleConfirmAction();
+    }
+
+    public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
+
     public ObservableCollection<InstallModel> AvaliablePackages { get; set; }
 
     public IEnumerable<InstallModel> FilteredPackages => _filteredPackages.Value;

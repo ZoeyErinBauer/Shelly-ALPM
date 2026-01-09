@@ -36,7 +36,14 @@
                    Opacity="0.5"/>
         <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"></ToggleSwitch>
         <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"></ToggleSwitch>
-        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"></ToggleSwitch>
-        <Button Content="Check For Updates"/> 
+        <ToggleSwitch Content="Enable Snapd (WIP)" IsEnabled="False"></ToggleSwitch>
+        <Button Content="Check for Updates"
+                Command="{Binding CheckForUpdatesCommand}"
+                IsVisible="{Binding IsUpdateCheckVisible}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="0,10"
+                Background="{DynamicResource SystemAccentColor}"
+                Foreground="{DynamicResource SystemBaseHighColor}"/>
     </StackPanel>
 </UserControl>

@@ -81,4 +81,10 @@
     <data name="Update" xml:space="preserve">
         <value>Update</value>
     </data>
+    <data name="Install" xml:space="preserve">
+        <value>Install</value>
+    </data>
+    <data name="WillInstallPackages" xml:space="preserve">
+        <value>This will install all selected packages.</value>
+    </data>
 </root>

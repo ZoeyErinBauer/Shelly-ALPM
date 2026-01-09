@@ -1,6 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -8,6 +9,8 @@ using Avalonia.Themes.Fluent;
 using ReactiveUI;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
+using Velopack;
+using Velopack.Sources;
 
 namespace Shelly_UI.ViewModels;
 
@@ -23,6 +26,8 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         {
             _accentHex = pal.Accent.ToString();
         }
+
+        CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
     }
     
     private string _accentHex = "#018574";
@@ -45,5 +50,28 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
     public IScreen HostScreen { get; }
     
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    public ReactiveCommand<Unit, Unit> CheckForUpdatesCommand { get; }
+    
+    public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share");
+
+    private async Task CheckForUpdates()
+    {
+        if (AppContext.BaseDirectory.StartsWith("/usr/share"))
+        {
+            return;
+        }
+        
+        var mgr = new UpdateManager(new GithubSource("https://github.com/ZoeyErinBauer/Shelly-ALPM", null, false));
+
+        var newVersion = await mgr.CheckForUpdatesAsync();
+        if (newVersion == null)
+        {
+            return;
+        }
+
+        await mgr.DownloadUpdatesAsync(newVersion);
+        mgr.ApplyUpdatesAndRestart(newVersion);
+    }
 
 }

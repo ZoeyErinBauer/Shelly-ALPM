@@ -29,6 +29,7 @@
         <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.1.10" />
         <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.10" />
+        <PackageReference Include="Velopack" Version="0.0.1053" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\PackageManager\PackageManager.csproj" />
