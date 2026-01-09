@@ -25,6 +25,9 @@
     },
     "PublishSettings": {
         "PublishSingleFile": "True",
+        "PublishTrimmed": "True",
+        "PublishAot": "True",
+        "PublishReadyToRun": "True",
         "ExtraBuildProperties": {}
     }
 }
