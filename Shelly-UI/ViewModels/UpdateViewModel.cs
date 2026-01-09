@@ -22,7 +22,6 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
         _alpmManager.IntializeWithSync();
         
         var updates = _alpmManager.GetPackagesNeedingUpdate();
-
         
         PackagesForUpdating = new ObservableCollection<UpdateModel>(
             updates.Select(u => new UpdateModel 
@@ -64,7 +63,6 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
     
-    
     public void CheckAll()
     {
         var targetState = PackagesForUpdating.Any(x => !x.IsChecked);
@@ -74,8 +72,6 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
             item.IsChecked = targetState;
         }
     }
-    
-  
     
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
     

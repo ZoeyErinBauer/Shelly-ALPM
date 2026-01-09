@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Shelly_UI.ViewModels"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="clr-namespace:Shelly_UI.Models"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:PackageViewModel"
              x:Class="Shelly_UI.Views.PackageWindow">
@@ -18,45 +20,85 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-    <Grid RowDefinitions="Auto,*">
-        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-            <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
-                <TextBlock
-                    Text="{x:Static lang:Resources.Packages}"
-                    FontWeight="Bold"
-                    Foreground="{DynamicResource SystemBaseHighColor}"
-                    VerticalAlignment="Center" />
-                <TextBox
-                    Grid.Column="1"
-                    Width="220"
-                    Margin="12,0"
-                    Watermark="{x:Static lang:Resources.SearchPackages}"
-                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                    Background="{DynamicResource ChromeWhite}"
-                    Foreground="{DynamicResource AltMediumLow}"
-                    BorderThickness="1"
-                    BorderBrush="{DynamicResource SystemBaseHighColor}"
-                    CornerRadius="4" />
-            </Grid>
+    <Grid>
+        <Grid RowDefinitions="Auto,*">
+            <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                    <TextBlock
+                        Text="{x:Static lang:Resources.Packages}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        VerticalAlignment="Center" />
+                    <TextBox
+                        Grid.Column="1"
+                        Width="220"
+                        Margin="12,0"
+                        Watermark="{x:Static lang:Resources.SearchPackages}"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Background="{DynamicResource ChromeWhite}"
+                        Foreground="{DynamicResource AltMediumLow}"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemBaseHighColor}"
+                        CornerRadius="4" />
+                </Grid>
+            </Border>
+            <DataGrid
+                Grid.Row="1"
+                ItemsSource="{Binding FilteredPackages}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                GridLinesVisibility="None">
+                <DataGrid.Styles>
+                    <Style Selector="DataGridRow">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu x:DataType="models:InstallModel">
+                                    <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
+                                    <Separator />
+                                    <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}" IsEnabled="False" />
+                                    <MenuItem Header="{Binding SizeString, StringFormat='Size: {0}'}" IsEnabled="False" />
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.Styles>
+                <DataGrid.Columns>
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.Name}"
+                        Binding="{Binding Name}"
+                        Width="*" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.Version}"
+                        Binding="{Binding Version}"
+                        Width="160" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.PackageSize}"
+                        Binding="{Binding SizeString}"
+                        Width="100" />
+                    <DataGridTemplateColumn
+                        Header=""
+                        Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" HorizontalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+
+            </DataGrid>
+
+        </Grid>
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                Margin="30"
+                CornerRadius="30"
+                BoxShadow="0 4 15 0 #60000000">
+            <Button Width="60" Height="60"
+                    Padding="0"
+                    CornerRadius="30">
+                <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource SystemAccentColor}" />
+            </Button>
         </Border>
-        <DataGrid
-            Grid.Row="1"
-            ItemsSource="{Binding FilteredPackages}"
-            AutoGenerateColumns="False"
-            IsReadOnly="True"
-            GridLinesVisibility="None">
-            <DataGrid.Columns>
-                <DataGridTextColumn
-                    Header="{x:Static lang:Resources.PackageName}"
-                    Binding="{Binding Name}"
-                    Width="*" />
-                <DataGridTextColumn
-                    Header="{x:Static lang:Resources.Version}"
-                    Binding="{Binding Version}"
-                    Width="160" />
-            </DataGrid.Columns>
-        </DataGrid>
     </Grid>
-
-
 </UserControl>

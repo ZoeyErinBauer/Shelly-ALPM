@@ -93,7 +93,7 @@
             <Button Width="60" Height="60"
                     Padding="0"
                     CornerRadius="30">
-                <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource ChromeWhite}" />
+                <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource SystemAccentColor}" />
             </Button>
         </Border>
     </Grid>

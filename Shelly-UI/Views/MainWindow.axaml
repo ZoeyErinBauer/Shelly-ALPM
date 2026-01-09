@@ -26,7 +26,7 @@
                CompactPaneLength="66"
                DisplayMode="CompactInline"
                OpenPaneLength="200">
-        <SplitView.Pane>
+        <SplitView.Pane>    
             <StackPanel Spacing="5" Margin="5">
                 <Button Command="{Binding TogglePane}"
                         HorizontalAlignment="Left"
@@ -51,7 +51,6 @@
                 </ListBox>
             </StackPanel>
         </SplitView.Pane>
-
         <avalonia:RoutedViewHost Grid.Row="0" Router="{Binding Router}" PageTransition="{x:Null}">
             <avalonia:RoutedViewHost.DefaultContent>
                 <TextBlock Text="Default content"
@@ -63,5 +62,4 @@
             </avalonia:RoutedViewHost.ViewLocator>
         </avalonia:RoutedViewHost>
     </SplitView>
-
 </Window>
