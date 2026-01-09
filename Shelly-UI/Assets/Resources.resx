@@ -51,4 +51,34 @@
     <data name="PackageSize" xml:space="preserve">
         <value>Size</value>
     </data>
+    <data name="UpdateToolTip" xml:space="preserve">
+        <value>Update Selected</value>
+    </data>
+    <data name="RemovedToolTip" xml:space="preserve">
+        <value>Remove Selected</value>
+    </data>
+    <data name="SearchPackages" xml:space="preserve">
+        <value>Search Packages...</value>
+    </data>
+    <data name="Name" xml:space="preserve">
+        <value>Name</value>
+    </data>
+    <data name="CurrentVersion" xml:space="preserve">
+        <value>Current Version</value>
+    </data>
+    <data name="Version" xml:space="preserve">
+        <value>Version</value>
+    </data>
+    <data name="AreYouSure" xml:space="preserve">
+        <value>Are you sure?</value>
+    </data>
+    <data name="WillRemovePackages" xml:space="preserve">
+        <value>This will remove all selected packages.</value>
+    </data>
+    <data name="Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Update" xml:space="preserve">
+        <value>Update</value>
+    </data>
 </root>

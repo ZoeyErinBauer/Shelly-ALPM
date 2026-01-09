@@ -27,11 +27,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
     public ObservableCollection<AlpmPackage> InstalledPackages { get; set; }
     
     public ObservableCollection<RssModel> FeedItems { get; } = new ObservableCollection<RssModel>();
-
-    public HomeViewModel()
-    {
-        LoadFeed();
-    }
+    
 
     private async void LoadFeed()
     {

@@ -10,73 +10,91 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.UpdateWindow"
              x:DataType="viewModels:UpdateViewModel">
+    <UserControl.Styles>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="SeparatorBrush" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
     <Grid>
-        <Grid RowDefinitions="Auto, *">
-            <Border Grid.Row="0"
-                    Background="{DynamicResource SystemAccentColor}"
-                    Padding="12,8,30,8">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{x:Static lang:Resources.PackageName}" FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.PackageVersion}" FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="{x:Static lang:Resources.PackageNewVersion}" FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Text="{x:Static lang:Resources.PackageSize}" FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <Button Grid.Column="4" Content="Toggle All" FontWeight="Bold" Command="{Binding CheckAll}" />
+        <Grid RowDefinitions="Auto,*">
+            <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                    <TextBlock
+                        Text="{x:Static lang:Resources.Packages}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        VerticalAlignment="Center" />
+                    <TextBox
+                        Grid.Column="1"
+                        Width="220"
+                        Margin="12,0"
+                        Watermark="{x:Static lang:Resources.SearchPackages}"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Background="{DynamicResource ChromeWhite}"
+                        Foreground="{DynamicResource AltMediumLow}"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemBaseHighColor}"
+                        CornerRadius="4" />
+                    <Button
+                        Grid.Column="2"
+                        Content="Toggle All"
+                        Padding="10,4"
+                        Command="{Binding CheckAll}" />
                 </Grid>
             </Border>
-            <ListBox Grid.Row="1"
-                     ItemsSource="{Binding PackagesForUpdating}"
-                     Background="Transparent"
-                     Padding="0">
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="models:UpdateModel">
-                        <Border Padding="12,8,12,8">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding Name}" />
-                                <TextBlock Grid.Column="1" Text="{Binding CurrentVersion}" />
-                                <TextBlock Grid.Column="2" Text="{Binding NewVersion}" />
-                                <TextBlock Grid.Column="3" Text="{Binding SizeString}" />
-                                <CheckBox Grid.Column="4" IsChecked="{Binding IsChecked, Mode=TwoWay}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <DataGrid
+                Grid.Row="1"
+                ItemsSource="{Binding FilteredPackages}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                GridLinesVisibility="None">
+                <DataGrid.Columns>
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.Name}"
+                        Binding="{Binding Name}"
+                        Width="*" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.CurrentVersion}"
+                        Binding="{Binding CurrentVersion}"
+                        Width="160" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.PackageNewVersion}"
+                        Binding="{Binding NewVersion}"
+                        Width="160" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.PackageSize}"
+                        Binding="{Binding SizeString}"
+                        Width="100" />
+                    <DataGridTemplateColumn
+                        Header=""
+                        Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" HorizontalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+
+            </DataGrid>
 
         </Grid>
-        <Button Width="60" Height="60"
-                Margin="20"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Background="{DynamicResource SystemAccentColor}"
-                Foreground="White"
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                Margin="30"
                 CornerRadius="30"
-                ToolTip.Tip="Update Selected">
-
-            <Button.Styles>
-                <!-- Simple hover effect -->
-                <Style Selector="Button:pointerover /template/ ContentPresenter">
-                    <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
-                </Style>
-            </Button.Styles>
-            <avalonia:MaterialIcon Kind="ArrowDown" Width="30" Height="30" />
-        </Button>
+                BoxShadow="0 4 15 0 #60000000">
+            <Button Width="60" Height="60"
+                    Padding="0"
+                    CornerRadius="30">
+                <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource ChromeWhite}" />
+            </Button>
+        </Border>
     </Grid>
 </UserControl>

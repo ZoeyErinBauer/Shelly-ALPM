@@ -2,10 +2,106 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:models="clr-namespace:Shelly_UI.Models"
+             xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.RemoveWindow">
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-        <TextBlock Text="hi im the Remove window" />
-    </StackPanel>
+             x:Class="Shelly_UI.Views.RemoveWindow"
+             x:DataType="viewModels:RemoveViewModel">
+       <UserControl.Styles>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="SeparatorBrush" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <Grid RowDefinitions="Auto,*">
+            <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                    <TextBlock
+                        Text="{x:Static lang:Resources.Packages}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        VerticalAlignment="Center" />
+                    <TextBox
+                        Grid.Column="1"
+                        Width="220"
+                        Margin="12,0"
+                        Watermark="{x:Static lang:Resources.SearchPackages}"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Background="{DynamicResource ChromeWhite}"
+                        Foreground="{DynamicResource AltMediumLow}"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemBaseHighColor}"
+                        CornerRadius="4" />
+                </Grid>
+            </Border>
+            <DataGrid
+                Grid.Row="1"
+                ItemsSource="{Binding FilteredPackages}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                GridLinesVisibility="None">
+                <DataGrid.Columns>
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.PackageName}"
+                        Binding="{Binding Name}"
+                        Width="*" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.Version}"
+                        Binding="{Binding Version}"
+                        Width="160" />
+                    <DataGridTemplateColumn
+                        Header=""
+                        Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="" HorizontalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+        <Border Background="#80000000" 
+                IsVisible="{Binding ShowConfirmDialog}"
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource SystemRegionColor}"
+                    CornerRadius="8"
+                    Padding="20"
+                    Width="300"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="0 10 30 0 #A0000000">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{x:Static lang:Resources.WillRemovePackages}" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}" HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                Command="{Binding ToggleConfirmAction}"/>
+                        <Button Grid.Column="1" Content="{x:Static lang:Resources.Update}" Background="#0E8C7A" Foreground="White" HorizontalAlignment="Stretch"
+                                />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                Margin="30"
+                CornerRadius="30"
+                BoxShadow="0 4 15 0 #60000000">
+            <Button Width="60" Height="60"
+                    Padding="0"
+                    CornerRadius="30"
+                    Command="{Binding ToggleConfirmAction}">
+                <avalonia:MaterialIcon Kind="DeleteForever" Width="30" Height="30" Foreground="{DynamicResource ChromeWhite}" />
+            </Button>
+        </Border>
+    </Grid>
 </UserControl>
