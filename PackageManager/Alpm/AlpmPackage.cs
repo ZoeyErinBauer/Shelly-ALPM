@@ -29,6 +29,13 @@ public class AlpmPackage(IntPtr pkgPtr)
         return packages;
     }
     
+    public AlpmPackageDto ToDto() => new AlpmPackageDto
+    {
+        Name = Name,
+        Version = Version,
+        Size = Size
+    };
+
     public override string ToString()
     {
         return $"Package: {Name}, Version: {Version}, Size: {Size} bytes";

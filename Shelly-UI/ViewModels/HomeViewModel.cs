@@ -1,3 +1,4 @@
+using System.Reactive.Concurrency;
 using System;
 using System.Collections.ObjectModel;
 using System.Net.Http;
@@ -7,6 +8,7 @@ using System.Xml.Linq;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Models;
+using Shelly_UI.Services;
 
 namespace Shelly_UI.ViewModels;
 
@@ -15,8 +17,25 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
     public HomeViewModel(IScreen screen)
     {
         HostScreen = screen;
-        InstalledPackages = new ObservableCollection<AlpmPackage>(new AlpmManager().GetInstalledPackages());
+        LoadData();
         LoadFeed();
+    }
+
+    private async void LoadData()
+    {
+        try
+        {
+            var packages = await Task.Run(() => AlpmService.Instance.GetInstalledPackages());
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                InstalledPackages = new ObservableCollection<AlpmPackageDto>(packages);
+                this.RaisePropertyChanged(nameof(InstalledPackages));
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load installed packages: {e.Message}");
+        }
     }
 
     // Reference to IScreen that owns the routable view model.
@@ -24,7 +43,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
-    public ObservableCollection<AlpmPackage> InstalledPackages { get; set; }
+    public ObservableCollection<AlpmPackageDto> InstalledPackages { get; set; }
     
     public ObservableCollection<RssModel> FeedItems { get; } = new ObservableCollection<RssModel>();
     
@@ -34,8 +53,11 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
         try
         {
             var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/");
-            foreach (var item in feed)
-                FeedItems.Add(item);
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                foreach (var item in feed)
+                    FeedItems.Add(item);
+            });
         }
         catch (Exception e)
         {

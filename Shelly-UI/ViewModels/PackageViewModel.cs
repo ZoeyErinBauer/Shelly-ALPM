@@ -1,3 +1,4 @@
+using System.Reactive.Concurrency;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,41 +9,62 @@ using System.Threading.Tasks;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Models;
+using Shelly_UI.Services;
 
 namespace Shelly_UI.ViewModels;
 
 public class PackageViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private AlpmManager _alpmManager = new AlpmManager();
+    private IAlpmManager _alpmManager = AlpmService.Instance;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<InstallModel>> _filteredPackages;
 
     public PackageViewModel(IScreen screen)
     {
         HostScreen = screen;
-        _alpmManager.IntializeWithSync();
-
-        var packages = _alpmManager.GetAvailablePackages();
-
-        AvaliablePackages = new ObservableCollection<InstallModel>(
-            packages.Select(u => new InstallModel
-            {
-                Name = u.Name,
-                Version = u.Version,
-                DownloadSize = u.Size,
-                IsChecked = false
-            })
-        );
+        AvaliablePackages = new ObservableCollection<InstallModel>();
 
         _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText)
+            .WhenAnyValue(x => x.SearchText, x => x.AvaliablePackages.Count, (s, c) => s)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
 
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
+        
+        LoadData();
+    }
+
+    private async void LoadData()
+    {
+        try
+        {
+            await Task.Run(() => _alpmManager.IntializeWithSync());
+            var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
+
+            var models = packages.Select(u => new InstallModel
+            {
+                Name = u.Name,
+                Version = u.Version,
+                DownloadSize = u.Size,
+                IsChecked = false
+            }).ToList();
+
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                foreach (var model in models)
+                {
+                    AvaliablePackages.Add(model);
+                }
+                this.RaisePropertyChanged(nameof(AvaliablePackages));
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load available packages: {e.Message}");
+        }
     }
 
     private IEnumerable<InstallModel> Search(string? searchText)
