@@ -5,7 +5,7 @@ using Shelly_UI.Models;
 
 namespace Shelly_UI.Services;
 
-public class ConfigService
+public class ConfigService : IConfigService
 {
     //home/user/.local/share/Shelly
     private static readonly string ConfigFolder = Path.Combine(

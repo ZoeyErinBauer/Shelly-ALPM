@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
+using Eto.Drawing;
 using ReactiveUI;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -18,9 +19,12 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
 {
     private string _selectedTheme;
 
-    public SettingViewModel(IScreen screen)
+    private readonly IConfigService _configService;
+
+    public SettingViewModel(IScreen screen, IConfigService configService)
     {
         HostScreen = screen;
+        _configService = configService;
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
         {
@@ -28,6 +32,7 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         }
 
         CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
+        
     }
     
     private string _accentHex = "#018574";
@@ -41,7 +46,7 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
     public void ApplyCustomAccent()
     {
        new ThemeService().ApplyCustomAccent(AccentHex);
-       new ConfigService().SaveConfig(new ShellyConfig
+       _configService.SaveConfig(new ShellyConfig
        {
            AccentColor = AccentHex
        });
