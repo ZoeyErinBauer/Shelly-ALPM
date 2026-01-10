@@ -64,7 +64,7 @@
         <value>Name</value>
     </data>
     <data name="CurrentVersion" xml:space="preserve">
-        <value>Current Version</value>
+        <value>Version</value>
     </data>
     <data name="Version" xml:space="preserve">
         <value>Version</value>

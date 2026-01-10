@@ -1,3 +1,5 @@
+using System;
+
 namespace Shelly_UI.Models;
 
 public class RssModel

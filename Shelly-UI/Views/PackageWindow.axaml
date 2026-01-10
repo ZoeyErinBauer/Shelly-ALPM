@@ -20,7 +20,7 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-    <Grid>
+    <Grid Background="{DynamicResource SystemChromeLowColor}">
         <Grid RowDefinitions="Auto,*">
             <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
                 <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">

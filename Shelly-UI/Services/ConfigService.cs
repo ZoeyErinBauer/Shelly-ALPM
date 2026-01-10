@@ -3,6 +3,8 @@ using System.IO;
 using System.Text.Json;
 using Shelly_UI.Models;
 
+namespace Shelly_UI.Services;
+
 public class ConfigService
 {
     //home/user/.local/share/Shelly

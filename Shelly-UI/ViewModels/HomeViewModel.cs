@@ -1,9 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Eto.Drawing;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Models;
@@ -31,18 +34,42 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
 
     private async void LoadFeed()
     {
+        //Try from cache or time expired
+        try
+        {
+            var rssFeed = LoadCachedFeed();
+            if (rssFeed.TimeCached.HasValue &&
+                DateTime.Now.Subtract(rssFeed.TimeCached.Value).TotalMinutes < 15)
+            {
+                foreach (var item in rssFeed.Rss) FeedItems.Add(item);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        //load from feed
         try
         {
             var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/");
+            var cachedFeed = new CachedRssModel();
             foreach (var item in feed)
+            {
                 FeedItems.Add(item);
+                cachedFeed.Rss.Add(item);
+            }
+            cachedFeed.TimeCached = DateTime.Now;
+            CacheFeed(cachedFeed);
+            
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
     }
-
+    
     public async Task<ObservableCollection<RssModel>> GetRssFeedAsync(string url)
     {
         var items = new ObservableCollection<RssModel>();
@@ -63,7 +90,38 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
                 PubDate = item.Element("pubDate")?.Value ?? ""
             });
         }
-
         return items;
     }
+    
+    #region RssCaching
+    
+    private static readonly string FeedFolder = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+        "Shelly");
+    
+    private static readonly string FeedPath = Path.Combine(FeedFolder, "Feed.json");
+
+    public static void CacheFeed(CachedRssModel feed)
+    {
+        if (!Directory.Exists(FeedFolder)) Directory.CreateDirectory(FeedFolder);
+        
+        var json = JsonSerializer.Serialize(feed);
+        File.WriteAllText(FeedPath, json);
+    }
+
+    public static CachedRssModel LoadCachedFeed()
+    {
+        if (!File.Exists(FeedPath)) return new CachedRssModel(); 
+
+        try
+        {
+            var json = File.ReadAllText(FeedPath);
+            return JsonSerializer.Deserialize<CachedRssModel>(json) ?? new CachedRssModel();
+        }
+        catch
+        {
+            return new CachedRssModel();
+        }
+    }
+    #endregion
 }
