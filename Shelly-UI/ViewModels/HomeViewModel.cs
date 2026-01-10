@@ -80,9 +80,10 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
                     FeedItems.Add(item);
                     cachedFeed.Rss.Add(item);
                 }
+                cachedFeed.TimeCached = DateTime.Now;
+                CacheFeed(cachedFeed);
             });
-            cachedFeed.TimeCached = DateTime.Now;
-            CacheFeed(cachedFeed);
+           
         }
         catch (Exception e)
         {
