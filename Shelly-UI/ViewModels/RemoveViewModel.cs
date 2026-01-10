@@ -17,12 +17,12 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<AlpmPackageDto>> _filteredPackages;
+    private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
     public RemoveViewModel(IScreen screen)
     {
         HostScreen = screen;
-        AvailablePackages = new ObservableCollection<AlpmPackageDto>();
+        AvailablePackages = new ObservableCollection<PackageModel>();
 
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
@@ -40,10 +40,16 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         {
             await Task.Run(() => _alpmManager.IntializeWithSync());
             var packages = await Task.Run(() => _alpmManager.GetInstalledPackages());
-
+            var models = packages.Select(u => new PackageModel
+            {
+                Name = u.Name,
+                Version = u.Version,
+                DownloadSize = u.Size,
+                IsChecked = false
+            }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                foreach (var pkg in packages)
+                foreach (var pkg in models)
                 {
                     AvailablePackages.Add(pkg);
                 }
@@ -56,7 +62,7 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-    private IEnumerable<AlpmPackageDto> Search(string? searchText)
+    private IEnumerable<PackageModel> Search(string? searchText)
     {
         if (string.IsNullOrWhiteSpace(searchText))
         {
@@ -80,11 +86,20 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         ShowConfirmDialog = !ShowConfirmDialog;
     }
 
+    private async Task RemovePackages()
+    {
+        var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+        if (selectedPackages.Any())
+        {
+            _alpmManager.RemovePackages(selectedPackages);
+        }
+        ToggleConfirmAction();
+    }
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
-    public ObservableCollection<AlpmPackageDto> AvailablePackages { get; set; }
+    public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
-    public IEnumerable<AlpmPackageDto> FilteredPackages => _filteredPackages.Value;
+    public IEnumerable<PackageModel> FilteredPackages => _filteredPackages.Value;
 
     public string? SearchText
     {

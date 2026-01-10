@@ -2,7 +2,7 @@ using ReactiveUI;
 
 namespace Shelly_UI.Models;
 
-public class InstallModel : ReactiveObject
+public class PackageModel : ReactiveObject
 {
     public required string Name { get; set; }
     

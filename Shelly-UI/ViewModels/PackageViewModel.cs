@@ -18,12 +18,12 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     public IScreen HostScreen { get; }
     private IAlpmManager _alpmManager = AlpmService.Instance;
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<InstallModel>> _filteredPackages;
+    private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
     public PackageViewModel(IScreen screen)
     {
         HostScreen = screen;
-        AvaliablePackages = new ObservableCollection<InstallModel>();
+        AvaliablePackages = new ObservableCollection<PackageModel>();
 
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.AvaliablePackages.Count, (s, c) => s)
@@ -44,7 +44,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
             await Task.Run(() => _alpmManager.IntializeWithSync());
             var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
 
-            var models = packages.Select(u => new InstallModel
+            var models = packages.Select(u => new PackageModel
             {
                 Name = u.Name,
                 Version = u.Version,
@@ -67,7 +67,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-    private IEnumerable<InstallModel> Search(string? searchText)
+    private IEnumerable<PackageModel> Search(string? searchText)
     {
         if (string.IsNullOrWhiteSpace(searchText))
         {
@@ -104,9 +104,9 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
 
-    public ObservableCollection<InstallModel> AvaliablePackages { get; set; }
+    public ObservableCollection<PackageModel> AvaliablePackages { get; set; }
 
-    public IEnumerable<InstallModel> FilteredPackages => _filteredPackages.Value;
+    public IEnumerable<PackageModel> FilteredPackages => _filteredPackages.Value;
 
     public string? SearchText
     {

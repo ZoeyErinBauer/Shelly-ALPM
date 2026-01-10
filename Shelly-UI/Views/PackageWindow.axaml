@@ -53,7 +53,7 @@
                     <Style Selector="DataGridRow">
                         <Setter Property="ContextMenu">
                             <Setter.Value>
-                                <ContextMenu x:DataType="models:InstallModel">
+                                <ContextMenu x:DataType="models:PackageModel">
                                     <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
                                     <Separator />
                                     <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}" IsEnabled="False" />

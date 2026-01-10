@@ -91,7 +91,10 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
 
     public void IntializeWithSync() => RunWorker("Sync");
 
-    public void Initialize() { /* Worker initializes per command in this implementation or we could add an Init command */ }
+    public void Initialize()
+    {
+        /* Worker initializes per command in this implementation or we could add an Init command */
+    }
 
     public void Sync(bool force = false) => RunWorker("Sync");
 
@@ -113,18 +116,28 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
         return JsonSerializer.Deserialize<List<AlpmPackageUpdateDto>>(json) ?? new List<AlpmPackageUpdateDto>();
     }
 
-    public void InstallPackages(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    public void InstallPackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         var jsonArgs = JsonSerializer.Serialize(packageNames);
         RunWorker("InstallPackages", jsonArgs);
     }
 
-    public void RemovePackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    public void RemovePackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    {
+        var jsonArgs = JsonSerializer.Serialize(packageNames);
+        RunWorker("RemovePackages", jsonArgs);
+    }
+
+    public void RemovePackage(string packageName,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         RunWorker("RemovePackage", packageName);
     }
 
-    public void UpdatePackages(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
+    public void UpdatePackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         var jsonArgs = JsonSerializer.Serialize(packageNames);
         RunWorker("UpdatePackages", jsonArgs);

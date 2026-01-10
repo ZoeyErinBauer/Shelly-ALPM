@@ -71,7 +71,11 @@ class Program
                         if (request.Payload == null) throw new Exception("Missing package name");
                         manager.RemovePackage(request.Payload);
                         break;
-
+                    case "RemovePackages":
+                        if (request.Payload == null) throw new Exception("Missing packages list");
+                        var packagesToRemove = JsonSerializer.Deserialize<List<string>>(request.Payload);
+                        manager.RemovePackages(packagesToRemove!);
+                        break;
                     case "Exit":
                         return;
 

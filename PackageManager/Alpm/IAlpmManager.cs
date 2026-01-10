@@ -10,7 +10,15 @@ public interface IAlpmManager
     List<AlpmPackageDto> GetInstalledPackages();
     List<AlpmPackageDto> GetAvailablePackages();
     List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate();
-    void InstallPackages(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
+    void InstallPackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
+    void RemovePackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
     void RemovePackage(string packageName, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
-    void UpdatePackages(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
+    void UpdatePackages(List<string> packageNames,
+        AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
 }
