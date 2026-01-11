@@ -15,25 +15,31 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
     private StreamReader? _workerOutput;
     private StreamReader? _workerError;
 
+    private bool _isElevated;
+
     public AlpmWorkerClient(string workerPath, Func<string?>? passwordProvider = null)
     {
         _workerPath = workerPath;
         _passwordProvider = passwordProvider;
     }
 
-    private void EnsureWorkerStarted()
+    private void EnsureWorkerStarted(bool elevated)
     {
         if (_workerProcess != null && !_workerProcess.HasExited)
         {
-            return;
-        }
+            if (_isElevated == elevated || (_isElevated && !elevated))
+            {
+                return;
+            }
 
-        var password = _passwordProvider?.Invoke();
+            // If we need elevation but the current process isn't elevated, we need to restart it.
+            StopWorker();
+        }
 
         var processInfo = new ProcessStartInfo
         {
-            FileName = "sudo",
-            Arguments = $"-S {_workerPath}",
+            FileName = elevated ? "sudo" : _workerPath,
+            Arguments = elevated ? $"-S {_workerPath}" : "",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             RedirectStandardInput = true,
@@ -41,25 +47,88 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
             CreateNoWindow = true
         };
 
-        _workerProcess = Process.Start(processInfo) ?? throw new Exception("Failed to start worker process.");
+        try
+        {
+            _workerProcess = Process.Start(processInfo) ?? throw new Exception("Failed to start worker process.");
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.Message.Contains("No such file or directory"))
+        {
+             // Fallback for development/test if workerPath is not absolute and not in PATH
+             if (!Path.IsPathRooted(_workerPath))
+             {
+                 var absolutePath = Path.GetFullPath(_workerPath);
+                 if (File.Exists(absolutePath))
+                 {
+                     processInfo.FileName = elevated ? "sudo" : absolutePath;
+                     processInfo.Arguments = elevated ? $"-S {absolutePath}" : "";
+                     _workerProcess = Process.Start(processInfo) ?? throw new Exception("Failed to start worker process.");
+                 }
+                 else
+                 {
+                     throw;
+                 }
+             }
+             else
+             {
+                 throw;
+             }
+        }
+
         _workerInput = _workerProcess.StandardInput;
         _workerOutput = _workerProcess.StandardOutput;
         _workerError = _workerProcess.StandardError;
+        _isElevated = elevated;
 
-        if (!string.IsNullOrEmpty(password))
+        if (elevated)
         {
-            _workerInput.WriteLine(password);
-            _workerInput.Flush();
-        }
-        else
-        {
-            throw new Exception("Authentication required: No password provided.");
+            var password = _passwordProvider?.Invoke();
+            if (!string.IsNullOrEmpty(password))
+            {
+                _workerInput.WriteLine(password);
+                _workerInput.Flush();
+            }
+            else
+            {
+                // We might want to allow sudo without password if configured, but usually, we need it.
+                // For now, let's keep it required as per original logic.
+                throw new Exception("Authentication required: No password provided.");
+            }
         }
     }
 
-    private string RunWorker(string command, string? payload = null)
+    private void StopWorker()
     {
-        EnsureWorkerStarted();
+        if (_workerProcess != null && !_workerProcess.HasExited)
+        {
+            try
+            {
+                var request = new WorkerRequest { Command = "Exit" };
+                var jsonRequest = JsonSerializer.Serialize(request);
+                _workerInput?.WriteLine(jsonRequest);
+                _workerInput?.Flush();
+                if (!_workerProcess.WaitForExit(1000))
+                {
+                    _workerProcess.Kill();
+                }
+            }
+            catch
+            {
+                _workerProcess.Kill();
+            }
+            finally
+            {
+                _workerProcess.Dispose();
+                _workerProcess = null;
+                _workerInput = null;
+                _workerOutput = null;
+                _workerError = null;
+            }
+        }
+    }
+
+    private string RunWorker(string command, string? payload = null, bool elevated = false)
+    {
+        EnsureWorkerStarted(elevated);
 
         var request = new WorkerRequest
         {
@@ -89,30 +158,30 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
         return response.Data ?? string.Empty;
     }
 
-    public void IntializeWithSync() => RunWorker("Sync");
+    public void IntializeWithSync() => RunWorker("Sync", elevated: true);
 
     public void Initialize()
     {
         /* Worker initializes per command in this implementation or we could add an Init command */
     }
 
-    public void Sync(bool force = false) => RunWorker("Sync");
+    public void Sync(bool force = false) => RunWorker("Sync", elevated: true);
 
     public List<AlpmPackageDto> GetInstalledPackages()
     {
-        var json = RunWorker("GetInstalledPackages");
+        var json = RunWorker("GetInstalledPackages", elevated: false);
         return JsonSerializer.Deserialize<List<AlpmPackageDto>>(json) ?? new List<AlpmPackageDto>();
     }
 
     public List<AlpmPackageDto> GetAvailablePackages()
     {
-        var json = RunWorker("GetAvailablePackages");
+        var json = RunWorker("GetAvailablePackages", elevated: false);
         return JsonSerializer.Deserialize<List<AlpmPackageDto>>(json) ?? new List<AlpmPackageDto>();
     }
 
     public List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate()
     {
-        var json = RunWorker("GetPackagesNeedingUpdate");
+        var json = RunWorker("GetPackagesNeedingUpdate", elevated: false);
         return JsonSerializer.Deserialize<List<AlpmPackageUpdateDto>>(json) ?? new List<AlpmPackageUpdateDto>();
     }
 
@@ -120,52 +189,31 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         var jsonArgs = JsonSerializer.Serialize(packageNames);
-        RunWorker("InstallPackages", jsonArgs);
+        RunWorker("InstallPackages", jsonArgs, elevated: true);
     }
 
     public void RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         var jsonArgs = JsonSerializer.Serialize(packageNames);
-        RunWorker("RemovePackages", jsonArgs);
+        RunWorker("RemovePackages", jsonArgs, elevated: true);
     }
 
     public void RemovePackage(string packageName,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
-        RunWorker("RemovePackage", packageName);
+        RunWorker("RemovePackage", packageName, elevated: true);
     }
 
     public void UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks)
     {
         var jsonArgs = JsonSerializer.Serialize(packageNames);
-        RunWorker("UpdatePackages", jsonArgs);
+        RunWorker("UpdatePackages", jsonArgs, elevated: true);
     }
 
     public void Dispose()
     {
-        if (_workerProcess != null && !_workerProcess.HasExited)
-        {
-            try
-            {
-                var request = new WorkerRequest { Command = "Exit" };
-                var jsonRequest = JsonSerializer.Serialize(request);
-                _workerInput?.WriteLine(jsonRequest);
-                _workerInput?.Flush();
-                if (!_workerProcess.WaitForExit(1000))
-                {
-                    _workerProcess.Kill();
-                }
-            }
-            catch
-            {
-                _workerProcess.Kill();
-            }
-            finally
-            {
-                _workerProcess.Dispose();
-            }
-        }
+        StopWorker();
     }
 }

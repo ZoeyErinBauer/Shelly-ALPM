@@ -24,7 +24,7 @@
     <Grid Background="{DynamicResource SystemChromeLowColor}">
         <Grid RowDefinitions="Auto,*">
             <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
                     <TextBlock
                         Text="{x:Static lang:Resources.Packages}"
                         FontWeight="Bold"
@@ -41,6 +41,15 @@
                         BorderThickness="1"
                         BorderBrush="{DynamicResource SystemBaseHighColor}"
                         CornerRadius="4" />
+                    <Button
+                        Grid.Column="2"
+                        Margin="12,0,0,0"
+                        Padding="8"
+                        Background="Transparent"
+                        Command="{Binding RefreshCommand}"
+                        ToolTip.Tip="{x:Static lang:Resources.Refresh}">
+                        <avalonia:MaterialIcon Kind="Refresh" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
+                    </Button>
                 </Grid>
             </Border>
             <DataGrid
@@ -63,7 +72,7 @@
                         Width="60">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="" HorizontalAlignment="Center" />
+                                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" HorizontalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -88,7 +97,7 @@
                         <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}" HorizontalAlignment="Stretch" Margin="0,0,5,0"
                                 Command="{Binding ToggleConfirmAction}"/>
                         <Button Grid.Column="1" Content="{x:Static lang:Resources.Remove}" Background="#0E8C7A" Foreground="White" HorizontalAlignment="Stretch"
-                                />
+                                Command="{Binding RemovePackagesCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

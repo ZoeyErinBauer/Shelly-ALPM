@@ -31,14 +31,34 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
 
+        RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
+        RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
+
         LoadData();
+    }
+
+    private async Task Refresh()
+    {
+        try
+        {
+            await Task.Run(() => _alpmManager.Initialize());
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                AvailablePackages.Clear();
+                LoadData();
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to refresh installed packages: {e.Message}");
+        }
     }
 
     private async void LoadData()
     {
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            await Task.Run(() => _alpmManager.Initialize());
             var packages = await Task.Run(() => _alpmManager.GetInstalledPackages());
             var models = packages.Select(u => new PackageModel
             {
@@ -91,11 +111,16 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            _alpmManager.RemovePackages(selectedPackages);
+            await Task.Run(() => _alpmManager.RemovePackages(selectedPackages));
         }
         ToggleConfirmAction();
     }
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
+
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
 
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 

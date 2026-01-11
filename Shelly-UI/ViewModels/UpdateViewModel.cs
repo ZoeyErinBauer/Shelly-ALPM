@@ -31,7 +31,36 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
 
+        AlpmUpdateCommand = ReactiveCommand.CreateFromTask(AlpmUpdate);
+        SyncCommand = ReactiveCommand.CreateFromTask(Sync);
+
         LoadData();
+    }
+
+    private async Task Sync()
+    {
+        try
+        {
+            await Task.Run(() => _alpmManager.IntializeWithSync());
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                PackagesForUpdating.Clear();
+                LoadData();
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to sync packages for update: {e.Message}");
+        }
+    }
+
+    private async Task AlpmUpdate()
+    {
+        var selectedPackages = PackagesForUpdating.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+        if (selectedPackages.Any())
+        {
+            await Task.Run(() => _alpmManager.UpdatePackages(selectedPackages));
+        }
     }
 
     private async void LoadData()
@@ -78,6 +107,9 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
     }
 
     public ObservableCollection<AlpmPackageDto> AvailablePackages { get; set; }
+
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AlpmUpdateCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SyncCommand { get; }
 
     public IEnumerable<UpdateModel> FilteredPackages => _filteredPackages.Value;
 

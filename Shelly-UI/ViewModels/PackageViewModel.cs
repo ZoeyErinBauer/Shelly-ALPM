@@ -39,8 +39,29 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
             .ToProperty(this, x => x.FilteredPackages);
 
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
+        SyncCommand = ReactiveCommand.CreateFromTask(Sync);
 
         LoadData();
+    }
+
+    private async Task Sync()
+    {
+        try
+        {
+            await Task.Run(() => _alpmManager.IntializeWithSync());
+            // Clear cache and reload data by storing null
+            await _appCache.StoreAsync<List<PackageModel>?>(nameof(CacheEnums.PackageCache), null);
+            
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                AvaliablePackages.Clear();
+                LoadData();
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to sync packages: {e.Message}");
+        }
     }
 
     private async void LoadData()
@@ -63,7 +84,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            await Task.Run(() => _alpmManager.Initialize());
             var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
 
             var models = packages.Select(u => new PackageModel
@@ -123,13 +144,14 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         var selectedPackages = AvaliablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            _alpmManager.InstallPackages(selectedPackages);
+            await Task.Run(() => _alpmManager.InstallPackages(selectedPackages));
         }
 
         ToggleConfirmAction();
     }
 
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
+    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
 
     public ObservableCollection<PackageModel> AvaliablePackages { get; set; }
 

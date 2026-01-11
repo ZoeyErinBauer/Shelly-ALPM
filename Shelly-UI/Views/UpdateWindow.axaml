@@ -25,7 +25,7 @@
     <Grid Background="{DynamicResource SystemChromeLowColor}">
         <Grid RowDefinitions="Auto,*">
             <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
                     <TextBlock
                         Text="{x:Static lang:Resources.Packages}"
                         FontWeight="Bold"
@@ -44,8 +44,18 @@
                         CornerRadius="4" />
                     <Button
                         Grid.Column="2"
+                        Margin="12,0,0,0"
+                        Padding="8"
+                        Background="Transparent"
+                        Command="{Binding SyncCommand}"
+                        ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                        <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
+                    </Button>
+                    <Button
+                        Grid.Column="3"
                         Content="Toggle All"
                         Padding="10,4"
+                        Margin="12,0,0,0"
                         Command="{Binding CheckAll}" />
                 </Grid>
             </Border>
@@ -93,7 +103,8 @@
                 BoxShadow="0 4 15 0 #60000000">
             <Button Width="60" Height="60"
                     Padding="0"
-                    CornerRadius="30">
+                    CornerRadius="30"
+                    Command="{Binding AlpmUpdateCommand}">
                 <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource SystemAccentColor}" />
             </Button>
         </Border>

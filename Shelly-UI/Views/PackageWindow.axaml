@@ -24,7 +24,7 @@
     <Grid Background="{DynamicResource SystemChromeLowColor}">
         <Grid RowDefinitions="Auto,*">
             <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
                     <TextBlock
                         Text="{x:Static lang:Resources.Packages}"
                         FontWeight="Bold"
@@ -41,6 +41,15 @@
                         BorderThickness="1"
                         BorderBrush="{DynamicResource SystemBaseHighColor}"
                         CornerRadius="4" />
+                    <Button
+                        Grid.Column="2"
+                        Margin="12,0,0,0"
+                        Padding="8"
+                        Background="Transparent"
+                        Command="{Binding SyncCommand}"
+                        ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                        <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
+                    </Button>
                 </Grid>
             </Border>
             <DataGrid
