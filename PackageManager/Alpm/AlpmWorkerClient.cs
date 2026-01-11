@@ -13,7 +13,6 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
     private Process? _workerProcess;
     private StreamWriter? _workerInput;
     private StreamReader? _workerOutput;
-    private StreamReader? _workerError;
 
     private bool _isElevated;
 
@@ -25,14 +24,14 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
 
     private void EnsureWorkerStarted(bool elevated)
     {
-        if (_workerProcess != null && !_workerProcess.HasExited)
+        if (_workerProcess != null)
         {
-            if (_isElevated == elevated || (_isElevated && !elevated))
+            if (!_workerProcess.HasExited && (_isElevated == elevated || (_isElevated && !elevated)))
             {
                 return;
             }
 
-            // If we need elevation but the current process isn't elevated, we need to restart it.
+            // If we need elevation but the current process isn't elevated, or it has exited, we need to restart it.
             StopWorker();
         }
 
@@ -76,8 +75,17 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
 
         _workerInput = _workerProcess.StandardInput;
         _workerOutput = _workerProcess.StandardOutput;
-        _workerError = _workerProcess.StandardError;
         _isElevated = elevated;
+
+        // Subscribe to standard error to log output
+        _workerProcess.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                Console.WriteLine($"[WORKER LOG] {e.Data}");
+            }
+        };
+        _workerProcess.BeginErrorReadLine();
 
         if (elevated)
         {
@@ -121,7 +129,6 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
                 _workerProcess = null;
                 _workerInput = null;
                 _workerOutput = null;
-                _workerError = null;
             }
         }
     }
@@ -143,8 +150,7 @@ public class AlpmWorkerClient : IAlpmManager, IDisposable
         var jsonResponse = _workerOutput!.ReadLine();
         if (jsonResponse == null)
         {
-            var error = _workerError!.ReadToEnd();
-            throw new Exception($"Worker process exited unexpectedly: {error}");
+            throw new Exception("Worker process exited unexpectedly.");
         }
 
         var response = JsonSerializer.Deserialize(jsonResponse, AlpmWorkerJsonContext.Default.WorkerResponse)

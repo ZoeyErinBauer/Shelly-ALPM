@@ -116,11 +116,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     localpath = Path.Combine(_config.DbPath, "sync", fileName);
                     //Console.WriteLine($"Using {localpath} as destination for {url}");
+                    Console.Error.WriteLine($"[DEBUG_LOG] Using {localpath} as destination for {url}");
                 }
                 else
                 {
                     localpath = Path.Combine(_config.CacheDir, fileName);
                     //Console.WriteLine($"Using {localpath} as destination for {url}");
+                    Console.Error.WriteLine($"[DEBUG_LOG] Using {localpath} as destination for {url}");
                 }
             }
 
@@ -233,6 +235,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
 
             //Console.WriteLine($"Download logic failed for {urlString}: {ex.Message}");
+            Console.Error.WriteLine($"[DEBUG_LOG] Download logic failed for {urlString}: {ex.Message}");
             return -1;
         }
     }
@@ -242,10 +245,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             //Console.WriteLine($"Downloading {fullUrl} to {localpath}");
+            Console.Error.WriteLine($"[DEBUG_LOG] Downloading {fullUrl} to {localpath}");
             using var response = _httpClient.GetAsync(fullUrl).GetAwaiter().GetResult();
             if (!response.IsSuccessStatusCode)
             {
-                //Console.WriteLine($"Failed to download {fullUrl}: {response.StatusCode}");
+                Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: {response.StatusCode}");
                 return -1;
             }
 
@@ -256,7 +260,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
             catch (Exception ex)
             {
-                //Console.WriteLine($"Failed to write to {localpath}: {ex.Message}");
+                Console.Error.WriteLine($"[DEBUG_LOG] Failed to write to {localpath}: {ex.Message}");
                 return -1;
             }
 
