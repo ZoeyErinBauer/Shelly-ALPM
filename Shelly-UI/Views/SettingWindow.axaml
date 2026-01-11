@@ -3,14 +3,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.SettingWindow" 
              x:DataType="viewModels:SettingViewModel"
              x:CompileBindings="True">
     <StackPanel Margin="20" Spacing="10">
-        <TextBlock Text="Appearance" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Text="{x:Static lang:Resources.Appearence}" FontSize="18" FontWeight="Bold"/>
         
-        <TextBlock Text="Accent Hex Color" FontSize="14" Opacity="0.7"/>
+        <TextBlock Text="{x:Static lang:Resources.AcccentHexColor}" FontSize="14" Opacity="0.7"/>
         
         <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
             <TextBox Grid.Column="0" 
@@ -24,21 +25,17 @@
                     BorderThickness="1"
                     Background="{Binding AccentHex, Mode=TwoWay}"/>
         </Grid>
-        <Button Content="Apply Custom Accent" 
+        <Button Content="{x:Static lang:Resources.ApplyAccent}" 
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Padding="0,10"
                 Command="{Binding ApplyCustomAccent}"
                 Background="{DynamicResource SystemAccentColor}"
                 Foreground="{DynamicResource SystemBaseHighColor}"/>
-        <TextBlock Text="Tip: Use hex format like #FF0000 for red." 
-                   FontSize="12" 
-                   FontStyle="Italic" 
-                   Opacity="0.5"/>
         <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"></ToggleSwitch>
         <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"></ToggleSwitch>
-        <ToggleSwitch Content="Enable Snapd (WIP)" IsEnabled="False"></ToggleSwitch>
-        <Button Content="Check for Updates"
+        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"></ToggleSwitch>
+        <Button Content="{x:Static lang:Resources.CheckForUpdates}"
                 Command="{Binding CheckForUpdatesCommand}"
                 IsVisible="{Binding IsUpdateCheckVisible}"
                 HorizontalAlignment="Stretch"

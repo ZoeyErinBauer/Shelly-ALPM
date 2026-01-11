@@ -111,7 +111,8 @@
                 IsVisible="{Binding ShowConfirmDialog}"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch">
-            <Border Background="{DynamicResource SystemRegionColor}"
+            <Border Background="{DynamicResource SystemChromeLowColor}"
+                    BorderBrush="{DynamicResource SystemBaseLowColor}"
                     CornerRadius="8"
                     Padding="20"
                     Width="300"
@@ -124,7 +125,7 @@
                     <Grid ColumnDefinitions="*,*">
                         <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}" HorizontalAlignment="Stretch" Margin="0,0,5,0"
                                 Command="{Binding ToggleConfirmAction}"/>
-                        <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}" Background="#0E8C7A" Foreground="White" HorizontalAlignment="Stretch"
+                        <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}" Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
                                 Command="{Binding AlpmInstallCommand}"/>
                     </Grid>
                 </StackPanel>

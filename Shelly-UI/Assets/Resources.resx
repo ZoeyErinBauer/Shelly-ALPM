@@ -93,4 +93,28 @@
     <data name="Refresh" xml:space="preserve">
         <value>Refresh</value>
     </data>
+    <data name="AuthRequired" xml:space="preserve">
+        <value>Authentication is required to perform this action.</value>
+    </data>
+    <data name="EnterPassword" xml:space="preserve">
+        <value>Please enter your sudo password:</value>
+    </data>
+    <data name="CheckForUpdates" xml:space="preserve">
+        <value>Check For Updates</value>
+    </data>
+    <data name="ToggleAll" xml:space="preserve">
+        <value>Toggle All</value>
+    </data>
+    <data name="ApplyAccent" xml:space="preserve">
+        <value>Apply Custom Accent</value>
+    </data>
+    <data name="Appearence" xml:space="preserve">
+        <value>Appearence</value>
+    </data>
+    <data name="AcccentHexColor" xml:space="preserve">
+        <value>Accemt Hex Color</value>
+    </data>
+    <data name="Confirm" xml:space="preserve">
+        <value>Confirm</value>
+    </data>
 </root>
