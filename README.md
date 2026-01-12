@@ -6,8 +6,18 @@ Shelly is a modern, visual package manager for Arch Linux, built with .NET 10 an
 
 - **Native Arch Integration**: Directly interacts with `libalpm` for accurate and fast package management.
 - **Cross-Platform UI Framework**: Built using [Avalonia UI](https://avaloniaui.net/), ensuring a modern and responsive user interface.
-- **Repository Management**: Supports synchronization of official repositories.
-- **Package Installation & Removal**: (Work in progress) Aims to provide a full suite of package management actions.
+- **Package Management**: Supports searching for, installing, updating, and removing packages.
+- **Repository Management**: Synchronizes with official repositories to keep package lists up to date.
+
+## Roadmap
+
+Upcoming features and development targets:
+
+- **Repository Modification**: Allow modification of supported repositories (First future release).
+- **AUR Support**: Integration with the Arch User Repository for a wider range of software.
+- **Package Grouping**: Group related packages for easier management.
+- **Flatpak Support**: Manage Flatpak applications alongside native packages.
+- **Snapd Support**: Support for Snap packages.
 
 ## Prerequisites
 
@@ -70,7 +80,7 @@ dotnet test
 
 ## License
 
-This project is licensed under the MIT License - see the [PKGBUILD](PKGBUILD) or project files for details.
+This project is licensed under the GPL-3.0 License - see the [PKGBUILD](PKGBUILD) or project files for details.
 
 ## Disclaimer
 
