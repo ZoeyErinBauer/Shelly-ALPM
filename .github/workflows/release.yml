@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libalpm-dev libx11-dev libice-dev libsm-dev libfontconfig1-dev libfreetype6-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev libxtst-dev libgl1-mesa-dev libgles2-mesa-dev libgtk-3-dev
+
+    - name: Publish Shelly-UI
+      run: dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -r linux-x64 --self-contained true -o publish/shelly-ui
+
+    - name: Publish Shelly.Worker
+      run: dotnet publish Shelly.Worker/Shelly.Worker.csproj -c Release -r linux-x64 --self-contained true -o publish/shelly-worker
+
+    - name: Package Binaries
+      run: |
+        cd publish
+        tar -czvf shelly-ui-linux-x64.tar.gz -C shelly-ui .
+        tar -czvf shelly-worker-linux-x64.tar.gz -C shelly-worker .
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          publish/shelly-ui-linux-x64.tar.gz
+          publish/shelly-worker-linux-x64.tar.gz
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
