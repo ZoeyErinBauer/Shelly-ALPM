@@ -31,4 +31,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shelly-ui-linux-x64-v3
-        path: publish/shelly-ui/Shelly-UI
+        path: |
+          publish/shelly-ui/Shelly-UI
+          publish/shelly-ui/libHarfBuzzSharp.so
+          publish/shelly-ui/libSkiaSharp.so

@@ -30,7 +30,7 @@ jobs:
     - name: Package Binaries
       run: |
         cd publish/shelly-ui
-        tar -czvf ../shelly-ui-linux-x64-v3.tar.gz Shelly-UI
+        tar -czvf ../shelly-ui-linux-x64-v3.tar.gz Shelly-UI libHarfBuzzSharp.so libSkiaSharp.so
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
