@@ -120,4 +120,7 @@
     <data name="Installed" xml:space="preserve">
         <value>Installed</value>
     </data>
+    <data name="PackageRepository" xml:space="preserve">
+        <value>PackageRepository</value>
+    </data>
 </root>

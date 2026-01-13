@@ -140,6 +140,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     private void HandleQuestion(IntPtr questionPtr)
     {
+        //TODO: HANDLE QUESTIONS BETTER RATHER THAN AUTOMATICALLY ANSWERING YES
         // 1. Read the 'type' of the question (usually the first 4 bytes of the struct)
         var question = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
 
@@ -162,7 +163,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         Marshal.WriteInt32(questionPtr, 8, 1);
     }
 
-    
 
     private int DownloadFile(IntPtr ctx, IntPtr urlPtr, IntPtr localpathPtr, int force)
     {
@@ -310,7 +310,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             Console.Error.WriteLine($"[DEBUG_LOG] Downloading {fullUrl} to {localpath}");
-            using var response = _httpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+            using var response = _httpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead).GetAwaiter()
+                .GetResult();
             if (!response.IsSuccessStatusCode)
             {
                 Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: {response.StatusCode}");
@@ -324,17 +325,17 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             {
                 using var fs = new FileStream(localpath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
                 using var stream = response.Content.ReadAsStream();
-                
+
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 long totalRead = 0;
                 int lastPercent = -1;
-                
+
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     fs.Write(buffer, 0, bytesRead);
                     totalRead += bytesRead;
-                    
+
                     if (totalBytes.HasValue && totalBytes.Value > 0)
                     {
                         int percent = (int)((totalRead * 100) / totalBytes.Value);
@@ -351,7 +352,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         }
                     }
                 }
-                
+
                 // Ensure 100% is sent
                 if (lastPercent != 100)
                 {
@@ -918,7 +919,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         Release(_handle);
         _handle = IntPtr.Zero;
     }
-    
+
     private void HandleProgress(IntPtr ctx, AlpmProgressType progress, IntPtr pkgNamePtr, int percent, ulong howmany,
         ulong current)
     {
@@ -941,126 +942,127 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
-        private void HandleEvent(IntPtr eventPtr)
+    private void HandleEvent(IntPtr eventPtr)
+    {
+        if (eventPtr == IntPtr.Zero) return;
+
+        var type = (AlpmEventType)Marshal.ReadInt32(eventPtr);
+
+        switch (type)
         {
-            if (eventPtr == IntPtr.Zero) return;
+            case AlpmEventType.CheckDepsStart:
+                Console.Error.WriteLine("[ALPM] Checking dependencies...");
+                break;
+            case AlpmEventType.CheckDepsDone:
+                Console.Error.WriteLine("[ALPM] Dependency check finished.");
+                break;
+            case AlpmEventType.InterConflictsStart:
+                Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
+                break;
+            case AlpmEventType.InterConflictsDone:
+                Console.Error.WriteLine("[ALPM] File conflict check finished.");
+                break;
+            case AlpmEventType.TransactionStart:
+                Console.Error.WriteLine("[ALPM] Starting transaction...");
+                PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                break;
+            case AlpmEventType.TransactionDone:
+                Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
+                PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                break;
+            case AlpmEventType.IntegrityStart:
+                Console.Error.WriteLine("[ALPM] Checking package integrity...");
+                break;
+            case AlpmEventType.IntegrityDone:
+                Console.Error.WriteLine("[ALPM] Integrity check finished.");
+                break;
+            case AlpmEventType.LoadStart:
+                Console.Error.WriteLine("[ALPM] Loading packages...");
+                break;
+            case AlpmEventType.LoadDone:
+                Console.Error.WriteLine("[ALPM] Packages loaded.");
+                break;
+            case AlpmEventType.DiskspaceStart:
+                Console.Error.WriteLine("[ALPM] Checking available disk space...");
+                break;
+            case AlpmEventType.DiskspaceDone:
+                Console.Error.WriteLine("[ALPM] Disk space check finished.");
+                break;
 
-            var type = (AlpmEventType)Marshal.ReadInt32(eventPtr);
+            case AlpmEventType.PackageOperationStart:
+                // Offset 4: Operation type (Install/Upgrade/Remove)
+                // Offset 8: Package pointer
+                IntPtr pkgPtrStart = Marshal.ReadIntPtr(eventPtr, 8);
+                string? pkgNameStart = Marshal.PtrToStringUTF8(GetPkgName(pkgPtrStart));
+                Console.Error.WriteLine($"[ALPM] Processing package: {pkgNameStart}");
+                PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgNameStart));
+                break;
 
-            switch (type)
-            {
-                case AlpmEventType.CheckDepsStart:
-                    Console.Error.WriteLine("[ALPM] Checking dependencies...");
-                    break;
-                case AlpmEventType.CheckDepsDone:
-                    Console.Error.WriteLine("[ALPM] Dependency check finished.");
-                    break;
-                case AlpmEventType.InterConflictsStart:
-                    Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
-                    break;
-                case AlpmEventType.InterConflictsDone:
-                    Console.Error.WriteLine("[ALPM] File conflict check finished.");
-                    break;
-                case AlpmEventType.TransactionStart:
-                    Console.Error.WriteLine("[ALPM] Starting transaction...");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
-                    break;
-                case AlpmEventType.TransactionDone:
-                    Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
-                    break;
-                case AlpmEventType.IntegrityStart:
-                    Console.Error.WriteLine("[ALPM] Checking package integrity...");
-                    break;
-                case AlpmEventType.IntegrityDone:
-                    Console.Error.WriteLine("[ALPM] Integrity check finished.");
-                    break;
-                case AlpmEventType.LoadStart:
-                    Console.Error.WriteLine("[ALPM] Loading packages...");
-                    break;
-                case AlpmEventType.LoadDone:
-                    Console.Error.WriteLine("[ALPM] Packages loaded.");
-                    break;
-                case AlpmEventType.DiskspaceStart:
-                    Console.Error.WriteLine("[ALPM] Checking available disk space...");
-                    break;
-                case AlpmEventType.DiskspaceDone:
-                    Console.Error.WriteLine("[ALPM] Disk space check finished.");
-                    break;
+            case AlpmEventType.PackageOperationDone:
+                IntPtr pkgPtrDone = Marshal.ReadIntPtr(eventPtr, 8);
+                string? pkgNameDone = Marshal.PtrToStringUTF8(GetPkgName(pkgPtrDone));
+                Console.Error.WriteLine($"[ALPM] Finished processing: {pkgNameDone}");
+                PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgNameDone));
+                break;
 
-                case AlpmEventType.PackageOperationStart:
-                    // Offset 4: Operation type (Install/Upgrade/Remove)
-                    // Offset 8: Package pointer
-                    IntPtr pkgPtrStart = Marshal.ReadIntPtr(eventPtr, 8);
-                    string? pkgNameStart = Marshal.PtrToStringUTF8(GetPkgName(pkgPtrStart));
-                    Console.Error.WriteLine($"[ALPM] Processing package: {pkgNameStart}");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgNameStart));
-                    break;
+            case AlpmEventType.ScriptletInfo:
+                // Offset 4: Pointer to the message string
+                IntPtr msgPtr = Marshal.ReadIntPtr(eventPtr, 4);
+                string? msg = Marshal.PtrToStringUTF8(msgPtr);
+                if (!string.IsNullOrEmpty(msg))
+                {
+                    Console.Error.WriteLine($"[ALPM_SCRIPT] {msg.Trim()}");
+                }
 
-                case AlpmEventType.PackageOperationDone:
-                    IntPtr pkgPtrDone = Marshal.ReadIntPtr(eventPtr, 8);
-                    string? pkgNameDone = Marshal.PtrToStringUTF8(GetPkgName(pkgPtrDone));
-                    Console.Error.WriteLine($"[ALPM] Finished processing: {pkgNameDone}");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgNameDone));
-                    break;
+                break;
 
-                case AlpmEventType.ScriptletInfo:
-                    // Offset 4: Pointer to the message string
-                    IntPtr msgPtr = Marshal.ReadIntPtr(eventPtr, 4);
-                    string? msg = Marshal.PtrToStringUTF8(msgPtr);
-                    if (!string.IsNullOrEmpty(msg))
-                    {
-                        Console.Error.WriteLine($"[ALPM_SCRIPT] {msg.Trim()}");
-                    }
-                    break;
+            case AlpmEventType.HookStart:
+                Console.Error.WriteLine("[ALPM] Running hooks...");
+                break;
+            case AlpmEventType.HookDone:
+                Console.Error.WriteLine("[ALPM] Hooks finished.");
+                break;
 
-                case AlpmEventType.HookStart:
-                    Console.Error.WriteLine("[ALPM] Running hooks...");
-                    break;
-                case AlpmEventType.HookDone:
-                    Console.Error.WriteLine("[ALPM] Hooks finished.");
-                    break;
+            case AlpmEventType.HookRunStart:
+                // Offset 4: Hook name string pointer
+                // Offset 12: Description string pointer
+                IntPtr hookNamePtr = Marshal.ReadIntPtr(eventPtr, 4);
+                IntPtr hookDescPtr = Marshal.ReadIntPtr(eventPtr, 12);
+                string? hookDesc = Marshal.PtrToStringUTF8(hookDescPtr);
+                Console.Error.WriteLine($"[ALPM_HOOK] Running: {hookDesc ?? Marshal.PtrToStringUTF8(hookNamePtr)}");
+                break;
 
-                case AlpmEventType.HookRunStart:
-                    // Offset 4: Hook name string pointer
-                    // Offset 12: Description string pointer
-                    IntPtr hookNamePtr = Marshal.ReadIntPtr(eventPtr, 4);
-                    IntPtr hookDescPtr = Marshal.ReadIntPtr(eventPtr, 12);
-                    string? hookDesc = Marshal.PtrToStringUTF8(hookDescPtr);
-                    Console.Error.WriteLine($"[ALPM_HOOK] Running: {hookDesc ?? Marshal.PtrToStringUTF8(hookNamePtr)}");
-                    break;
+            case AlpmEventType.DatabaseSyncStart:
+                IntPtr dbNamePtr = Marshal.ReadIntPtr(eventPtr, 4);
+                Console.Error.WriteLine($"[ALPM] Synchronizing {Marshal.PtrToStringUTF8(dbNamePtr)}...");
+                break;
 
-                case AlpmEventType.DatabaseSyncStart:
-                    IntPtr dbNamePtr = Marshal.ReadIntPtr(eventPtr, 4);
-                    Console.Error.WriteLine($"[ALPM] Synchronizing {Marshal.PtrToStringUTF8(dbNamePtr)}...");
-                    break;
+            case AlpmEventType.RetrieveStart:
+                Console.Error.WriteLine("[ALPM] Retrieving packages...");
+                break;
 
-                case AlpmEventType.RetrieveStart:
-                    Console.Error.WriteLine("[ALPM] Retrieving packages...");
-                    break;
-
-                case AlpmEventType.RetrieveDone:
-                    Console.Error.WriteLine("[ALPM] Packages retrieved.");
-                    break;
-                case AlpmEventType.RetrieveFailed:
-                    Console.Error.WriteLine("[ALPM] Package retrieval failed.");
-                    break;
-                case AlpmEventType.PkgsignStart:
-                    Console.Error.WriteLine("[ALPM] Signing packages...");
-                    break;
-                case AlpmEventType.PkgsignDone:
-                    Console.Error.WriteLine("[ALPM] Packages signed.");
-                    break;
-                case AlpmEventType.DatabaseSyncDone:
-                    Console.Error.WriteLine("[ALPM] Synchronization finished.");
-                    break;
-                case AlpmEventType.HookRunDone:
-                    Console.Error.WriteLine("[ALPM] Hook finished.");
-                    break;
-                default:
-                    // Fallback for types we haven't explicitly handled yet
-                    // Console.Error.WriteLine($"[ALPM_DEBUG] Event Triggered: {type}");
-                    break;
-            }
+            case AlpmEventType.RetrieveDone:
+                Console.Error.WriteLine("[ALPM] Packages retrieved.");
+                break;
+            case AlpmEventType.RetrieveFailed:
+                Console.Error.WriteLine("[ALPM] Package retrieval failed.");
+                break;
+            case AlpmEventType.PkgsignStart:
+                Console.Error.WriteLine("[ALPM] Signing packages...");
+                break;
+            case AlpmEventType.PkgsignDone:
+                Console.Error.WriteLine("[ALPM] Packages signed.");
+                break;
+            case AlpmEventType.DatabaseSyncDone:
+                Console.Error.WriteLine("[ALPM] Synchronization finished.");
+                break;
+            case AlpmEventType.HookRunDone:
+                Console.Error.WriteLine("[ALPM] Hook finished.");
+                break;
+            default:
+                // Fallback for types we haven't explicitly handled yet
+                // Console.Error.WriteLine($"[ALPM_DEBUG] Event Triggered: {type}");
+                break;
         }
+    }
 }

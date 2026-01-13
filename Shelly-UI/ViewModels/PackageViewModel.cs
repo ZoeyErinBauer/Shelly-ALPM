@@ -84,7 +84,8 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
                 Description = u.Description,
                 Url = u.Url,
                 IsChecked = false,
-                IsInstalled = installedNames.Contains(u.Name)
+                IsInstalled = installedNames.Contains(u.Name),
+                Repository = u.Repository
             }).ToList();
             
             await _appCache.StoreAsync(nameof(CacheEnums.PackageCache), models);

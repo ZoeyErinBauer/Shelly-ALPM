@@ -14,6 +14,20 @@ public class AlpmPackage(IntPtr pkgPtr)
     public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr));
 
     public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr));
+    
+    public string Repository 
+    {
+        get 
+        {
+            IntPtr dbPtr = AlpmReference.GetPkgDb(PackagePtr);
+            if (dbPtr == IntPtr.Zero) 
+            {
+                return "local"; // Or handle as an installed/local package
+            }
+            IntPtr namePtr = AlpmReference.DbGetName(dbPtr);
+            return Marshal.PtrToStringUTF8(namePtr) ?? string.Empty;
+        }
+    }
 
     public static List<AlpmPackage> FromList(IntPtr listPtr)
     {
@@ -39,7 +53,8 @@ public class AlpmPackage(IntPtr pkgPtr)
         Version = Version,
         Size = Size,
         Description = Description,
-        Url = Url
+        Url = Url,
+        Repository = Repository,
     };
 
     public override string ToString()

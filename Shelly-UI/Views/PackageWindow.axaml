@@ -89,7 +89,7 @@
                 <DataGrid.Columns>
                     <DataGridTemplateColumn
                         Header="{x:Static lang:Resources.Name}"
-                        Width="*">
+                        Width="200">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate DataType="models:PackageModel">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
@@ -113,6 +113,10 @@
                         Header="{x:Static lang:Resources.PackageSize}"
                         Binding="{Binding SizeString}"
                         Width="100" />
+                    <DataGridTextColumn
+                        Header="{x:Static lang:Resources.PackageRepository}"
+                        Binding="{Binding Repository}"
+                        Width="175"/>
                     <DataGridTemplateColumn
                         Header=""
                         Width="60">
