@@ -7,8 +7,9 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.SettingWindow" 
              x:DataType="viewModels:SettingViewModel"
-             x:CompileBindings="True">
-    <StackPanel Margin="20" Spacing="10">
+             x:CompileBindings="True"
+             Background="{DynamicResource SystemChromeLowColor}">
+    <StackPanel Margin="20" Spacing="10" >
         <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold"/>
         
         <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7"/>
