@@ -126,23 +126,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService)));
-
-        MenuItems = new()
-        {
-            new MenuItemViewModel(Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
-            new MenuItemViewModel(Resources.Packages, MaterialIconKind.PackageVariantClosed,
-                "View New Packages to Install",
-                GoPackages),
-            new MenuItemViewModel(Resources.Updates, MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
-            new MenuItemViewModel(Resources.Remove, MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
-            new MenuItemViewModel(Resources.Settings, MaterialIconKind.Settings, "Application Settings", GoSetting)
-        };
-
+        
         GoHome.Execute(Unit.Default);
     }
-
-    public ObservableCollection<MenuItemViewModel> MenuItems { get; }
-
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen

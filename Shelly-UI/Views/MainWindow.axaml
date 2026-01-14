@@ -100,7 +100,8 @@
                                 HorizontalAlignment="Stretch"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Padding="0">
+                                Padding="0"
+                                IsVisible="False">
                             <Grid ColumnDefinitions="66, *" Height="40">
                                 <icons:MaterialIcon Kind="Arch" Width="22" Height="22"
                                                     HorizontalAlignment="Center"
@@ -141,7 +142,8 @@
                                 HorizontalAlignment="Stretch"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Padding="0">
+                                Padding="0"
+                                IsVisible="False">
                             <Grid ColumnDefinitions="66, *" Height="40">
                                 <icons:MaterialIcon Kind="Snapchat" Width="22" Height="22"
                                                     HorizontalAlignment="Center"
@@ -178,12 +180,13 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-                        <Grid IsVisible="False">
+                      
                             <Button Command="{Binding ToggleFlatpakMenu}"
                                     HorizontalAlignment="Stretch"
                                     Background="Transparent"
                                     BorderThickness="0"
-                                    Padding="0">
+                                    Padding="0"
+                                    IsVisible="False">
                                 <Grid ColumnDefinitions="66, *" Height="40">
                                     <icons:MaterialIcon Kind="MusicAccidentalFlat" Width="22" Height="22"
                                                         HorizontalAlignment="Center"
@@ -221,7 +224,7 @@
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
-                        </Grid>
+                   
                     </StackPanel>
                     <Button Command="{Binding GoSetting}"
                             HorizontalAlignment="Stretch"
