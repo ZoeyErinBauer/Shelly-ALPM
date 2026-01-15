@@ -159,23 +159,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService)));
-
-        MenuItems = new()
-        {
-            new MenuItemViewModel(Resources.Home, MaterialIconKind.Home, "Home page", GoHome),
-            new MenuItemViewModel(Resources.Packages, MaterialIconKind.PackageVariantClosed,
-                "View New Packages to Install",
-                GoPackages),
-            new MenuItemViewModel(Resources.Updates, MaterialIconKind.Update, "Update Existing Packages", GoUpdate),
-            new MenuItemViewModel(Resources.Remove, MaterialIconKind.Delete, "Delete Existing Packages", GoRemove),
-            new MenuItemViewModel(Resources.Settings, MaterialIconKind.Settings, "Application Settings", GoSetting)
-        };
-
+        
         GoHome.Execute(Unit.Default);
     }
-
-    public ObservableCollection<MenuItemViewModel> MenuItems { get; }
-
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -262,6 +249,15 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     #region MenuItemSelectionNav
 
+    private bool _isPackageOpen;
+    
+    
+    public bool IsPackageOpen 
+    {
+        get => _isPackageOpen;
+        set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
+    }
+    
     public void TogglePackageMenu()
     {
         if (!IsPaneOpen)
@@ -275,11 +271,64 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
     
-    private bool _isPackageOpen;
-    public bool IsPackageOpen 
+    private bool _isAurOpen;
+    public bool IsAurOpen 
     {
-        get => _isPackageOpen;
-        set => this.RaiseAndSetIfChanged(ref _isPackageOpen, value);
+        get => _isAurOpen;
+        set => this.RaiseAndSetIfChanged(ref _isAurOpen, value);
+    }
+    
+    public void ToggleAurMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsAurOpen = true;
+        }
+        else
+        {
+            IsAurOpen = !IsAurOpen;
+        }
+    }
+    
+    private bool _isSnapOpen;
+    public bool IsSnapOpen 
+    {
+        get => _isSnapOpen;
+        set => this.RaiseAndSetIfChanged(ref _isSnapOpen, value);
+    }
+    
+    public void ToggleSnapMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsSnapOpen = true;
+        }
+        else
+        {
+            IsSnapOpen = !IsSnapOpen;
+        }
+    }
+    
+    private bool _isFlatpakOpen;
+    public bool IsFlatpakOpen 
+    {
+        get => _isFlatpakOpen;
+        set => this.RaiseAndSetIfChanged(ref _isFlatpakOpen, value);
+    }
+    
+    public void ToggleFlatpakMenu()
+    {
+        if (!IsPaneOpen)
+        {
+            IsPaneOpen = true;
+            IsFlatpakOpen = true;
+        }
+        else
+        {
+            IsFlatpakOpen = !IsFlatpakOpen;
+        }
     }
 
     private string GetQuestionTitle(AlpmQuestionType questionType)

@@ -14,7 +14,7 @@ using Velopack.Sources;
 
 namespace Shelly_UI.ViewModels;
 
-public class SettingViewModel : ViewModelBase,  IRoutableViewModel
+public class SettingViewModel : ViewModelBase, IRoutableViewModel
 {
     private string _selectedTheme;
 
@@ -29,16 +29,22 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         {
             _accentHex = pal.Accent.ToString();
         }
+
         var config = _configService.LoadConfig();
         _isDarkMode = config.DarkMode;
 
         CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
-        
     }
-    
+
     private string _accentHex = "#018574";
-    
+
     private bool _isDarkMode;
+
+    private bool _enableAur;
+
+    private bool _enableFlatpak;
+
+    private bool _enableSnapd;
 
     public string AccentHex
     {
@@ -48,12 +54,12 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
 
     public void ApplyCustomAccent()
     {
-       new ThemeService().ApplyCustomAccent(AccentHex);
-       var config = _configService.LoadConfig();
-       config.AccentColor = AccentHex;
-       _configService.SaveConfig(config);
+        new ThemeService().ApplyCustomAccent(AccentHex);
+        var config = _configService.LoadConfig();
+        config.AccentColor = AccentHex;
+        _configService.SaveConfig(config);
     }
-    
+
     public bool IsDarkMode
     {
         get => _isDarkMode;
@@ -61,21 +67,58 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         {
             this.RaiseAndSetIfChanged(ref _isDarkMode, value);
             new ThemeService().SetTheme(value);
-                
+
             var config = _configService.LoadConfig();
             config.DarkMode = value;
             _configService.SaveConfig(config);
         }
     }
-    
-  
-    
+
+    public bool EnableSnap
+    {
+        get => _enableSnapd;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _enableSnapd, value);
+
+            var config = _configService.LoadConfig();
+            config.SnapEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
+    public bool EnableFlatpak
+    {
+        get => _enableFlatpak;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _enableFlatpak, value);
+
+            var config = _configService.LoadConfig();
+            config.FlatPackEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
+    public bool EnableAur
+    {
+        get => _enableAur;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _enableAur, value);
+
+            var config = _configService.LoadConfig();
+            config.AurEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
     public IScreen HostScreen { get; }
-    
+
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public ReactiveCommand<Unit, Unit> CheckForUpdatesCommand { get; }
-    
+
     public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share");
 
     private async Task CheckForUpdates()
@@ -84,7 +127,7 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         {
             return;
         }
-        
+
         var mgr = new UpdateManager(new GithubSource("https://github.com/ZoeyErinBauer/Shelly-ALPM", null, false));
 
         var newVersion = await mgr.CheckForUpdatesAsync();
@@ -96,5 +139,4 @@ public class SettingViewModel : ViewModelBase,  IRoutableViewModel
         await mgr.DownloadUpdatesAsync(newVersion);
         mgr.ApplyUpdatesAndRestart(newVersion);
     }
-
 }

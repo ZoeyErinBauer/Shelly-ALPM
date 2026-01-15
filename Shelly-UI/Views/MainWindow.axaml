@@ -69,8 +69,8 @@
                                            IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
                             </Grid>
                         </Button>
-                        <StackPanel Margin="10,0,0,10" Spacing="5"
-                                    HorizontalAlignment="Center">
+                        <StackPanel Margin="25,0,0,10" Spacing="5"
+                                    HorizontalAlignment="Left">
                             <StackPanel.IsVisible>
                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                     <Binding Path="IsPackageOpen" />
@@ -79,7 +79,7 @@
                             </StackPanel.IsVisible>
                             <Button Classes="SubMenuItem" Command="{Binding GoPackages}" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18"/>
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
                                     <TextBlock Text="Install Packages" FontSize="13" />
                                 </StackPanel>
                             </Button>
@@ -96,7 +96,135 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-
+                        <Button Command="{Binding ToggleAurMenu}"
+                                HorizontalAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                IsVisible="False">
+                            <Grid ColumnDefinitions="66, *" Height="40">
+                                <icons:MaterialIcon Kind="Arch" Width="22" Height="22"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="AUR"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                            </Grid>
+                        </Button>
+                        <StackPanel Margin="25,0,0,10" Spacing="5"
+                                    HorizontalAlignment="Left">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="IsAurOpen" />
+                                    <Binding Path="$parent[SplitView].IsPaneOpen" />
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
+                            <Button Classes="SubMenuItem" Command="{Binding GoPackages}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                    <TextBlock Text="Install AUR" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                    <TextBlock Text="Update AUR" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                    <TextBlock Text="Remove AUR" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <Button Command="{Binding ToggleSnapMenu}"
+                                HorizontalAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                IsVisible="False">
+                            <Grid ColumnDefinitions="66, *" Height="40">
+                                <icons:MaterialIcon Kind="Snapchat" Width="22" Height="22"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="Snapd"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                            </Grid>
+                        </Button>
+                        <StackPanel Margin="25,0,0,10" Spacing="5"
+                                    HorizontalAlignment="Left">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="IsSnapOpen" />
+                                    <Binding Path="$parent[SplitView].IsPaneOpen" />
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
+                            <Button Classes="SubMenuItem" Command="{Binding GoPackages}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                    <TextBlock Text="Install Snapd" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                    <TextBlock Text="Update Snapd" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                    <TextBlock Text="Remove Snapd" FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                      
+                            <Button Command="{Binding ToggleFlatpakMenu}"
+                                    HorizontalAlignment="Stretch"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    IsVisible="False">
+                                <Grid ColumnDefinitions="66, *" Height="40">
+                                    <icons:MaterialIcon Kind="MusicAccidentalFlat" Width="22" Height="22"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Flatpak"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
+                                </Grid>
+                            </Button>
+                            <StackPanel Margin="25,0,0,10" Spacing="5"
+                                        HorizontalAlignment="Left">
+                                <StackPanel.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="IsFlatpakOpen" />
+                                        <Binding Path="$parent[SplitView].IsPaneOpen" />
+                                    </MultiBinding>
+                                </StackPanel.IsVisible>
+                                <Button Classes="SubMenuItem" Command="{Binding GoPackages}"
+                                        Background="Transparent">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                        <TextBlock Text="Install Flatpak" FontSize="13" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                        <TextBlock Text="Update Flatpak" FontSize="13" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                        <TextBlock Text="Remove Flatpak" FontSize="13" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                   
                     </StackPanel>
                     <Button Command="{Binding GoSetting}"
                             HorizontalAlignment="Stretch"

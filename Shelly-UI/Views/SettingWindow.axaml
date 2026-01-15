@@ -35,9 +35,9 @@
                 Foreground="{DynamicResource SystemBaseHighColor}"/>
         <ToggleSwitch Content="Toggle Dark/Light Mode" 
                        IsChecked="{Binding IsDarkMode, Mode=TwoWay}"/>
-        <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"></ToggleSwitch>
-        <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"></ToggleSwitch>
-        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"></ToggleSwitch>
+        <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"  IsChecked="{Binding EnableAur, Mode=TwoWay}"></ToggleSwitch>
+        <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"  IsChecked="{Binding EnableFlatpak, Mode=TwoWay}"></ToggleSwitch>
+        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"  IsChecked="{Binding EnableSnap, Mode=TwoWay}"></ToggleSwitch>
         <Button Content="{x:Static lang:Resources.CheckForUpdates}"
                 Command="{Binding CheckForUpdatesCommand}"
                 IsVisible="{Binding IsUpdateCheckVisible}"
