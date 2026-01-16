@@ -9,6 +9,7 @@ using Avalonia.Themes.Fluent;
 using ReactiveUI;
 using Shelly_UI.Enums;
 
+using Shelly_UI.Models;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 
@@ -119,15 +120,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-    private string _updateAvailable = "Checking for updates...";
-
-    public string UpdateAvailableText
-    {
-        get => _updateAvailable;
-        set => this.RaiseAndSetIfChanged(ref _updateAvailable, value);
-    }
-    
-    
     public IScreen HostScreen { get; }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
@@ -143,6 +135,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             return;
         }
 
+        var mgr = new UpdateManager(new GithubSource("https://github.com/ZoeyErinBauer/Shelly-ALPM", null, false));
+
         bool updateAvailable = await _updateService.CheckForUpdateAsync();
         if (updateAvailable)
         {
@@ -150,10 +144,5 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             // For now, as per requirement, we proceed with download and install
             await _updateService.DownloadAndInstallUpdateAsync();
         }
-    }
-
-    private async Task SetUpdateText()
-    {
-        UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache)) ? "Update Available Click to Download" : "Checking for updates...";
     }
 }

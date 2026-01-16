@@ -5,11 +5,11 @@ using System.Reactive.Linq;
 using System.Reactive;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Material.Icons;
 using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
-using Shelly_UI.Enums;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 
@@ -168,10 +168,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoSetting = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new SettingViewModel(this, configService, _services.GetRequiredService<IUpdateService>(), appCache)));
         
         GoHome.Execute(Unit.Default);
-        _ = CheckForUpdates();
-
     }
-
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -213,7 +211,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private bool _showQuestion;
-
     public bool ShowQuestion
     {
         get => _showQuestion;
@@ -221,7 +218,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private string _questionTitle = string.Empty;
-
     public string QuestionTitle
     {
         get => _questionTitle;
@@ -229,7 +225,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private string _questionText = string.Empty;
-
     public string QuestionText
     {
         get => _questionText;
@@ -283,13 +278,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     private bool _isAurOpen;
-
-    public bool IsAurOpen
+    public bool IsAurOpen 
     {
         get => _isAurOpen;
         set => this.RaiseAndSetIfChanged(ref _isAurOpen, value);
     }
-
+    
     public void ToggleAurMenu()
     {
         if (!IsPaneOpen)
@@ -302,15 +296,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             IsAurOpen = !IsAurOpen;
         }
     }
-
+    
     private bool _isSnapOpen;
-
-    public bool IsSnapOpen
+    public bool IsSnapOpen 
     {
         get => _isSnapOpen;
         set => this.RaiseAndSetIfChanged(ref _isSnapOpen, value);
     }
-
+    
     public void ToggleSnapMenu()
     {
         if (!IsPaneOpen)
@@ -323,15 +316,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             IsSnapOpen = !IsSnapOpen;
         }
     }
-
+    
     private bool _isFlatpakOpen;
-
-    public bool IsFlatpakOpen
+    public bool IsFlatpakOpen 
     {
         get => _isFlatpakOpen;
         set => this.RaiseAndSetIfChanged(ref _isFlatpakOpen, value);
     }
-
+    
     public void ToggleFlatpakMenu()
     {
         if (!IsPaneOpen)
@@ -359,41 +351,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         };
     }
 
-    #endregion
-
-    #region UpdateNotification
-
-    private async Task CheckForUpdates()
-    {
-        try
-        {
-            if (AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") || AppContext.BaseDirectory.StartsWith("/usr/share/Shelly"))
-            {
-                return;
-            }
-
-            bool updateAvailable = await _updateService.CheckForUpdateAsync();
-            if (updateAvailable)
-            {
-                ShowNotification = true;
-                await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), true);
-            }
-
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-    }
-
-    private bool _showNotification = false;
-
-    public bool ShowNotification
-    {
-        get => _showNotification;
-        set => this.RaiseAndSetIfChanged(ref _showNotification, value);
-    }
-    
     #endregion
 }
 

@@ -5,50 +5,46 @@
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.SettingWindow"
+             x:Class="Shelly_UI.Views.SettingWindow" 
              x:DataType="viewModels:SettingViewModel"
              x:CompileBindings="True"
              Background="{DynamicResource SystemChromeLowColor}">
-    <Grid>
-        <StackPanel Margin="20" Spacing="10">
-            <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold" />
-
-            <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7" />
-
-            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
-                <TextBox Grid.Column="0"
-                         Text="{Binding AccentHex, Mode=TwoWay}"
-                         Watermark="#018574"
-                         VerticalAlignment="Center" />
-                <Border Grid.Column="1"
-                        Width="40" Height="32"
-                        Margin="10,0,0,0"
-                        CornerRadius="4"
-                        BorderThickness="1"
-                        Background="{Binding AccentHex, Mode=TwoWay}" />
-            </Grid>
-            <Button Content="{x:Static lang:Resources.ApplyAccent}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="0,10"
-                    Command="{Binding ApplyCustomAccent}"
-                    Background="{DynamicResource SystemAccentColor}"
-                    Foreground="{DynamicResource SystemBaseHighColor}" />
-            <ToggleSwitch Content="Toggle Dark/Light Mode"
-                          IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
-            <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False" IsChecked="{Binding EnableAur, Mode=TwoWay}"></ToggleSwitch>
-            <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"
-                          IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">
-            </ToggleSwitch>
-            <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False" IsChecked="{Binding EnableSnap, Mode=TwoWay}"></ToggleSwitch>
-            <Button Content="{Binding UpdateAvailableText}"
-                    Command="{Binding CheckForUpdatesCommand}"
-                    IsVisible="{Binding IsUpdateCheckVisible}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="0,10"
-                    Background="{DynamicResource SystemAccentColor}"
-                    Foreground="{DynamicResource SystemBaseHighColor}" />
-        </StackPanel>
-    </Grid>
+    <StackPanel Margin="20" Spacing="10" >
+        <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold"/>
+        
+        <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7"/>
+        
+        <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+            <TextBox Grid.Column="0" 
+                     Text="{Binding AccentHex, Mode=TwoWay}" 
+                     Watermark="#018574"
+                     VerticalAlignment="Center"/>
+            <Border Grid.Column="1" 
+                    Width="40" Height="32" 
+                    Margin="10,0,0,0"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    Background="{Binding AccentHex, Mode=TwoWay}"/>
+        </Grid>
+        <Button Content="{x:Static lang:Resources.ApplyAccent}" 
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="0,10"
+                Command="{Binding ApplyCustomAccent}"
+                Background="{DynamicResource SystemAccentColor}"
+                Foreground="{DynamicResource SystemBaseHighColor}"/>
+        <ToggleSwitch Content="Toggle Dark/Light Mode" 
+                       IsChecked="{Binding IsDarkMode, Mode=TwoWay}"/>
+        <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False"  IsChecked="{Binding EnableAur, Mode=TwoWay}"></ToggleSwitch>
+        <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"  IsChecked="{Binding EnableFlatpak, Mode=TwoWay}"></ToggleSwitch>
+        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"  IsChecked="{Binding EnableSnap, Mode=TwoWay}"></ToggleSwitch>
+        <Button Content="{x:Static lang:Resources.CheckForUpdates}"
+                Command="{Binding CheckForUpdatesCommand}"
+                IsVisible="{Binding IsUpdateCheckVisible}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="0,10"
+                Background="{DynamicResource SystemAccentColor}"
+                Foreground="{DynamicResource SystemBaseHighColor}"/>
+    </StackPanel>
 </UserControl>
