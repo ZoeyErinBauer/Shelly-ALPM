@@ -233,9 +233,18 @@
                             BorderThickness="0"
                             Padding="0">
                         <Grid ColumnDefinitions="66, *" Height="48" Background="Transparent">
-                            <icons:MaterialIcon Kind="Settings" Width="24" Height="24" HorizontalAlignment="Center"
-                                                VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="Settings" VerticalAlignment="Center"
+                                <Panel Grid.Column="0">
+                                    <icons:MaterialIcon Kind="Settings" Width="24" Height="24" HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center" />
+                                    <Ellipse Fill="{DynamicResource SystemAccentColor}" 
+                                             Width="8" Height="8" 
+                                             Margin="12,0,0,12"
+                                             HorizontalAlignment="Center" 
+                                             VerticalAlignment="Center"
+                                             IsVisible="{Binding ShowNotification}"/>
+                                </Panel>
+                            
+                                <TextBlock Grid.Column="1" Text="Settings" VerticalAlignment="Center"
                                        IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
                         </Grid>
                     </Button>
