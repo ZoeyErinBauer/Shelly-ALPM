@@ -8,6 +8,8 @@
         <!-- Enable Native AOT -->
         <PublishAot>true</PublishAot>
         <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>true</PublishSingleFile>
         <!-- Optimization: Remove symbols for smaller binary -->
         <StripSymbols>true</StripSymbols>
         

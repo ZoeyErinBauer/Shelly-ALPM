@@ -1,11 +1,13 @@
 # Shelly: A Visual Arch Package Manager
 
-Shelly is a modern, visual package manager for Arch Linux, built with .NET 10 and Avalonia. It provides a user-friendly interface for managing your Arch Linux system's packages by leveraging the power of `libalpm`.
+Shelly is a modern, visual package manager for Arch Linux, built with .NET 10 and Avalonia. It provides a user-friendly
+interface for managing your Arch Linux system's packages by leveraging the power of `libalpm`.
 
 ## Features
 
 - **Native Arch Integration**: Directly interacts with `libalpm` for accurate and fast package management.
-- **Cross-Platform UI Framework**: Built using [Avalonia UI](https://avaloniaui.net/), ensuring a modern and responsive user interface.
+- **Modern UI Framework**: Built using [Avalonia UI](https://avaloniaui.net/), ensuring a modern and responsive
+  user interface.
 - **Package Management**: Supports searching for, installing, updating, and removing packages.
 - **Repository Management**: Synchronizes with official repositories to keep package lists up to date.
 
@@ -22,7 +24,7 @@ Upcoming features and development targets:
 ## Prerequisites
 
 - **Arch Linux** (or an Arch-based distribution)
-- **.NET 10.0 Runtime** (for running)
+- **.NET 10.0 Runtime** (for running only if installed from aur)
 - **.NET 10.0 SDK** (for building)
 - **libalpm** (provided by `pacman`)
 
@@ -33,8 +35,8 @@ Upcoming features and development targets:
 Since Shelly is designed for Arch Linux, you can build and install it using the provided `PKGBUILD`:
 
 ```bash
-git clone https://github.com/zoey/Shelly-UI.git
-cd Shelly-UI
+git clone https://github.com/ZoeyErinBauer/Shelly-ALPM.git
+cd Shelly-ALPM
 makepkg -si
 ```
 
@@ -43,10 +45,10 @@ makepkg -si
 You can also build the project manually using the .NET CLI:
 
 ```bash
-dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out /p:PublishSingleFile=true /p:SelfContained=false
+dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
 ```
 
-The binary will be located in the `out/` directory.
+The binary will be located in the `/publish/shelly-ui/` directory.
 
 ## Usage
 
@@ -65,6 +67,7 @@ Shelly is structured into several components:
 - **Shelly-UI**: The main Avalonia-based desktop application.
 - **PackageManager**: The core logic library providing bindings and abstractions for `libalpm`.
 - **PackageManager.Tests**: Comprehensive tests for the package management logic.
+- **Shelly-UI.Tests**: Unit tests for the Avalonia UI components.
 
 ### Building for Development
 
@@ -84,4 +87,5 @@ This project is licensed under the GPL-3.0 License - see the [PKGBUILD](PKGBUILD
 
 ## Disclaimer
 
-Shelly is currently in early development. Use it with caution on your Arch Linux system.
+Shelly is in active development. It comes with no guarantees and may contain bugs, however if you experience issues
+please report them by opening an issue on this page and we will do our best to resolve the issues.

@@ -22,11 +22,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libalpm-dev libx11-dev libice-dev libsm-dev libfontconfig1-dev libfreetype6-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev libxtst-dev libgl1-mesa-dev libgles2-mesa-dev libgtk-3-dev zip
+        sudo apt-get install -y clang zlib1g-dev libalpm-dev libx11-dev libice-dev libsm-dev libfontconfig1-dev libfreetype6-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxrandr-dev libxrender-dev libxtst-dev libgl1-mesa-dev libgles2-mesa-dev libgtk-3-dev zip
 
     - name: Publish Shelly-UI
       run: |
-        dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/shelly-ui
+        dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
         cp install.sh publish/shelly-ui/
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cd publish/shelly-ui
