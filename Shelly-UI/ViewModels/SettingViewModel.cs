@@ -134,8 +134,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         {
             return;
         }
-
-        var mgr = new UpdateManager(new GithubSource("https://github.com/ZoeyErinBauer/Shelly-ALPM", null, false));
+        
 
         bool updateAvailable = await _updateService.CheckForUpdateAsync();
         if (updateAvailable)
