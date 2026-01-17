@@ -9,29 +9,18 @@ public static class EnvironmentManager
 
     public static string CreateWindowManagerVars()
     {
-        switch (GetDesktopEnvironment())
+        return GetDesktopEnvironment() switch
         {
-            case SupportedDesktopEnvironments.KDE:
-            case SupportedDesktopEnvironments.GNOME:
-            case SupportedDesktopEnvironments.XFCE:
-            case SupportedDesktopEnvironments.Cinnamon:
-            case SupportedDesktopEnvironments.MATE:
-            case SupportedDesktopEnvironments.LXQt:
-            case SupportedDesktopEnvironments.LXDE:
-            case SupportedDesktopEnvironments.Budgie:
-            case SupportedDesktopEnvironments.Pantheon:
-            case SupportedDesktopEnvironments.COSMIC:
-                return "";
-            case SupportedDesktopEnvironments.Hyprland:
-            case SupportedDesktopEnvironments.Sway:
-            case SupportedDesktopEnvironments.Niri:
-            case SupportedDesktopEnvironments.i3:
-            case SupportedDesktopEnvironments.Unknown:
-                return CreateWMLaunchVars();
-            default:
-                // Should never happen. If this does; get a drink and pray.
-                throw new ArgumentOutOfRangeException();
-        }
+            SupportedDesktopEnvironments.KDE or SupportedDesktopEnvironments.GNOME or SupportedDesktopEnvironments.XFCE
+                or SupportedDesktopEnvironments.Cinnamon or SupportedDesktopEnvironments.MATE
+                or SupportedDesktopEnvironments.LXQt or SupportedDesktopEnvironments.LXDE
+                or SupportedDesktopEnvironments.Budgie or SupportedDesktopEnvironments.Pantheon
+                or SupportedDesktopEnvironments.COSMIC => "",
+            SupportedDesktopEnvironments.Hyprland or SupportedDesktopEnvironments.Sway
+                or SupportedDesktopEnvironments.Niri or SupportedDesktopEnvironments.i3
+                or SupportedDesktopEnvironments.Unknown => CreateWMLaunchVars(),
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 
     private static string CreateWMLaunchVars()
