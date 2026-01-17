@@ -26,7 +26,6 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
         LoadData();
         LoadFeed();
         _appCache = appCache;
-        var logger = ConsoleLogService.Instance; 
     }
 
     private async void LoadData()
