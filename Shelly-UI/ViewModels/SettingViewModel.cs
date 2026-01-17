@@ -39,6 +39,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
         var config = _configService.LoadConfig();
         _isDarkMode = config.DarkMode;
+        _enableConsole = config.ConsoleEnabled;
 
         _ = SetUpdateText();
 
@@ -48,6 +49,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private string _accentHex = "#018574";
 
     private bool _isDarkMode;
+    
+    private bool _enableConsole;
 
     private bool _enableAur;
 
@@ -79,6 +82,19 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
             var config = _configService.LoadConfig();
             config.DarkMode = value;
+            _configService.SaveConfig(config);
+        }
+    }
+    
+    public bool EnableConsole
+    {
+        get => _enableConsole;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _enableConsole, value);
+
+            var config = _configService.LoadConfig();
+            config.ConsoleEnabled = value;
             _configService.SaveConfig(config);
         }
     }

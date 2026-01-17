@@ -177,6 +177,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoHome.Execute(Unit.Default);
     }
 
+    
+    
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -461,6 +463,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         }
     }
     #endregion
+    
+    private bool _isBottomPanelCollapsed = true;
+    public bool IsBottomPanelCollapsed
+    {
+        get => _isBottomPanelCollapsed;
+        set => this.RaiseAndSetIfChanged(ref _isBottomPanelCollapsed, value);
+    }
+
+    public void ToggleBottomPanel()
+    {
+        IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
+    }
 }
 
 public class MenuItemViewModel(

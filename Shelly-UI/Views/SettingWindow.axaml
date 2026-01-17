@@ -44,6 +44,8 @@
                 Foreground="{DynamicResource SystemBaseHighColor}" />
         <ToggleSwitch Content="Toggle Dark/Light Mode"
                       IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
+        <ToggleSwitch Content="Enable Console"
+                      IsChecked="{Binding EnableConsole, Mode=TwoWay}" />
         <ToggleSwitch Content="Enable AUR (WIP)" IsEnabled="False" IsChecked="{Binding EnableAur, Mode=TwoWay}"></ToggleSwitch>
         <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"
                       IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">

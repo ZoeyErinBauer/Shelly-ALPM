@@ -6,6 +6,7 @@
         xmlns:icons="using:Material.Icons.Avalonia"
         xmlns:avalonia="http://reactiveui.net"
         xmlns:shellyUi="clr-namespace:Shelly_UI"
+        xmlns:converters="clr-namespace:Shelly_UI.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Shelly_UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -16,6 +17,7 @@
         MinWidth="800"
         Width="800"
         Height="600">
+  
     <Window.Styles>
         <Style Selector="ToggleButton#ManagementToggle:pointerover /template/ Border">
             <Setter Property="Background" Value="#1AFFFFFF" />
@@ -77,21 +79,24 @@
                                     <Binding Path="$parent[SplitView].IsPaneOpen" />
                                 </MultiBinding>
                             </StackPanel.IsVisible>
-                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoPackages}"  HorizontalAlignment="Stretch" Background="Transparent"
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoPackages}"
+                                          HorizontalAlignment="Stretch" Background="Transparent"
                                           IsChecked="{Binding IsInstallPackActive}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
                                     <TextBlock Text="Install Packages" FontSize="13" />
                                 </StackPanel>
                             </ToggleButton>
-                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoUpdate}"  HorizontalAlignment="Stretch" Background="Transparent"
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoUpdate}"
+                                          HorizontalAlignment="Stretch" Background="Transparent"
                                           IsChecked="{Binding IsUpdateActive}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                     <TextBlock Text="Update Packages" FontSize="13" />
                                 </StackPanel>
                             </ToggleButton>
-                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoRemove}" HorizontalAlignment="Stretch" Background="Transparent"
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoRemove}"
+                                          HorizontalAlignment="Stretch" Background="Transparent"
                                           IsChecked="{Binding IsRemoveActive}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />

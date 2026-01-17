@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using DynamicData;
+using DynamicData.Binding;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Enums;
@@ -24,11 +26,16 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 
     private IAppCache _appCache;
 
+    private readonly ObservableAsPropertyHelper<string> _fullLogText;
+    public string FullLogText => _fullLogText.Value;
+    
     public PackageViewModel(IScreen screen, IAppCache appCache)
     {
         HostScreen = screen;
         AvaliablePackages = new ObservableCollection<PackageModel>();
 
+        
+        
         _appCache = appCache;
 
         _filteredPackages = this
@@ -38,10 +45,18 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
 
+        _fullLogText = ConsoleLogService.Instance.Logs
+            .ToObservableChangeSet() 
+            .QueryWhenChanged(items => string.Join(Environment.NewLine, items))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .ToProperty(this, x => x.FullLogText);
+        
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
 
+        // In a real app, you'd likely resolve this via DI
+        
         LoadData();
     }
 
@@ -151,7 +166,19 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     {
         package.IsChecked = !package.IsChecked;
 
-        Console.WriteLine($"Package {package.Name} checked state: {package.IsChecked}");
+        Console.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
+    }
+    
+    private bool _isBottomPanelCollapsed = true;
+    public bool IsBottomPanelCollapsed
+    {
+        get => _isBottomPanelCollapsed;
+        set => this.RaiseAndSetIfChanged(ref _isBottomPanelCollapsed, value);
+    }
+
+    public void ToggleBottomPanel()
+    {
+        IsBottomPanelCollapsed = !IsBottomPanelCollapsed;
     }
 
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }

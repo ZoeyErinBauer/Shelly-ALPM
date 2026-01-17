@@ -13,4 +13,6 @@ public class ShellyConfig
     public bool FlatPackEnabled { get; set; } = false;
     
     public bool SnapEnabled { get; set; } = false;
+    
+    public bool ConsoleEnabled { get; set; } = false;
 }
