@@ -4,7 +4,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 using Shelly.Utilities.System;
+using Shelly_UI.Views;
 
 namespace Shelly_UI.Services;
 
@@ -134,6 +138,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
+        StreamWriter? stdinWriter = null;
 
         process.OutputDataReceived += (sender, e) =>
         {
@@ -144,15 +149,44 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             }
         };
 
-        process.ErrorDataReceived += (sender, e) =>
+        process.ErrorDataReceived += async (sender, e) =>
         {
             if (e.Data != null)
             {
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
-                    errorBuilder.AppendLine(e.Data);
-                    Console.Error.WriteLine(e.Data);
+                    // Check for ALPM question
+                    if (e.Data.StartsWith("[ALPM_QUESTION]"))
+                    {
+                        var questionText = e.Data.Substring("[ALPM_QUESTION]".Length);
+                        Console.Error.WriteLine($"Question received: {questionText}");
+                        
+                        // Show dialog on UI thread and get response
+                        var response = await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop 
+                                && desktop.MainWindow != null)
+                            {
+                                var dialog = new QuestionDialog(questionText);
+                                var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
+                                return result;
+                            }
+                            return true; // Default to yes if no window available
+                        });
+                        
+                        // Send response to CLI via stdin
+                        if (stdinWriter != null)
+                        {
+                            await stdinWriter.WriteLineAsync(response ? "y" : "n");
+                            await stdinWriter.FlushAsync();
+                        }
+                    }
+                    else
+                    {
+                        errorBuilder.AppendLine(e.Data);
+                        Console.Error.WriteLine(e.Data);
+                    }
                 }
             }
         };
@@ -160,15 +194,18 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         try
         {
             process.Start();
+            stdinWriter = process.StandardInput;
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
             // Write password to stdin followed by newline
-            await process.StandardInput.WriteLineAsync(password);
-            await process.StandardInput.FlushAsync();
-            process.StandardInput.Close();
+            await stdinWriter.WriteLineAsync(password);
+            await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
+            
+            // Close stdin after process exits
+            stdinWriter.Close();
 
             var success = process.ExitCode == 0;
             

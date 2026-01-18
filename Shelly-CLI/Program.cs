@@ -261,6 +261,23 @@ public class InstallCommand : Command<PackageSettings>
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
         };
 
+        manager.Question += (sender, args) =>
+        {
+            if (settings.NoConfirm)
+            {
+                // Machine-readable format for UI integration
+                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.Flush();
+                var input = Console.ReadLine();
+                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+            }
+            else
+            {
+                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                args.Response = response ? 1 : 0;
+            }
+        };
+
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing and syncing ALPM...", ctx =>
@@ -308,6 +325,23 @@ public class RemoveCommand : Command<PackageSettings>
         manager.Progress += (sender, args) =>
         {
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        manager.Question += (sender, args) =>
+        {
+            if (settings.NoConfirm)
+            {
+                // Machine-readable format for UI integration
+                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.Flush();
+                var input = Console.ReadLine();
+                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+            }
+            else
+            {
+                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                args.Response = response ? 1 : 0;
+            }
         };
 
         AnsiConsole.Status()
@@ -359,6 +393,23 @@ public class UpdateCommand : Command<PackageSettings>
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
         };
 
+        manager.Question += (sender, args) =>
+        {
+            if (settings.NoConfirm)
+            {
+                // Machine-readable format for UI integration
+                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.Flush();
+                var input = Console.ReadLine();
+                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+            }
+            else
+            {
+                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                args.Response = response ? 1 : 0;
+            }
+        };
+
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing and syncing ALPM...", ctx =>
@@ -405,6 +456,23 @@ public class UpgradeCommand : Command<UpgradeSettings>
         manager.Progress += (sender, args) =>
         {
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+        };
+
+        manager.Question += (sender, args) =>
+        {
+            if (settings.NoConfirm)
+            {
+                // Machine-readable format for UI integration
+                Console.Error.WriteLine($"[ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.Flush();
+                var input = Console.ReadLine();
+                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+            }
+            else
+            {
+                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                args.Response = response ? 1 : 0;
+            }
         };
 
         AnsiConsole.Status()

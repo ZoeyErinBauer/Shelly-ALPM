@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:icons="using:Material.Icons.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+        x:Class="Shelly_UI.Views.QuestionDialog"
+        Title="Question"
+        Width="400"
+        Height="180"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="BorderOnly">
+    
+    <Grid Margin="20" RowDefinitions="*, Auto">
+        <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="15">
+            <icons:MaterialIcon Kind="HelpCircle" Width="32" Height="32" 
+                                HorizontalAlignment="Center"
+                                Foreground="{DynamicResource SystemAccentColor}" />
+            <TextBlock x:Name="QuestionText" 
+                       Text="Question text goes here"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       FontSize="14" />
+        </StackPanel>
+        
+        <StackPanel Grid.Row="1" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Center" 
+                    Spacing="15">
+            <Button x:Name="YesButton" 
+                    Content="Yes" 
+                    Width="80"
+                    Click="YesButton_Click" />
+            <Button x:Name="NoButton" 
+                    Content="No" 
+                    Width="80"
+                    Click="NoButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
