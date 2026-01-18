@@ -19,20 +19,22 @@ namespace Shelly_UI.ViewModels;
 public class HomeViewModel : ViewModelBase, IRoutableViewModel
 {
     private IAppCache _appCache;
+    private IPackageService _packageService;
     
-    public HomeViewModel(IScreen screen, IAppCache appCache)
+    public HomeViewModel(IScreen screen, IAppCache appCache, IPackageService packageService)
     {
         HostScreen = screen;
+        _appCache = appCache;
+        _packageService = packageService;
         LoadData();
         LoadFeed();
-        _appCache = appCache;
     }
 
     private async void LoadData()
     {
         try
         {
-            var packages = await Task.Run(() => AlpmService.Instance.GetInstalledPackages());
+            var packages = await _packageService.GetInstalledPackagesAsync();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 InstalledPackages = new ObservableCollection<AlpmPackageDto>(packages);

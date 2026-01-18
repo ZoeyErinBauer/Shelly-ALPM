@@ -25,9 +25,27 @@ public static class EnvironmentManager
     {
         get
         {
+            // If running via sudo, get original user's home
+            var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
+            if (!string.IsNullOrEmpty(sudoUser))
+            {
+                var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "getent",
+                    Arguments = $"passwd {sudoUser}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                });
+                process?.WaitForExit();
+                var output = process?.StandardOutput.ReadLine();
+                var parts = output?.Split(':');
+                if (parts?.Length > 5 && !string.IsNullOrEmpty(parts[5])) 
+                    return parts[5];
+            }
+            
             // If running via pkexec, get original user's home
             var pkexecUid = Environment.GetEnvironmentVariable("PKEXEC_UID");
-            if (pkexecUid != null)
+            if (!string.IsNullOrEmpty(pkexecUid))
             {
                 var process = Process.Start(new ProcessStartInfo
                 {
@@ -38,8 +56,9 @@ public static class EnvironmentManager
                 });
                 process?.WaitForExit();
                 var output = process?.StandardOutput.ReadLine();
-                var home = output?.Split(':')[5];
-                if (!string.IsNullOrEmpty(home)) return home;
+                var parts = output?.Split(':');
+                if (parts?.Length > 5 && !string.IsNullOrEmpty(parts[5])) 
+                    return parts[5];
             }
 
             return Environment.GetEnvironmentVariable("HOME")

@@ -15,13 +15,14 @@ namespace Shelly_UI.ViewModels;
 public class UpdateViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAlpmManager _alpmManager = AlpmService.Instance;
+    private IPackageService _packageService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
 
-    public UpdateViewModel(IScreen screen)
+    public UpdateViewModel(IScreen screen, IPackageService packageService)
     {
         HostScreen = screen;
+        _packageService = packageService;
         PackagesForUpdating = new ObservableCollection<UpdateModel>();
 
         _filteredPackages = this
@@ -41,7 +42,7 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            await _packageService.InitializeWithSyncAsync();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 PackagesForUpdating.Clear();
@@ -59,7 +60,7 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
         var selectedPackages = PackagesForUpdating.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            await Task.Run(() => _alpmManager.UpdatePackages(selectedPackages));
+            await _packageService.UpdatePackagesAsync(selectedPackages);
             await Sync();
         }
     }
@@ -68,8 +69,7 @@ public class UpdateViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            //await Task.Run(() => _alpmManager.IntializeWithSync());
-            var updates = await Task.Run(() => AlpmService.Instance.GetPackagesNeedingUpdate());
+            var updates = await _packageService.GetPackagesNeedingUpdateAsync();
 
             var models = updates.Select(u => new UpdateModel
             {

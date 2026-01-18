@@ -15,13 +15,14 @@ namespace Shelly_UI.ViewModels;
 public class RemoveViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAlpmManager _alpmManager = AlpmService.Instance;
+    private IPackageService _packageService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
-    public RemoveViewModel(IScreen screen)
+    public RemoveViewModel(IScreen screen, IPackageService packageService)
     {
         HostScreen = screen;
+        _packageService = packageService;
         AvailablePackages = new ObservableCollection<PackageModel>();
 
         _filteredPackages = this
@@ -41,7 +42,7 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.Initialize());
+            await _packageService.InitializeAsync();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 AvailablePackages.Clear();
@@ -58,8 +59,8 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.Initialize());
-            var packages = await Task.Run(() => _alpmManager.GetInstalledPackages());
+            await _packageService.InitializeAsync();
+            var packages = await _packageService.GetInstalledPackagesAsync();
             var models = packages.Select(u => new PackageModel
             {
                 Name = u.Name,
@@ -114,8 +115,7 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         if (selectedPackages.Any())
         {
             ShowConfirmDialog = false;
-            await Task.Run(() =>
-                _alpmManager.RemovePackages(selectedPackages, AlpmTransFlag.Cascade | AlpmTransFlag.Recurse));
+            await _packageService.RemovePackagesAsync(selectedPackages, AlpmTransFlag.Cascade | AlpmTransFlag.Recurse);
             await Refresh();
         }
         else

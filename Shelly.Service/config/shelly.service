@@ -1,0 +1,26 @@
+[Unit]
+Description=Shelly Package Manager Service
+Documentation=https://github.com/ZoeyErinBauer/Shelly-ALPM
+After=network.target dbus.service
+Requires=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.shelly.PackageManager
+ExecStart=/usr/bin/shelly-service
+User=root
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=false
+ReadWritePaths=/var/lib/pacman /var/cache/pacman
+
+# Allow access to pacman databases and cache
+ReadOnlyPaths=/etc/pacman.conf /etc/pacman.d
+
+[Install]
+WantedBy=multi-user.target

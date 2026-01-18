@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.shelly.PackageManager
+Exec=/usr/bin/shelly-service
+User=root
+SystemdService=shelly.service

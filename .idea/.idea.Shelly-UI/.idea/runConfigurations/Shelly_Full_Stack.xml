@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Shelly Full Stack" type="CompoundRunConfigurationType">
+    <toRun name="Shelly-UI" type="DotNetProject" />
+    <toRun name="Shelly.Service" type="DotNetProject" />
+    <method v="2" />
+  </configuration>
+</component>

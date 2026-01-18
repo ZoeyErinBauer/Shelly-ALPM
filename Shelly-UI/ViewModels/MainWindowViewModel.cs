@@ -20,7 +20,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     private readonly IServiceProvider _services;
     private IAppCache _appCache;
 
-    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
+    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IPackageService packageService,
         IServiceProvider services,
         IScheduler? scheduler = null)
     {
@@ -29,142 +29,24 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
         _appCache = appCache;
 
-        var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
-            h => alpmManager.PackageOperation += h,
-            h => alpmManager.PackageOperation -= h);
+        // TODO: Progress events will be implemented via D-Bus signals in a future update
+        // For now, the privileged Shelly.Service handles the actual package operations
+        // and the UI will show a simple processing state managed by individual ViewModels
 
-        packageOperationEvents
-            .ObserveOn(scheduler)
-            .Subscribe(pattern =>
-            {
-                //Console.WriteLine($@"Got here:" + pattern.EventArgs.EventType);
-                var args = pattern.EventArgs;
-                switch (args.EventType)
-                {
-                    case AlpmEventType.PackageOperationStart:
-                    case AlpmEventType.TransactionStart:
-                    {
-                        IsProcessing = true;
-                        if (!string.IsNullOrEmpty(args.PackageName))
-                        {
-                            ProcessingMessage = $"Completing requested actions: {args.PackageName}";
-                        }
-                        else if (args.EventType == AlpmEventType.TransactionStart)
-                        {
-                            ProcessingMessage = "Starting transaction...";
-                        }
-                        else
-                        {
-                            ProcessingMessage = "Processing...";
-                        }
-
-                        ProgressValue = 0;
-                        ProgressIndeterminate = true;
-                        break;
-                    }
-                    case AlpmEventType.PackageOperationDone:
-                    case AlpmEventType.TransactionDone:
-                    {
-                        if (args.EventType == AlpmEventType.TransactionDone)
-                        {
-                            IsProcessing = false;
-                            ProcessingMessage = string.Empty;
-                            ProgressValue = 0;
-                        }
-
-                        break;
-                    }
-                }
-            });
-
-        Observable.FromEventPattern<AlpmProgressEventArgs>(
-                h => alpmManager.Progress += h,
-                h => alpmManager.Progress -= h)
-            .ObserveOn(scheduler)
-            .Subscribe(pattern =>
-            {
-                if (pattern.EventArgs.ProgressType == AlpmProgressType.AddStart ||
-                    pattern.EventArgs.ProgressType == AlpmProgressType.RemoveStart)
-                {
-                    IsProcessing = true;
-                }
-
-                if (pattern.EventArgs.Percent >= 100)
-                {
-                    IsProcessing = false;
-                }
-
-                Console.Error.WriteLine($@"Got here:" + pattern.EventArgs.ProgressType);
-                var args = pattern.EventArgs;
-                if (args.Percent.HasValue)
-                {
-                    ProgressValue = args.Percent.Value;
-                    ProgressIndeterminate = false;
-                }
-
-                if (!string.IsNullOrEmpty(args.PackageName))
-                {
-                    var prefix = args.ProgressType == AlpmProgressType.PackageDownload ? "Downloading" : "Processing";
-                    ProcessingMessage = $"{prefix} {args.PackageName}... ({args.Percent}%)";
-                }
-                else if (args.Percent.HasValue)
-                {
-                    ProcessingMessage = $"Processing... ({args.Percent}%)";
-                }
-            });
-
-        packageOperationEvents
-            .ObserveOn(scheduler)
-            .Where(e => e.EventArgs.EventType != AlpmEventType.TransactionDone)
-            .Throttle(TimeSpan.FromSeconds(30), scheduler)
-            .Subscribe(_ =>
-            {
-                Console.Error.WriteLine("Resetting processing state");
-                IsProcessing = false;
-                ProcessingMessage = string.Empty;
-            });
-
-        var questionResponseSubject = new Subject<int>();
         RespondToQuestion = ReactiveCommand.Create<string>(response =>
         {
-            if (int.TryParse(response, out var result))
-            {
-                questionResponseSubject.OnNext(result);
-            }
-            else
-            {
-                questionResponseSubject.OnNext(0); // Default to No
-            }
-
+            // Question handling will be implemented via D-Bus signals in a future update
             ShowQuestion = false;
         });
-
-        Observable.FromEventPattern<AlpmQuestionEventArgs>(
-                h => alpmManager.Question += h,
-                h => alpmManager.Question -= h)
-            .ObserveOn(scheduler)
-            .SelectMany(async pattern =>
-            {
-                var args = pattern.EventArgs;
-                QuestionTitle = GetQuestionTitle(args.QuestionType);
-                QuestionText = args.QuestionText;
-                ShowQuestion = true;
-
-                // Wait for user response
-                var response = await questionResponseSubject.FirstAsync();
-                args.Response = response;
-                return Unit.Default;
-            })
-            .Subscribe();
 
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
             TurnOffMenuItems();
-            return Router.Navigate.Execute(new HomeViewModel(this, appCache));
+            return Router.Navigate.Execute(new HomeViewModel(this, appCache, packageService));
         });
-        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache)));
-        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this)));
-        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this)));
+        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache, packageService)));
+        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this, packageService)));
+        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, packageService)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache)));

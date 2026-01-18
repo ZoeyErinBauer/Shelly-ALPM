@@ -1,11 +1,7 @@
 ﻿using Avalonia;
 using ReactiveUI.Avalonia;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using PackageManager.User;
-using Shelly_UI.Enums;
 using Shelly.Utilities.System;
 
 namespace Shelly_UI;
@@ -21,12 +17,13 @@ sealed class Program
     public static void Main(string[] args)
     {
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
-        var logPath = Environment.GetEnvironmentVariable("PKEXEC_UID") != null
-            ? Path.Combine(Path.GetTempPath(), "shelly") // /tmp/shelly
-            : Path.Combine(EnvironmentManager.UserPath, "Documents", "Shelly");
+        
+        // Log to user's Documents folder (no longer running as root)
+        var logPath = Path.Combine(EnvironmentManager.UserPath, "Documents", "Shelly");
         Directory.CreateDirectory(logPath);
         var logWriter = new LogTextWriter(Console.Error, logPath);
         Console.SetError(logWriter);
+        
         AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
         {
             _crashed = true;
@@ -53,26 +50,9 @@ sealed class Program
             return;
         }
 
-        if (!UserIdentity.IsRoot())
-        {
-            var wmVars = EnvironmentManager.CreateWindowManagerVars();
-            var userPath = EnvironmentManager.UserPath;
-            Console.Error.WriteLine($"Running with user path {userPath}");
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "pkexec",
-                    Arguments =
-                        $"env {wmVars} {Process.GetCurrentProcess().MainModule?.FileName} {string.Join(" ", args)}",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.Start();
-            return;
-        }
-
+        // No longer need to elevate to root - the GUI communicates with the
+        // privileged shelly-service via D-Bus for package operations.
+        
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }

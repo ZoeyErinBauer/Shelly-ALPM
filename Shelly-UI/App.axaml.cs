@@ -32,6 +32,7 @@ public partial class App : Application
         collection.AddSingleton<IAppCache, AppCache>();
         collection.AddSingleton<IUpdateService, GitHubUpdateService>();
         collection.AddSingleton<ThemeService>();
+        collection.AddSingleton<IPackageService, PackageService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         _services = collection.BuildServiceProvider();
@@ -41,6 +42,7 @@ public partial class App : Application
             var configService = _services.GetRequiredService<IConfigService>();
             var themeService = _services.GetRequiredService<ThemeService>();
             var cacheService = _services.GetRequiredService<IAppCache>();
+            var packageService = _services.GetRequiredService<IPackageService>();
             var config = configService.LoadConfig();
             if (config.AccentColor != null) themeService.ApplyCustomAccent(config.AccentColor);
             themeService.SetTheme(config.DarkMode);
@@ -48,7 +50,7 @@ public partial class App : Application
         
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance, _services),
+                DataContext = new MainWindowViewModel(configService, cacheService, packageService, _services),
             };
         }
 

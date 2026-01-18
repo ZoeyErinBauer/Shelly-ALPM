@@ -21,7 +21,7 @@ namespace Shelly_UI.ViewModels;
 public class PackageViewModel : ViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAlpmManager _alpmManager = AlpmService.Instance;
+    private IPackageService _packageService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
@@ -32,12 +32,13 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     private readonly ObservableAsPropertyHelper<string> _fullLogText;
     public string FullLogText => _fullLogText.Value;
     
-    public PackageViewModel(IScreen screen, IAppCache appCache)
+    public PackageViewModel(IScreen screen, IAppCache appCache, IPackageService packageService)
     {
         HostScreen = screen;
         AvaliablePackages = new ObservableCollection<PackageModel>();
         
         _appCache = appCache;
+        _packageService = packageService;
 
         var consoleEnabled = _configService.LoadConfig().ConsoleEnabled;
         
@@ -60,8 +61,6 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         
         _isBottomPanelVisible = consoleEnabled;
 
-        // In a real app, you'd likely resolve this via DI
-        
         LoadData();
     }
 
@@ -69,10 +68,11 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
     {
         try
         {
-            await Task.Run(() => _alpmManager.IntializeWithSync());
+            await _packageService.InitializeWithSyncAsync();
             // Clear cache and reload data by storing null
             await _appCache.StoreAsync<List<PackageModel>?>(nameof(CacheEnums.PackageCache), null);
-            await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
+            var installedPackages = await _packageService.GetInstalledPackagesAsync();
+            await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
 
             RxApp.MainThreadScheduler.Schedule(() =>
             {
@@ -92,8 +92,8 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
 
         try
         {
-            await Task.Run(() => _alpmManager.Initialize());
-            var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
+            await _packageService.InitializeAsync();
+            var packages = await _packageService.GetAvailablePackagesAsync();
 
             var installed = await _appCache.GetAsync<List<AlpmPackageDto>?>(nameof(CacheEnums.InstalledCache));
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
@@ -158,7 +158,7 @@ public class PackageViewModel : ViewModelBase, IRoutableViewModel
         if (selectedPackages.Any())
         {
             ShowConfirmDialog = false;
-            await Task.Run(() => _alpmManager.InstallPackages(selectedPackages));
+            await _packageService.InstallPackagesAsync(selectedPackages);
             await Sync();
         }
         else

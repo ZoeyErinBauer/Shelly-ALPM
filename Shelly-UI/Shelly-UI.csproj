@@ -55,5 +55,6 @@
     <ItemGroup>
         <ProjectReference Include="..\PackageManager\PackageManager.csproj"/>
         <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
+        <ProjectReference Include="..\Shelly.Protocol\Shelly.Protocol.csproj" />
     </ItemGroup>
 </Project>
