@@ -26,118 +26,142 @@ public class ShellyServiceClient : IDisposable
         if (IsConnected)
             return;
 
+        // Dispose old disconnected connection if any
+        _connection?.Dispose();
+
         _connection = new Connection(Address.System!);
         await _connection.ConnectAsync();
     }
 
-    public Task InitializeWithSyncAsync()
+    public async Task InitializeWithSyncAsync()
     {
-        EnsureConnected();
-        return CallMethodAsync("InitializeWithSync");
+        await CallMethodAsync("InitializeWithSync");
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        EnsureConnected();
-        return CallMethodAsync("Initialize");
+        await CallMethodAsync("Initialize");
     }
 
-    public Task SyncAsync(bool force = false)
+    public async Task SyncAsync(bool force = false)
     {
-        EnsureConnected();
-        return CallMethodAsync("Sync", writer => writer.WriteBool(force), "b");
+        await CallMethodAsync("Sync", writer => writer.WriteBool(force), "b");
     }
 
     public async Task<PackageInfo[]> GetInstalledPackagesAsync()
     {
-        EnsureConnected();
         var jsonStrings = await CallMethodWithReplyAsync("GetInstalledPackages");
         return DeserializePackageInfoArray(jsonStrings);
     }
 
     public async Task<PackageInfo[]> GetAvailablePackagesAsync()
     {
-        EnsureConnected();
         var jsonStrings = await CallMethodWithReplyAsync("GetAvailablePackages");
         return DeserializePackageInfoArray(jsonStrings);
     }
 
     public async Task<PackageUpdateInfo[]> GetPackagesNeedingUpdateAsync()
     {
-        EnsureConnected();
         var jsonStrings = await CallMethodWithReplyAsync("GetPackagesNeedingUpdate");
         return DeserializePackageUpdateInfoArray(jsonStrings);
     }
 
-    public Task InstallPackagesAsync(string[] packageNames, uint flags = 0)
+    public async Task InstallPackagesAsync(string[] packageNames, uint flags = 0)
     {
-        EnsureConnected();
-        return CallMethodAsync("InstallPackages", writer =>
+        await CallMethodAsync("InstallPackages", writer =>
         {
             writer.WriteArray(packageNames);
             writer.WriteUInt32(flags);
         }, "asu");
     }
 
-    public Task RemovePackagesAsync(string[] packageNames, uint flags = 0)
+    public async Task RemovePackagesAsync(string[] packageNames, uint flags = 0)
     {
-        EnsureConnected();
-        return CallMethodAsync("RemovePackages", writer =>
+        await CallMethodAsync("RemovePackages", writer =>
         {
             writer.WriteArray(packageNames);
             writer.WriteUInt32(flags);
         }, "asu");
     }
 
-    public Task UpdatePackagesAsync(string[] packageNames, uint flags = 0)
+    public async Task UpdatePackagesAsync(string[] packageNames, uint flags = 0)
     {
-        EnsureConnected();
-        return CallMethodAsync("UpdatePackages", writer =>
+        await CallMethodAsync("UpdatePackages", writer =>
         {
             writer.WriteArray(packageNames);
             writer.WriteUInt32(flags);
         }, "asu");
     }
 
-    public Task SyncSystemUpdateAsync(uint flags = 0)
+    public async Task SyncSystemUpdateAsync(uint flags = 0)
     {
-        EnsureConnected();
-        return CallMethodAsync("SyncSystemUpdate", writer => writer.WriteUInt32(flags), "u");
+        await CallMethodAsync("SyncSystemUpdate", writer => writer.WriteUInt32(flags), "u");
     }
 
-    private Task CallMethodAsync(string method, Action<MessageWriter>? writeArgs = null, string? signature = null)
+    private async Task CallMethodAsync(string method, Action<MessageWriter>? writeArgs = null, string? signature = null)
     {
-        var writer = _connection!.GetMessageWriter();
-        writer.WriteMethodCallHeader(
-            destination: ShellyDbusConstants.ServiceName,
-            path: ShellyDbusConstants.ObjectPath,
-            @interface: ShellyDbusConstants.InterfaceName,
-            member: method,
-            signature: signature);
+        for (int i = 0; i < 3; i++)
+        {
+            try
+            {
+                await EnsureConnectedAsync();
+                var writer = _connection!.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: ShellyDbusConstants.ServiceName,
+                    path: ShellyDbusConstants.ObjectPath,
+                    @interface: ShellyDbusConstants.InterfaceName,
+                    member: method,
+                    signature: signature);
 
-        writeArgs?.Invoke(writer);
+                writeArgs?.Invoke(writer);
 
-        return _connection.CallMethodAsync(writer.CreateMessage());
+                await _connection.CallMethodAsync(writer.CreateMessage());
+                return;
+            }
+            catch (DisconnectedException) when (i < 2)
+            {
+                _connection?.Dispose();
+                _connection = null;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[FUCKER] Failed to call method {method}: {ex}");
+            }
+        }
     }
 
     private async Task<string[]> CallMethodWithReplyAsync(string method)
     {
-        var writer = _connection!.GetMessageWriter();
-        writer.WriteMethodCallHeader(
-            destination: ShellyDbusConstants.ServiceName,
-            path: ShellyDbusConstants.ObjectPath,
-            @interface: ShellyDbusConstants.InterfaceName,
-            member: method);
-
-        var reply = await _connection.CallMethodAsync(writer.CreateMessage(), 
-            static (Message message, object? state) =>
+        for (int i = 0; i < 3; i++)
+        {
+            try
             {
-                var reader = message.GetBodyReader();
-                return reader.ReadArrayOfString();
-            }, 
-            null);
-        
-        return reply;
+                await EnsureConnectedAsync();
+                var writer = _connection!.GetMessageWriter();
+                writer.WriteMethodCallHeader(
+                    destination: ShellyDbusConstants.ServiceName,
+                    path: ShellyDbusConstants.ObjectPath,
+                    @interface: ShellyDbusConstants.InterfaceName,
+                    member: method);
+
+                var reply = await _connection.CallMethodAsync(writer.CreateMessage(),
+                    static (Message message, object? state) =>
+                    {
+                        var reader = message.GetBodyReader();
+                        return reader.ReadArrayOfString();
+                    },
+                    null);
+
+                return reply;
+            }
+            catch (DisconnectedException) when (i < 2)
+            {
+                _connection?.Dispose();
+                _connection = null;
+            }
+        }
+
+        throw new Exception("D-Bus connection lost.");
     }
 
     private static PackageInfo[] DeserializePackageInfoArray(string[] jsonStrings)
@@ -145,8 +169,10 @@ public class ShellyServiceClient : IDisposable
         var packages = new PackageInfo[jsonStrings.Length];
         for (int i = 0; i < jsonStrings.Length; i++)
         {
-            packages[i] = JsonSerializer.Deserialize<PackageInfo>(jsonStrings[i]) ?? new PackageInfo();
+            packages[i] = JsonSerializer.Deserialize(jsonStrings[i], ShellyUIJsonContext.Default.PackageInfo) ??
+                          new PackageInfo();
         }
+
         return packages;
     }
 
@@ -155,9 +181,22 @@ public class ShellyServiceClient : IDisposable
         var packages = new PackageUpdateInfo[jsonStrings.Length];
         for (int i = 0; i < jsonStrings.Length; i++)
         {
-            packages[i] = JsonSerializer.Deserialize<PackageUpdateInfo>(jsonStrings[i]) ?? new PackageUpdateInfo();
+            packages[i] = JsonSerializer.Deserialize(jsonStrings[i], ShellyUIJsonContext.Default.PackageUpdateInfo) ??
+                          new PackageUpdateInfo();
         }
+
         return packages;
+    }
+
+    private async Task EnsureConnectedAsync()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(ShellyServiceClient));
+
+        if (!IsConnected)
+        {
+            await ConnectAsync();
+        }
     }
 
     private void EnsureConnected()

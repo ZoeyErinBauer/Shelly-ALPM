@@ -115,7 +115,8 @@ public class RemoveViewModel : ViewModelBase, IRoutableViewModel
         if (selectedPackages.Any())
         {
             ShowConfirmDialog = false;
-            await _packageService.RemovePackagesAsync(selectedPackages, AlpmTransFlag.Cascade | AlpmTransFlag.Recurse);
+            await _packageService.InitializeAsync();
+            await _packageService.RemovePackagesAsync(selectedPackages, AlpmTransFlag.Cascade | AlpmTransFlag.Recurse | AlpmTransFlag.NoHooks | AlpmTransFlag.NoScriptlet);
             await Refresh();
         }
         else

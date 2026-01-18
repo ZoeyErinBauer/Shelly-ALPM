@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shelly.Protocol;
@@ -29,6 +30,14 @@ public class ShellyDbusHostedService : IHostedService, IDisposable
             // Connect to the system bus (requires root privileges)
             _connection = new Connection(Address.System!);
             await _connection.ConnectAsync();
+            await _connection.CallMethodAsync<object>(
+                CreateUniqueNameMessage(),
+                static (Message message, object? state) =>
+                {
+                    Console.Error.WriteLine($"[ALPM_DBUS] {message.InterfaceAsString}");
+                    return null;
+                },
+                null);
 
             _logger.LogInformation("Connected to system D-Bus as {UniqueName}", _connection.UniqueName);
 
@@ -59,5 +68,19 @@ public class ShellyDbusHostedService : IHostedService, IDisposable
     public void Dispose()
     {
         _connection?.Dispose();
+    }
+    
+    private MessageBuffer CreateUniqueNameMessage()
+    {
+        using var writer = _connection.GetMessageWriter();
+        writer.WriteMethodCallHeader(
+            destination: "org.freedesktop.DBus",
+            path: "/org/freedesktop/DBus",
+            @interface: "org.freedesktop.DBus",
+            member: "RequestName",
+            signature: "su");
+        writer.WriteString("org.shelly.PackageManager");
+        writer.WriteUInt32(0); // flags
+        return writer.CreateMessage();
     }
 }

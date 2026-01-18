@@ -11,6 +11,7 @@ public interface IAlpmManager
 
     void IntializeWithSync();
     void Initialize();
+    void ReleaseHandle();
     void Sync(bool force = false);
     List<AlpmPackageDto> GetInstalledPackages();
     List<AlpmPackageDto> GetAvailablePackages();

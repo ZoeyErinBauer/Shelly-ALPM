@@ -122,21 +122,37 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     {
                         string suffix = archSuffixMatch.Groups[1].Value;
                         AddArchitecture(_handle, resolvedArch + suffix);
-                        Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
-                        Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
+                        //Commented out the logging to reduce noise.
+                        //Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
+                        //Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
                     }
 
                     // Resolve $repo and $arch variables in the server URL
                     var resolvedServer = server
                         .Replace("$repo", repo.Name)
                         .Replace("$arch", resolvedArch);
-                    Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture {resolvedArch}");
 
-                    Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
+                    //Console.Error.WriteLine($"[DEBUG_LOG] Registering Server: {resolvedServer}");
                     DbAddServer(db, resolvedServer);
                 }
             }
         }
+    }
+
+    public void ReleaseHandle()
+    {
+        if (_handle == IntPtr.Zero)
+            return;
+
+        if (Release(_handle) == 0)
+        {
+            _handle = IntPtr.Zero;
+            Console.Error.WriteLine("[ALPM_DEBUG] Released handle");
+            return;
+        }
+
+        Console.Error.WriteLine("[ALPM_ERROR] Failed to release handle");
     }
 
     private void HandleQuestion(IntPtr questionPtr)
@@ -602,25 +618,29 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     public void RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None)
     {
+        Console.Error.WriteLine("[DEBUG_LOG] Removing packages: {0}", string.Join(", ", packageNames));
         if (_handle == IntPtr.Zero) Initialize();
 
         List<IntPtr> pkgPtrs = new List<IntPtr>();
         var localDbPtr = GetLocalDb(_handle);
         foreach (var packageName in packageNames)
         {
-            // Find the package in sync databases
-
             var pkgPtr = DbGetPkg(localDbPtr, packageName);
 
             if (pkgPtr == IntPtr.Zero)
             {
-                throw new Exception($"Package '{packageName}' not found in any sync database.");
+                Console.Error.WriteLine($"[ALPM_ERROR] Package '{packageName}' not found in local database.");
+                continue;
             }
 
             pkgPtrs.Add(pkgPtr);
         }
 
-        if (pkgPtrs.Count == 0) return;
+        if (pkgPtrs.Count == 0)
+        {
+            Console.Error.WriteLine("[ALPM_WARN] No valid packages found for removal.");
+            return;
+        }
 
         // If we are doing a DbOnly install, we should also skip dependency checks, 
         // extraction, and signature/checksum validation to avoid requirement for the physical package file.
@@ -633,6 +653,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
+            Console.Error.WriteLine($"[ALPM_ERROR] Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -652,12 +673,14 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
+                Console.Error.WriteLine($"[ALPM_ERROR] Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
+                Console.Error.WriteLine($"[ALPM_ERROR] Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }

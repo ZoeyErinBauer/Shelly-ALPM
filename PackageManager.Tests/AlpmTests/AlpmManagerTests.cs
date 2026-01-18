@@ -288,6 +288,14 @@ public class AlpmManagerTests
     }
 
     [Test]
+    public void RemovePackages_DoesNotThrow_WhenPackageNotFound()
+    {
+        _manager.Initialize();
+        var packages = new List<string> { "this-package-should-not-be-installed-98765" };
+        Assert.DoesNotThrow(() => _manager.RemovePackages(packages));
+    }
+
+    [Test]
     public void RemovePackage_ThrowsException_WhenPackageNotFound()
     {
         _manager.Initialize();

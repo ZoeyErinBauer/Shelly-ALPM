@@ -27,11 +27,13 @@ public class ShellyDbusService : IMethodHandler
 
     public ValueTask HandleMethodAsync(MethodContext context)
     {
+        _logger.LogInformation("Handling method call: {MethodName}", context.Request.MemberAsString);
         var request = context.Request;
-        
+
         if (request.InterfaceAsString != ShellyDbusConstants.InterfaceName)
         {
-            context.ReplyError("org.freedesktop.DBus.Error.UnknownInterface", 
+            _logger.LogError("Unknown interface: {Interface}", request.InterfaceAsString);
+            context.ReplyError("org.freedesktop.DBus.Error.UnknownInterface",
                 $"Unknown interface: {request.InterfaceAsString}");
             return ValueTask.CompletedTask;
         }
@@ -48,12 +50,20 @@ public class ShellyDbusService : IMethodHandler
             "RemovePackages" => HandleRemovePackagesAsync(context),
             "UpdatePackages" => HandleUpdatePackagesAsync(context),
             "SyncSystemUpdate" => HandleSyncSystemUpdateAsync(context),
+            "Release" => HandleReleaseAsync(context),
             _ => HandleUnknownMethod(context)
         };
     }
 
+    private async ValueTask HandleReleaseAsync(MethodContext context)
+    {
+        await Task.Run(() => _alpmManager.ReleaseHandle());
+        ReplyEmpty(context);
+    }
+
     private ValueTask HandleUnknownMethod(MethodContext context)
     {
+        _logger.LogInformation("Unknown method called: {MethodName}", context.Request.MemberAsString);
         context.ReplyError("org.freedesktop.DBus.Error.UnknownMethod",
             $"Unknown method: {context.Request.MemberAsString}");
         return ValueTask.CompletedTask;
@@ -101,7 +111,7 @@ public class ShellyDbusService : IMethodHandler
         {
             var reader = context.Request.GetBodyReader();
             var force = reader.ReadBool();
-            
+
             _logger.LogInformation("Syncing databases (force: {Force})", force);
             await Task.Run(() => _alpmManager.Sync(force));
             ReplyEmpty(context);
@@ -127,7 +137,7 @@ public class ShellyDbusService : IMethodHandler
                 Description = p.Description,
                 Url = p.Url,
                 Repository = p.Repository
-            })).ToArray();
+            }, ShellyServiceJsonContext.Default.PackageInfo)).ToArray();
 
             using var writer = context.CreateReplyWriter("as");
             writer.WriteArray(jsonArray);
@@ -154,7 +164,7 @@ public class ShellyDbusService : IMethodHandler
                 Description = p.Description,
                 Url = p.Url,
                 Repository = p.Repository
-            })).ToArray();
+            }, ShellyServiceJsonContext.Default.PackageInfo)).ToArray();
 
             using var writer = context.CreateReplyWriter("as");
             writer.WriteArray(jsonArray);
@@ -179,7 +189,7 @@ public class ShellyDbusService : IMethodHandler
                 CurrentVersion = p.CurrentVersion,
                 NewVersion = p.NewVersion,
                 DownloadSize = p.DownloadSize
-            })).ToArray();
+            }, ShellyServiceJsonContext.Default.PackageUpdateInfo)).ToArray();
 
             using var writer = context.CreateReplyWriter("as");
             writer.WriteArray(jsonArray);
@@ -218,15 +228,27 @@ public class ShellyDbusService : IMethodHandler
             var reader = context.Request.GetBodyReader();
             var packageNames = reader.ReadArrayOfString();
             var flags = reader.ReadUInt32();
-
             _logger.LogInformation("Removing packages: {Packages}", string.Join(", ", packageNames));
-            await Task.Run(() => _alpmManager.RemovePackages(packageNames.ToList(), (AlpmTransFlag)flags));
+
+            // Set a long timeout for the removal operation if needed, 
+            // though D-Bus method calls usually have a default timeout of 25 seconds.
+            await Task.Run(() =>
+                _alpmManager.RemovePackages(packageNames.ToList(), (AlpmTransFlag)flags));
+
+            _logger.LogInformation("Packages removed successfully");
             ReplyEmpty(context);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove packages");
-            context.ReplyError("org.shelly.Error.RemoveFailed", ex.Message);
+            try
+            {
+                context.ReplyError("org.shelly.Error.RemoveFailed", ex.Message);
+            }
+            catch (Exception replyEx)
+            {
+                _logger.LogError(replyEx, "Failed to send error reply for removal");
+            }
         }
     }
 

@@ -42,9 +42,9 @@ fi
 
 echo "Installing D-Bus configuration..."
 if [ -f "$SCRIPT_DIR/Shelly.Service/config/org.shelly.PackageManager.conf" ]; then
-    cp "$SCRIPT_DIR/Shelly.Service/config/org.shelly.PackageManager.conf" /etc/dbus-1/system.d/
+    cp "$SCRIPT_DIR/Shelly.Service/config/org.shelly.PackageManager.conf" /usr/share/dbus-1/system.d/
 elif [ -f "$SERVICE_DIR/config/org.shelly.PackageManager.conf" ]; then
-    cp "$SERVICE_DIR/config/org.shelly.PackageManager.conf" /etc/dbus-1/system.d/
+    cp "$SERVICE_DIR/config/org.shelly.PackageManager.conf" /usr/share/dbus-1/system.d/
 fi
 
 echo "Installing D-Bus service activation file..."

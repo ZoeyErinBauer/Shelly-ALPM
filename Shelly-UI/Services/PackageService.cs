@@ -91,10 +91,19 @@ public class PackageService : IPackageService, IDisposable
         await _client.InstallPackagesAsync(packageNames.ToArray(), (uint)flags);
     }
 
-    public async Task RemovePackagesAsync(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.None)
+    public async Task RemovePackagesAsync(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.Cascade | AlpmTransFlag.Recurse | AlpmTransFlag.NoHooks | AlpmTransFlag.NoScriptlet )
     {
-        await EnsureConnectedAsync();
-        await _client.RemovePackagesAsync(packageNames.ToArray(), (uint)flags);
+        try
+        {
+            await EnsureConnectedAsync();
+            var uintFlags = (uint)flags;
+            await _client.RemovePackagesAsync(packageNames.ToArray(), uintFlags);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG_LOG] Error removing packages: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task UpdatePackagesAsync(List<string> packageNames, AlpmTransFlag flags = AlpmTransFlag.None)

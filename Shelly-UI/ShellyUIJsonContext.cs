@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Shelly.Protocol;
 using Shelly_UI.Models;
 
 namespace Shelly_UI;
@@ -9,6 +10,8 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(GitHubRelease))]
 [JsonSerializable(typeof(GitHubAsset))]
 [JsonSerializable(typeof(GitHubAsset[]))]
+[JsonSerializable(typeof(PackageInfo))]
+[JsonSerializable(typeof(PackageUpdateInfo))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext
 {
 }

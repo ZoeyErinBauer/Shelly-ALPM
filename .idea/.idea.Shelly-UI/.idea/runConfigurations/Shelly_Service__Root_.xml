@@ -1,23 +1,23 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Shelly.Service (Root)" type="ShellScriptRunConfigurationType">
-    <option name="SCRIPT_TEXT" value="" />
-    <option name="INDEPENDENT_SCRIPT_PATH" value="1" />
-    <option name="SCRIPT_PATH" value="$PROJECT_DIR$/debug-as-root.sh" />
-    <option name="SCRIPT_OPTIONS" value="$PROJECT_DIR$/Shelly.Service/bin/Debug/net10.0/Shelly.Service" />
-    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="1" />
-    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/Shelly.Service" />
-    <option name="INDEPENDENT_INTERPRETER_PATH" value="1" />
-    <option name="INTERPRETER_PATH" value="/bin/bash" />
-    <option name="INTERPRETER_OPTIONS" value="" />
-    <option name="EXECUTE_IN_TERMINAL" value="true" />
-    <option name="EXECUTE_SCRIPT_FILE" value="true" />
-    <envs />
+  <configuration default="false" name="Shelly.Service (Root)" type="DotNetProject" factoryName=".NET Project">
+    <option name="EXE_PATH" value="$PROJECT_DIR$/debug-as-root.sh" />
+    <option name="PROGRAM_PARAMETERS" value="$PROJECT_DIR$/Shelly.Service/bin/Debug/net10.0/shelly-service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Shelly.Service" />
+    <option name="PASS_PARENT_ENVS" value="1" />
+    <option name="ENV_FILE_PATHS" value="" />
+    <option name="REDIRECT_INPUT_PATH" value="" />
+    <option name="MIXED_MODE_DEBUG" value="0" />
+    <option name="USE_MONO" value="0" />
+    <option name="RUNTIME_ARGUMENTS" value="" />
+    <option name="AUTO_ATTACH_CHILDREN" value="0" />
+    <option name="PROJECT_PATH" value="$PROJECT_DIR$/Shelly.Service/Shelly.Service.csproj" />
+    <option name="PROJECT_EXE_PATH_TRACKING" value="0" />
+    <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
+    <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="0" />
+    <option name="PROJECT_KIND" value="DotNetCore" />
+    <option name="PROJECT_TFM" value="net10.0" />
     <method v="2">
-      <option name="DotNetBuildConfiguration" enabled="true">
-        <configuration>
-          <option name="PROJECT_PATH" value="$PROJECT_DIR$/Shelly.Service/Shelly.Service.csproj" />
-        </configuration>
-      </option>
+      <option name="Build" default="false" projectName="Shelly.Service" projectPath="$PROJECT_DIR$/Shelly.Service/Shelly.Service.csproj" />
     </method>
   </configuration>
 </component>
