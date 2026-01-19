@@ -947,13 +947,21 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     private void HandleEvent(IntPtr eventPtr)
     {
+        // Early return for null pointer
         if (eventPtr == IntPtr.Zero) return;
 
         try
         {
-            // Read the type field directly using ReadInt32 - this is safer than PtrToStructure
-            // for the initial type detection as it avoids potential marshalling issues
-            var type = (AlpmEventType)Marshal.ReadInt32(eventPtr);
+            // Read the type field directly using ReadInt32
+            int typeValue = Marshal.ReadInt32(eventPtr);
+            // Validate the type value is within expected range (1-37 for ALPM events)
+            if (typeValue < 1 || typeValue > 37)
+            {
+                // Invalid event type - likely corrupted memory or wrong pointer
+                return;
+            }
+
+            var type = (AlpmEventType)typeValue;
 
             switch (type)
             {
@@ -1010,48 +1018,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.PackageOperationStart:
                 {
-                    // PackageOperation: type (4 bytes) + operation (4 bytes) + oldpkg ptr + newpkg ptr
-                    // Offset 8 for first pointer (type + operation = 8 bytes, no padding needed)
-                    const int ptrOffset = 8;
-                    IntPtr oldPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    IntPtr newPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
-                    
-                    // For install/upgrade, use NewPkgPtr; for remove, use OldPkgPtr
-                    IntPtr pkgPtr = newPkgPtr != IntPtr.Zero ? newPkgPtr : oldPkgPtr;
-                    string? pkgName = pkgPtr != IntPtr.Zero 
-                        ? Marshal.PtrToStringUTF8(GetPkgName(pkgPtr)) 
-                        : null;
-                    Console.Error.WriteLine($"[ALPM] Processing package: {pkgName}");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgName));
+                    Console.Error.WriteLine("[ALPM] Starting package operation...");
                     break;
                 }
 
                 case AlpmEventType.PackageOperationDone:
                 {
-                    const int ptrOffset = 8;
-                    IntPtr oldPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    IntPtr newPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
-                    
-                    IntPtr pkgPtr = newPkgPtr != IntPtr.Zero ? newPkgPtr : oldPkgPtr;
-                    string? pkgName = pkgPtr != IntPtr.Zero 
-                        ? Marshal.PtrToStringUTF8(GetPkgName(pkgPtr)) 
-                        : null;
-                    Console.Error.WriteLine($"[ALPM] Finished processing: {pkgName}");
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, pkgName));
+                    Console.Error.WriteLine("[ALPM] Package operation finished.");
                     break;
                 }
 
                 case AlpmEventType.ScriptletInfo:
                 {
-                    // ScriptletInfo: type (4 bytes) + padding (4 bytes on 64-bit) + line pointer
-                    // On 64-bit, pointer must be 8-byte aligned, so offset is 8
-                    const int ptrOffset = 8;
-                    IntPtr linePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    string? msg = linePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(linePtr) : null;
-                    if (!string.IsNullOrEmpty(msg))
-                    {
-                        Console.Error.WriteLine($"[ALPM_SCRIPT] {msg.Trim()}");
-                    }
+                    Console.Error.WriteLine("[ALPM] Running scriptlet...");
                     break;
                 }
 
@@ -1064,13 +1043,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.HookRunStart:
                 {
-                    // HookRun: type (4 bytes) + padding (4 bytes) + name ptr + desc ptr + position + total
-                    const int ptrOffset = 8;
-                    IntPtr namePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    IntPtr descPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
-                    string? hookName = namePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(namePtr) : null;
-                    string? hookDesc = descPtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(descPtr) : null;
-                    Console.Error.WriteLine($"[ALPM_HOOK] Running: {hookDesc ?? hookName}");
+                    Console.Error.WriteLine("[ALPM] Running hook...");
                     break;
                 }
                 case AlpmEventType.HookRunDone:
@@ -1101,11 +1074,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.DatabaseMissing:
                 {
-                    // DatabaseMissing: type (4 bytes) + padding (4 bytes) + dbname ptr
-                    const int ptrOffset = 8;
-                    IntPtr dbNamePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    string? dbName = dbNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(dbNamePtr) : null;
-                    Console.Error.WriteLine($"[ALPM] Database missing: {dbName}");
+                    Console.Error.WriteLine(
+                        "[ALPM] Database missing. Please run 'pacman-key --init' to initialize it.");
                     break;
                 }
 
@@ -1134,14 +1104,58 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     break;
 
                 default:
-                    // Fallback for types we haven't explicitly handled yet
-                    // Console.Error.WriteLine($"[ALPM_DEBUG] Event Triggered: {type}");
+                    // Unknown event type - just ignore it
                     break;
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[ALPM_ERROR] Error handling event: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Safely reads a string pointer from an event struct at the given offset.
+    /// Returns null if the pointer is invalid or reading fails.
+    /// </summary>
+    private static string? ReadStringFromEvent(IntPtr eventPtr, int offset)
+    {
+        try
+        {
+            IntPtr strPtr = Marshal.ReadIntPtr(eventPtr, offset);
+            if (strPtr == IntPtr.Zero) return null;
+            return Marshal.PtrToStringUTF8(strPtr);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Safely reads the package name from a PackageOperation event.
+    /// The struct layout is: type (4) + operation (4) + oldpkg ptr + newpkg ptr
+    /// </summary>
+    private string? ReadPackageNameFromEvent(IntPtr eventPtr)
+    {
+        try
+        {
+            const int ptrOffset = 8; // type (4) + operation (4)
+            IntPtr oldPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
+            IntPtr newPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
+
+            // For install/upgrade, use NewPkgPtr; for remove, use OldPkgPtr
+            IntPtr pkgPtr = newPkgPtr != IntPtr.Zero ? newPkgPtr : oldPkgPtr;
+            if (pkgPtr == IntPtr.Zero) return null;
+
+            IntPtr namePtr = GetPkgName(pkgPtr);
+            if (namePtr == IntPtr.Zero) return null;
+
+            return Marshal.PtrToStringUTF8(namePtr);
+        }
+        catch
+        {
+            return null;
         }
     }
 }
