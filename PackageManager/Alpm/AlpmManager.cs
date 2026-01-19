@@ -235,7 +235,23 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             string? url = Marshal.PtrToStringUTF8(urlPtr);
-            string? localpath = Marshal.PtrToStringUTF8(localpathPtr);
+            // Add safety check for localpathPtr
+            string? localpath = null;
+            if (localpathPtr != IntPtr.Zero)
+            {
+                try
+                {
+                    localpath = Marshal.PtrToStringUTF8(localpathPtr);
+                }
+                catch (Exception)
+                {
+                    Console.Error.WriteLine("[DEBUG_LOG] localpathPtr points to invalid memory");
+                    localpath = null;
+                }
+            }
+
+            Console.Error.WriteLine(
+                $"[DEBUG_LOG] DownloadFile called with url='{url}', localpath='{localpath}', force={force}");
 
             // If libalpm provides no destination, we must provide one
             if (string.IsNullOrEmpty(localpath) && !string.IsNullOrEmpty(url))
@@ -266,6 +282,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
             {
+                Console.Error.WriteLine($"[DEBUG_LOG] Attempting download from {absoluteUri} to {localpath}");
                 return PerformDownload(absoluteUri.ToString(), localpath);
             }
 
@@ -277,14 +294,28 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             while (currentPtr != IntPtr.Zero)
             {
                 var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-                var dbName = Marshal.PtrToStringUTF8(DbGetName(node.Data));
-                if (dbName != null && url.StartsWith(dbName))
+                if (node.Data != IntPtr.Zero)
                 {
-                    targetDb = node.Data;
-                    break;
+                    var dbName = Marshal.PtrToStringUTF8(DbGetName(node.Data));
+                    Console.Error.WriteLine($"[DEBUG_LOG] Checking dbName: {dbName}");
+                    if (dbName != null && (url == $"{dbName}.db" || url == $"{dbName}.db.sig"))
+                    {
+                        targetDb = node.Data;
+                        break;
+                    }
                 }
 
                 currentPtr = node.Next;
+            }
+
+            if (targetDb != IntPtr.Zero)
+            {
+                var matchedDbName = Marshal.PtrToStringUTF8(DbGetName(targetDb));
+                Console.Error.WriteLine($"[DEBUG_LOG] Found targetDb: {matchedDbName} for url: {url}");
+            }
+            else
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG] No targetDb found for url: {url}");
             }
 
             // 2. If it's a package, find which DB contains a package with this exact filename
@@ -294,23 +325,26 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 while (currentPtr != IntPtr.Zero)
                 {
                     var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
-                    var pkgCachePtr = DbGetPkgCache(node.Data);
-                    var pkgNodePtr = pkgCachePtr;
-
-                    while (pkgNodePtr != IntPtr.Zero)
+                    if (node.Data != IntPtr.Zero)
                     {
-                        var pkgNode = Marshal.PtrToStructure<AlpmList>(pkgNodePtr);
-                        // Get the actual filename for the package in this database
-                        var pkgFilenamePtr = GetPkgFileName(pkgNode.Data);
-                        var pkgFilename = Marshal.PtrToStringUTF8(pkgFilenamePtr);
+                        var pkgCachePtr = DbGetPkgCache(node.Data);
+                        var pkgNodePtr = pkgCachePtr;
 
-                        if (pkgFilename == url)
+                        while (pkgNodePtr != IntPtr.Zero)
                         {
-                            targetDb = node.Data;
-                            break;
-                        }
+                            var pkgNode = Marshal.PtrToStructure<AlpmList>(pkgNodePtr);
+                            // Get the actual filename for the package in this database
+                            var pkgFilenamePtr = GetPkgFileName(pkgNode.Data);
+                            var pkgFilename = Marshal.PtrToStringUTF8(pkgFilenamePtr);
 
-                        pkgNodePtr = pkgNode.Next;
+                            if (pkgFilename == url)
+                            {
+                                targetDb = node.Data;
+                                break;
+                            }
+
+                            pkgNodePtr = pkgNode.Next;
+                        }
                     }
 
                     if (targetDb != IntPtr.Zero) break;
@@ -323,6 +357,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             while (currentPtr != IntPtr.Zero)
             {
                 var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                if (node.Data == IntPtr.Zero)
+                {
+                    currentPtr = node.Next;
+                    continue;
+                }
 
                 // If we found a specific DB, skip the others
                 if (targetDb != IntPtr.Zero && node.Data != targetDb)
@@ -332,15 +371,25 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 }
 
                 var serversPtr = DbGetServers(node.Data);
+                Console.Error.WriteLine(
+                    $"[DEBUG_LOG] serversPtr for db: {(serversPtr == IntPtr.Zero ? "NULL" : "valid")}");
                 var serverNodePtr = serversPtr;
                 while (serverNodePtr != IntPtr.Zero)
                 {
                     var serverNode = Marshal.PtrToStructure<AlpmList>(serverNodePtr);
+                    Console.Error.WriteLine($"[DEBUG_LOG] serverNode.Data: {serverNode.Data}");
                     var serverBaseUrl = Marshal.PtrToStringUTF8(serverNode.Data);
+                    if (serverNode.Data == IntPtr.Zero)
+                    {
+                        Console.Error.WriteLine("[DEBUG_LOG] serverNode.Data is NULL - skipping");
+                        serverNodePtr = serverNode.Next;
+                        continue;
+                    }
 
                     if (!string.IsNullOrEmpty(serverBaseUrl))
                     {
                         var fullUrl = serverBaseUrl.EndsWith('/') ? $"{serverBaseUrl}{url}" : $"{serverBaseUrl}/{url}";
+                        Console.Error.WriteLine($"[DEBUG_LOG] fullUrl: {fullUrl}");
                         if (PerformDownload(fullUrl, localpath) == 0) return 0;
                     }
 
@@ -366,18 +415,27 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
 
             //Console.WriteLine($"Download logic failed for {urlString}: {ex.Message}");
-            //Console.Error.WriteLine($"[DEBUG_LOG] Download logic failed for {urlString}: {ex.Message}");
+            Console.Error.WriteLine($"[DEBUG_LOG] Download logic failed for {urlString}: {ex.Message}");
+            Console.Error.WriteLine($"[DEBUG_LOG] Stack trace: {ex.StackTrace}"); // ADD THIS LINE
             return -1;
         }
     }
 
     private int PerformDownload(string fullUrl, string localpath)
     {
+        // Use a temporary file for atomic writes - prevents corruption if download is interrupted
+        string tempPath = localpath + ".part";
+        Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
+
         try
         {
             Console.Error.WriteLine($"[DEBUG_LOG] Downloading {fullUrl} to {localpath}");
-            using var response = _httpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseHeadersRead).GetAwaiter()
+
+            using var response = _httpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
+                .GetAwaiter()
                 .GetResult();
+
+
             if (!response.IsSuccessStatusCode)
             {
                 Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: {response.StatusCode}");
@@ -387,11 +445,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             var totalBytes = response.Content.Headers.ContentLength;
             string fileName = Path.GetFileName(localpath);
 
-            try
+            // Write to temporary file first
+            using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var stream = response.Content.ReadAsStream())
             {
-                using var fs = new FileStream(localpath, FileMode.Create, FileAccess.Write, FileShare.None);
-                using var stream = response.Content.ReadAsStream();
-
+                Console.Error.WriteLine($"[DEBUG_LOG] Reading content stream");
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 long totalRead = 0;
@@ -407,6 +465,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         int percent = (int)((totalRead * 100) / totalBytes.Value);
                         if (percent != lastPercent)
                         {
+                            Console.Error.WriteLine($"[DEBUG_LOG] Download progress: {percent}%");
+                            Console.Error.WriteLine(
+                                $"[DEBUG_LOG] Download progress: {totalRead} / {totalBytes.Value} bytes");
                             lastPercent = percent;
                             Progress?.Invoke(this, new AlpmProgressEventArgs(
                                 AlpmProgressType.PackageDownload,
@@ -422,6 +483,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 // Ensure 100% is sent
                 if (lastPercent != 100)
                 {
+                    Console.Error.WriteLine($"[DEBUG_LOG] Download progress: 100% (.)(.)");
                     Progress?.Invoke(this, new AlpmProgressEventArgs(
                         AlpmProgressType.PackageDownload,
                         fileName,
@@ -431,9 +493,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     ));
                 }
             }
+
+            // Atomic rename: move temp file to final destination only after successful download
+            try
+            {
+                File.Move(tempPath, localpath, overwrite: true);
+            }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[DEBUG_LOG] Failed to write to {localpath}: {ex.Message}");
+                Console.Error.WriteLine($"[DEBUG_LOG] Failed to move temp file: {ex.Message}");
+                Console.Error.WriteLine($"[DEBUG_LOG] Source: {tempPath}, Exists: {File.Exists(tempPath)}");
+                Console.Error.WriteLine($"[DEBUG_LOG] Destination: {localpath}");
+                Console.Error.WriteLine(
+                    $"[DEBUG_LOG] Dest dir exists: {Directory.Exists(Path.GetDirectoryName(localpath))}");
                 return -1;
             }
 
@@ -442,6 +514,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[DEBUG_LOG] Download failed for {fullUrl}: {ex.Message}");
+            // Clean up temp file on failure to prevent leaving partial files
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch
+            {
+                /* Ignore cleanup errors */
+            }
+
             return -1;
         }
     }
@@ -459,6 +541,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 var error = ErrorNumber(_handle);
                 Console.Error.WriteLine($"Sync failed: {GetErrorMessage(error)}");
             }
+
             if (result > 0)
             {
                 Console.Error.WriteLine($"Sync database up to date");
@@ -499,10 +582,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     currentPtr = node.Next;
                     continue;
                 }
+
                 var dbPkgCachePtr = DbGetPkgCache(node.Data);
                 packages.AddRange(AlpmPackage.FromList(dbPkgCachePtr).Select(p => p.ToDto()));
             }
-      
+
             currentPtr = node.Next;
         }
 

@@ -28,7 +28,7 @@ jobs:
       run: |
         dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli
         cd publish/shelly-cli
-        rm -f *.dbg
+        rm -f *.dbg *.pdb
         tar -czf ../Shelly-CLI-linux-x64.tar.gz .
         cd ../..
 
@@ -39,7 +39,7 @@ jobs:
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cp publish/shelly-cli/Shelly-CLI publish/shelly-ui/
         cd publish/shelly-ui
-        rm -f *.dbg
+        rm -f *.dbg *.pdb
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .
         cd ../..
         
