@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Shelly_CLI;
 
@@ -68,21 +69,78 @@ public class StderrPrefixWriter : TextWriter
     public override Encoding Encoding => _stderr.Encoding;
 }
 
+/// <summary>
+/// A TextWriter that filters out lines containing [bracketed] patterns when running in terminal mode.
+/// </summary>
+public class FilteringTextWriter : TextWriter
+{
+    private readonly TextWriter _inner;
+    private static readonly Regex BracketedPattern = new Regex(@"\[[^\]]+\]", RegexOptions.Compiled);
+    
+    public FilteringTextWriter(TextWriter inner)
+    {
+        _inner = inner;
+    }
+    
+    public override void WriteLine(string? value)
+    {
+        // Filter out lines that contain [somestring] patterns
+        if (value != null && BracketedPattern.IsMatch(value))
+        {
+            return; // Skip this line
+        }
+        _inner.WriteLine(value);
+    }
+    
+    public override void Write(string? value)
+    {
+        // For Write (without newline), pass through as-is since we filter on complete lines
+        _inner.Write(value);
+    }
+    
+    public override void Write(char value)
+    {
+        _inner.Write(value);
+    }
+    
+    public override Encoding Encoding => _inner.Encoding;
+}
+
 public class Program
 {
     public static int Main(string[] args)
     {
-        // Configure stderr to use prefix for UI integration
-        var stderrWriter = new StderrPrefixWriter(Console.Error);
-        Console.SetError(stderrWriter);
+        // Check if running in UI mode (--ui-mode flag passed by Shelly-UI)
+        var argsList = args.ToList();
+        var isUiMode = argsList.Remove("--ui-mode");
+        args = argsList.ToArray();
         
-        // Configure AnsiConsole to use DualOutputWriter for UI integration
-        var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
-        Console.SetOut(dualWriter);
-        AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+        if (isUiMode)
         {
-            Out = new AnsiConsoleOutput(dualWriter)
-        });
+            // Configure stderr to use prefix for UI integration
+            var stderrWriter = new StderrPrefixWriter(Console.Error);
+            Console.SetError(stderrWriter);
+            
+            // Configure AnsiConsole to use DualOutputWriter for UI integration
+            var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
+            Console.SetOut(dualWriter);
+            AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(dualWriter)
+            });
+        }
+        else
+        {
+            // When running from terminal, filter out lines containing [bracketed] patterns
+            var filteringStdout = new FilteringTextWriter(Console.Out);
+            var filteringStderr = new FilteringTextWriter(Console.Error);
+            Console.SetOut(filteringStdout);
+            Console.SetError(filteringStderr);
+            AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(filteringStdout)
+            });
+        }
         
         var app = new CommandApp();
         app.Configure(config =>

@@ -118,7 +118,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         }
 
         var arguments = string.Join(" ", args);
-        var fullCommand = $"{_cliPath} {arguments}";
+        var fullCommand = $"{_cliPath} --ui-mode {arguments}";
 
         Console.WriteLine($"Executing privileged command: sudo {fullCommand}");
 

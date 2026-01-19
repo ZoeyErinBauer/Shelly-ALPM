@@ -963,11 +963,23 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 case AlpmEventType.CheckDepsDone:
                     Console.Error.WriteLine("[ALPM] Dependency check finished.");
                     break;
-                case AlpmEventType.InterConflictsStart:
+                case AlpmEventType.FileConflictsStart:
                     Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
                     break;
-                case AlpmEventType.InterConflictsDone:
+                case AlpmEventType.FileConflictsDone:
                     Console.Error.WriteLine("[ALPM] File conflict check finished.");
+                    break;
+                case AlpmEventType.ResolveDepsStart:
+                    Console.Error.WriteLine("[ALPM] Resolving dependencies...");
+                    break;
+                case AlpmEventType.ResolveDepsDone:
+                    Console.Error.WriteLine("[ALPM] Dependency resolution finished.");
+                    break;
+                case AlpmEventType.InterConflictsStart:
+                    Console.Error.WriteLine("[ALPM] Checking for inter-conflicts...");
+                    break;
+                case AlpmEventType.InterConflictsDone:
+                    Console.Error.WriteLine("[ALPM] Inter-conflict check finished.");
                     break;
                 case AlpmEventType.TransactionStart:
                     Console.Error.WriteLine("[ALPM] Starting transaction...");
@@ -998,9 +1010,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.PackageOperationStart:
                 {
-                    // Use architecture-aware offsets for reading pointers
-                    // On 64-bit: after int type (4 bytes) + int operation (4 bytes) = offset 8 for first pointer
-                    int ptrOffset = IntPtr.Size; // First pointer after type+operation (both 4 bytes = 8, aligned to IntPtr.Size)
+                    // PackageOperation: type (4 bytes) + operation (4 bytes) + oldpkg ptr + newpkg ptr
+                    // Offset 8 for first pointer (type + operation = 8 bytes, no padding needed)
+                    const int ptrOffset = 8;
                     IntPtr oldPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
                     IntPtr newPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
                     
@@ -1016,7 +1028,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.PackageOperationDone:
                 {
-                    int ptrOffset = IntPtr.Size;
+                    const int ptrOffset = 8;
                     IntPtr oldPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
                     IntPtr newPkgPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
                     
@@ -1032,7 +1044,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 case AlpmEventType.ScriptletInfo:
                 {
                     // ScriptletInfo: type (4 bytes) + padding (4 bytes on 64-bit) + line pointer
-                    int ptrOffset = IntPtr.Size;
+                    // On 64-bit, pointer must be 8-byte aligned, so offset is 8
+                    const int ptrOffset = 8;
                     IntPtr linePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
                     string? msg = linePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(linePtr) : null;
                     if (!string.IsNullOrEmpty(msg))
@@ -1051,8 +1064,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 case AlpmEventType.HookRunStart:
                 {
-                    // HookRun: type (4 bytes) + padding + name ptr + desc ptr + position + total
-                    int ptrOffset = IntPtr.Size;
+                    // HookRun: type (4 bytes) + padding (4 bytes) + name ptr + desc ptr + position + total
+                    const int ptrOffset = 8;
                     IntPtr namePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
                     IntPtr descPtr = Marshal.ReadIntPtr(eventPtr, ptrOffset + IntPtr.Size);
                     string? hookName = namePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(namePtr) : null;
@@ -1060,39 +1073,66 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     Console.Error.WriteLine($"[ALPM_HOOK] Running: {hookDesc ?? hookName}");
                     break;
                 }
-
-                case AlpmEventType.DatabaseSyncStart:
-                {
-                    // DatabaseSync: type (4 bytes) + padding + dbname ptr
-                    int ptrOffset = IntPtr.Size;
-                    IntPtr dbNamePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
-                    string? dbName = dbNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(dbNamePtr) : null;
-                    Console.Error.WriteLine($"[ALPM] Synchronizing {dbName}...");
-                    break;
-                }
-
-                case AlpmEventType.RetrieveStart:
-                    Console.Error.WriteLine("[ALPM] Retrieving packages...");
-                    break;
-
-                case AlpmEventType.RetrieveDone:
-                    Console.Error.WriteLine("[ALPM] Packages retrieved.");
-                    break;
-                case AlpmEventType.RetrieveFailed:
-                    Console.Error.WriteLine("[ALPM] Package retrieval failed.");
-                    break;
-                case AlpmEventType.PkgsignStart:
-                    Console.Error.WriteLine("[ALPM] Signing packages...");
-                    break;
-                case AlpmEventType.PkgsignDone:
-                    Console.Error.WriteLine("[ALPM] Packages signed.");
-                    break;
-                case AlpmEventType.DatabaseSyncDone:
-                    Console.Error.WriteLine("[ALPM] Synchronization finished.");
-                    break;
                 case AlpmEventType.HookRunDone:
                     Console.Error.WriteLine("[ALPM] Hook finished.");
                     break;
+
+                // Database retrieval events (for sync operations)
+                case AlpmEventType.DbRetrieveStart:
+                    Console.Error.WriteLine("[ALPM] Retrieving database...");
+                    break;
+                case AlpmEventType.DbRetrieveDone:
+                    Console.Error.WriteLine("[ALPM] Database retrieved.");
+                    break;
+                case AlpmEventType.DbRetrieveFailed:
+                    Console.Error.WriteLine("[ALPM] Database retrieval failed.");
+                    break;
+
+                // Package retrieval events
+                case AlpmEventType.PkgRetrieveStart:
+                    Console.Error.WriteLine("[ALPM] Retrieving packages...");
+                    break;
+                case AlpmEventType.PkgRetrieveDone:
+                    Console.Error.WriteLine("[ALPM] Packages retrieved.");
+                    break;
+                case AlpmEventType.PkgRetrieveFailed:
+                    Console.Error.WriteLine("[ALPM] Package retrieval failed.");
+                    break;
+
+                case AlpmEventType.DatabaseMissing:
+                {
+                    // DatabaseMissing: type (4 bytes) + padding (4 bytes) + dbname ptr
+                    const int ptrOffset = 8;
+                    IntPtr dbNamePtr = Marshal.ReadIntPtr(eventPtr, ptrOffset);
+                    string? dbName = dbNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(dbNamePtr) : null;
+                    Console.Error.WriteLine($"[ALPM] Database missing: {dbName}");
+                    break;
+                }
+
+                case AlpmEventType.OptdepRemoval:
+                    Console.Error.WriteLine("[ALPM] Optional dependency being removed.");
+                    break;
+
+                case AlpmEventType.KeyringStart:
+                    Console.Error.WriteLine("[ALPM] Checking keyring...");
+                    break;
+                case AlpmEventType.KeyringDone:
+                    Console.Error.WriteLine("[ALPM] Keyring check finished.");
+                    break;
+                case AlpmEventType.KeyDownloadStart:
+                    Console.Error.WriteLine("[ALPM] Downloading keys...");
+                    break;
+                case AlpmEventType.KeyDownloadDone:
+                    Console.Error.WriteLine("[ALPM] Key download finished.");
+                    break;
+
+                case AlpmEventType.PacnewCreated:
+                    Console.Error.WriteLine("[ALPM] .pacnew file created.");
+                    break;
+                case AlpmEventType.PacsaveCreated:
+                    Console.Error.WriteLine("[ALPM] .pacsave file created.");
+                    break;
+
                 default:
                     // Fallback for types we haven't explicitly handled yet
                     // Console.Error.WriteLine($"[ALPM_DEBUG] Event Triggered: {type}");
