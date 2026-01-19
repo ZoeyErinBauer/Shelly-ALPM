@@ -39,15 +39,16 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         // Check common installation paths
         var possiblePaths = new[]
         {
+#if DEBUG
+            debugPath,
+#endif
             "/usr/bin/shelly-cli",
             "/usr/local/bin/shelly-cli",
             Path.Combine(AppContext.BaseDirectory, "shelly-cli"),
             Path.Combine(AppContext.BaseDirectory, "Shelly-CLI"),
             // Development path - relative to UI executable
             Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory) ?? "", "Shelly-CLI", "Shelly-CLI"),
-#if DEBUG
-            debugPath,
-#endif
+
         };
 
         foreach (var path in possiblePaths)

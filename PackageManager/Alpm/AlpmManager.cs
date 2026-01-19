@@ -92,13 +92,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
 
         _eventCallback = HandleEvent;
-        if (SetEventCallback(_handle, _eventCallback) != 0)
+        if (SetEventCallback(_handle, _eventCallback, IntPtr.Zero) != 0)
         {
             Console.Error.WriteLine("[ALPM_ERROR] Failed to set event callback");
         }
 
         _questionCallback = HandleQuestion;
-        if (SetQuestionCallback(_handle, _questionCallback) != 0)
+        if (SetQuestionCallback(_handle, _questionCallback, IntPtr.Zero) != 0)
         {
             Console.Error.WriteLine("[ALPM_ERROR] Failed to set question callback");
         }
@@ -140,7 +140,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
-    private void HandleQuestion(IntPtr questionPtr)
+    private void HandleQuestion(IntPtr ctx, IntPtr questionPtr)
     {
         var question = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
         var questionType = (AlpmQuestionType)question.Type;
@@ -945,22 +945,41 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
-    private void HandleEvent(IntPtr eventPtr)
+    private void HandleEvent(IntPtr ctx, IntPtr eventPtr)
     {
         // Early return for null pointer
         if (eventPtr == IntPtr.Zero) return;
+        
+        // Additional safety check - if handle is disposed, don't process events
+        if (_handle == IntPtr.Zero) return;
 
+        int typeValue;
         try
         {
             // Read the type field directly using ReadInt32
-            int typeValue = Marshal.ReadInt32(eventPtr);
-            // Validate the type value is within expected range (1-37 for ALPM events)
-            if (typeValue < 1 || typeValue > 37)
-            {
-                // Invalid event type - likely corrupted memory or wrong pointer
-                return;
-            }
+            typeValue = Marshal.ReadInt32(eventPtr);
+        }
+        catch (AccessViolationException)
+        {
+            // Memory access violation - pointer is invalid, silently ignore
+            return;
+        }
+        catch (Exception ex)
+        {
+            //TODO: SWALLOW HERE TILL I CAN FIGURE OUT WHY SOMETIMES THE EVENTS PRODUCE A MEMORY ERROR
+            //Console.Error.WriteLine($"[ALPM_ERROR] Error reading event type: {ex.Message}");
+            return;
+        }
+        
+        // Validate the type value is within expected range (1-37 for ALPM events)
+        if (typeValue < 1 || typeValue > 37)
+        {
+            // Invalid event type - likely corrupted memory or wrong pointer
+            return;
+        }
 
+        try
+        {
             var type = (AlpmEventType)typeValue;
 
             switch (type)
@@ -1110,7 +1129,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR] Error handling event: {ex.Message}");
+            //TODO: SWALLING ERRORS HERE WHEN THEY OCCUR TILL I CAN FIGURE OUT WHICH MEMORY POINTER IS CAUSING ISSUES
+            //Console.Error.WriteLine($"[ALPM_ERROR] Error handling event: {ex.Message}");
         }
     }
 
