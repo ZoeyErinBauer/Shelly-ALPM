@@ -9,8 +9,4 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
-    <ItemGroup>
-      <Folder Include="SoftwareSources\Snapd\" />
-    </ItemGroup>
-
 </Project>
