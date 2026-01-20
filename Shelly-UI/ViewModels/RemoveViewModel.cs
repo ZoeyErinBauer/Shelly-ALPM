@@ -24,14 +24,16 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IAppCache _appCache;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
+    private readonly ICredentialManager _credentialManager;
 
-    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
+    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<PackageModel>();
-
+        _credentialManager = credentialManager;
+        
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -128,18 +130,56 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            ShowConfirmDialog = false;
-            var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages);
-            if (!result.Success)
+            
+            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+            try
             {
-                Console.WriteLine($"Failed to remove packages: {result.Error}");
+                ShowConfirmDialog = false;
+                // Request credentials 
+                if (!_credentialManager.IsValidated)
+                {
+                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+
+                    if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
+
+                    var isValidated = await _credentialManager.ValidateInputCredentials();
+
+                    if (!isValidated) return;
+                }
+                
+                // Set busy
+                if (mainWindow != null)
+                {
+                    mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalProgressText = "0%";
+                    mainWindow.IsGlobalBusy = true;
+                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
+                }
+
+                //do work
+
+                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to remove packages: {result.Error}");
+                }
+                else
+                {
+                    // Update the installed packages cache after successful removal
+                    await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
+                }
+
+                await Refresh();
             }
-            else
+            finally
             {
-                // Update the installed packages cache after successful removal
-                await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
+                //always exit globally busy in case of failure
+                if (mainWindow != null)
+                {
+                    mainWindow.IsGlobalBusy = false;
+                }
             }
-            await Refresh();
         }
         else
         {

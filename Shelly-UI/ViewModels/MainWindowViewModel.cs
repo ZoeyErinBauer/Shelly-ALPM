@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive;
 using System.Reactive.Subjects;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Shelly_UI.Assets;
 using ReactiveUI;
@@ -22,6 +26,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly ICredentialManager _credentialManager;
 
+    private static readonly Regex AlpmProgressPattern =
+        new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
+
+    private static readonly Regex LogPercentagePattern = new(@"([^:\s\[\]]+): \d+% -> (\d+)%", RegexOptions.Compiled);
+
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
         IServiceProvider services,
         IScheduler? scheduler = null)
@@ -32,7 +41,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         _appCache = appCache;
         _privilegedOperationService = services.GetRequiredService<IPrivilegedOperationService>();
         _credentialManager = services.GetRequiredService<ICredentialManager>();
-        
+
         // Subscribe to credential requests
         _credentialManager.CredentialRequested += (sender, args) =>
         {
@@ -43,32 +52,44 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 PasswordInput = string.Empty;
                 PasswordErrorMessage = string.Empty;
                 ShowPasswordPrompt = true;
+                IsGlobalBusy = false;
             });
         };
-        
+
         // Command to submit password
-        SubmitPasswordCommand = ReactiveCommand.Create(() =>
+        SubmitPasswordCommand = ReactiveCommand.CreateFromTask(async () =>
         {
             if (!string.IsNullOrEmpty(PasswordInput))
             {
                 _credentialManager.StorePassword(PasswordInput);
-                ShowPasswordPrompt = false;
-                PasswordInput = string.Empty;
-                _credentialManager.CompleteCredentialRequest(true);
+                PasswordErrorMessage = "Validating...";
+                
+                await _credentialManager.CompleteCredentialRequestAsync(true);
+                
+                if (_credentialManager.IsValidated)
+                {
+                    ShowPasswordPrompt = false;
+                    PasswordInput = string.Empty;
+                    PasswordErrorMessage = string.Empty;
+                }
+                else
+                {
+                    PasswordErrorMessage = "Invalid password. Please try again.";
+                }
             }
             else
             {
                 PasswordErrorMessage = "Password cannot be empty.";
             }
         });
-        
+
         // Command to cancel password prompt
-        CancelPasswordCommand = ReactiveCommand.Create(() =>
+        CancelPasswordCommand = ReactiveCommand.CreateFromTask(async () =>
         {
             ShowPasswordPrompt = false;
             PasswordInput = string.Empty;
             PasswordErrorMessage = string.Empty;
-            _credentialManager.CompleteCredentialRequest(false);
+            await _credentialManager.CompleteCredentialRequestAsync(false);
         });
 
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
@@ -117,43 +138,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                     }
                 }
             });
-
-        Observable.FromEventPattern<AlpmProgressEventArgs>(
-                h => alpmManager.Progress += h,
-                h => alpmManager.Progress -= h)
-            .ObserveOn(scheduler)
-            .Subscribe(pattern =>
-            {
-                if (pattern.EventArgs.ProgressType == AlpmProgressType.AddStart ||
-                    pattern.EventArgs.ProgressType == AlpmProgressType.RemoveStart)
-                {
-                    IsProcessing = true;
-                }
-
-                if (pattern.EventArgs.Percent >= 100)
-                {
-                    IsProcessing = false;
-                }
-
-                Console.Error.WriteLine($@"Got here:" + pattern.EventArgs.ProgressType);
-                var args = pattern.EventArgs;
-                if (args.Percent.HasValue)
-                {
-                    ProgressValue = args.Percent.Value;
-                    ProgressIndeterminate = false;
-                }
-
-                if (!string.IsNullOrEmpty(args.PackageName))
-                {
-                    var prefix = args.ProgressType == AlpmProgressType.PackageDownload ? "Downloading" : "Processing";
-                    ProcessingMessage = $"{prefix} {args.PackageName}... ({args.Percent}%)";
-                }
-                else if (args.Percent.HasValue)
-                {
-                    ProcessingMessage = $"Processing... ({args.Percent}%)";
-                }
-            });
-
+        
         packageOperationEvents
             .ObserveOn(scheduler)
             .Where(e => e.EventArgs.EventType != AlpmEventType.TransactionDone)
@@ -203,16 +188,98 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             TurnOffMenuItems();
             return Router.Navigate.Execute(new HomeViewModel(this, appCache));
         });
-        GoPackages = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService)));
-        GoUpdate = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService)));
-        GoRemove = ReactiveCommand.CreateFromObservable(() => Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService)));
+        GoPackages = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new PackageViewModel(this, appCache, _privilegedOperationService,
+                _credentialManager)));
+        GoUpdate = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new UpdateViewModel(this, _privilegedOperationService, _credentialManager)));
+        GoRemove = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache)));
 
         GoHome.Execute(Unit.Default);
+
+        Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
+                h => ConsoleLogService.Instance.Logs.CollectionChanged += h,
+                h => ConsoleLogService.Instance.Logs.CollectionChanged -= h)
+            .Where(pattern => pattern.EventArgs.Action == NotifyCollectionChangedAction.Add &&
+                              pattern.EventArgs.NewItems != null)
+            .SelectMany(pattern => pattern.EventArgs.NewItems!.Cast<string>())
+            .ObserveOn(scheduler)
+            .Subscribe(log =>
+            {
+                var matchAlpm = AlpmProgressPattern.Match(log);
+                var matchFormatted = LogPercentagePattern.Match(log);
+
+                if (matchAlpm.Success)
+                {
+                    var progressType = matchAlpm.Groups[1].Value;
+                    var pkg = matchAlpm.Groups[2].Value.Trim();
+                    if (int.TryParse(matchAlpm.Groups[3].Value, out var percent))
+                    {
+                        var action = progressType switch
+                        {
+                            "PackageDownload" => "Downloading",
+                            "ReinstallStart" => "Reinstalling",
+                            "AddStart" => "Installing",
+                            "UpgradeStart" => "Updating",
+                            "RemoveStart" => "Removing",
+                            _ => progressType.Replace("Start", "ing")
+                        };
+
+                        GlobalProgressValue = percent;
+                        GlobalProgressText = $"{percent}%";
+                        GlobalBusyMessage = $"{action} {pkg}...";
+                    }
+                }
+                else if (matchFormatted.Success)
+                {
+                    var pkg = matchFormatted.Groups[1].Value.Trim();
+                    if (int.TryParse(matchFormatted.Groups[2].Value, out var percent))
+                    {
+                        GlobalProgressValue = percent;
+                        GlobalProgressText = $"{percent}%";
+                        GlobalBusyMessage = $"Processing {pkg}...";
+                    }
+                }
+            });
     }
-    
+
+
+    private bool _isGlobalBusy;
+
+    public bool IsGlobalBusy
+    {
+        get => _isGlobalBusy;
+        set => this.RaiseAndSetIfChanged(ref _isGlobalBusy, value);
+    }
+
+    private string _globalBusyMessage = "Processing...";
+
+    public string GlobalBusyMessage
+    {
+        get => _globalBusyMessage;
+        set => this.RaiseAndSetIfChanged(ref _globalBusyMessage, value);
+    }
+
+    private int _globalProgressValue;
+
+    public int GlobalProgressValue
+    {
+        get => _globalProgressValue;
+        set => this.RaiseAndSetIfChanged(ref _globalProgressValue, value);
+    }
+
+    private string _globalProgressText = "0%";
+
+    public string GlobalProgressText
+    {
+        get => _globalProgressText;
+        set => this.RaiseAndSetIfChanged(ref _globalProgressText, value);
+    }
+
     private bool _isPaneOpen = false;
 
     public bool IsPaneOpen
@@ -280,38 +347,42 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
 
     #region Password Prompt
-    
+
     private bool _showPasswordPrompt;
+
     public bool ShowPasswordPrompt
     {
         get => _showPasswordPrompt;
         set => this.RaiseAndSetIfChanged(ref _showPasswordPrompt, value);
     }
-    
+
     private string _passwordPromptReason = string.Empty;
+
     public string PasswordPromptReason
     {
         get => _passwordPromptReason;
         set => this.RaiseAndSetIfChanged(ref _passwordPromptReason, value);
     }
-    
+
     private string _passwordInput = string.Empty;
+
     public string PasswordInput
     {
         get => _passwordInput;
         set => this.RaiseAndSetIfChanged(ref _passwordInput, value);
     }
-    
+
     private string _passwordErrorMessage = string.Empty;
+
     public string PasswordErrorMessage
     {
         get => _passwordErrorMessage;
         set => this.RaiseAndSetIfChanged(ref _passwordErrorMessage, value);
     }
-    
+
     public ReactiveCommand<Unit, Unit> SubmitPasswordCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelPasswordCommand { get; }
-    
+
     #endregion
 
     public void TogglePane()
@@ -477,9 +548,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     }
 
     #endregion
-    
+
     #region MenuItemsToggle
-    
+
     //Revisit later but works now easily for one set of items, may be a lot to manage in the future.
 
     private void TurnOffMenuItems()
@@ -488,50 +559,57 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         IsUpdateActive = false;
         IsRemoveActive = false;
     }
-    
+
     private bool _isRemoveActive;
+
     public bool IsRemoveActive
     {
         get => _isRemoveActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsInstallPackActive = false;
                 IsUpdateActive = false;
             }
+
             this.RaiseAndSetIfChanged(ref _isRemoveActive, value);
         }
     }
 
     private bool _isInstallPackActive;
+
     public bool IsInstallPackActive
     {
         get => _isInstallPackActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsRemoveActive = false;
                 IsUpdateActive = false;
             }
+
             this.RaiseAndSetIfChanged(ref _isInstallPackActive, value);
         }
     }
 
     private bool _isUpdateActive;
+
     public bool IsUpdateActive
     {
         get => _isUpdateActive;
-        set 
+        set
         {
-            if (value) 
+            if (value)
             {
                 IsRemoveActive = false;
                 IsInstallPackActive = false;
             }
+
             this.RaiseAndSetIfChanged(ref _isUpdateActive, value);
         }
     }
+
     #endregion
 }

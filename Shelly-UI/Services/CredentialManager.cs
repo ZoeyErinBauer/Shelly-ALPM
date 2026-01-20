@@ -94,37 +94,117 @@ public class CredentialManager : ICredentialManager
     public async Task<bool> RequestCredentialsAsync(string reason)
     {
         TaskCompletionSource<bool> tcs;
-        
+        bool shouldRaiseEvent = false;
+
         lock (_lock)
         {
             // If we already have validated credentials, return immediately
-            if (HasStoredCredentials && _isValidated)
+            if (HasStoredCredentials)
             {
                 return true;
             }
-            
-            // Create a new completion source for this request
-            _pendingRequest = new TaskCompletionSource<bool>();
-            tcs = _pendingRequest;
+
+            // If there's already a pending request, return its task
+            if (_pendingRequest != null)
+            {
+                tcs = _pendingRequest;
+            }
+            else
+            {
+                // Create a new completion source for this request
+                _pendingRequest = new TaskCompletionSource<bool>();
+                tcs = _pendingRequest;
+                shouldRaiseEvent = true;
+            }
         }
-        
-        // Raise the event to request credentials from the UI
-        CredentialRequested?.Invoke(this, new CredentialRequestEventArgs(reason));
-        
+
+        if (shouldRaiseEvent)
+        {
+            // Raise the event to request credentials from the UI
+            CredentialRequested?.Invoke(this, new CredentialRequestEventArgs(reason));
+        }
+
         // Wait for the UI to complete the request
         return await tcs.Task;
     }
 
-    public void CompleteCredentialRequest(bool success)
+    public async Task CompleteCredentialRequestAsync(bool success)
     {
         TaskCompletionSource<bool>? tcs;
-        
+
         lock (_lock)
         {
             tcs = _pendingRequest;
-            _pendingRequest = null;
         }
-        
-        tcs?.TrySetResult(success);
+
+        if (success)
+        {
+            var isValid = await ValidateInputCredentials();
+            if (isValid)
+            {
+                lock (_lock)
+                {
+                    _pendingRequest = null;
+                }
+                tcs?.TrySetResult(true);
+            }
+        }
+        else
+        {
+            lock (_lock)
+            {
+                _pendingRequest = null;
+            }
+            tcs?.TrySetResult(false);
+        }
+    }
+
+    public async Task<bool> ValidateInputCredentials()
+    {
+        var password = GetPassword();
+        var username = Environment.UserName;
+
+        using var process = new System.Diagnostics.Process();
+        process.StartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "su",
+            Arguments = $"-c true {username}",
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        try
+        {
+            process.Start();
+
+            // Pipe the password to su
+            await process.StandardInput.WriteLineAsync(password);
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine("Credentials verified successfully via su.");
+                MarkAsValidated();
+                return true;
+            }
+            else
+            {
+                Console.Error.WriteLine("Authentication failed via su. Clearing credentials.");
+                MarkAsInvalid();
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during authentication check: {ex.Message}");
+        }
+
+        return false;
     }
 }
