@@ -12,26 +12,26 @@ namespace PackageManager.Alpm
         public const string LibName = "alpm";
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void AlpmEventCallback(IntPtr eventPtr);
+        public delegate void AlpmEventCallback(IntPtr ctx, IntPtr eventPtr);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void AlpmQuestionCallback(IntPtr questionPtr);
+        public delegate void AlpmQuestionCallback(IntPtr ctx, IntPtr questionPtr);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void AlpmProgressCallback(IntPtr ctx, AlpmProgressType progress,
             IntPtr pkg, int percent, ulong howmany, ulong current);
         
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_eventcb")]
-        public static partial int SetEventCallback(IntPtr handle, AlpmEventCallback cb);
+        public static partial int SetEventCallback(IntPtr handle, AlpmEventCallback cb, IntPtr ctx);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int AlpmDownloadCallback(IntPtr ctx, IntPtr url, IntPtr localpath, int force);
+        public delegate int AlpmFetchCallback(IntPtr ctx, IntPtr url, IntPtr localpath, int force);
 
-        [LibraryImport(LibName, EntryPoint = "alpm_option_set_dlcb")]
-        public static partial int SetDownloadCallback(IntPtr handle, AlpmDownloadCallback cb, IntPtr ctx);
+        [LibraryImport(LibName, EntryPoint = "alpm_option_set_fetchcb")]
+        public static partial int SetFetchCallback(IntPtr handle, AlpmFetchCallback cb, IntPtr ctx);
 
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_questioncb")]
-        public static partial int SetQuestionCallback(IntPtr handle, AlpmQuestionCallback cb);
+        public static partial int SetQuestionCallback(IntPtr handle, AlpmQuestionCallback cb, IntPtr ctx);
 
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_progresscb")]
         public static partial int SetProgressCallback(IntPtr handle, AlpmProgressCallback cb, IntPtr ctx);

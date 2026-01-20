@@ -17,8 +17,12 @@ public partial class PackageWindow : ReactiveUserControl<PackageViewModel>
 {
     public PackageWindow()
     {
-        this.WhenActivated(disposables => { });
+      
         AvaloniaXamlLoader.Load(this);
+        this.WhenActivated(disposables =>
+        {
+            
+        });
     }
 
     private void OpenUrl_Click(object? sender, RoutedEventArgs e)

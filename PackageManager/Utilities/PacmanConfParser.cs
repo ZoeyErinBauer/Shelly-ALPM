@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using PackageManager.Alpm;
 
 namespace PackageManager.Utilities;
 
-public static class PacmanConfParser
+internal static class PacmanConfParser
 {
-    public static PacmanConf Parse(string path = "/etc/pacman.conf")
+    internal static PacmanConf Parse(string path = "/etc/pacman.conf")
     {
         var conf = new PacmanConf();
         if (!File.Exists(path)) return conf;
@@ -97,6 +98,8 @@ public static class PacmanConfParser
             case "noextract": conf.NoExtract.AddRange(value.Split(' ', StringSplitOptions.RemoveEmptyEntries)); break;
             case "usesyslog": conf.UseSyslog = true; break;
             case "checkspace": conf.CheckSpace = true; break;
+            case "siglevel": conf.SigLevel = ParseSigLevel(value.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList()); break;
+            case "localfilesiglevel": conf.LocalFileSigLevel = ParseSigLevel(value.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList()); break;
         }
     }
 
@@ -126,5 +129,59 @@ public static class PacmanConfParser
                 }
                 break;
         }
+    }
+    
+    private static AlpmSigLevel ParseSigLevel(IEnumerable<string> levels)
+    {
+        AlpmSigLevel result = AlpmSigLevel.None;
+
+        foreach (var level in levels)
+        {
+            switch (level.ToLowerInvariant())
+            {
+                // Package Settings
+                case "required":
+                case "packagerequired":
+                    result |= AlpmSigLevel.Package;
+                    break;
+                case "optional":
+                case "packageoptional":
+                    result |= AlpmSigLevel.PackageOptional;
+                    break;
+                case "packagemarginalok":
+                    result |= AlpmSigLevel.PackageMarginalOk;
+                    break;
+                case "packageunknownok":
+                    result |= AlpmSigLevel.PackageUnknownOk;
+                    break;
+
+                // Database Settings
+                case "databaserequired":
+                    result |= AlpmSigLevel.Database;
+                    break;
+                case "databaseoptional":
+                    result |= AlpmSigLevel.DatabaseOptional;
+                    break;
+                case "databasemarginalok":
+                    result |= AlpmSigLevel.DatabaseMarginalOk;
+                    break;
+                case "databaseunknownok":
+                    result |= AlpmSigLevel.DatabaseUnknownOk;
+                    break;
+
+                // Meta
+                case "never":
+                    result = AlpmSigLevel.None;
+                    break;
+                case "trustall":
+                    result |= AlpmSigLevel.PackageUnknownOk | AlpmSigLevel.PackageMarginalOk | AlpmSigLevel.DatabaseUnknownOk | AlpmSigLevel.DatabaseMarginalOk;
+                    break;
+                case "usedefault":
+                    result |= AlpmSigLevel.UseDefault;
+                    break;
+            }
+        }
+
+        return result;
     }
 }

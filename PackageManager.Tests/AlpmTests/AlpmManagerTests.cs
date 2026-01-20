@@ -91,7 +91,7 @@ public class AlpmManagerTests
             // Use reflection to call the private HandleQuestion method
             var method = typeof(AlpmManager).GetMethod("HandleQuestion",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            method.Invoke(_manager, new object[] { questionPtr });
+            method.Invoke(_manager, new object[] { IntPtr.Zero, questionPtr });
 
             // Assert
             Assert.That(questionTriggered, Is.True);

@@ -2,11 +2,15 @@
 
 ![Shelly Wiki](https://img.shields.io/badge/Shelly-Wiki-blue)
 
-Shelly is a modern, visual package manager for Arch Linux, built with .NET 10 and Avalonia. It provides a user-friendly
-interface for managing your Arch Linux system's packages by leveraging the power of `libalpm`.
+### About
+Shelly is a modern reinmagination of the Arch Linux package manager, designed to be a more intuitive and user-friendly
+alternative to `pacman` and `octopi`. Unlike other Arch package managers, Shelly offers a modern, visual interface with a focus on
+user experience and ease of use; It **IS NOT** built as a `pacman` wrapper or front-end. It is a complete reimagination of how a user
+interacts with their Arch Linux system, providing a more streamlined and intuitive experience.
+
 
 ## Features
-
+- **Modern-CLI**: Provides a command-line interface for advanced users and automation, with a focus on ease of use.
 - **Native Arch Integration**: Directly interacts with `libalpm` for accurate and fast package management.
 - **Modern UI Framework**: Built using [Avalonia UI](https://avaloniaui.net/), ensuring a modern and responsive
   user interface.
@@ -35,7 +39,6 @@ Upcoming features and development targets:
 ### Using PKGBUILD
 
 Since Shelly is designed for Arch Linux, you can build and install it using the provided `PKGBUILD`:
-
 ```bash
 git clone https://github.com/ZoeyErinBauer/Shelly-ALPM.git
 cd Shelly-ALPM
@@ -48,7 +51,13 @@ You can also build the project manually using the .NET CLI:
 
 ```bash
 dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
+dotnet publish Shelly-CLI/Shelly-CLI.csproj -C Release -o publish/shelly-cli
 ```
+alternatively you can run
+```bash
+sudo ./local-install.sh
+```
+This will build and perform the functions of install.sh
 
 The binary will be located in the `/publish/shelly-ui/` directory.
 
@@ -59,8 +68,7 @@ Run the application from your terminal or application launcher:
 ```bash
 shelly-ui
 ```
-
-*Note: Shelly will relaunch itself as root using pkexec if not already running as root.*
+In it's install location or by opening it from your applications menu.
 
 ## Shelly-CLI
 
@@ -103,34 +111,34 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 ```bash
 # Synchronize package databases
-shelly-cli sync
+shelly sync
 
 # Force sync even if up to date
-shelly-cli sync --force
+shelly sync --force
 
 # List all installed packages
-shelly-cli list-installed
+shelly list-installed
 
 # List packages needing updates
-shelly-cli list-updates
+shelly list-updates
 
 # Install packages
-shelly-cli install firefox vim
+shelly install firefox vim
 
 # Install without confirmation
-shelly-cli install --no-confirm firefox
+shelly install --no-confirm firefox
 
 # Remove packages
-shelly-cli remove firefox
+shelly remove firefox
 
 # Update specific packages
-shelly-cli update firefox vim
+shelly update firefox vim
 
 # Perform full system upgrade
-shelly-cli upgrade
+shelly upgrade
 
 # System upgrade without confirmation
-shelly-cli upgrade --no-confirm
+shelly upgrade --no-confirm
 ```
 
 ## Development

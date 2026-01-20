@@ -38,4 +38,24 @@ Categories=System;Utility;
 Terminal=false
 EOF
 
+REAL_USER=${SUDO_USER:-$USER}
+USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
+
+USER_DESKTOP="$USER_HOME/Desktop"
+
+if [ -d "$USER_DESKTOP" ]; then
+    echo "Creating desktop icon for user: $REAL_USER"
+    cp /usr/share/applications/shelly.desktop "$USER_DESKTOP/shelly.desktop"
+    
+    # Ensure the user owns the file and it's executable
+    chown "$REAL_USER":"$REAL_USER" "$USER_DESKTOP/shelly.desktop"
+    chmod +x "$USER_DESKTOP/shelly.desktop"
+    
+    # Mark as trusted (specific to some desktop environments like GNOME/KDE)
+    gio set "$USER_DESKTOP/shelly.desktop" metadata::trusted true 2>/dev/null || true
+else
+    echo "Desktop directory not found for $REAL_USER, skipping desktop icon."
+fi
+
 echo "Installation complete!"

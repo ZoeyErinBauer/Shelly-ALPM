@@ -95,7 +95,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
             await Task.Run(() => _alpmManager.Initialize());
             var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
 
-            var installed = await Task.Run(() => _alpmManager.GetInstalledPackages());
+            var installed = await Task.Run(() => _alpmManager.GetInstalledPackages());   
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
             var models = packages.Select(u => new PackageModel

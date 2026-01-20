@@ -32,17 +32,17 @@ public class ConsoleLogService : TextWriter
         Console.SetError(this);
     }
 
-    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    private const string ShellyPrefix = "[Shelly]";
     
     public override void WriteLine(string? value)
     {
         if (value != null)
         {
-            // Only process logs that start with [Shelly-CLI] prefix
-            if (value.StartsWith(ShellyCLIPrefix))
+            // Only process logs that start with [Shelly] prefix
+            if (value.StartsWith(ShellyPrefix))
             {
                 // Remove the prefix for display
-                var logMessage = value.Substring(ShellyCLIPrefix.Length);
+                var logMessage = value.Substring(ShellyPrefix.Length);
                 
                 // Check if the message contains a percentage pattern and update package progress
                 var match = PercentagePattern.Match(logMessage);

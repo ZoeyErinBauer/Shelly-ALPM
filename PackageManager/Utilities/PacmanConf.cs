@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using PackageManager.Alpm;
 
 namespace PackageManager.Utilities;
 
-public record PacmanConf
+internal record PacmanConf
 {
     public string RootDirectory { get; set; } = "/";
     public string DbPath { get; set; } = "/var/lib/pacman";
@@ -22,10 +23,15 @@ public record PacmanConf
     public bool UseSyslog { get; set; } = false;
     public bool CheckSpace { get; set; } = false;
     public List<Repository> Repos { get; set; } = [];
+    public AlpmSigLevel SigLevel { get; set; } = AlpmSigLevel.Package | AlpmSigLevel.DatabaseOptional;
+    public AlpmSigLevel LocalFileSigLevel { get; set; } = AlpmSigLevel.PackageOptional | AlpmSigLevel.DatabaseOptional;
+    public AlpmSigLevel RemoteFileSigLevel { get; set; } = AlpmSigLevel.Package | AlpmSigLevel.Database;
 }
 
-public class Repository
+internal class Repository
 {
     public string Name { get; set; } = string.Empty;
     public List<string> Servers { get; set; } = [];
+
+    public AlpmSigLevel SigLevel { get; set; } = AlpmSigLevel.UseDefault;
 }

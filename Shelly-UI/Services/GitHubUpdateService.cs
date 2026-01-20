@@ -39,7 +39,14 @@ public class GitHubUpdateService : IUpdateService
             Console.Error.WriteLine($"[DEBUG] Current version: {currentVersion?.ToString(3)}");
             if (currentVersion == null) return false;
 
-            if (Version.TryParse(_latestRelease.TagName.TrimStart('v').TrimEnd("-alpha"), out var latestVersion))
+            var versionString = _latestRelease.TagName.TrimStart('v');
+            var dashIndex = versionString.IndexOf('-');
+            if (dashIndex != -1)
+            {
+                versionString = versionString.Substring(0, dashIndex);
+            }
+
+            if (Version.TryParse(versionString, out var latestVersion))
             {
                 Console.Error.WriteLine($"[DEBUG] Current version: {currentVersion}, Latest version: {latestVersion}");
                 return latestVersion > currentVersion;

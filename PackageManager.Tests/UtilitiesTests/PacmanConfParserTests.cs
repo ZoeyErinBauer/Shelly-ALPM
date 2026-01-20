@@ -2,11 +2,12 @@ using NUnit.Framework;
 using PackageManager.Utilities;
 using System.IO;
 using System.Linq;
+using PackageManager.Alpm;
 
 namespace PackageManager.Tests.UtilitiesTests;
 
 [TestFixture]
-public class PacmanConfParserTests
+internal class PacmanConfParserTests
 {
     private string _testConfPath;
 
@@ -91,5 +92,27 @@ Server = https://another-mirror.example.com/extra/os/$arch
     public void Parse_SystemConfig_DoesNotThrow()
     {
         Assert.DoesNotThrow(() => PacmanConfParser.Parse());
+    }
+
+    [Test]
+    [TestCase("Required DatabaseOptional", AlpmSigLevel.Package | AlpmSigLevel.DatabaseOptional)]
+    [TestCase("Never", AlpmSigLevel.None)]
+    [TestCase("Optional TrustAll", AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk | AlpmSigLevel.PackageMarginalOk | AlpmSigLevel.DatabaseUnknownOk | AlpmSigLevel.DatabaseMarginalOk)]
+    [TestCase("PackageRequired DatabaseRequired", AlpmSigLevel.Package | AlpmSigLevel.Database)]
+    [TestCase("UseDefault", AlpmSigLevel.UseDefault)]
+    public void Parse_SigLevel_CorrectlyParsed(string sigLevelValue, AlpmSigLevel expected)
+    {
+        var mainPath = Path.GetTempFileName();
+        File.WriteAllText(mainPath, $"[options]\nSigLevel = {sigLevelValue}");
+
+        try
+        {
+            var conf = PacmanConfParser.Parse(mainPath);
+            Assert.That(conf.SigLevel, Is.EqualTo(expected));
+        }
+        finally
+        {
+            if (File.Exists(mainPath)) File.Delete(mainPath);
+        }
     }
 }

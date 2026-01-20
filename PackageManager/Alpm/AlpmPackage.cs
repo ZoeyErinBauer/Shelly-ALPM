@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PackageManager.Alpm;
 
@@ -14,16 +15,17 @@ public class AlpmPackage(IntPtr pkgPtr)
     public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr));
 
     public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr));
-    
-    public string Repository 
+
+    public string Repository
     {
-        get 
+        get
         {
             IntPtr dbPtr = AlpmReference.GetPkgDb(PackagePtr);
-            if (dbPtr == IntPtr.Zero) 
+            if (dbPtr == IntPtr.Zero)
             {
                 return "local"; // Or handle as an installed/local package
             }
+
             IntPtr namePtr = AlpmReference.DbGetName(dbPtr);
             return Marshal.PtrToStringUTF8(namePtr) ?? string.Empty;
         }
@@ -61,4 +63,5 @@ public class AlpmPackage(IntPtr pkgPtr)
     {
         return $"Package: {Name}, Version: {Version}, Size: {Size} bytes";
     }
+    
 }

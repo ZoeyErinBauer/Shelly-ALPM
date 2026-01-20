@@ -6,6 +6,7 @@
         <!-- Enable Native AOT -->
         <PublishAot>true</PublishAot>
         <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
 </Project>

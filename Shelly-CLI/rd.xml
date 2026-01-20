@@ -2,7 +2,7 @@
   <Application>
     <Assembly Name="Spectre.Console" Dynamic="Required All" />
     <Assembly Name="Spectre.Console.Cli" Dynamic="Required All" />
-    <Assembly Name="Shelly-CLI" Dynamic="Required All">
+    <Assembly Name="shelly" Dynamic="Required All">
       <Type Name="Shelly_CLI.SyncSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.SyncCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.ListInstalledCommand" Dynamic="Required All" />
@@ -14,6 +14,13 @@
       <Type Name="Shelly_CLI.UpdateCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.UpgradeSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.UpgradeCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringInitCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringPopulateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringRecvCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringLsignCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringListCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.KeyringRefreshCommand" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Shelly_CLI;
 
@@ -12,7 +13,7 @@ public class DualOutputWriter : TextWriter
 {
     private readonly TextWriter _primary;
     private readonly TextWriter _stderr;
-    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    private const string ShellyPrefix = "[Shelly]";
     
     public DualOutputWriter(TextWriter primary, TextWriter stderr)
     {
@@ -24,7 +25,7 @@ public class DualOutputWriter : TextWriter
     {
         _primary.WriteLine(value);
         // Also write to stderr with prefix for UI capture
-        _stderr.WriteLine($"{ShellyCLIPrefix}{value}");
+        _stderr.WriteLine($"{ShellyPrefix}{value}");
     }
     
     public override void Write(string? value)
@@ -43,7 +44,7 @@ public class DualOutputWriter : TextWriter
 public class StderrPrefixWriter : TextWriter
 {
     private readonly TextWriter _stderr;
-    private const string ShellyCLIPrefix = "[Shelly-CLI]";
+    private const string ShellyPrefix = "[Shelly]";
     
     public StderrPrefixWriter(TextWriter stderr)
     {
@@ -52,7 +53,7 @@ public class StderrPrefixWriter : TextWriter
     
     public override void WriteLine(string? value)
     {
-        _stderr.WriteLine($"{ShellyCLIPrefix}{value}");
+        _stderr.WriteLine($"{ShellyPrefix}{value}");
     }
     
     public override void Write(string? value)
@@ -68,27 +69,84 @@ public class StderrPrefixWriter : TextWriter
     public override Encoding Encoding => _stderr.Encoding;
 }
 
+/// <summary>
+/// A TextWriter that filters out lines containing [bracketed] patterns when running in terminal mode.
+/// </summary>
+public class FilteringTextWriter : TextWriter
+{
+    private readonly TextWriter _inner;
+    private static readonly Regex BracketedPattern = new Regex(@"\[[^\]]+\]", RegexOptions.Compiled);
+    
+    public FilteringTextWriter(TextWriter inner)
+    {
+        _inner = inner;
+    }
+    
+    public override void WriteLine(string? value)
+    {
+        // Filter out lines that contain [somestring] patterns
+        if (value != null && BracketedPattern.IsMatch(value))
+        {
+            return; // Skip this line
+        }
+        _inner.WriteLine(value);
+    }
+    
+    public override void Write(string? value)
+    {
+        // For Write (without newline), pass through as-is since we filter on complete lines
+        _inner.Write(value);
+    }
+    
+    public override void Write(char value)
+    {
+        _inner.Write(value);
+    }
+    
+    public override Encoding Encoding => _inner.Encoding;
+}
+
 public class Program
 {
     public static int Main(string[] args)
     {
-        // Configure stderr to use prefix for UI integration
-        var stderrWriter = new StderrPrefixWriter(Console.Error);
-        Console.SetError(stderrWriter);
+        // Check if running in UI mode (--ui-mode flag passed by Shelly-UI)
+        var argsList = args.ToList();
+        var isUiMode = argsList.Remove("--ui-mode");
+        args = argsList.ToArray();
         
-        // Configure AnsiConsole to use DualOutputWriter for UI integration
-        var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
-        Console.SetOut(dualWriter);
-        AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+        if (isUiMode)
         {
-            Out = new AnsiConsoleOutput(dualWriter)
-        });
+            // Configure stderr to use prefix for UI integration
+            var stderrWriter = new StderrPrefixWriter(Console.Error);
+            Console.SetError(stderrWriter);
+            
+            // Configure AnsiConsole to use DualOutputWriter for UI integration
+            var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
+            Console.SetOut(dualWriter);
+            AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(dualWriter)
+            });
+        }
+        else
+        {
+            // When running from terminal, filter out lines containing [bracketed] patterns
+            var filteringStdout = new FilteringTextWriter(Console.Out);
+            var filteringStderr = new FilteringTextWriter(Console.Error);
+            Console.SetOut(filteringStdout);
+            Console.SetError(filteringStderr);
+            AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(filteringStdout)
+            });
+        }
         
         var app = new CommandApp();
         app.Configure(config =>
         {
-            config.SetApplicationName("shelly-cli");
-            config.SetApplicationVersion("1.0.0");
+            config.SetApplicationName("shelly");
+            config.SetApplicationVersion("1.2.2");
 
             config.AddCommand<SyncCommand>("sync")
                 .WithDescription("Synchronize package databases");
@@ -113,6 +171,29 @@ public class Program
 
             config.AddCommand<UpgradeCommand>("upgrade")
                 .WithDescription("Perform a full system upgrade");
+
+            config.AddBranch("keyring", keyring =>
+            {
+                keyring.SetDescription("Manage pacman keyring");
+                
+                keyring.AddCommand<KeyringInitCommand>("init")
+                    .WithDescription("Initialize the pacman keyring");
+                
+                keyring.AddCommand<KeyringPopulateCommand>("populate")
+                    .WithDescription("Reload keys from keyrings in /usr/share/pacman/keyrings");
+                
+                keyring.AddCommand<KeyringRecvCommand>("recv")
+                    .WithDescription("Receive keys from a keyserver");
+                
+                keyring.AddCommand<KeyringLsignCommand>("lsign")
+                    .WithDescription("Locally sign the specified key(s)");
+                
+                keyring.AddCommand<KeyringListCommand>("list")
+                    .WithDescription("List all keys in the keyring");
+                
+                keyring.AddCommand<KeyringRefreshCommand>("refresh")
+                    .WithDescription("Refresh keys from the keyserver");
+            });
         });
 
         return app.Run(args);
@@ -136,7 +217,7 @@ public class SyncCommand : Command<SyncSettings>
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         AnsiConsole.Status()
@@ -161,7 +242,7 @@ public class ListInstalledCommand : Command
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         var packages = manager.GetInstalledPackages();
@@ -340,7 +421,7 @@ public class InstallCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -406,7 +487,7 @@ public class RemoveCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -422,7 +503,7 @@ public class RemoveCommand : Command<PackageSettings>
             .Spinner(Spinner.Known.Dots)
             .Start("Initializing ALPM...", ctx =>
             {
-                manager.Initialize();
+                manager.Initialize(true);
             });
 
         AnsiConsole.Status()
@@ -472,7 +553,7 @@ public class UpdateCommand : Command<PackageSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -537,7 +618,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
             if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly-CLI][ALPM_QUESTION]{args.QuestionText}");
+                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
                 args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
@@ -574,5 +655,176 @@ public static class StringExtensions
     {
         if (string.IsNullOrEmpty(value)) return value;
         return value.Length <= maxLength ? value : value[..(maxLength - 3)] + "...";
+    }
+}
+
+// Keyring command settings
+public class KeyringSettings : CommandSettings
+{
+    [CommandArgument(0, "[keys]")]
+    [Description("Key IDs or fingerprints to operate on")]
+    public string[]? Keys { get; set; }
+    
+    [CommandOption("--keyserver <server>")]
+    [Description("Keyserver to use for receiving keys")]
+    public string? Keyserver { get; set; }
+}
+
+// Helper class for running pacman-key commands
+public static class PacmanKeyRunner
+{
+    public static int Run(string args)
+    {
+        var process = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "pacman-key",
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            }
+        };
+        
+        process.OutputDataReceived += (s, e) => { if (e.Data != null) AnsiConsole.WriteLine(e.Data); };
+        process.ErrorDataReceived += (s, e) => { if (e.Data != null) AnsiConsole.MarkupLine($"[red]{Markup.Escape(e.Data)}[/]"); };
+        
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit();
+        
+        return process.ExitCode;
+    }
+}
+
+public class KeyringInitCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        AnsiConsole.MarkupLine("[yellow]Initializing pacman keyring...[/]");
+        var result = PacmanKeyRunner.Run("--init");
+        if (result == 0)
+        {
+            AnsiConsole.MarkupLine("[green]Keyring initialized successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[red]Failed to initialize keyring.[/]");
+        }
+        return result;
+    }
+}
+
+public class KeyringPopulateCommand : Command<KeyringSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
+    {
+        var args = "--populate";
+        if (settings.Keys?.Length > 0)
+        {
+            args += " " + string.Join(" ", settings.Keys);
+            AnsiConsole.MarkupLine($"[yellow]Populating keyring with: {string.Join(", ", settings.Keys)}...[/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[yellow]Populating keyring with default keys...[/]");
+        }
+        
+        var result = PacmanKeyRunner.Run(args);
+        if (result == 0)
+        {
+            AnsiConsole.MarkupLine("[green]Keyring populated successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[red]Failed to populate keyring.[/]");
+        }
+        return result;
+    }
+}
+
+public class KeyringRecvCommand : Command<KeyringSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
+    {
+        if (settings.Keys == null || settings.Keys.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
+            return 1;
+        }
+        
+        var args = "--recv-keys " + string.Join(" ", settings.Keys);
+        if (!string.IsNullOrEmpty(settings.Keyserver))
+        {
+            args += $" --keyserver {settings.Keyserver}";
+        }
+        
+        AnsiConsole.MarkupLine($"[yellow]Receiving keys: {string.Join(", ", settings.Keys)}...[/]");
+        var result = PacmanKeyRunner.Run(args);
+        if (result == 0)
+        {
+            AnsiConsole.MarkupLine("[green]Keys received successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[red]Failed to receive keys.[/]");
+        }
+        return result;
+    }
+}
+
+public class KeyringLsignCommand : Command<KeyringSettings>
+{
+    public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
+    {
+        if (settings.Keys == null || settings.Keys.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
+            return 1;
+        }
+        
+        AnsiConsole.MarkupLine($"[yellow]Locally signing keys: {string.Join(", ", settings.Keys)}...[/]");
+        
+        foreach (var key in settings.Keys)
+        {
+            var result = PacmanKeyRunner.Run($"--lsign-key {key}");
+            if (result != 0)
+            {
+                AnsiConsole.MarkupLine($"[red]Failed to sign key: {key}[/]");
+                return result;
+            }
+        }
+        
+        AnsiConsole.MarkupLine("[green]Keys signed successfully![/]");
+        return 0;
+    }
+}
+
+public class KeyringListCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        AnsiConsole.MarkupLine("[yellow]Listing keys in keyring...[/]");
+        return PacmanKeyRunner.Run("--list-keys");
+    }
+}
+
+public class KeyringRefreshCommand : Command
+{
+    public override int Execute([NotNull] CommandContext context)
+    {
+        AnsiConsole.MarkupLine("[yellow]Refreshing keys from keyserver...[/]");
+        var result = PacmanKeyRunner.Run("--refresh-keys");
+        if (result == 0)
+        {
+            AnsiConsole.MarkupLine("[green]Keys refreshed successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[red]Failed to refresh keys.[/]");
+        }
+        return result;
     }
 }
