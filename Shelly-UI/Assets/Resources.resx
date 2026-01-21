@@ -123,4 +123,7 @@
     <data name="PackageRepository" xml:space="preserve">
         <value>PackageRepository</value>
     </data>
+    <data name="ForceSync" xml:space="preserve">
+        <value>Force Database Update</value>
+    </data>
 </root>

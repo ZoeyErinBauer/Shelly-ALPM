@@ -53,7 +53,12 @@ public interface ICredentialManager
     /// <summary>
     /// Completes a pending credential request.
     /// </summary>
-    void CompleteCredentialRequest(bool success);
+    Task CompleteCredentialRequestAsync(bool success);
+    
+    /// <summary>
+    /// Validates the stored credentials with sudo su.
+    /// </summary>
+    Task<bool> ValidateInputCredentials();
 }
 
 public class CredentialRequestEventArgs : EventArgs

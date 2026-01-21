@@ -32,7 +32,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             throw new InvalidOperationException("HOME environment variable is not set.");
         }
         var debugPath =
-            Path.Combine(home!,"RiderProjects/Shelly-ALPM/Shelly/bin/Debug/net10.0/linux-x64/Shelly");
+            Path.Combine(home!,"RiderProjects/Shelly-ALPM/Shelly-CLI/bin/Debug/net10.0/linux-x64/shelly");
         Console.Error.WriteLine($"Debug path: {debugPath}");
         #endif
         
@@ -65,7 +65,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<OperationResult> SyncDatabasesAsync()
     {
-        return await ExecutePrivilegedCommandAsync("Synchronize package databases", "sync", "--force");
+        return await ExecutePrivilegedCommandAsync("Synchronize package databases", "sync");
     }
 
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
@@ -89,6 +89,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> UpgradeSystemAsync()
     {
         return await ExecutePrivilegedCommandAsync("Upgrade system", "upgrade", "--no-confirm");
+    }
+
+    public async  Task<OperationResult> ForceSyncDatabaseAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");
+        
     }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)

@@ -21,12 +21,16 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
+    private readonly ICredentialManager _credentialManager;
 
-    public UpdateViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
+
+    public UpdateViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
+        ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
         PackagesForUpdating = new ObservableCollection<UpdateModel>();
+        _credentialManager = credentialManager;
 
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.PackagesForUpdating.Count, (s, c) => s)
@@ -38,7 +42,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         AlpmUpdateCommand = ReactiveCommand.CreateFromTask(AlpmUpdate);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<UpdateModel>(TogglePackageCheck);
-        
+
         LoadData();
     }
 
@@ -51,6 +55,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 Console.WriteLine($"Failed to sync databases: {result.Error}");
             }
+
             // Re-initialize the local alpm manager to pick up synced data
             await Task.Run(() => _alpmManager.Initialize());
             RxApp.MainThreadScheduler.Schedule(() =>
@@ -70,57 +75,94 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         var selectedPackages = PackagesForUpdating.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            var result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
-            if (!result.Success)
+            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+            try
             {
-                Console.WriteLine($"Failed to update packages: {result.Error}");
+                // Request credentials 
+                if (!_credentialManager.IsValidated)
+                {
+                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+
+                    if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
+
+                    var isValidated = await _credentialManager.ValidateInputCredentials();
+
+                    if (!isValidated) return;
+                }
+
+
+                // Set busy
+                if (mainWindow != null)
+                {
+                    mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalProgressText = "0%";
+                    mainWindow.IsGlobalBusy = true;
+                    mainWindow.GlobalBusyMessage = "Updating selected packages...";
+                }
+
+                //do work
+                var result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to update packages: {result.Error}");
+                }
+
+                await Sync();
             }
-            await Sync();
+            finally
+            {
+                //always exit globally busy in case of failure
+                if (mainWindow != null)
+                {
+                    mainWindow.IsGlobalBusy = false;
+                }
+            }
         }
     }
 
     private async void LoadData()
-    {
-        try
         {
-            //await Task.Run(() => _alpmManager.IntializeWithSync());
-            var updates = await Task.Run(() => AlpmService.Instance.GetPackagesNeedingUpdate());
-
-            var models = updates.Select(u => new UpdateModel
+            try
             {
-                Name = u.Name,
-                CurrentVersion = u.CurrentVersion,
-                NewVersion = u.NewVersion,
-                DownloadSize = u.DownloadSize,
-                IsChecked = false
-            }).ToList();
+                //await Task.Run(() => _alpmManager.IntializeWithSync());
+                var updates = await Task.Run(() => AlpmService.Instance.GetPackagesNeedingUpdate());
 
-            RxApp.MainThreadScheduler.Schedule(() =>
-            {
-                foreach (var model in models)
+                var models = updates.Select(u => new UpdateModel
                 {
-                    PackagesForUpdating.Add(model);
-                }
+                    Name = u.Name,
+                    CurrentVersion = u.CurrentVersion,
+                    NewVersion = u.NewVersion,
+                    DownloadSize = u.DownloadSize,
+                    IsChecked = false
+                }).ToList();
 
-                this.RaisePropertyChanged(nameof(PackagesForUpdating));
-            });
+                RxApp.MainThreadScheduler.Schedule(() =>
+                {
+                    foreach (var model in models)
+                    {
+                        PackagesForUpdating.Add(model);
+                    }
+
+                    this.RaisePropertyChanged(nameof(PackagesForUpdating));
+                });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to load package updates: {e.Message}");
+            }
         }
-        catch (Exception e)
+
+        private IEnumerable<UpdateModel> Search(string? searchText)
         {
-            Console.WriteLine($"Failed to load package updates: {e.Message}");
-        }
-    }
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return PackagesForUpdating;
+            }
 
-    private IEnumerable<UpdateModel> Search(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return PackagesForUpdating;
+            return PackagesForUpdating.Where(p =>
+                p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
         }
-
-        return PackagesForUpdating.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-    }
 
     public ObservableCollection<AlpmPackageDto> AvailablePackages { get; set; }
 
@@ -148,13 +190,13 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public ObservableCollection<UpdateModel> PackagesForUpdating { get; set; }
-    
+
     private void TogglePackageCheck(UpdateModel package)
     {
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-    
+
     public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
 }

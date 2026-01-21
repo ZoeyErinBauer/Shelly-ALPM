@@ -51,6 +51,12 @@
                       IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">
         </ToggleSwitch>
         <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False" IsChecked="{Binding EnableSnap, Mode=TwoWay}"></ToggleSwitch>
+        <Button Content="{x:Static lang:Resources.ForceSync}"
+                Command="{Binding ForceSyncUpdateCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Background="{DynamicResource SystemAccentColor}"
+                Foreground="{DynamicResource SystemBaseHighColor}" />
         <Button Content="{Binding UpdateAvailableText}"
                 Command="{Binding CheckForUpdatesCommand}"
                 IsVisible="{Binding IsUpdateCheckVisible}"

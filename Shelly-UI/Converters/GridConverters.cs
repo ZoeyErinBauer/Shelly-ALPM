@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
+using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 
 namespace Shelly_UI.Converters;
@@ -9,7 +10,10 @@ public class BottomPanelHeightConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (!new ConfigService().LoadConfig().ConsoleEnabled)
+        
+        var configService = App.Services.GetRequiredService<IConfigService>();
+        
+        if (!configService.LoadConfig().ConsoleEnabled)
         {
             return new Avalonia.Controls.GridLength(0);
         }

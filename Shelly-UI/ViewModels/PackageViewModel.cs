@@ -6,9 +6,6 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Avalonia.Controls;
-using DynamicData;
-using DynamicData.Binding;
 using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
@@ -29,41 +26,40 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
 
     private readonly ConfigService _configService = new();
-    
+
     private IAppCache _appCache;
-    
-    public PackageViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
+    private readonly ICredentialManager _credentialManager;
+
+    public PackageViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService,
+        ICredentialManager credentialManager)
     {
         HostScreen = screen;
         AvaliablePackages = new ObservableCollection<PackageModel>();
-        
+
         _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
-        
+        _credentialManager = credentialManager;
+
         // Always initialize ConsoleLogService to ensure stderr interception is active
         // This is needed even when console is disabled so that logs from CLI are captured
         var _ = ConsoleLogService.Instance;
-        
+
         _filteredPackages = this
             .WhenAnyValue(x => x.SearchText, x => x.AvaliablePackages.Count, (s, c) => s)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Select(Search)
             .ToProperty(this, x => x.FilteredPackages);
-        
+
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
-        
-        LoadData();
+
         // Load data when the view model is activated (navigated to)
-        // this.WhenActivated((System.Reactive.Disposables.CompositeDisposable disposables) =>
-        // {
-        //     LoadData();
-        // });
+        LoadData();
     }
-    
-    
+
+
     private async Task Sync()
     {
         try
@@ -73,6 +69,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
+
             // Re-initialize the local alpm manager to pick up synced data
             await Task.Run(() => _alpmManager.Initialize());
             // Clear cache and reload data by storing null
@@ -97,7 +94,8 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
         {
             await Task.Run(() => _alpmManager.Initialize());
             var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
-            var installed =  await Task.Run(() => _alpmManager.GetInstalledPackages());
+
+            var installed = await Task.Run(() => _alpmManager.GetInstalledPackages());   
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
             var models = packages.Select(u => new PackageModel
@@ -157,15 +155,53 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     private async Task AlpmInstall()
     {
         var selectedPackages = AvaliablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+
         if (selectedPackages.Any())
         {
-            ShowConfirmDialog = false;
-            var result = await _privilegedOperationService.InstallPackagesAsync(selectedPackages);
-            if (!result.Success)
+            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+            try
             {
-                Console.WriteLine($"Failed to install packages: {result.Error}");
+                ShowConfirmDialog = false;
+
+                if (!_credentialManager.IsValidated)
+                {
+                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+
+                    if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
+
+                    var isValidated = await _credentialManager.ValidateInputCredentials();
+
+                    if (!isValidated) return;
+                }
+
+
+                // Set busy
+                if (mainWindow != null)
+                {
+                    mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalProgressText = "0%";
+                    mainWindow.IsGlobalBusy = true;
+                    mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                }
+
+                //do work
+                var result = await _privilegedOperationService.InstallPackagesAsync(selectedPackages);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to install packages: {result.Error}");
+                }
+
+                await Sync();
             }
-            await Sync();
+            finally
+            {
+                //always exit globally busy in case of failure
+                if (mainWindow != null)
+                {
+                    mainWindow.IsGlobalBusy = false;
+                }
+            }
         }
         else
         {
@@ -179,7 +215,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-    
+
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }

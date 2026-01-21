@@ -1,10 +1,8 @@
-using System;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
-using ReactiveUI;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels;
@@ -16,6 +14,8 @@ public partial class App : Application
 {
     private ServiceProvider _services = null!;
 
+    public static ServiceProvider Services => ((App)Current!)._services;
+    
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

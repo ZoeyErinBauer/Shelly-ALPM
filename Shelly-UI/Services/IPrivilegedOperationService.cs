@@ -10,6 +10,7 @@ public interface IPrivilegedOperationService
     Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpgradeSystemAsync();
+    Task<OperationResult> ForceSyncDatabaseAsync();
 }
 
 public class OperationResult

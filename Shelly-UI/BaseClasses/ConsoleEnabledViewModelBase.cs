@@ -1,7 +1,4 @@
-using System;
-using System.Reactive.Linq;
-using DynamicData;
-using DynamicData.Binding;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Shelly_UI.Services;
 using Shelly_UI.ViewModels;
@@ -10,8 +7,6 @@ namespace Shelly_UI.BaseClasses;
 
 public abstract class ConsoleEnabledViewModelBase : ViewModelBase
 {
-    private readonly ConfigService _configService = new();
-    
     // Expose the collection directly for the custom control
     public System.Collections.ObjectModel.ObservableCollection<string> Logs => 
         ConsoleLogService.Instance.Logs;
@@ -33,7 +28,7 @@ public abstract class ConsoleEnabledViewModelBase : ViewModelBase
 
     protected ConsoleEnabledViewModelBase()
     {
-        var consoleEnabled = _configService.LoadConfig().ConsoleEnabled;
+        var consoleEnabled =  App.Services.GetRequiredService<IConfigService>().LoadConfig().ConsoleEnabled;
         _isBottomPanelVisible = consoleEnabled;
     }
 
