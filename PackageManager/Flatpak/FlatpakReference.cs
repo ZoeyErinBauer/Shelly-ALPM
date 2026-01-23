@@ -76,6 +76,16 @@ internal static partial class FlatpakReference
 
     #endregion
 
+    #region Remotes
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_installation_list_remotes", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr InstallationListRemotes(IntPtr installation, IntPtr cancellable, out IntPtr error);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_remote_get_name", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr RemoteGetName(IntPtr remote);
+
+    #endregion
+
     #region Transaction
 
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_new_for_installation", StringMarshalling = StringMarshalling.Utf8)]
@@ -84,7 +94,16 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_install", StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionAddInstall(IntPtr transaction, string remote, string @ref, IntPtr subpaths, out IntPtr error);
+    
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_uninstall", StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TransactionAddUninstall(IntPtr transaction, string @ref, out IntPtr error);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_update", StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TransactionAddUpdate(IntPtr transaction, string @ref, IntPtr subpaths, string? commit, out IntPtr error);
+
+    
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_run", StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionRun(IntPtr transaction, IntPtr cancellable, out IntPtr error);

@@ -3,48 +3,33 @@ using System.Diagnostics.CodeAnalysis;
 using PackageManager.Flatpak;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Shelly_CLI;
 
 public class Flatpak
 {
-// Helper class for running pacman-key commands
-    public static class FlatpakRunner
+    public sealed class FlathubSearchSettings : CommandSettings
     {
-        public static int Run(string args)
-        {
-            var process = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "flatpak",
-                    Arguments = args,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false
-                }
-            };
+        [CommandArgument(0, "<query>")]
+        [Description("Search term (passed to Flathub API as 'q')")]
+        public string Query { get; init; } = string.Empty;
 
-            process.OutputDataReceived += (s, e) =>
-            {
-                if (e.Data != null) AnsiConsole.WriteLine(e.Data);
-            };
-            process.ErrorDataReceived += (s, e) =>
-            {
-                if (e.Data != null) AnsiConsole.MarkupLine($"[red]{Markup.Escape(e.Data)}[/]");
-            };
+        [CommandOption("--limit <N>")]
+        [Description("Max number of results to show")]
+        [DefaultValue(21)]
+        public int Limit { get; init; } = 21;
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
-
-            return process.ExitCode;
-        }
+        [CommandOption("--page <N>")]
+        [Description("Page number (1-based)")]
+        [DefaultValue(1)]
+        public int Page { get; init; } = 1;
+        
+        [CommandOption("--no-ui")]
+        [Description("Returns Raw json")]
+        [DefaultValue(false)]
+        public bool noUi { get; init; } = false;
     }
 
     public class FlatpakSetting : CommandSettings
@@ -54,14 +39,68 @@ public class Flatpak
         public string Packages { get; set; } = string.Empty;
     }
 
-    public class FlatpakSearchCommand : Command<FlatpakSetting>
+    public class FlathubSearchCommand : Command<FlathubSearchSettings>
     {
-        public override int Execute([NotNull] CommandContext context, [NotNull] FlatpakSetting settings)
-        {
-            AnsiConsole.MarkupLine("[yellow]Searching flatpak...[/]");
-            var result = FlatpakRunner.Run("search" + settings.Packages.Aggregate("", (a, b) => a + " " + b));
 
-            return result;
+        public override int Execute(CommandContext context, FlathubSearchSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.Query))
+            {
+                AnsiConsole.MarkupLine("[red]Query cannot be empty.[/]");
+                return 1;
+            }
+
+            try
+            {
+                if (settings.noUi)
+                {
+                    //TODO: Add logic to return raw json
+                }
+                else
+                {
+                    var manager = new FlatpakManager();
+                    var results = manager.SearchFlathubAsync(
+                            settings.Query,
+                            page: settings.Page,
+                            limit: settings.Limit,
+                            ct: CancellationToken.None)
+                        .GetAwaiter().GetResult();
+
+                    Render(results, settings.Limit);
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Search failed:[/] {ex.Message.EscapeMarkup()}");
+                return 1;
+            }
+        }
+
+        private static void Render(FlatpakApiResponse root, int limit)
+        {
+            var table = new Table().Border(TableBorder.Rounded);
+            table.AddColumn("Name");
+            table.AddColumn("AppId");
+            table.AddColumn("Summary");
+
+            var count = 0;
+
+            foreach (var item in root.hits)
+            {
+                if (count++ >= limit) break;
+
+                table.AddRow(
+                    item.name.EscapeMarkup(),
+                    item.app_id.EscapeMarkup(),
+                    item.summary.EscapeMarkup().Truncate(70)
+                );
+            }
+
+            AnsiConsole.Write(table);
+            AnsiConsole.MarkupLine(
+                $"[blue]Shown:[/] {Math.Min(limit, root.hits.Count)} / [blue]Total Pages:[/] {root.totalPages} / [blue]Current Page:[/] {root.page} / [blue]Total hits:[/] {root.totalHits}");
         }
     }
 
@@ -70,10 +109,11 @@ public class Flatpak
         public override int Execute([NotNull] CommandContext context, [NotNull] FlatpakSetting settings)
         {
             AnsiConsole.MarkupLine("[yellow]Installing flatpak app...[/]");
-            //var result = FlatpakManager.InstallApp("Flathub", settings.Packages);
+            var manager = new FlatpakManager();
+            var result = manager.InstallApp(settings.Packages);
 
-            AnsiConsole.MarkupLine("[yellow]Installed: " + "");
-            
+            AnsiConsole.MarkupLine("[yellow]Installed: " + result.EscapeMarkup() + "[/]");
+
             return 0;
         }
     }
@@ -82,10 +122,11 @@ public class Flatpak
     {
         public override int Execute([NotNull] CommandContext context, [NotNull] FlatpakSetting settings)
         {
-            AnsiConsole.MarkupLine("[yellow]Removing flatpak app...[/]");
-            var result = FlatpakRunner.Run("remove" + settings.Packages.Aggregate("", (a, b) => a + " " + b));
+            var manager = new FlatpakManager();
+            var result = manager.UninstallApp(settings.Packages);
 
-            return result;
+            AnsiConsole.MarkupLine("[yellow]" + result.EscapeMarkup() + "[/]");
+            return 0;
         }
     }
 
@@ -94,9 +135,12 @@ public class Flatpak
         public override int Execute([NotNull] CommandContext context, [NotNull] FlatpakSetting settings)
         {
             AnsiConsole.MarkupLine("[yellow]Updating flatpak app...[/]");
-            var result = FlatpakRunner.Run("update" + settings.Packages.Aggregate("", (a, b) => a + " " + b));
+            var manager = new FlatpakManager();
+            var result = manager.UpdateApp(settings.Packages);
 
-            return result;
+            AnsiConsole.MarkupLine("[yellow]" + result.EscapeMarkup() + "[/]");
+
+            return 0;
         }
     }
 
@@ -158,7 +202,7 @@ public class Flatpak
         {
             AnsiConsole.MarkupLine("[yellow]Currently running flatpack instances on machine...[/]");
             var result = new FlatpakManager().GetRunningInstances();
-            
+
             if (result.Count > 0)
             {
                 var table = new Table();
@@ -169,9 +213,10 @@ public class Flatpak
                 {
                     table.AddRow(
                         pkg.AppId,
-                        pkg.Pid.ToString() 
+                        pkg.Pid.ToString()
                     );
                 }
+
                 AnsiConsole.Write(table);
                 return 0;
             }
@@ -187,12 +232,11 @@ public class Flatpak
         {
             AnsiConsole.MarkupLine("[yellow]Killing selected flatpak app...[/]");
             var result = new FlatpakManager().KillApp(settings.Packages);
-            
-            AnsiConsole.MarkupLine("[red]" + result + "[/]");
-            
-          
 
-            return  0;
+            AnsiConsole.MarkupLine("[red]" + result + "[/]");
+
+
+            return 0;
         }
     }
 }

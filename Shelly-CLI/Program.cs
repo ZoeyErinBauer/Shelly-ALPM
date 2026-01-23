@@ -225,7 +225,7 @@ public class Program
                 flatpak.AddCommand<Flatpak.FlatpakKillCommand>("kill")
                     .WithDescription("Kill running flatpak app");
 
-                flatpak.AddCommand<Flatpak.FlatpakSearchCommand>("search")
+                flatpak.AddCommand<Flatpak.FlathubSearchCommand>("search")
                     .WithDescription("Search flatpak");
             });
         });
