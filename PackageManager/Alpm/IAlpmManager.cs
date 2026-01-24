@@ -28,4 +28,6 @@ public interface IAlpmManager
         AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
 
     void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
+
+    void InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None);
 }

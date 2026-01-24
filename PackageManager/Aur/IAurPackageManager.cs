@@ -6,10 +6,17 @@ namespace PackageManager.Aur;
 
 public interface IAurPackageManager
 {
-    void Intialize(bool root = false);
+    Task Initialize(bool root = false);
 
     Task<List<AurPackageDto>> GetInstalledPackages();
     Task<List<AurPackageDto>> SearchPackages(string query);
     
-    Task<List<AurPackageDto>> GetPackagesNeedingUpdate(string packageName);
+    Task<List<AurPackageDto>> GetPackagesNeedingUpdate();
+    
+    Task UpdatePackages(List<string> packageNames);
+    
+    Task InstallPackages(List<string> packageNames);
+    
+    Task RemovePackages(List<string> packageNames);
+    
 }

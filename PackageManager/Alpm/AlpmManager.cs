@@ -807,6 +807,51 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
+    public void InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+
+        // 1. Load package from file
+        var result = PkgLoad(_handle, path, true, AlpmSigLevel.PackageOptional | AlpmSigLevel.DatabaseOptional, out IntPtr pkgPtr);
+        if (result != 0 || pkgPtr == IntPtr.Zero)
+        {
+            throw new Exception($"Failed to load package from '{path}': {GetErrorMessage(ErrorNumber(_handle))}");
+        }
+
+        // 2. Initialize transaction
+        if (TransInit(_handle, flags) != 0)
+        {
+            _ = PkgFree(pkgPtr);
+            throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+        }
+
+        try
+        {
+            // 3. Add package to transaction
+            if (AddPkg(_handle, pkgPtr) != 0)
+            {
+                _ = PkgFree(pkgPtr);
+                throw new Exception($"Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            // 4. Prepare transaction
+            if (TransPrepare(_handle, out var dataPtr) != 0)
+            {
+                throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+
+            // 5. Commit transaction
+            if (TransCommit(_handle, out dataPtr) != 0)
+            {
+                throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            }
+        }
+        finally
+        {
+            TransRelease(_handle);
+        }
+    }
+
     public void UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None)
     {
