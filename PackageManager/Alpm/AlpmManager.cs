@@ -71,19 +71,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         if (_config.SigLevel != AlpmSigLevel.None)
         {
-            AlpmSigLevel sigLevel;
-            AlpmSigLevel localSigLevel;
-            if (!root)
-            {
-                sigLevel = AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
-                           AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk;
-                localSigLevel = sigLevel;
-            }
-            else
-            {
-                sigLevel = _config.SigLevel;
-                localSigLevel = _config.LocalFileSigLevel;
-            }
+            AlpmSigLevel sigLevel = _config.SigLevel;
+            AlpmSigLevel localSigLevel = _config.LocalFileSigLevel;
 
             if (SetDefaultSigLevel(_handle, sigLevel) != 0)
             {
@@ -96,16 +85,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
         }
 
-        AlpmSigLevel remoteSigLevel;
-        if (!root)
-        {
-            remoteSigLevel = AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
-                             AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk;
-        }
-        else
-        {
-            remoteSigLevel = _config.RemoteFileSigLevel;
-        }
+        AlpmSigLevel remoteSigLevel = _config.RemoteFileSigLevel;
 
         if (SetRemoteFileSigLevel(_handle, remoteSigLevel) != 0)
         {
@@ -165,10 +145,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         foreach (var repo in _config.Repos)
         {
             var effectiveSigLevel = repo.SigLevel is AlpmSigLevel.None or AlpmSigLevel.UseDefault
-                ? (root
-                    ? _config.SigLevel
-                    : AlpmSigLevel.PackageOptional | AlpmSigLevel.PackageUnknownOk |
-                      AlpmSigLevel.DatabaseOptional | AlpmSigLevel.DatabaseUnknownOk)
+                ? _config.SigLevel
                 : repo.SigLevel;
             Console.Error.WriteLine($"[DEBUG] Registering {repo.Name} with SigLevel: {effectiveSigLevel}");
             IntPtr db = RegisterSyncDb(_handle, repo.Name, effectiveSigLevel);
@@ -445,6 +422,47 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         var dbPtr = GetLocalDb(_handle);
         var pkgPtr = DbGetPkgCache(dbPtr);
         return AlpmPackage.FromList(pkgPtr).Select(p => p.ToDto()).ToList();
+    }
+
+    public List<AlpmPackageDto> GetForeignPackages()
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        
+        var localDbPtr = GetLocalDb(_handle);
+        var installedPkgs = AlpmPackage.FromList(DbGetPkgCache(localDbPtr));
+        var syncDbsPtr = GetSyncDbs(_handle);
+        
+        var foreignPackages = new List<AlpmPackageDto>();
+        
+        foreach (var pkg in installedPkgs)
+        {
+            // Check if package exists in any sync database
+            bool foundInSync = false;
+            var currentPtr = syncDbsPtr;
+            
+            while (currentPtr != IntPtr.Zero)
+            {
+                var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                if (node.Data != IntPtr.Zero)
+                {
+                    var syncPkgPtr = DbGetPkg(node.Data, pkg.Name);
+                    if (syncPkgPtr != IntPtr.Zero)
+                    {
+                        foundInSync = true;
+                        break;
+                    }
+                }
+                currentPtr = node.Next;
+            }
+            
+            // If not found in any sync db, it's a foreign package
+            if (!foundInSync)
+            {
+                foreignPackages.Add(pkg.ToDto());
+            }
+        }
+        
+        return foreignPackages;
     }
 
     public List<AlpmPackageDto> GetAvailablePackages()
