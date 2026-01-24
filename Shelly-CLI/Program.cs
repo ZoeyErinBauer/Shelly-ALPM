@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using PackageManager.Flatpak;
 
 namespace Shelly_CLI;
 
@@ -14,30 +15,30 @@ public class DualOutputWriter : TextWriter
     private readonly TextWriter _primary;
     private readonly TextWriter _stderr;
     private const string ShellyPrefix = "[Shelly]";
-    
+
     public DualOutputWriter(TextWriter primary, TextWriter stderr)
     {
         _primary = primary;
         _stderr = stderr;
     }
-    
+
     public override void WriteLine(string? value)
     {
         _primary.WriteLine(value);
         // Also write to stderr with prefix for UI capture
         _stderr.WriteLine($"{ShellyPrefix}{value}");
     }
-    
+
     public override void Write(string? value)
     {
         _primary.Write(value);
     }
-    
+
     public override void Write(char value)
     {
         _primary.Write(value);
     }
-    
+
     public override Encoding Encoding => _primary.Encoding;
 }
 
@@ -45,27 +46,27 @@ public class StderrPrefixWriter : TextWriter
 {
     private readonly TextWriter _stderr;
     private const string ShellyPrefix = "[Shelly]";
-    
+
     public StderrPrefixWriter(TextWriter stderr)
     {
         _stderr = stderr;
     }
-    
+
     public override void WriteLine(string? value)
     {
         _stderr.WriteLine($"{ShellyPrefix}{value}");
     }
-    
+
     public override void Write(string? value)
     {
         _stderr.Write(value);
     }
-    
+
     public override void Write(char value)
     {
         _stderr.Write(value);
     }
-    
+
     public override Encoding Encoding => _stderr.Encoding;
 }
 
@@ -76,12 +77,12 @@ public class FilteringTextWriter : TextWriter
 {
     private readonly TextWriter _inner;
     private static readonly Regex BracketedPattern = new Regex(@"\[[^\]]+\]", RegexOptions.Compiled);
-    
+
     public FilteringTextWriter(TextWriter inner)
     {
         _inner = inner;
     }
-    
+
     public override void WriteLine(string? value)
     {
         // Filter out lines that contain [somestring] patterns
@@ -89,20 +90,21 @@ public class FilteringTextWriter : TextWriter
         {
             return; // Skip this line
         }
+
         _inner.WriteLine(value);
     }
-    
+
     public override void Write(string? value)
     {
         // For Write (without newline), pass through as-is since we filter on complete lines
         _inner.Write(value);
     }
-    
+
     public override void Write(char value)
     {
         _inner.Write(value);
     }
-    
+
     public override Encoding Encoding => _inner.Encoding;
 }
 
@@ -114,13 +116,13 @@ public class Program
         var argsList = args.ToList();
         var isUiMode = argsList.Remove("--ui-mode");
         args = argsList.ToArray();
-        
+
         if (isUiMode)
         {
             // Configure stderr to use prefix for UI integration
             var stderrWriter = new StderrPrefixWriter(Console.Error);
             Console.SetError(stderrWriter);
-            
+
             // Configure AnsiConsole to use DualOutputWriter for UI integration
             var dualWriter = new DualOutputWriter(Console.Out, stderrWriter);
             Console.SetOut(dualWriter);
@@ -141,7 +143,7 @@ public class Program
                 Out = new AnsiConsoleOutput(filteringStdout)
             });
         }
-        
+
         var app = new CommandApp();
         app.Configure(config =>
         {
@@ -175,24 +177,59 @@ public class Program
             config.AddBranch("keyring", keyring =>
             {
                 keyring.SetDescription("Manage pacman keyring");
-                
+
                 keyring.AddCommand<KeyringInitCommand>("init")
                     .WithDescription("Initialize the pacman keyring");
-                
+
                 keyring.AddCommand<KeyringPopulateCommand>("populate")
                     .WithDescription("Reload keys from keyrings in /usr/share/pacman/keyrings");
-                
+
                 keyring.AddCommand<KeyringRecvCommand>("recv")
                     .WithDescription("Receive keys from a keyserver");
-                
+
                 keyring.AddCommand<KeyringLsignCommand>("lsign")
                     .WithDescription("Locally sign the specified key(s)");
-                
+
                 keyring.AddCommand<KeyringListCommand>("list")
                     .WithDescription("List all keys in the keyring");
-                
+
                 keyring.AddCommand<KeyringRefreshCommand>("refresh")
                     .WithDescription("Refresh keys from the keyserver");
+            });
+
+            config.AddBranch("flatpak", flatpak =>
+            {
+                flatpak.SetDescription("Manage flatpak");
+
+                flatpak.AddCommand<Flatpak.FlatpakInstallCommand>("install")
+                    .WithDescription("Install flatpak app");
+
+                flatpak.AddCommand<Flatpak.FlatpakUpdateCommand>("update")
+                    .WithDescription("Update flatpak app");
+
+                flatpak.AddCommand<Flatpak.FlatpakListCommand>("list")
+                    .WithDescription("List installed flatpak apps");
+                
+                flatpak.AddCommand<Flatpak.FlatpakListUpdatesCommand>("list-updates")
+                    .WithDescription("List installed flatpak apps");
+                
+                flatpak.AddCommand<Flatpak.FlatpakRunningCommand>("running")
+                    .WithDescription("List running flatpak apps");
+
+                /*flatpak.AddCommand<>("config")
+                    .WithDescription("Config flatpak");*/
+
+                flatpak.AddCommand<Flatpak.FlatpakRemoveCommand>("uninstall")
+                    .WithDescription("Remove flatpak app");
+
+                flatpak.AddCommand<Flatpak.FlatpakRunCommand>("run")
+                    .WithDescription("Run flatpak app");
+
+                flatpak.AddCommand<Flatpak.FlatpakKillCommand>("kill")
+                    .WithDescription("Kill running flatpak app");
+
+                flatpak.AddCommand<Flatpak.FlathubSearchCommand>("search")
+                    .WithDescription("Search flatpak");
             });
         });
 
@@ -215,17 +252,11 @@ public class SyncCommand : Command<SyncSettings>
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing ALPM...", ctx =>
-            {
-                manager.Initialize(true);
-            });
+            .Start("Initializing ALPM...", ctx => { manager.Initialize(true); });
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Synchronizing package databases...", ctx =>
-            {
-                manager.Sync(settings.Force);
-            });
+            .Start("Synchronizing package databases...", ctx => { manager.Sync(settings.Force); });
 
         AnsiConsole.MarkupLine("[green]Package databases synchronized successfully![/]");
         return 0;
@@ -240,10 +271,7 @@ public class ListInstalledCommand : Command
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing ALPM...", ctx =>
-            {
-                manager.Initialize(true);
-            });
+            .Start("Initializing ALPM...", ctx => { manager.Initialize(true); });
 
         var packages = manager.GetInstalledPackages();
 
@@ -278,6 +306,7 @@ public class ListInstalledCommand : Command
             order++;
             size /= 1024;
         }
+
         return $"{size:0.##} {sizes[order]}";
     }
 }
@@ -290,10 +319,7 @@ public class ListAvailableCommand : Command
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx =>
-            {
-                manager.IntializeWithSync();
-            });
+            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
 
         var packages = manager.GetAvailablePackages();
 
@@ -327,10 +353,7 @@ public class ListUpdatesCommand : Command
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx =>
-            {
-                manager.IntializeWithSync();
-            });
+            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
 
         var updates = manager.GetPackagesNeedingUpdate();
 
@@ -371,6 +394,7 @@ public class ListUpdatesCommand : Command
             order++;
             size /= 1024;
         }
+
         return $"{size:0.##} {sizes[order]}";
     }
 }
@@ -435,17 +459,11 @@ public class InstallCommand : Command<PackageSettings>
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx =>
-            {
-                manager.IntializeWithSync();
-            });
+            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Installing packages...", ctx =>
-            {
-                manager.InstallPackages(packageList);
-            });
+            .Start("Installing packages...", ctx => { manager.InstallPackages(packageList); });
 
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;
@@ -501,17 +519,11 @@ public class RemoveCommand : Command<PackageSettings>
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing ALPM...", ctx =>
-            {
-                manager.Initialize(true);
-            });
+            .Start("Initializing ALPM...", ctx => { manager.Initialize(true); });
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Removing packages...", ctx =>
-            {
-                manager.RemovePackages(packageList);
-            });
+            .Start("Removing packages...", ctx => { manager.RemovePackages(packageList); });
 
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
         return 0;
@@ -567,17 +579,11 @@ public class UpdateCommand : Command<PackageSettings>
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx =>
-            {
-                manager.IntializeWithSync();
-            });
+            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Updating packages...", ctx =>
-            {
-                manager.UpdatePackages(packageList);
-            });
+            .Start("Updating packages...", ctx => { manager.UpdatePackages(packageList); });
 
         AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
         return 0;
@@ -632,17 +638,11 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx =>
-            {
-                manager.IntializeWithSync();
-            });
+            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
 
         AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
-            .Start("Upgrading system...", ctx =>
-            {
-                manager.SyncSystemUpdate();
-            });
+            .Start("Upgrading system...", ctx => { manager.SyncSystemUpdate(); });
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         return 0;
@@ -664,7 +664,7 @@ public class KeyringSettings : CommandSettings
     [CommandArgument(0, "[keys]")]
     [Description("Key IDs or fingerprints to operate on")]
     public string[]? Keys { get; set; }
-    
+
     [CommandOption("--keyserver <server>")]
     [Description("Keyserver to use for receiving keys")]
     public string? Keyserver { get; set; }
@@ -686,15 +686,21 @@ public static class PacmanKeyRunner
                 UseShellExecute = false
             }
         };
-        
-        process.OutputDataReceived += (s, e) => { if (e.Data != null) AnsiConsole.WriteLine(e.Data); };
-        process.ErrorDataReceived += (s, e) => { if (e.Data != null) AnsiConsole.MarkupLine($"[red]{Markup.Escape(e.Data)}[/]"); };
-        
+
+        process.OutputDataReceived += (s, e) =>
+        {
+            if (e.Data != null) AnsiConsole.WriteLine(e.Data);
+        };
+        process.ErrorDataReceived += (s, e) =>
+        {
+            if (e.Data != null) AnsiConsole.MarkupLine($"[red]{Markup.Escape(e.Data)}[/]");
+        };
+
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
-        
+
         return process.ExitCode;
     }
 }
@@ -713,6 +719,7 @@ public class KeyringInitCommand : Command
         {
             AnsiConsole.MarkupLine("[red]Failed to initialize keyring.[/]");
         }
+
         return result;
     }
 }
@@ -731,7 +738,7 @@ public class KeyringPopulateCommand : Command<KeyringSettings>
         {
             AnsiConsole.MarkupLine("[yellow]Populating keyring with default keys...[/]");
         }
-        
+
         var result = PacmanKeyRunner.Run(args);
         if (result == 0)
         {
@@ -741,6 +748,7 @@ public class KeyringPopulateCommand : Command<KeyringSettings>
         {
             AnsiConsole.MarkupLine("[red]Failed to populate keyring.[/]");
         }
+
         return result;
     }
 }
@@ -754,13 +762,13 @@ public class KeyringRecvCommand : Command<KeyringSettings>
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
             return 1;
         }
-        
+
         var args = "--recv-keys " + string.Join(" ", settings.Keys);
         if (!string.IsNullOrEmpty(settings.Keyserver))
         {
             args += $" --keyserver {settings.Keyserver}";
         }
-        
+
         AnsiConsole.MarkupLine($"[yellow]Receiving keys: {string.Join(", ", settings.Keys)}...[/]");
         var result = PacmanKeyRunner.Run(args);
         if (result == 0)
@@ -771,6 +779,7 @@ public class KeyringRecvCommand : Command<KeyringSettings>
         {
             AnsiConsole.MarkupLine("[red]Failed to receive keys.[/]");
         }
+
         return result;
     }
 }
@@ -784,9 +793,9 @@ public class KeyringLsignCommand : Command<KeyringSettings>
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
             return 1;
         }
-        
+
         AnsiConsole.MarkupLine($"[yellow]Locally signing keys: {string.Join(", ", settings.Keys)}...[/]");
-        
+
         foreach (var key in settings.Keys)
         {
             var result = PacmanKeyRunner.Run($"--lsign-key {key}");
@@ -796,7 +805,7 @@ public class KeyringLsignCommand : Command<KeyringSettings>
                 return result;
             }
         }
-        
+
         AnsiConsole.MarkupLine("[green]Keys signed successfully![/]");
         return 0;
     }
@@ -825,6 +834,7 @@ public class KeyringRefreshCommand : Command
         {
             AnsiConsole.MarkupLine("[red]Failed to refresh keys.[/]");
         }
+
         return result;
     }
 }
