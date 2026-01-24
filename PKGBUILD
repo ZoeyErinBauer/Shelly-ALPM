@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc="Shelly is a visual arch linux package manager"
 arch=('x86_64')
 url="https://github.com/ZoeyErinBauer/Shelly-ALPM"
-license=('GPL-3.0-only')
+license=('GPL-2.0-only')
 depends=('pacman')
 makedepends=('dotnet-sdk-10.0')
 source=("${pkgname}::git+https://github.com/ZoeyErinBauer/Shelly-ALPM.git")
@@ -47,4 +47,7 @@ Terminal=false" | install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/shel
 
   # Install icon
   install -Dm644 Shelly-UI/Assets/shellylogo.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/shelly.png"
+
+  # Install license
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
