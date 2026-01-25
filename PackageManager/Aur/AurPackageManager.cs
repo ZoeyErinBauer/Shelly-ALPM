@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
+using PackageManager.Utilities;
 
 namespace PackageManager.Aur;
 
@@ -64,10 +65,28 @@ public class AurPackageManager(string? configPath = null, string? aurSyncPath = 
             .Concat(suggestByBaseNameResponse.Results).ToList();
     }
 
-    public async Task<List<AurPackageDto>> GetPackagesNeedingUpdate()
+    public async Task<List<AurUpdateDto>> GetPackagesNeedingUpdate()
     {
+        List<AurUpdateDto> packagesToUpdate = [];
         var packages = _alpm.GetForeignPackages();
-        await _aurSearchManager.GetInfoAsync(packages.Select(x => x.Name).ToList());
+        var response = await _aurSearchManager.GetInfoAsync(packages.Select(x => x.Name).ToList());
+        foreach (var pkg in response.Results)
+        {
+            var installedPkg = packages.FirstOrDefault(x => x.Name == pkg.Name);
+            if (installedPkg is null) continue;
+            if (VersionComparer.IsNewer(pkg.Version, installedPkg.Version))
+            {
+                packagesToUpdate.Add(new AurUpdateDto
+                {
+                    Name = pkg.Name,
+                    Version = installedPkg.Version,
+                    NewVersion = pkg.Version,
+                    Url = pkg.Url,
+                    PackageBase = pkg.PackageBase,
+                    Description = pkg.Description
+                });
+            }
+        }
         throw new System.NotImplementedException();
     }
 

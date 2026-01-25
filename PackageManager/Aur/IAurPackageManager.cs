@@ -11,7 +11,7 @@ public interface IAurPackageManager
     Task<List<AurPackageDto>> GetInstalledPackages();
     Task<List<AurPackageDto>> SearchPackages(string query);
     
-    Task<List<AurPackageDto>> GetPackagesNeedingUpdate();
+    Task<List<AurUpdateDto>> GetPackagesNeedingUpdate();
     
     Task UpdatePackages(List<string> packageNames);
     
