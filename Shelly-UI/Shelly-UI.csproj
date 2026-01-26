@@ -56,4 +56,9 @@
         <ProjectReference Include="..\PackageManager\PackageManager.csproj"/>
         <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <Reference Include="Avalonia.Controls.ColorPicker">
+        <HintPath>..\..\..\.nuget\packages\avalonia.controls.colorpicker\11.3.10\lib\net8.0\Avalonia.Controls.ColorPicker.dll</HintPath>
+      </Reference>
+    </ItemGroup>
 </Project>

@@ -40,7 +40,6 @@
       <Type Name="Shelly_CLI.Flatpak+FlatpakUpdateCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Flatpak+FlatpakListCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Flatpak+FlatpakListUpdatesCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Flatpak+FlatpakUpgradeCommand" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>
