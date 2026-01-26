@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Reactive.Concurrency;
@@ -8,14 +7,13 @@ using System.Reactive;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Shelly_UI.Assets;
 using ReactiveUI;
-using Material.Icons;
 using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
 using Shelly_UI.Enums;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
+using Shelly_UI.ViewModels.AUR;
 
 namespace Shelly_UI.ViewModels;
 
@@ -25,6 +23,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     private IAppCache _appCache;
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly ICredentialManager _credentialManager;
+    private IConfigService _configService = App.Services.GetRequiredService<IConfigService>();
 
     private static readonly Regex AlpmProgressPattern =
         new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
@@ -95,6 +94,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
             h => alpmManager.PackageOperation += h,
             h => alpmManager.PackageOperation -= h);
+        
 
         packageOperationEvents
             .ObserveOn(scheduler)
@@ -185,7 +185,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
-            TurnOffMenuItems();
+            ActiveMenu = MenuOptions.None;
             return Router.Navigate.Execute(new HomeViewModel(this, appCache));
         });
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
@@ -199,6 +199,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new SettingViewModel(this, configService,
                 _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService)));
+        GoAur = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new AurViewModel(this, appCache, _privilegedOperationService,
+                _credentialManager)));
+        GoAurUpdate = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new AurUpdateViewModel(this, _privilegedOperationService, _credentialManager)));
+        GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(
+                new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
 
         GoHome.Execute(Unit.Default);
 
@@ -247,7 +255,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen
                 }
             });
     }
-
+    
 
     private bool _isGlobalBusy;
 
@@ -405,6 +413,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoPackages { get; set; } = null!;
 
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoAur { get; set; } = null!;
+
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoAurRemove { get; set; } = null!;
+    
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoAurUpdate { get; set; } = null!;
+
     #endregion
 
     #region MenuItemSelectionNav
@@ -450,6 +464,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen
             IsAurOpen = !IsAurOpen;
         }
     }
+
+    public bool IsAurEnabled => _configService.LoadConfig().AurEnabled;
 
     private bool _isSnapOpen;
 
@@ -551,66 +567,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen
     #endregion
 
     #region MenuItemsToggle
+    private MenuOptions _activeMenu;
 
-    //Revisit later but works now easily for one set of items, may be a lot to manage in the future.
-
-    private void TurnOffMenuItems()
+    public MenuOptions ActiveMenu
     {
-        IsInstallPackActive = false;
-        IsUpdateActive = false;
-        IsRemoveActive = false;
+        get => _activeMenu;
+        set => this.RaiseAndSetIfChanged(ref _activeMenu, value);
     }
-
-    private bool _isRemoveActive;
-
-    public bool IsRemoveActive
-    {
-        get => _isRemoveActive;
-        set
-        {
-            if (value)
-            {
-                IsInstallPackActive = false;
-                IsUpdateActive = false;
-            }
-
-            this.RaiseAndSetIfChanged(ref _isRemoveActive, value);
-        }
-    }
-
-    private bool _isInstallPackActive;
-
-    public bool IsInstallPackActive
-    {
-        get => _isInstallPackActive;
-        set
-        {
-            if (value)
-            {
-                IsRemoveActive = false;
-                IsUpdateActive = false;
-            }
-
-            this.RaiseAndSetIfChanged(ref _isInstallPackActive, value);
-        }
-    }
-
-    private bool _isUpdateActive;
-
-    public bool IsUpdateActive
-    {
-        get => _isUpdateActive;
-        set
-        {
-            if (value)
-            {
-                IsRemoveActive = false;
-                IsInstallPackActive = false;
-            }
-
-            this.RaiseAndSetIfChanged(ref _isUpdateActive, value);
-        }
-    }
-
     #endregion
 }

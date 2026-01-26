@@ -7,6 +7,7 @@
         xmlns:avalonia="http://reactiveui.net"
         xmlns:shellyUi="clr-namespace:Shelly_UI"
         xmlns:converters="clr-namespace:Shelly_UI.Converters"
+        xmlns:enums="clr-namespace:Shelly_UI.Enums"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Shelly_UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -17,18 +18,21 @@
         MinWidth="800"
         Width="800"
         Height="600">
-  
+
     <Window.Styles>
         <Style Selector="ToggleButton#ManagementToggle:pointerover /template/ Border">
             <Setter Property="Background" Value="#1AFFFFFF" />
         </Style>
     </Window.Styles>
+    <Window.Resources>
+        <converters:EnumEqualsConverter x:Key="EnumEqualsConverter" />
+    </Window.Resources>
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel />
     </Design.DataContext>
-
+    
     <Grid>
         <SplitView IsPaneOpen="{Binding IsPaneOpen}"
                    CompactPaneLength="66"
@@ -81,7 +85,9 @@
                             </StackPanel.IsVisible>
                             <ToggleButton Classes="SubMenuItem" Command="{Binding GoPackages}"
                                           HorizontalAlignment="Stretch" Background="Transparent"
-                                          IsChecked="{Binding IsInstallPackActive}">
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.InstallPackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
                                     <TextBlock Text="Install Packages" FontSize="13" />
@@ -89,7 +95,9 @@
                             </ToggleButton>
                             <ToggleButton Classes="SubMenuItem" Command="{Binding GoUpdate}"
                                           HorizontalAlignment="Stretch" Background="Transparent"
-                                          IsChecked="{Binding IsUpdateActive}">
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.UpdatePackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                     <TextBlock Text="Update Packages" FontSize="13" />
@@ -97,7 +105,9 @@
                             </ToggleButton>
                             <ToggleButton Classes="SubMenuItem" Command="{Binding GoRemove}"
                                           HorizontalAlignment="Stretch" Background="Transparent"
-                                          IsChecked="{Binding IsRemoveActive}">
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.RemovePackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
                                     <TextBlock Text="Remove Packages" FontSize="13" />
@@ -109,7 +119,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Padding="0"
-                                IsVisible="False">
+                                IsVisible="{Binding IsAurEnabled}">
                             <Grid ColumnDefinitions="66, *" Height="40">
                                 <icons:MaterialIcon Kind="Arch" Width="22" Height="22"
                                                     HorizontalAlignment="Center"
@@ -127,24 +137,36 @@
                                     <Binding Path="$parent[SplitView].IsPaneOpen" />
                                 </MultiBinding>
                             </StackPanel.IsVisible>
-                            <Button Classes="SubMenuItem" Command="{Binding GoPackages}" Background="Transparent">
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoAur}" HorizontalAlignment="Stretch"
+                                          Background="Transparent"
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.InstallAurPackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
                                     <TextBlock Text="Install AUR" FontSize="13" />
                                 </StackPanel>
-                            </Button>
-                            <Button Classes="SubMenuItem" Command="{Binding GoUpdate}" Background="Transparent">
+                            </ToggleButton>
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoAurUpdate}"
+                                          HorizontalAlignment="Stretch" Background="Transparent"
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.UpdateAurPackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                     <TextBlock Text="Update AUR" FontSize="13" />
                                 </StackPanel>
-                            </Button>
-                            <Button Classes="SubMenuItem" Command="{Binding GoRemove}" Background="Transparent">
+                            </ToggleButton>
+                            <ToggleButton Classes="SubMenuItem" Command="{Binding GoAurRemove}"
+                                          HorizontalAlignment="Stretch" Background="Transparent"
+                                          IsChecked="{Binding ActiveMenu,
+        Converter={StaticResource EnumEqualsConverter},
+        ConverterParameter={x:Static enums:MenuOptions.RemoveAurPackage}}">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
                                     <TextBlock Text="Remove AUR" FontSize="13" />
                                 </StackPanel>
-                            </Button>
+                            </ToggleButton>
                         </StackPanel>
                         <Button Command="{Binding ToggleSnapMenu}"
                                 HorizontalAlignment="Stretch"
@@ -328,7 +350,7 @@
                 </StackPanel>
             </Border>
         </Panel>
-        
+
         <!-- Password Prompt Dialog -->
         <Panel IsVisible="{Binding ShowPasswordPrompt}" Background="#80000000">
             <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
@@ -354,19 +376,20 @@
                                TextWrapping="Wrap"
                                TextAlignment="Center"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    
-                    <TextBlock Text="Enter your password to continue. Your password will be remembered for this session. Multiple failed attempts may cause a lockout."
-                               HorizontalAlignment="Center"
-                               FontSize="12"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+
+                    <TextBlock
+                        Text="Enter your password to continue. Your password will be remembered for this session. Multiple failed attempts may cause a lockout."
+                        HorizontalAlignment="Center"
+                        FontSize="12"
+                        TextWrapping="Wrap"
+                        TextAlignment="Center"
+                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
 
                     <TextBox Watermark="Password"
                              PasswordChar="●"
                              Text="{Binding PasswordInput}"
                              HorizontalAlignment="Stretch" />
-                    
+
                     <TextBlock Text="{Binding PasswordErrorMessage}"
                                Foreground="IndianRed"
                                FontSize="12"
@@ -394,13 +417,13 @@
                            HorizontalAlignment="Right"
                            FontSize="12"
                            Margin="0,-15,0,0" />
-                <ProgressBar Value="{Binding GlobalProgressValue}" 
+                <ProgressBar Value="{Binding GlobalProgressValue}"
                              Minimum="0" Maximum="100"
                              Width="300" Height="8" CornerRadius="4" />
-                <TextBlock Text="{Binding GlobalBusyMessage}" 
-                           Foreground="White" 
-                           FontSize="16" 
-                           HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding GlobalBusyMessage}"
+                           Foreground="White"
+                           FontSize="16"
+                           HorizontalAlignment="Center" />
             </StackPanel>
         </Panel>
     </Grid>

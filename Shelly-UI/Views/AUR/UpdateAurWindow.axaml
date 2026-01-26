@@ -8,7 +8,7 @@
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              xmlns:aur="clr-namespace:Shelly_UI.ViewModels.AUR"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.UpdateWindow"
+             x:Class="Shelly_UI.Views.AUR.UpdateAurWindow"
              x:DataType="aur:AurUpdateViewModel"
              x:CompileBindings="True">
     <UserControl.Styles>
@@ -52,7 +52,7 @@
                                 Padding="8"
                                 Background="Transparent"
                                 Command="{Binding SyncCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                ToolTip.Tip="{x:Static lang:Resources.Refresh}">
                                 <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
                             </Button>
                             <Button

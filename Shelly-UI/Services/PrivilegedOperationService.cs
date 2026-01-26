@@ -96,6 +96,24 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");
         
     }
+    
+    public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages)
+    {
+        var packageArgs = string.Join(" ", packages);
+        return await ExecutePrivilegedCommandAsync("Install AUR packages", "aur", "install", packageArgs);
+    }
+    
+    public async Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages)
+    {
+        var packageArgs = string.Join(" ", packages);
+        return await ExecutePrivilegedCommandAsync("Remove AUR packages", "aur", "remove", packageArgs);
+    }
+    
+    public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
+    {
+        var packageArgs = string.Join(" ", packages);
+        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", packageArgs);
+    }
 
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)
     {

@@ -42,6 +42,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         var config = _configService.LoadConfig();
         _isDarkMode = config.DarkMode;
         _enableConsole = config.ConsoleEnabled;
+        _enableAur = config.AurEnabled;
 
         _ = SetUpdateText();
 

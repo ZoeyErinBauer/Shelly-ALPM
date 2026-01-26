@@ -2,15 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
-             xmlns:aur="clr-namespace:Shelly_UI.ViewModels.AUR"
+             xmlns:aur1="clr-namespace:Shelly_UI.ViewModels.AUR"
+             xmlns:customControls1="clr-namespace:Shelly_UI.CustomControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.UpdateWindow"
-             x:DataType="aur:AurUpdateViewModel"
-             x:CompileBindings="True">
+             x:DataType="aur1:AurRemoveViewModel"
+             x:Class="Shelly_UI.Views.AUR.RemoveAurWindow">
     <UserControl.Styles>
         <Style Selector="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
@@ -21,15 +20,14 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-
-    <customControls:ConsoleSplitControl 
+    <customControls1:ConsoleSplitControl
         IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
         IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
         <customControls:ConsoleSplitControl.MainContent>
             <Grid Background="{DynamicResource SystemChromeLowColor}">
                 <Grid RowDefinitions="Auto,*">
                     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
                             <TextBlock
                                 Text="{x:Static lang:Resources.Packages}"
                                 FontWeight="Bold"
@@ -51,57 +49,72 @@
                                 Margin="12,0,0,0"
                                 Padding="8"
                                 Background="Transparent"
-                                Command="{Binding SyncCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
+                                Command="{Binding RefreshCommand}"
+                                ToolTip.Tip="{x:Static lang:Resources.Refresh}">
+                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}"
+                                                       Width="20" Height="20" />
                             </Button>
-                            <Button
-                                Grid.Column="3"
-                                Content="{x:Static lang:Resources.ToggleAll}"
-                                Padding="10,4"
-                                Margin="12,0,0,0"
-                                Command="{Binding CheckAll}" />
                         </Grid>
                     </Border>
                     <DataGrid
                         Grid.Row="1"
                         ItemsSource="{Binding FilteredPackages}"
                         AutoGenerateColumns="False"
-                        IsReadOnly="True"
                         CanUserResizeColumns="True"
+                        IsReadOnly="True"
                         GridLinesVisibility="None"
                         DoubleTapped="DataGrid_DoubleTapped">
                         <DataGrid.Columns>
                             <DataGridTextColumn
-                                Header="{x:Static lang:Resources.Name}"
+                                Header="{x:Static lang:Resources.PackageName}"
                                 Binding="{Binding Name}"
                                 Width="*" />
                             <DataGridTextColumn
-                                Header="{x:Static lang:Resources.CurrentVersion}"
-                                Binding="{Binding CurrentVersion}"
+                                Header="{x:Static lang:Resources.Version}"
+                                Binding="{Binding Version}"
                                 Width="160" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageNewVersion}"
-                                Binding="{Binding NewVersion}"
-                                Width="160" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageSize}"
-                                Binding="{Binding SizeString}"
-                                Width="100" />
                             <DataGridTemplateColumn
                                 Header=""
                                 CanUserResize="False"
                                 Width="60">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" HorizontalAlignment="Center" />
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                  HorizontalAlignment="Center" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
+                <Border Background="#80000000"
+                        IsVisible="{Binding ShowConfirmDialog}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch">
+                    <Border Background="{DynamicResource SystemChromeLowColor}"
+                            BorderBrush="{DynamicResource SystemBaseLowColor}"
+                            CornerRadius="8"
+                            Padding="20"
+                            Width="300"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            BoxShadow="0 10 30 0 #A0000000">
+                        <StackPanel Spacing="15">
+                            <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="{x:Static lang:Resources.WillRemovePackages}" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" TextAlignment="Center" />
+                            <Grid ColumnDefinitions="*,*">
+                                <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                        HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                        Command="{Binding ToggleConfirmAction}" />
+                                <Button Grid.Column="1" Content="{x:Static lang:Resources.Remove}"
+                                        Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
+                                        Command="{Binding RemovePackagesCommand}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Border>
                 <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
                         Margin="30"
                         CornerRadius="30"
@@ -109,8 +122,9 @@
                     <Button Width="60" Height="60"
                             Padding="0"
                             CornerRadius="30"
-                            Command="{Binding AlpmUpdateCommand}">
-                        <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource SystemAccentColor}" />
+                            Command="{Binding ToggleConfirmAction}">
+                        <avalonia:MaterialIcon Kind="Delete" Width="30" Height="30"
+                                               Foreground="{DynamicResource SystemAccentColor}" />
                     </Button>
                 </Border>
             </Grid>
@@ -122,6 +136,6 @@
                 </ScrollViewer>
             </Grid>
         </customControls:ConsoleSplitControl.BottomContent>
-        
-    </customControls:ConsoleSplitControl>
+
+    </customControls1:ConsoleSplitControl>
 </UserControl>
