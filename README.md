@@ -77,6 +77,8 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 ### CLI Commands
 
+#### Package Management
+
 | Command              | Description                     |
 |----------------------|---------------------------------|
 | `sync`               | Synchronize package databases   |
@@ -87,6 +89,43 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 | `remove <packages>`  | Remove one or more packages     |
 | `update <packages>`  | Update one or more packages     |
 | `upgrade`            | Perform a full system upgrade   |
+
+#### Keyring Management (`keyring`)
+
+| Command                      | Description                                              |
+|------------------------------|----------------------------------------------------------|
+| `keyring init`               | Initialize the pacman keyring                            |
+| `keyring populate [keyring]` | Reload keys from keyrings in /usr/share/pacman/keyrings  |
+| `keyring recv <keys>`        | Receive keys from a keyserver                            |
+| `keyring lsign <keys>`       | Locally sign the specified key(s)                        |
+| `keyring list`               | List all keys in the keyring                             |
+| `keyring refresh`            | Refresh keys from the keyserver                          |
+
+#### AUR Management (`aur`)
+
+| Command                   | Description                        |
+|---------------------------|------------------------------------|
+| `aur search <query>`      | Search for AUR packages            |
+| `aur list`                | List installed AUR packages        |
+| `aur list-updates`        | List AUR packages that need updates|
+| `aur install <packages>`  | Install AUR packages               |
+| `aur update <packages>`   | Update specific AUR packages       |
+| `aur upgrade`             | Upgrade all AUR packages           |
+| `aur remove <packages>`   | Remove AUR packages                |
+
+#### Flatpak Management (`flatpak`)
+
+| Command                      | Description                  |
+|------------------------------|------------------------------|
+| `flatpak search <query>`     | Search flatpak               |
+| `flatpak list`               | List installed flatpak apps  |
+| `flatpak list-updates`       | List flatpak apps with updates|
+| `flatpak install <apps>`     | Install flatpak app          |
+| `flatpak update <apps>`      | Update flatpak app           |
+| `flatpak uninstall <apps>`   | Remove flatpak app           |
+| `flatpak run <app>`          | Run flatpak app              |
+| `flatpak running`            | List running flatpak apps    |
+| `flatpak kill <app>`         | Kill running flatpak app     |
 
 ### CLI Options
 
