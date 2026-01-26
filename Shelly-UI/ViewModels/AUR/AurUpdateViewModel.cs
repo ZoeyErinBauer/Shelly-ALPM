@@ -43,7 +43,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
         AlpmUpdateCommand = ReactiveCommand.CreateFromTask(AlpmUpdate);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<UpdateModel>(TogglePackageCheck);
-
+        
         LoadData();
     }
 

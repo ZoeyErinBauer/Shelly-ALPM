@@ -29,6 +29,7 @@
         IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
         <customControls:ConsoleSplitControl.MainContent>
             <Grid Background="{DynamicResource SystemChromeLowColor}">
+                <TextBlock Text="Search To get started!" HorizontalAlignment="Center" VerticalAlignment="Center" ZIndex="10" Opacity=".7" IsVisible="{Binding HelpTextVisibility}"/>
                 <Grid RowDefinitions="Auto,*">
                     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
@@ -47,7 +48,13 @@
                                 Foreground="{DynamicResource AltMediumLow}"
                                 BorderThickness="1"
                                 BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
+                                CornerRadius="4">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding
+                                        Gesture ="Enter"
+                                        Command="{Binding SearchCommand}" />
+                                </TextBox.KeyBindings>
+                            </TextBox>
                             <Button
                                 Grid.Column="2"
                                 Margin="12,0,0,0"

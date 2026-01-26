@@ -50,6 +50,8 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
 
     private async Task Search()
     {
+        HelpTextVisibility = false;
+        
         if (string.IsNullOrWhiteSpace(SearchText))
             return;
 
@@ -167,6 +169,14 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
+    }
+
+    private bool _helpTextVisibility = true;
+    
+    public bool HelpTextVisibility
+    {
+        get => _helpTextVisibility;
+        set => this.RaiseAndSetIfChanged(ref _helpTextVisibility, value);
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
