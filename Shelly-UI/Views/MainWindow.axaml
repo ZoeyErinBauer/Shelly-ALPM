@@ -385,8 +385,12 @@
                     <TextBox Watermark="Password"
                              PasswordChar="●"
                              Text="{Binding PasswordInput}"
-                             HorizontalAlignment="Stretch" />
-
+                             HorizontalAlignment="Stretch"><TextBox.KeyBindings>
+                            <KeyBinding
+                                Gesture ="Enter"
+                                Command="{Binding SubmitPasswordCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
                     <TextBlock Text="{Binding PasswordErrorMessage}"
                                Foreground="IndianRed"
                                FontSize="12"
