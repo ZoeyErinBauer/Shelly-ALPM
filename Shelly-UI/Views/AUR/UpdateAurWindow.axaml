@@ -21,7 +21,6 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-
     <customControls:ConsoleSplitControl 
         IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
         IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
@@ -41,6 +40,8 @@
                                 Margin="12,0"
                                 Watermark="{x:Static lang:Resources.SearchPackages}"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
                                 Background="{DynamicResource ChromeWhite}"
                                 Foreground="{DynamicResource AltMediumLow}"
                                 BorderThickness="1"
@@ -98,7 +99,6 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -122,6 +122,5 @@
                 </ScrollViewer>
             </Grid>
         </customControls:ConsoleSplitControl.BottomContent>
-        
     </customControls:ConsoleSplitControl>
 </UserControl>

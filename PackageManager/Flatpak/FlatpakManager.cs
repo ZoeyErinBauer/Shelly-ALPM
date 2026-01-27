@@ -9,11 +9,15 @@ namespace PackageManager.Flatpak;
 
 public class FlatpakManager
 {
+    /// <summary>
+    /// Searches installed flatpak apps
+    /// </summary>
+    /// <returns>Returns a list of FlatpakPackageDto</returns>
     public List<FlatpakPackageDto> SearchInstalled()
     {
         var packages = new List<FlatpakPackageDto>();
 
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -22,17 +26,15 @@ public class FlatpakManager
 
         try
         {
-            // GPtrArray structure: first field is data pointer, second is length
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-
-                // Get installed refs for this installation
-                IntPtr refsPtr = FlatpakReference.InstallationListInstalledRefs(
+                
+                var refsPtr = FlatpakReference.InstallationListInstalledRefs(
                     installationPtr, IntPtr.Zero, out IntPtr refsError);
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
@@ -43,12 +45,12 @@ public class FlatpakManager
 
                 try
                 {
-                    IntPtr refsDataPtr = Marshal.ReadIntPtr(refsPtr);
-                    int refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
+                    var refsDataPtr = Marshal.ReadIntPtr(refsPtr);
+                    var refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
 
-                    for (int j = 0; j < refsLength; j++)
+                    for (var j = 0; j < refsLength; j++)
                     {
-                        IntPtr refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
+                        var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                         if (refPtr == IntPtr.Zero) continue;
 
                         var package = new FlatpackPackage(refPtr);
@@ -76,7 +78,7 @@ public class FlatpakManager
     /// <returns>True if launch was successful</returns>
     public bool LaunchApp(string nameOrId)
     {
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -85,32 +87,29 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-
-                // Find the matching package to get its details
+                
                 var match = FindInstalledApp(installationPtr, nameOrId);
 
-                if (match != null)
-                {
-                    bool success = FlatpakReference.InstallationLaunch(
-                        installationPtr,
-                        match.Id,
-                        match.Arch,
-                        match.Branch,
-                        null, // commit
-                        IntPtr.Zero, // cancellable
-                        out IntPtr launchError);
+                if (match == null) continue;
+                var success = FlatpakReference.InstallationLaunch(
+                    installationPtr,
+                    match.Id,
+                    match.Arch,
+                    match.Branch,
+                    null, // commit
+                    IntPtr.Zero, // cancellable
+                    out var launchError);
 
-                    if (success && launchError == IntPtr.Zero)
-                    {
-                        return true;
-                    }
+                if (success && launchError == IntPtr.Zero)
+                {
+                    return true;
                 }
             }
         }
@@ -127,7 +126,7 @@ public class FlatpakManager
     /// </summary>
     private FlatpakPackageDto? FindInstalledApp(IntPtr installationPtr, string nameOrId)
     {
-        IntPtr refsPtr = FlatpakReference.InstallationListInstalledRefs(
+        var refsPtr = FlatpakReference.InstallationListInstalledRefs(
             installationPtr, IntPtr.Zero, out IntPtr refsError);
 
         if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
@@ -137,17 +136,16 @@ public class FlatpakManager
 
         try
         {
-            IntPtr refsDataPtr = Marshal.ReadIntPtr(refsPtr);
-            int refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
+            var refsDataPtr = Marshal.ReadIntPtr(refsPtr);
+            var refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
 
-            for (int j = 0; j < refsLength; j++)
+            for (var j = 0; j < refsLength; j++)
             {
-                IntPtr refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
+                var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                 if (refPtr == IntPtr.Zero) continue;
 
                 var package = new FlatpackPackage(refPtr);
-
-                // Match by ID (exact or contains) or by friendly name
+                
                 if (string.Equals(package.Id, nameOrId, StringComparison.OrdinalIgnoreCase) ||
                     package.Id.Contains(nameOrId, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(package.Name, nameOrId, StringComparison.OrdinalIgnoreCase) ||
@@ -171,35 +169,33 @@ public class FlatpakManager
     /// <param name="appId">The application ID to kill</param>
     /// <returns>True if at least one instance was killed</returns>
     public string KillApp(string appId)
-    { 
+    {
         var flatpakInstanceDtos = GetRunningInstances();
 
-        bool isRunning = flatpakInstanceDtos.Any(instance => 
+        var isRunning = flatpakInstanceDtos.Any(instance =>
             string.Equals(instance.AppId, appId, StringComparison.OrdinalIgnoreCase));
-        
-        
+
+
         if (flatpakInstanceDtos.Count == 0 || !isRunning)
         {
             return "Failed to find running instance of " + appId + ".";
         }
-        
-        int pid = flatpakInstanceDtos.Where(x => x.AppId == appId).Select(x => x.Pid).FirstOrDefault();
-        
-        if (pid > 0)
+
+        var pid = flatpakInstanceDtos.Where(x => x.AppId == appId).Select(x => x.Pid).FirstOrDefault();
+
+        if (pid <= 0) return "Failed to kill instance of " + appId + "." + pid;
+        try
         {
-            try
-            {
-                var process = System.Diagnostics.Process.GetProcessById(pid);
-                
-                process.Kill(true); 
-                return "Killed";
-            }
-            catch
-            {
-                // Process may have already exited
-            }
+            var process = System.Diagnostics.Process.GetProcessById(pid);
+
+            process.Kill(true);
+            return "Killed";
         }
-                    
+        catch(Exception e)
+        {
+           Console.WriteLine(e);
+        }
+
         return "Failed to kill instance of " + appId + "." + pid;
     }
 
@@ -211,7 +207,7 @@ public class FlatpakManager
     {
         var instances = new List<FlatpakInstanceDto>();
 
-        IntPtr instancesPtr = FlatpakReference.InstanceGetAll();
+        var instancesPtr = FlatpakReference.InstanceGetAll();
 
         if (instancesPtr == IntPtr.Zero)
         {
@@ -220,12 +216,12 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(instancesPtr);
-            int length = Marshal.ReadInt32(instancesPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(instancesPtr);
+            var length = Marshal.ReadInt32(instancesPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr instancePtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var instancePtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (instancePtr == IntPtr.Zero) continue;
 
                 if (FlatpakReference.InstanceIsActive(instancePtr))
@@ -245,8 +241,8 @@ public class FlatpakManager
 
         return instances;
     }
-    
-       /// <summary>
+
+    /// <summary>
     /// Installs a flatpak package from a remote repository.
     /// </summary>
     /// <param name="appId">The application ID (e.g., "org.mozilla.firefox")</param>
@@ -254,7 +250,7 @@ public class FlatpakManager
     /// <returns>A result message indicating success or failure</returns>
     public string InstallApp(string appId, string? remoteName = null)
     {
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -263,33 +259,29 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
             int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
             if (length == 0)
             {
                 return "No flatpak installations found.";
             }
-
-            // Use the first installation (typically the system installation)
-            IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr);
+            
+            var installationPtr = Marshal.ReadIntPtr(dataPtr);
             if (installationPtr == IntPtr.Zero)
             {
                 return "Installation pointer is invalid.";
             }
-
-            // If no remote specified, get the first available remote
-            string remote = remoteName ?? GetFirstRemote(installationPtr);
+            
+            var remote = remoteName ?? GetFirstRemote(installationPtr);
             if (string.IsNullOrEmpty(remote))
             {
                 return "No remote repository configured. Add a remote like 'flathub' first.";
             }
-
-            // Build the ref string (format: app/org.example.App/x86_64/stable)
-            string refString = $"app/{appId}/{GetCurrentArch()}/stable";
-
-            // Create a transaction for the installation
-            IntPtr transactionPtr = FlatpakReference.TransactionNewForInstallation(
+            
+            var refString = $"app/{appId}/{GetCurrentArch()}/stable";
+            
+            var transactionPtr = FlatpakReference.TransactionNewForInstallation(
                 installationPtr, IntPtr.Zero, out IntPtr transactionError);
 
             if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
@@ -299,17 +291,15 @@ public class FlatpakManager
 
             try
             {
-                // Add the install operation to the transaction
-                bool addSuccess = FlatpakReference.TransactionAddInstall(
+                var addSuccess = FlatpakReference.TransactionAddInstall(
                     transactionPtr, remote, refString, IntPtr.Zero, out IntPtr addError);
 
                 if (!addSuccess || addError != IntPtr.Zero)
                 {
                     return $"Failed to add {appId} to installation queue. Check if the app ID is correct.";
                 }
-
-                // Run the transaction
-                bool runSuccess = FlatpakReference.TransactionRun(
+                
+                var runSuccess = FlatpakReference.TransactionRun(
                     transactionPtr, IntPtr.Zero, out IntPtr runError);
 
                 if (!runSuccess || runError != IntPtr.Zero)
@@ -345,8 +335,8 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(remotesPtr);
-            int length = Marshal.ReadInt32(remotesPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(remotesPtr);
+            var length = Marshal.ReadInt32(remotesPtr + IntPtr.Size);
 
             if (length > 0)
             {
@@ -364,15 +354,15 @@ public class FlatpakManager
 
         return null;
     }
-    
-     /// <summary>
+
+    /// <summary>
     /// Uninstalls a flatpak application by its app ID or friendly name.
     /// </summary>
     /// <param name="nameOrId">The application ID (e.g., "org.mozilla.firefox") or friendly name</param>
     /// <returns>A result message indicating success or failure</returns>
     public string UninstallApp(string nameOrId)
     {
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -381,57 +371,50 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-
-                // Find the installed app to get its full ref details
+                
                 var match = FindInstalledApp(installationPtr, nameOrId);
 
-                if (match != null)
+                if (match == null) continue;
+                var refString = $"app/{match.Id}/{match.Arch}/{match.Branch}";
+
+                var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                    installationPtr, IntPtr.Zero, out IntPtr transactionError);
+
+                if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
                 {
-                    // Build the ref string (format: app/org.example.App/x86_64/stable)
-                    string refString = $"app/{match.Id}/{match.Arch}/{match.Branch}";
+                    return "Failed to create uninstallation transaction.";
+                }
 
-                    // Create a transaction for the uninstallation
-                    IntPtr transactionPtr = FlatpakReference.TransactionNewForInstallation(
-                        installationPtr, IntPtr.Zero, out IntPtr transactionError);
+                try
+                {
+                    var addSuccess = FlatpakReference.TransactionAddUninstall(
+                        transactionPtr, refString, out IntPtr addError);
 
-                    if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+                    if (!addSuccess || addError != IntPtr.Zero)
                     {
-                        return "Failed to create uninstallation transaction.";
+                        return $"Failed to add {nameOrId} to uninstallation queue.";
                     }
 
-                    try
+                    var runSuccess = FlatpakReference.TransactionRun(
+                        transactionPtr, IntPtr.Zero, out IntPtr runError);
+
+                    if (!runSuccess || runError != IntPtr.Zero)
                     {
-                        // Add the uninstall operation to the transaction
-                        bool addSuccess = FlatpakReference.TransactionAddUninstall(
-                            transactionPtr, refString, out IntPtr addError);
-
-                        if (!addSuccess || addError != IntPtr.Zero)
-                        {
-                            return $"Failed to add {nameOrId} to uninstallation queue.";
-                        }
-
-                        // Run the transaction
-                        bool runSuccess = FlatpakReference.TransactionRun(
-                            transactionPtr, IntPtr.Zero, out IntPtr runError);
-
-                        if (!runSuccess || runError != IntPtr.Zero)
-                        {
-                            return $"Uninstallation of {nameOrId} failed. You may need elevated permissions.";
-                        }
-
-                        return $"Successfully uninstalled {match.Name} ({match.Id}).";
+                        return $"Uninstallation of {nameOrId} failed. You may need elevated permissions.";
                     }
-                    finally
-                    {
-                        FlatpakReference.GObjectUnref(transactionPtr);
-                    }
+
+                    return $"Successfully uninstalled {match.Name} ({match.Id}).";
+                }
+                finally
+                {
+                    FlatpakReference.GObjectUnref(transactionPtr);
                 }
             }
         }
@@ -442,15 +425,15 @@ public class FlatpakManager
 
         return $"Could not find installed app matching '{nameOrId}'.";
     }
-     
-     /// <summary>
+
+    /// <summary>
     /// Updates a flatpak application by its app ID or friendly name.
     /// </summary>
     /// <param name="nameOrId">The application ID (e.g., "org.mozilla.firefox") or friendly name</param>
     /// <returns>A result message indicating success or failure</returns>
     public string UpdateApp(string nameOrId)
     {
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -459,56 +442,52 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
 
-                // Find the installed app to get its full ref details
                 var match = FindInstalledApp(installationPtr, nameOrId);
 
-                if (match != null)
+                if (match == null) continue;
+                var refString = BuildRefString(match);
+
+                var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                    installationPtr, IntPtr.Zero, out IntPtr transactionError);
+
+                if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
                 {
-                    // Build the ref string (format: app/org.example.App/x86_64/stable)
-                    var refString = BuildRefString(match);
-                    
-                    IntPtr transactionPtr = FlatpakReference.TransactionNewForInstallation(
-                        installationPtr, IntPtr.Zero, out IntPtr transactionError);
+                    return "Failed to create update transaction.";
+                }
 
-                    if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+                try
+                {
+                    var addSuccess = FlatpakReference.TransactionAddUpdate(
+                        transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
+
+                    if (!addSuccess || addError != IntPtr.Zero)
                     {
-                        return "Failed to create update transaction.";
+                        var response = FlatpakReference.GetErrorMessage(addError);
+                        return
+                            $"Failed to add {nameOrId} to update queue. Error: {response} App may already be up to date.";
                     }
 
-                    try
+                    var runSuccess = FlatpakReference.TransactionRun(
+                        transactionPtr, IntPtr.Zero, out IntPtr runError);
+
+                    if (!runSuccess || runError != IntPtr.Zero)
                     {
-                        var addSuccess = FlatpakReference.TransactionAddUpdate(
-                            transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
-
-                        if (!addSuccess || addError != IntPtr.Zero)
-                        {
-                            var response = FlatpakReference.GetErrorMessage(addError);
-                            return $"Failed to add {nameOrId} to update queue. Error: {response} App may already be up to date.";
-                        }
-                        
-                        var runSuccess = FlatpakReference.TransactionRun(
-                            transactionPtr, IntPtr.Zero, out IntPtr runError);
-
-                        if (!runSuccess || runError != IntPtr.Zero)
-                        {
-                            
-                            return $"Update of {nameOrId} failed. You may need elevated permissions.";
-                        }
-
-                        return $"Successfully updated {match.Name} ({match.Id}).";
+                        return $"Update of {nameOrId} failed. You may need elevated permissions.";
                     }
-                    finally
-                    {
-                        FlatpakReference.GObjectUnref(transactionPtr);
-                    }
+
+                    return $"Successfully updated {match.Name} ({match.Id}).";
+                }
+                finally
+                {
+                    FlatpakReference.GObjectUnref(transactionPtr);
                 }
             }
         }
@@ -519,12 +498,16 @@ public class FlatpakManager
 
         return $"Could not find installed app matching '{nameOrId}'.";
     }
-     
+
+    /// <summary>
+    /// Retrieve flatpak that require updates
+    /// <returns>List of FlatpakPackageDto</returns>
+    /// </summary>
     public List<FlatpakPackageDto> GetPackagesWithUpdates()
     {
         var packages = new List<FlatpakPackageDto>();
 
-        IntPtr installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
@@ -533,16 +516,15 @@ public class FlatpakManager
 
         try
         {
-            IntPtr dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                IntPtr installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
 
-                // Get refs that have updates available
-                IntPtr refsPtr = FlatpakReference.InstanceGetUpdates(
+                var refsPtr = FlatpakReference.InstanceGetUpdates(
                     installationPtr, IntPtr.Zero, out IntPtr refsError);
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
@@ -552,12 +534,12 @@ public class FlatpakManager
 
                 try
                 {
-                    IntPtr refsDataPtr = Marshal.ReadIntPtr(refsPtr);
-                    int refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
+                    var refsDataPtr = Marshal.ReadIntPtr(refsPtr);
+                    var refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
 
-                    for (int j = 0; j < refsLength; j++)
+                    for (var j = 0; j < refsLength; j++)
                     {
-                        IntPtr refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
+                        var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                         if (refPtr == IntPtr.Zero) continue;
 
                         var package = new FlatpackPackage(refPtr);
@@ -578,27 +560,46 @@ public class FlatpakManager
         return packages;
     }
 
+    /// <summary>
+    /// Search Flathub return Api Response
+    /// <param name="query">Query Parameter</param>
+    /// <param name="page">Page of query</param>
+    /// <param name="limit">Limit of each page</param>
+    /// <param name="filters">Filters to apply on search</param>
+    /// <param name="ct">Cancellation Token</param>
+    /// <returns>FlatpakApiResponse</returns>
+    /// </summary>
     public async Task<FlatpakApiResponse> SearchFlathubAsync(
         string query,
         int page = 1,
         int limit = 21,
         List<FlatpakHttpRequests.FlathubSearchFilter>? filters = null,
         CancellationToken ct = default)
-    { 
+    {
         return await new FlatpakHttpRequests().SearchAsync(query, page, limit, filters, ct);
     }
-    
+
+    /// <summary>
+    /// Search Flathub return json Response
+    /// <param name="query">Query Parameter</param>
+    /// <param name="page">Page of query</param>
+    /// <param name="limit">Limit of each page</param>
+    /// <param name="filters">Filters to apply on search</param>
+    /// <param name="ct">Cancellation Token</param>
+    /// <returns>FlatpakApiResponse</returns>
+    /// </summary>
     public async Task<string> SearchFlathubJsonAsync(
         string query,
         int page = 1,
         int limit = 21,
         List<FlatpakHttpRequests.FlathubSearchFilter>? filters = null,
         CancellationToken ct = default)
-    { 
-        return await new FlatpakHttpRequests().SearchJsonAsync(query, page, limit, filters, ct);;
+    {
+        return await new FlatpakHttpRequests().SearchJsonAsync(query, page, limit, filters, ct);
+        ;
     }
 
-     
+
     /// <summary>
     /// Gets the current system architecture for flatpak refs.
     /// </summary>
@@ -614,21 +615,23 @@ public class FlatpakManager
         };
     }
 
+    /// <summary>
+    /// Convert Ptr* to String
+    /// </summary>
     private static string PtrToStringSafe(IntPtr ptr)
     {
         return ptr == IntPtr.Zero ? string.Empty : Marshal.PtrToStringUTF8(ptr) ?? string.Empty;
     }
-    
+
     /// <summary>
     /// Builds a Flatpak ref string based on the package kind.
     /// </summary>
     private static string BuildRefString(FlatpakPackageDto package)
     {
-        var kindString = package.Kind == FlatpakReference.FlatpakRefKindApp 
-            ? "app" 
+        var kindString = package.Kind == FlatpakReference.FlatpakRefKindApp
+            ? "app"
             : "runtime";
-    
+
         return $"{kindString}/{package.Id}/{package.Arch}/{package.Branch}";
     }
 }
-

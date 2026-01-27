@@ -5,7 +5,7 @@ using Shelly_UI.ViewModels;
 
 namespace Shelly_UI.BaseClasses;
 
-public abstract class ConsoleEnabledViewModelBase : ViewModelBase
+public abstract class ConsoleEnabledViewModelBase : ReactiveObject
 {
     // Expose the collection directly for the custom control
     public System.Collections.ObjectModel.ObservableCollection<string> Logs => 

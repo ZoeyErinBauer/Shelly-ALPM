@@ -25,6 +25,14 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
         
         Width = config.WindowWidth;
         Height = config.WindowHeight;
+        
+        if (config.WindowWidth == 0 || config.WindowHeight == 0)
+        {
+            Width = 800;
+            Height = 600;
+        }
+        
+        WindowState = config.WindowState;
     }
 
     private void SaveWindow()
@@ -35,9 +43,12 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
         var width = size.Width;
         var height = size.Height;
         
+        var state = WindowState;
+        
         var config = configService.LoadConfig();
         config.WindowWidth = width;
         config.WindowHeight = height;
+        config.WindowState = state;
         
         configService.SaveConfig(config);
     }

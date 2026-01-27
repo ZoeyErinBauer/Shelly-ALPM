@@ -15,7 +15,6 @@
                 BorderBrush="{DynamicResource SystemBaseLowColor}"
                 BorderThickness="1"
                 Margin="8,4,4,4">
-
             <Grid RowDefinitions="Auto, *">
                 <TextBlock Text="{x:Static lang:Resources.ArchNews}" FontWeight="Bold"
                            FontSize="18" Margin="10, 5,0 ,0">

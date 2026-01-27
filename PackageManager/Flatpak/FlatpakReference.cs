@@ -29,10 +29,6 @@ internal static partial class FlatpakReference
 
     #region Refs
 
-    [LibraryImport(LibName, EntryPoint = "flatpak_remote_ref_get_remote_name",
-        StringMarshalling = StringMarshalling.Utf8)]
-    public static partial IntPtr RemoteRefGetRemoteName(IntPtr @ref);
-
     [LibraryImport(LibName, EntryPoint = "flatpak_ref_get_name", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr RefGetName(IntPtr @ref);
 
@@ -78,7 +74,7 @@ internal static partial class FlatpakReference
 
     [LibraryImport(LibName, EntryPoint = "flatpak_installed_ref_get_latest_commit",
         StringMarshalling = StringMarshalling.Utf8)]
-    public static partial IntPtr InstalledGetLatestCommit(IntPtr instance);
+    public static partial IntPtr InstalledGetLatestCommit(IntPtr installation);
 
     [LibraryImport(LibName, EntryPoint = "flatpak_ref_get_kind", StringMarshalling = StringMarshalling.Utf8)]
     public static partial int RefGetKind(IntPtr instance);
@@ -105,10 +101,7 @@ internal static partial class FlatpakReference
 
     [LibraryImport(GLibName, EntryPoint = "g_ptr_array_unref")]
     public static partial void GPtrArrayUnref(IntPtr array);
-
-    [LibraryImport(GLibName, EntryPoint = "g_error_free")]
-    public static partial void GErrorFree(IntPtr error);
-
+    
     #endregion
 
     #region Remotes
@@ -197,13 +190,13 @@ internal static partial class FlatpakReference
 
         try
         {
-            int offset = 8;
-            IntPtr messagePtr = Marshal.ReadIntPtr(errorPtr, offset);
+            var offset = 8;
+            var messagePtr = Marshal.ReadIntPtr(errorPtr, offset);
 
             if (messagePtr == IntPtr.Zero)
                 return "Error message is null";
 
-            string? message = Marshal.PtrToStringUTF8(messagePtr);
+            var message = Marshal.PtrToStringUTF8(messagePtr);
             return message ?? "Unknown error";
         }
         catch (Exception ex)

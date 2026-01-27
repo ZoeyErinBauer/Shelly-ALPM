@@ -10,63 +10,73 @@
              x:DataType="viewModels:SettingViewModel"
              x:CompileBindings="True"
              Background="{DynamicResource SystemChromeLowColor}">
-    <StackPanel Margin="20" Spacing="10">
-        <Button Command="{Binding HostScreen.Router.NavigateBack}"
-                HorizontalAlignment="Left"
-                Background="Transparent"
+    <Grid RowDefinitions="Auto,Auto">
+        <TabControl Grid.Row="0"
+            Margin="0 16"
+            TabStripPlacement="Top">
+            <TabItem Header="App Settings">
+                <StackPanel Orientation="Vertical" Spacing="8">
+                    <ToggleSwitch Content="Enable Console"
+                                  IsChecked="{Binding EnableConsole, Mode=TwoWay}" />
+                    <ToggleSwitch Content="Enable AUR (Beta) (Requires Restart of Shelly)"
+                                  IsChecked="{Binding EnableAur, Mode=TwoWay}">
+                    </ToggleSwitch>
+                    <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"
+                                  IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">
+                    </ToggleSwitch>
+                    <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False"
+                                  IsChecked="{Binding EnableSnap, Mode=TwoWay}">
+                    </ToggleSwitch>
+                    <Button Content="{x:Static lang:Resources.ForceSync}"
+                            Command="{Binding ForceSyncUpdateCommand}"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Center"
+                            Background="{DynamicResource SystemAccentColor}"
+                            Foreground="{DynamicResource SystemBaseHighColor}"
+                            Width="250"/>
+                    <Button Content="{Binding UpdateAvailableText}"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            IsVisible="{Binding IsUpdateCheckVisible}"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            Background="{DynamicResource SystemAccentColor}"
+                            Foreground="{DynamicResource SystemBaseHighColor}"
+                            Width="250"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Appearance">
+                <StackPanel Orientation="Vertical" Spacing="8" Margin="0,10">
+                    <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7" />
+                    <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
+                        <ColorPicker Grid.Column="0" Color="{Binding AccentHex, Mode=TwoWay}" />
+                        <Button Grid.Column="1" Content="{x:Static lang:Resources.ApplyAccent}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Margin="20,0"
+                                Padding="10,7"
+                                Command="{Binding ApplyCustomAccent}"
+                                Background="{DynamicResource SystemAccentColor}"
+                                Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </Grid>
+                    <ToggleSwitch Content="Toggle Dark/Light Mode"
+                                  IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="1"  VerticalAlignment="Bottom" Margin="10">
+            <Button
                 Padding="0"
-                Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Spacing="5">
-                <avalonia:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" />
-                <TextBlock Text="Back" VerticalAlignment="Center" />
-            </StackPanel>
-        </Button>
-        <TextBlock Text="{x:Static lang:Resources.Appearance}" FontSize="18" FontWeight="Bold" />
-        <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14" Opacity="0.7" />
-        <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
-            <ColorPicker Grid.Column="0" Color="{Binding AccentHex, Mode=TwoWay}" />
-            <Button Grid.Column="1" Content="{x:Static lang:Resources.ApplyAccent}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Margin="20,0"
-                    Padding="10,7"
-                    Command="{Binding ApplyCustomAccent}"
-                    Background="{DynamicResource SystemAccentColor}"
-                    Foreground="{DynamicResource SystemBaseHighColor}" />
-        </Grid>
-        <ToggleSwitch Content="Toggle Dark/Light Mode"
-                      IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
-        <ToggleSwitch Content="Enable Console"
-                      IsChecked="{Binding EnableConsole, Mode=TwoWay}" />
-        <ToggleSwitch Content="Enable AUR (Beta) (Requires Restart of Shelly)" IsChecked="{Binding EnableAur, Mode=TwoWay}"></ToggleSwitch>
-        <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"
-                      IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">
-        </ToggleSwitch>
-        <ToggleSwitch Content="Enable Snap (WIP)" IsEnabled="False" IsChecked="{Binding EnableSnap, Mode=TwoWay}"></ToggleSwitch>
-        <Button Content="{x:Static lang:Resources.ForceSync}"
-                Command="{Binding ForceSyncUpdateCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Background="{DynamicResource SystemAccentColor}"
-                Foreground="{DynamicResource SystemBaseHighColor}" />
-        <Button Content="{Binding UpdateAvailableText}"
-                Command="{Binding CheckForUpdatesCommand}"
-                IsVisible="{Binding IsUpdateCheckVisible}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0,10"
-                Background="{DynamicResource SystemAccentColor}"
-                Foreground="{DynamicResource SystemBaseHighColor}" />
-        <Button
-            Padding="0"
-            Click="OpenUrlCrossPlatform"
-            Background="Transparent">
-            <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
-                <avalonia:MaterialIcon Kind="CoffeeToGo" Foreground="{DynamicResource SystemBaseHighColor}" Width="20"
-                                       Height="20" />
-                <TextBlock Grid.Column="1" Text="Buy me a coffee" Opacity=".7" Padding="10, 0"></TextBlock>
-            </Grid>
-        </Button>
-        <TextBlock Text="{Binding AppVersion}" Opacity=".7" />
-    </StackPanel>
+                Click="OpenUrlCrossPlatform"
+                Background="Transparent">
+                <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
+                    <avalonia:MaterialIcon Kind="CoffeeToGo" Foreground="{DynamicResource SystemBaseHighColor}"
+                                           Width="20"
+                                           Height="20" />
+                    <TextBlock Grid.Column="1" Text="Buy me a coffee" Opacity=".7" Padding="10, 0"></TextBlock>
+                </Grid>
+            </Button>
+            <TextBlock Text="{Binding AppVersion}" Opacity=".7"/>
+        </StackPanel>
+    </Grid>
 </UserControl>

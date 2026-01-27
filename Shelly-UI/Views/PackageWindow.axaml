@@ -21,7 +21,6 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
             <Setter Property="SeparatorBrush" Value="Transparent" />
-
         </Style>
     </UserControl.Styles>
     <UserControl.Resources>
@@ -46,6 +45,8 @@
                                 Margin="12,0"
                                 Watermark="{x:Static lang:Resources.SearchPackages}"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
                                 Background="{DynamicResource ChromeWhite}"
                                 Foreground="{DynamicResource AltMediumLow}"
                                 BorderThickness="1"
@@ -158,9 +159,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-
                         </DataGrid.Columns>
-
                     </DataGrid>
                 </Grid>
                 <Border Background="#80000000"
@@ -206,15 +205,11 @@
             </Grid>
         </customControls:ConsoleSplitControl.MainContent>
         <customControls:ConsoleSplitControl.BottomContent>
-            
             <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
                 <ScrollViewer>
                 <customControls:RichConsoleControl Logs="{Binding Logs}" />
                 </ScrollViewer>
             </Grid>
         </customControls:ConsoleSplitControl.BottomContent>
-
     </customControls:ConsoleSplitControl>
-
-
 </UserControl>

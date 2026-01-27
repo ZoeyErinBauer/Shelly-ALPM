@@ -44,6 +44,8 @@
                                 Margin="12,0"
                                 Watermark="{x:Static lang:Resources.SearchPackages}"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                HorizontalContentAlignment="Left"
+                                VerticalContentAlignment="Center"
                                 Background="{DynamicResource ChromeWhite}"
                                 Foreground="{DynamicResource AltMediumLow}"
                                 BorderThickness="1"
@@ -61,7 +63,7 @@
                                 Padding="8"
                                 Background="Transparent"
                                 Command="{Binding SearchCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                ToolTip.Tip="Search">
                                 <avalonia:MaterialIcon Kind="Search" Foreground="{DynamicResource SystemBaseHighColor}"
                                                        Width="20" Height="20" />
                             </Button>
@@ -156,9 +158,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-
                         </DataGrid.Columns>
-
                     </DataGrid>
                 </Grid>
                 <Border Background="#80000000"
@@ -211,8 +211,5 @@
                 </ScrollViewer>
             </Grid>
         </customControls:ConsoleSplitControl.BottomContent>
-
     </customControls:ConsoleSplitControl>
-
-
 </UserControl>
