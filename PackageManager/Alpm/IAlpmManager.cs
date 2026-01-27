@@ -30,4 +30,9 @@ public interface IAlpmManager
     void SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.NoScriptlet | AlpmTransFlag.NoHooks);
 
     void InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None);
+    
+    /// <summary>
+    /// This installs the first package that provides a given dependency.
+    /// </summary>
+    string GetPackageNameFromProvides(string provides, AlpmTransFlag flags = AlpmTransFlag.None);
 }

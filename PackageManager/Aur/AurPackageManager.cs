@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
@@ -211,13 +212,40 @@ public class AurPackageManager(string? configPath = null)
                 Status = PackageProgressStatus.Building,
                 Message = "Building package with makepkg"
             });
+            var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
+            var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
+            var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
+            var allDeps = depends.Concat(makeDepends).Distinct().ToList();
+            var installedPackages = _alpm.GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
+            var depsToInstall = allDeps.Where(x => !IsDependencySatisfied(x, installedPackages)).ToList();
+
+            foreach (var dep in depsToInstall)
+            {
+                try
+                {
+                    _alpm.InstallPackages(depsToInstall);
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        var pkgName = _alpm.GetPackageNameFromProvides(dep);
+                        _alpm.InstallPackage(pkgName);
+                    }
+                    catch (Exception ex2)
+                    {
+                        Console.Error.WriteLine("Failed to install dependency: " + ex2.Message + "");
+                    }
+                }
+            }
+
 
             var buildProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sudo",
-                    Arguments = $"-u {user} makepkg -s --noconfirm",
+                    Arguments = $"-u {user} makepkg --noconfirm",
                     WorkingDirectory = tempPath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -403,5 +431,34 @@ public class AurPackageManager(string? configPath = null)
         {
             return false;
         }
+    }
+
+    private static bool IsDependencySatisfied(string dependency, Dictionary<string, string> installedPackages)
+    {
+        // Parse dependency: "package>=1.0", "package>2.0", "package=1.5", etc.
+        var match = Regex.Match(dependency, @"^([a-zA-Z0-9@._+-]+)(>=|<=|>|<|=)?(.+)?$");
+        if (!match.Success) return false;
+
+        var pkgName = match.Groups[1].Value;
+        var op = match.Groups[2].Value;
+        var requiredVersion = match.Groups[3].Value;
+
+        if (!installedPackages.TryGetValue(pkgName, out var installedVersion))
+            return false; // Not installed
+
+        if (string.IsNullOrEmpty(op))
+            return true; // No version constraint, just needs to be installed
+
+        var cmp = VersionComparer.Compare(installedVersion, requiredVersion);
+
+        return op switch
+        {
+            ">=" => cmp >= 0,
+            "<=" => cmp <= 0,
+            ">" => cmp > 0,
+            "<" => cmp < 0,
+            "=" => cmp == 0,
+            _ => true
+        };
     }
 }
