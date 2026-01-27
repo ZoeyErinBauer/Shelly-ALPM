@@ -66,13 +66,11 @@ public class InstallCommand : Command<PackageSettings>
             }
         };
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+        AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
+        manager.IntializeWithSync();
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Installing packages...", ctx => { manager.InstallPackages(packageList); });
+        AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+        manager.InstallPackages(packageList);
 
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;
@@ -126,13 +124,11 @@ public class RemoveCommand : Command<PackageSettings>
             }
         };
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Initializing ALPM...", ctx => { manager.Initialize(true); });
+        AnsiConsole.MarkupLine("[yellow]Initializing ALPM...[/]");
+        manager.Initialize(true);
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Removing packages...", ctx => { manager.RemovePackages(packageList); });
+        AnsiConsole.MarkupLine("[yellow]Removing packages...[/]");
+        manager.RemovePackages(packageList);
 
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
         return 0;
@@ -186,13 +182,11 @@ public class UpdateCommand : Command<PackageSettings>
             }
         };
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+        AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
+        manager.IntializeWithSync();
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Updating packages...", ctx => { manager.UpdatePackages(packageList); });
+        AnsiConsole.MarkupLine("[yellow]Updating packages...[/]");
+        manager.UpdatePackages(packageList);
 
         AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
         return 0;
