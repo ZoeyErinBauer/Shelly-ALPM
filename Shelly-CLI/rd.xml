@@ -3,24 +3,25 @@
     <Assembly Name="Spectre.Console" Dynamic="Required All" />
     <Assembly Name="Spectre.Console.Cli" Dynamic="Required All" />
     <Assembly Name="shelly" Dynamic="Required All">
-      <Type Name="Shelly_CLI.SyncSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.SyncCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.ListInstalledCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.ListAvailableCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.ListUpdatesCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.PackageSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.InstallCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.RemoveCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.UpdateCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.UpgradeSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.UpgradeCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringInitCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringPopulateCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringRecvCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringLsignCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringListCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.KeyringRefreshCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.VersionCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.SyncSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.SyncCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.ListInstalledCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.ListAvailableCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.ListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.PackageSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.InstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.RemoveCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.UpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.UpgradeSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.UpgradeCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringInitCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringPopulateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringRecvCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringLsignCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringListCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.KeyringRefreshCommand" Dynamic="Required All" />
       <!-- AUR commands -->
       <Type Name="Shelly_CLI.Aur+AurSearchSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Aur+AurSearchCommand" Dynamic="Required All" />

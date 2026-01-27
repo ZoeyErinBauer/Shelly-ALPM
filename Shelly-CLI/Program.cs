@@ -46,6 +46,9 @@ public class Program
             config.SetApplicationName("shelly");
             config.SetApplicationVersion("1.2.4");
 
+            config.AddCommand<VersionCommand>("version")
+                .WithDescription("Display the application version");
+
             config.AddCommand<SyncCommand>("sync")
                 .WithDescription("Synchronize package databases");
 
