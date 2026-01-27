@@ -20,7 +20,7 @@ namespace PackageManager.Alpm
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void AlpmProgressCallback(IntPtr ctx, AlpmProgressType progress,
             IntPtr pkg, int percent, ulong howmany, ulong current);
-        
+
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_eventcb")]
         public static partial int SetEventCallback(IntPtr handle, AlpmEventCallback cb, IntPtr ctx);
 
@@ -35,7 +35,7 @@ namespace PackageManager.Alpm
 
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_progresscb")]
         public static partial int SetProgressCallback(IntPtr handle, AlpmProgressCallback cb, IntPtr ctx);
-        
+
         /// <summary>
         /// Initializes the alpm library.
         /// </summary>
@@ -689,6 +689,15 @@ namespace PackageManager.Alpm
         /// <returns>A pointer to the new version of the package, or IntPtr.Zero if no newer version is found.</returns>
         [LibraryImport(LibName, EntryPoint = "alpm_sync_get_new_version")]
         public static partial IntPtr SyncGetNewVersion(IntPtr pkg, IntPtr dbs_sync);
+
+        /// <summary>
+        /// Finds a package that satisfies a dependency string.
+        /// </summary>
+        /// <param name="pkgList"></param>
+        /// <param name="depstring"></param>
+        /// <returns>The first package that satifies the dependency</returns>
+        [LibraryImport(LibName, EntryPoint = "alpm_find_satisfier", StringMarshalling = StringMarshalling.Utf8)]
+        public static partial IntPtr PkgFindSatisfier(IntPtr pkgList, string depstring);
 
         /// <summary>
         /// Finds a package in a list.

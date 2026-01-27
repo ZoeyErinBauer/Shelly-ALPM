@@ -427,19 +427,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     public List<AlpmPackageDto> GetForeignPackages()
     {
         if (_handle == IntPtr.Zero) Initialize();
-        
+
         var localDbPtr = GetLocalDb(_handle);
         var installedPkgs = AlpmPackage.FromList(DbGetPkgCache(localDbPtr));
         var syncDbsPtr = GetSyncDbs(_handle);
-        
+
         var foreignPackages = new List<AlpmPackageDto>();
-        
+
         foreach (var pkg in installedPkgs)
         {
             // Check if package exists in any sync database
             bool foundInSync = false;
             var currentPtr = syncDbsPtr;
-            
+
             while (currentPtr != IntPtr.Zero)
             {
                 var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
@@ -452,16 +452,17 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         break;
                     }
                 }
+
                 currentPtr = node.Next;
             }
-            
+
             // If not found in any sync db, it's a foreign package
             if (!foundInSync)
             {
                 foreignPackages.Add(pkg.ToDto());
             }
         }
-        
+
         return foreignPackages;
     }
 
@@ -830,7 +831,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         if (_handle == IntPtr.Zero) Initialize();
 
         // 1. Load package from file
-        var result = PkgLoad(_handle, path, true, AlpmSigLevel.PackageOptional | AlpmSigLevel.DatabaseOptional, out IntPtr pkgPtr);
+        var result = PkgLoad(_handle, path, true, AlpmSigLevel.PackageOptional | AlpmSigLevel.DatabaseOptional,
+            out IntPtr pkgPtr);
         if (result != 0 || pkgPtr == IntPtr.Zero)
         {
             throw new Exception($"Failed to load package from '{path}': {GetErrorMessage(ErrorNumber(_handle))}");
@@ -868,6 +870,31 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             TransRelease(_handle);
         }
+    }
+
+    public string GetPackageNameFromProvides(string provides, AlpmTransFlag flags = AlpmTransFlag.None)
+    {
+        if (_handle == IntPtr.Zero) Initialize();
+        var syncDbsPtr = GetSyncDbs(_handle);
+        var currentPtr = syncDbsPtr;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                //Grab pkg cache
+                var pkgCache = DbGetPkgCache(node.Data);
+                var pkgPtr = PkgFindSatisfier(pkgCache, provides);
+                if (pkgPtr != IntPtr.Zero)
+                {
+                    return Marshal.PtrToStringUTF8(GetPkgName(pkgPtr));
+                }
+            }
+
+            currentPtr = node.Next;
+        }
+
+        return string.Empty;
     }
 
     public void UpdatePackages(List<string> packageNames,

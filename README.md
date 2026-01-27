@@ -1,6 +1,7 @@
-# Shelly: A Visual Arch Package Manager
+![shelly_banner.png](shelly_banner.png)
 
 ![Shelly Wiki](https://img.shields.io/badge/Shelly-Wiki-blue)
+
 
 ### About
 Shelly is a modern reinmagination of the Arch Linux package manager, designed to be a more intuitive and user-friendly
