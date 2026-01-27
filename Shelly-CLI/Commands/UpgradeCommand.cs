@@ -18,6 +18,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
     {
+        Dictionary<string, int> packageProgress = new();
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
         if (!settings.NoConfirm)
@@ -33,7 +34,9 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         manager.Progress += (sender, args) =>
         {
-            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+            if (packageProgress.TryGetValue(args.PackageName, out int value) && value >= args.Percent) return;
+            packageProgress[args.PackageName] = args.Percent ?? 0;
+            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {packageProgress[args.PackageName]}%");
         };
 
         manager.Question += (sender, args) =>
@@ -53,13 +56,11 @@ public class UpgradeCommand : Command<UpgradeSettings>
             }
         };
 
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
-
-        AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .Start("Upgrading system...", ctx => { manager.SyncSystemUpdate(); });
+        AnsiConsole.MarkupLine("[yellow]Checking for system updates...[/]");
+        AnsiConsole.MarkupLine("[yellow] Initializing and syncing repositories...[/]");
+        manager.IntializeWithSync();
+        AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
+        manager.SyncSystemUpdate();
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         return 0;
