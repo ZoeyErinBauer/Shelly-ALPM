@@ -9,7 +9,7 @@
              xmlns:aur="clr-namespace:Shelly_UI.ViewModels.AUR"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.UpdateWindow"
-             x:DataType="aur:AurUpdateViewModel"
+             x:DataType="viewModels:UpdateViewModel"
              x:CompileBindings="True">
     <UserControl.Styles>
         <Style Selector="DataGridColumnHeader">
