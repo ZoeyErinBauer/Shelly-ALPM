@@ -23,17 +23,18 @@
       <Type Name="Shelly_CLI.Commands.KeyringListCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.KeyringRefreshCommand" Dynamic="Required All" />
       <!-- AUR commands -->
-      <Type Name="Shelly_CLI.Aur+AurSearchSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurSearchCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurListInstalledCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurListUpdatesCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurPackageSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurInstallCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurInstallVersionSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurInstallVersionCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurUpdateCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurUpgradeCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Aur+AurRemoveCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurSearchSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurSearchCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurListInstalledCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurListUpdatesCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurPackageSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurInstallCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurInstallVersionSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurInstallVersionCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurUpdateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurUpgradeSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurUpgradeCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Aur.AurRemoveCommand" Dynamic="Required All" />
       <!-- Flatpak commands -->
       <Type Name="Shelly_CLI.Flatpak+FlathubSearchSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Flatpak+FlathubSearchCommand" Dynamic="Required All" />

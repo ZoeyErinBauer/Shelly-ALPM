@@ -1,5 +1,6 @@
 using System.Reflection;
 using Shelly_CLI.Commands;
+using Shelly_CLI.Commands.Aur;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -101,28 +102,28 @@ public class Program
             {
                 aur.SetDescription("Manage AUR packages");
 
-                aur.AddCommand<Aur.AurSearchCommand>("search")
+                aur.AddCommand<AurSearchCommand>("search")
                     .WithDescription("Search for AUR packages");
 
-                aur.AddCommand<Aur.AurListInstalledCommand>("list")
+                aur.AddCommand<AurListInstalledCommand>("list")
                     .WithDescription("List installed AUR packages");
 
-                aur.AddCommand<Aur.AurListUpdatesCommand>("list-updates")
+                aur.AddCommand<AurListUpdatesCommand>("list-updates")
                     .WithDescription("List AUR packages that need updates");
 
-                aur.AddCommand<Aur.AurInstallCommand>("install")
+                aur.AddCommand<AurInstallCommand>("install")
                     .WithDescription("Install AUR packages");
 
-                aur.AddCommand<Aur.AurInstallVersionCommand>("install-version")
+                aur.AddCommand<AurInstallVersionCommand>("install-version")
                     .WithDescription("Install a specific version of an AUR package by commit hash");
 
-                aur.AddCommand<Aur.AurUpdateCommand>("update")
+                aur.AddCommand<AurUpdateCommand>("update")
                     .WithDescription("Update specific AUR packages");
 
-                aur.AddCommand<Aur.AurUpgradeCommand>("upgrade")
+                aur.AddCommand<AurUpgradeCommand>("upgrade")
                     .WithDescription("Upgrade all AUR packages");
 
-                aur.AddCommand<Aur.AurRemoveCommand>("remove")
+                aur.AddCommand<AurRemoveCommand>("remove")
                     .WithDescription("Remove AUR packages");
             });
 
