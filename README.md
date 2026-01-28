@@ -35,7 +35,7 @@ Upcoming features and development targets:
 - **AUR Support**: Integration with the Arch User Repository for a wider range of software.
 - **Package Grouping**: Group related packages for easier management.
 - **Flatpak Support**: Manage Flatpak applications alongside native packages.
-- **Snapd Support**: Support for Snap packages.
+- **Shelly Sync**: Multi-system sync lists that keep packages together across computers
 
 ## Prerequisites
 
