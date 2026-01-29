@@ -26,21 +26,23 @@ This will download and install the latest release, including the UI and CLI tool
   user interface.
 - **Package Management**: Supports searching for, installing, updating, and removing packages.
 - **Repository Management**: Synchronizes with official repositories to keep package lists up to date.
+- **AUR Support**: Integration with the Arch User Repository for a wider range of software.
+- **Flatpak Support**: Manage Flatpak applications alongside native packages. (Currently only in cli)
 
 ## Roadmap
 
 Upcoming features and development targets:
 
 - **Repository Modification**: Allow modification of supported repositories (First future release).
-- **AUR Support**: Integration with the Arch User Repository for a wider range of software.
 - **Package Grouping**: Group related packages for easier management.
 - **Flatpak Support**: Manage Flatpak applications alongside native packages.
+- **Desktop Integration**: Enhance integration with the desktop environment for seamless experience. Targeting KDE Plasma and Gnome initially.
 - **Shelly Sync**: Multi-system sync lists that keep packages together across computers
 
 ## Prerequisites
 
 - **Arch Linux** (or an Arch-based distribution)
-- **.NET 10.0 Runtime** (for running only if installed from aur)
+- **.NET 10.0 Runtime** (for running only if installed from non *-bin aur package)
 - **.NET 10.0 SDK** (for building)
 - **libalpm** (provided by `pacman`)
 

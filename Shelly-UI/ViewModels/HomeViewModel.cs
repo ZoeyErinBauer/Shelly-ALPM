@@ -19,7 +19,7 @@ namespace Shelly_UI.ViewModels;
 public class HomeViewModel : ViewModelBase, IRoutableViewModel
 {
     private IAppCache _appCache;
-    
+
     public HomeViewModel(IScreen screen, IAppCache appCache)
     {
         HostScreen = screen;
@@ -51,10 +51,11 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
-    public ObservableCollection<AlpmPackageDto> InstalledPackages { get; set; }
-    
+    public ObservableCollection<AlpmPackageDto> InstalledPackages { get; set; } =
+        [];
+
     public ObservableCollection<RssModel> FeedItems { get; } = new ObservableCollection<RssModel>();
-    
+
 
     private async void LoadFeed()
     {
@@ -86,10 +87,10 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
                     FeedItems.Add(item);
                     cachedFeed.Rss.Add(item);
                 }
+
                 cachedFeed.TimeCached = DateTime.Now;
                 CacheFeed(cachedFeed);
             });
-           
         }
         catch (Exception e)
         {
@@ -113,32 +114,33 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
             {
                 Title = item.Element("title")?.Value ?? "",
                 Link = item.Element("link")?.Value ?? "",
-                Description =  Regex.Replace(item.Element("description")?.Value ?? "" , "<.*?>", string.Empty),
+                Description = Regex.Replace(item.Element("description")?.Value ?? "", "<.*?>", string.Empty),
                 PubDate = item.Element("pubDate")?.Value ?? ""
             });
         }
+
         return items;
     }
-    
+
     #region RssCaching
-    
+
     private static readonly string FeedFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Shelly");
-    
+
     private static readonly string FeedPath = Path.Combine(FeedFolder, "Feed.json");
 
     public static void CacheFeed(CachedRssModel feed)
     {
         if (!Directory.Exists(FeedFolder)) Directory.CreateDirectory(FeedFolder);
-        
+
         var json = JsonSerializer.Serialize(feed, ShellyUIJsonContext.Default.CachedRssModel);
         File.WriteAllText(FeedPath, json);
     }
 
     public static CachedRssModel LoadCachedFeed()
     {
-        if (!File.Exists(FeedPath)) return new CachedRssModel(); 
+        if (!File.Exists(FeedPath)) return new CachedRssModel();
 
         try
         {
@@ -150,5 +152,6 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel
             return new CachedRssModel();
         }
     }
+
     #endregion
 }

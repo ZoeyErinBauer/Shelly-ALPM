@@ -61,8 +61,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private bool _enableAur;
 
     private bool _enableFlatpak;
-
-    private bool _enableSnapd;
+    
 
     public Color AccentHex
     {

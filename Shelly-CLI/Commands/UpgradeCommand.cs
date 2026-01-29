@@ -34,8 +34,8 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         manager.Progress += (sender, args) =>
         {
-            if (packageProgress.TryGetValue(args.PackageName, out int value) && value >= args.Percent) return;
-            packageProgress[args.PackageName] = args.Percent ?? 0;
+            if (packageProgress.TryGetValue(args.PackageName!, out int value) && value >= args.Percent) return;
+            packageProgress[args.PackageName!] = args.Percent ?? 0;
             AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {packageProgress[args.PackageName]}%");
         };
 

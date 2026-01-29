@@ -8,7 +8,7 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands;
 
-public class PackageSettings : CommandSettings
+public class PackageSettings : DefaultSettings
 {
     [CommandArgument(0, "<packages>")]
     [Description("Package name(s) to operate on")]

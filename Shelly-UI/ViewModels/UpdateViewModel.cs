@@ -164,8 +164,6 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
         }
 
-    public ObservableCollection<AlpmPackageDto> AvailablePackages { get; set; }
-
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AlpmUpdateCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SyncCommand { get; }
 

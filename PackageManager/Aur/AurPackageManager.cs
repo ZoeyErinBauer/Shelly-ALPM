@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
 using PackageManager.Utilities;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace PackageManager.Aur;
 
 public class PackageProgressEventArgs : EventArgs
 {
-    public string PackageName { get; init; }
+    public required string PackageName { get; init; }
     public int CurrentIndex { get; init; }
     public int TotalCount { get; init; }
     public PackageProgressStatus Status { get; init; }
@@ -21,9 +22,9 @@ public class PackageProgressEventArgs : EventArgs
 
 public class PkgbuildDiffRequestEventArgs : EventArgs
 {
-    public string PackageName { get; init; }
-    public string OldPkgbuild { get; init; }
-    public string NewPkgbuild { get; init; }
+    public required string PackageName { get; init; }
+    public required string OldPkgbuild { get; init; }
+    public required string NewPkgbuild { get; init; }
     public bool ShowDiff { get; set; }
     public bool ProceedWithUpdate { get; set; } = true;
 }
@@ -224,7 +225,7 @@ public class AurPackageManager(string? configPath = null)
                 {
                     _alpm.InstallPackages(depsToInstall);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     try
                     {

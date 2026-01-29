@@ -57,12 +57,12 @@ Server = https://another-mirror.example.com/extra/os/$arch
             
             var core = conf.Repos.FirstOrDefault(r => r.Name == "core");
             Assert.That(core, Is.Not.Null);
-            Assert.That(core.Servers, Has.Count.EqualTo(1));
+            Assert.That(core!.Servers, Has.Count.EqualTo(1));
             Assert.That(core.Servers[0], Is.EqualTo("https://mirror.example.com/core/os/$arch"));
 
             var extra = conf.Repos.FirstOrDefault(r => r.Name == "extra");
             Assert.That(extra, Is.Not.Null);
-            Assert.That(extra.Servers, Has.Count.EqualTo(2));
+            Assert.That(extra!.Servers, Has.Count.EqualTo(2));
         });
     }
 
