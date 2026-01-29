@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +35,7 @@ public class FlatpakManager
             {
                 var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-                
+
                 var refsPtr = FlatpakReference.InstallationListInstalledRefs(
                     installationPtr, IntPtr.Zero, out IntPtr refsError);
 
@@ -94,7 +96,7 @@ public class FlatpakManager
             {
                 var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-                
+
                 var match = FindInstalledApp(installationPtr, nameOrId);
 
                 if (match == null) continue;
@@ -145,7 +147,7 @@ public class FlatpakManager
                 if (refPtr == IntPtr.Zero) continue;
 
                 var package = new FlatpackPackage(refPtr);
-                
+
                 if (string.Equals(package.Id, nameOrId, StringComparison.OrdinalIgnoreCase) ||
                     package.Id.Contains(nameOrId, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(package.Name, nameOrId, StringComparison.OrdinalIgnoreCase) ||
@@ -191,9 +193,9 @@ public class FlatpakManager
             process.Kill(true);
             return "Killed";
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-           Console.WriteLine(e);
+            Console.WriteLine(e);
         }
 
         return "Failed to kill instance of " + appId + "." + pid;
@@ -266,21 +268,21 @@ public class FlatpakManager
             {
                 return "No flatpak installations found.";
             }
-            
+
             var installationPtr = Marshal.ReadIntPtr(dataPtr);
             if (installationPtr == IntPtr.Zero)
             {
                 return "Installation pointer is invalid.";
             }
-            
+
             var remote = remoteName ?? GetFirstRemote(installationPtr);
             if (string.IsNullOrEmpty(remote))
             {
                 return "No remote repository configured. Add a remote like 'flathub' first.";
             }
-            
+
             var refString = $"app/{appId}/{GetCurrentArch()}/stable";
-            
+
             var transactionPtr = FlatpakReference.TransactionNewForInstallation(
                 installationPtr, IntPtr.Zero, out IntPtr transactionError);
 
@@ -298,7 +300,7 @@ public class FlatpakManager
                 {
                     return $"Failed to add {appId} to installation queue. Check if the app ID is correct.";
                 }
-                
+
                 var runSuccess = FlatpakReference.TransactionRun(
                     transactionPtr, IntPtr.Zero, out IntPtr runError);
 
@@ -378,7 +380,7 @@ public class FlatpakManager
             {
                 var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
                 if (installationPtr == IntPtr.Zero) continue;
-                
+
                 var match = FindInstalledApp(installationPtr, nameOrId);
 
                 if (match == null) continue;
@@ -558,6 +560,124 @@ public class FlatpakManager
         }
 
         return packages;
+    }
+
+    /// <summary>
+    /// Updates the local appstream metadata for a remote repository.
+    /// </summary>
+    /// <param name="remoteName">The remote name (e.g., "flathub"). If null, updates all remotes.</param>
+    /// <param name="arch">The architecture (e.g., "x86_64"). If null, uses current system architecture.</param>
+    /// <returns>Tuple with success boolean and result message</returns>
+    public (bool success, string message) UpdateAppstream(string? remoteName = null, string? arch = null)
+    {
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+
+        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+        {
+            return (false, "Failed to get system installations.");
+        }
+
+        try
+        {
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            int length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+
+            if (length == 0)
+            {
+                return (false, "No flatpak installations found.");
+            }
+
+            var installationPtr = Marshal.ReadIntPtr(dataPtr);
+            if (installationPtr == IntPtr.Zero)
+            {
+                return (false, "Installation pointer is invalid.");
+            }
+
+            var targetArch = arch ?? GetCurrentArch();
+            var remote = remoteName ?? GetFirstRemote(installationPtr);
+
+            if (string.IsNullOrEmpty(remote))
+            {
+                return (false, "No remote repository configured. Add a remote like 'flathub' first.");
+            }
+
+            var success = FlatpakReference.InstallationUpdateAppstreamSync(
+                installationPtr,
+                remote,
+                targetArch,
+                out bool outChanged,
+                IntPtr.Zero,
+                out IntPtr updateError);
+
+            if (!success || updateError != IntPtr.Zero)
+            {
+                var errorMsg = FlatpakReference.GetErrorMessage(updateError);
+                return (false, $"Failed to update appstream for {remote}: {errorMsg}");
+            }
+
+            var message = outChanged
+                ? $"Successfully updated appstream for {remote}. Metadata was changed."
+                : $"Appstream for {remote} is already up to date.";
+            return (true, message);
+        }
+        finally
+        {
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
+        }
+    }
+
+    /// <summary>
+    /// Gets all available apps from the local appstream metadata.
+    /// </summary>
+    /// <param name="remoteName">The remote name (e.g., "flathub"). I</param>
+    /// <param name="arch">The architecture (e.g., "x86_64"). If null, uses current system architecture.</param>
+    /// <returns>List of available applications from appstream</returns>
+    public List<AppstreamApp> GetAvailableAppsFromAppstream(string remoteName, string? arch = null)
+    {
+        try
+        {
+            var targetArch = arch ?? GetCurrentArch();
+            var remote = remoteName;
+
+            if (string.IsNullOrEmpty(remote))
+            {
+                return new List<AppstreamApp>();
+            }
+
+            // Construct path to appstream file
+            var appstreamPath = $"/var/lib/flatpak/appstream/{remote}/{targetArch}/active/appstream.xml";
+
+            // Try .xml.gz if .xml doesn't exist
+            if (!File.Exists(appstreamPath))
+            {
+                appstreamPath = $"/var/lib/flatpak/appstream/{remote}/{targetArch}/active/appstream.xml.gz";
+            }
+
+            if (!File.Exists(appstreamPath))
+            {
+                return new List<AppstreamApp>();
+            }
+            
+            var parser = new AppstreamParser();
+            return parser.ParseFile(appstreamPath);
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"Failed to parse appstream: {e}");
+        }
+        return new List<AppstreamApp>();
+    }
+    
+    /// <summary>
+    /// Gets all available apps from appstream and serializes to JSON (AOT-compatible)
+    /// </summary>
+    /// <param name="remoteName">The remote name (e.g., "flathub"). If null, uses the first remote.</param>
+    /// <param name="arch">The architecture (e.g., "x86_64"). If null, uses current system architecture.</param>
+    /// <returns>JSON string of available applications</returns>
+    public string GetAvailableAppsFromAppstreamJson(string? remoteName = null, string? arch = null)
+    {
+        var apps = GetAvailableAppsFromAppstream(remoteName, arch);
+        return JsonSerializer.Serialize(apps, AppstreamJsonContext.Default.ListAppstreamApp);
     }
 
     /// <summary>

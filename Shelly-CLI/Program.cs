@@ -160,6 +160,12 @@ public class Program
 
                 flatpak.AddCommand<FlathubSearchCommand>("search")
                     .WithDescription("Search flatpak");
+                
+                flatpak.AddCommand<FlatpakSyncRemoteAppStream>("sync-remote-appstream")
+                    .WithDescription("Sync remote appstream");
+                
+                flatpak.AddCommand<FlathubGetRemote>("get-remote-appstream")
+                    .WithDescription("Returns remote appstream info");
             });
         });
 

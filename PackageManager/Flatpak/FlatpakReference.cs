@@ -113,6 +113,12 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_remote_get_name", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr RemoteGetName(IntPtr remote);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_installation_update_appstream_sync",
+        StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool InstallationUpdateAppstreamSync(IntPtr installation, string remoteName, string? arch,
+        [MarshalAs(UnmanagedType.Bool)] out bool outChanged, IntPtr cancellable, out IntPtr error);
+
     #endregion
 
     #region Transaction
