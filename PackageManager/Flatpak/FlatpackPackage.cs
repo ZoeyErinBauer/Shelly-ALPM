@@ -8,7 +8,6 @@ namespace PackageManager.Flatpak;
 
 public class FlatpackPackage(IntPtr pkgPtr)
 {
-    public IntPtr PackagePtr { get; } = pkgPtr;
 
     public string Id => PtrToStringSafe(FlatpakReference.RefGetName(pkgPtr));
     public string Arch => PtrToStringSafe(FlatpakReference.RefGetArch(pkgPtr));

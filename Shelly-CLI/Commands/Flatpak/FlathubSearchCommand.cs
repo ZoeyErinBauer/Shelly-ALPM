@@ -55,16 +55,18 @@ public class FlathubSearchCommand : Command<FlathubSearchSettings>
         table.AddColumn("Summary");
 
         var count = 0;
-
-        foreach (var item in root.hits)
+        if (root.hits is not null)
         {
-            if (count++ >= limit) break;
+            foreach (var item in root.hits)
+            {
+                if (count++ >= limit) break;
 
-            table.AddRow(
-                item.name.EscapeMarkup(),
-                item.app_id.EscapeMarkup(),
-                item.summary.EscapeMarkup().Truncate(70)
-            );
+                table.AddRow(
+                    item.name.EscapeMarkup(),
+                    item.app_id.EscapeMarkup(),
+                    item.summary.EscapeMarkup().Truncate(70)
+                );
+            }
         }
 
         AnsiConsole.Write(table);

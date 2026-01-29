@@ -596,7 +596,6 @@ public class FlatpakManager
         CancellationToken ct = default)
     {
         return await new FlatpakHttpRequests().SearchJsonAsync(query, page, limit, filters, ct);
-        ;
     }
 
 

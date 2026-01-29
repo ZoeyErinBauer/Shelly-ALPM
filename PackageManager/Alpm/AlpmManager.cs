@@ -8,17 +8,20 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using PackageManager.Utilities;
 using static PackageManager.Alpm.AlpmReference;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace PackageManager.Alpm;
 
 [SuppressMessage("ReSharper", "SuggestVarOrType_BuiltInTypes",
     Justification = "This class should be extra clear on the type definitions of the variables.")]
+[SuppressMessage("Compiler", "CS8618:Non-nullable field must contain a non-null value when exiting constructor. Consider adding the \'required\' modifier or declaring as nullable.")]
 public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, IAlpmManager
 {
     private string _configPath = configPath;
     private PacmanConf _config;
     private IntPtr _handle = IntPtr.Zero;
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient HttpClient = new();
     private AlpmFetchCallback _fetchCallback;
     private AlpmEventCallback _eventCallback;
     private AlpmQuestionCallback _questionCallback;
@@ -293,7 +296,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             Console.Error.WriteLine($"[DEBUG_LOG] Downloading {fullUrl} to {localpath}");
 
-            using var response = _httpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
+            using var response = HttpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
 
@@ -893,7 +896,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 var pkgPtr = PkgFindSatisfier(pkgCache, provides);
                 if (pkgPtr != IntPtr.Zero)
                 {
-                    return Marshal.PtrToStringUTF8(GetPkgName(pkgPtr));
+                    return Marshal.PtrToStringUTF8(GetPkgName(pkgPtr))!;
                 }
             }
 
@@ -1126,8 +1129,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
         catch (Exception ex)
         {
-            //TODO: SWALLOW HERE TILL I CAN FIGURE OUT WHY SOMETIMES THE EVENTS PRODUCE A MEMORY ERROR
-            //Console.Error.WriteLine($"[ALPM_ERROR] Error reading event type: {ex.Message}");
+            Console.Error.WriteLine($"[ALPM_ERROR] Error reading event type: {ex.Message}");
             return;
         }
 
@@ -1289,8 +1291,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
         catch (Exception ex)
         {
-            //TODO: SWALLING ERRORS HERE WHEN THEY OCCUR TILL I CAN FIGURE OUT WHICH MEMORY POINTER IS CAUSING ISSUES
-            //Console.Error.WriteLine($"[ALPM_ERROR] Error handling event: {ex.Message}");
+            Console.Error.WriteLine($"[ALPM_ERROR] Error handling event: {ex.Message}");
         }
     }
 

@@ -9,12 +9,12 @@ public class AlpmPackage(IntPtr pkgPtr)
 {
     public IntPtr PackagePtr { get; } = pkgPtr;
 
-    public string Name => Marshal.PtrToStringUTF8(AlpmReference.GetPkgName(PackagePtr));
-    public string Version => Marshal.PtrToStringUTF8(AlpmReference.GetPkgVersion(PackagePtr));
+    public string Name => Marshal.PtrToStringUTF8(AlpmReference.GetPkgName(PackagePtr))!;
+    public string Version => Marshal.PtrToStringUTF8(AlpmReference.GetPkgVersion(PackagePtr))!;
     public long Size => AlpmReference.GetPkgSize(PackagePtr);
-    public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr));
+    public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr))!;
 
-    public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr));
+    public string Url => Marshal.PtrToStringUTF8(AlpmReference.GetPkgUrl(PackagePtr))!;
 
     public string Repository
     {

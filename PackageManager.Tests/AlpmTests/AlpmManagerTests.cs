@@ -91,11 +91,14 @@ public class AlpmManagerTests
             // Use reflection to call the private HandleQuestion method
             var method = typeof(AlpmManager).GetMethod("HandleQuestion",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            method.Invoke(_manager, new object[] { IntPtr.Zero, questionPtr });
+            if (method != null) method.Invoke(_manager, new object[] { IntPtr.Zero, questionPtr });
 
-            // Assert
-            Assert.That(questionTriggered, Is.True);
-            Assert.That(capturedType, Is.EqualTo(AlpmQuestionType.InstallIgnorePkg));
+            Assert.Multiple(() =>
+            {
+                // Assert
+                Assert.That(questionTriggered, Is.True);
+                Assert.That(capturedType, Is.EqualTo(AlpmQuestionType.InstallIgnorePkg));
+            });
 
             // Verify the answer was written back (Response 0 we set in event handler)
             var updatedQuestion = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
