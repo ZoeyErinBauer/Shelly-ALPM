@@ -220,6 +220,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
         GoFlatpakRemove = ReactiveCommand.CreateFromObservable(() =>
             Router.Navigate.Execute(new FlatpakRemoveViewModel(this)));
+        
+        GoFlatpakUpdate = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new FlatpakUpdateViewModel(this)));
 
         _navigationMap = new()
         {

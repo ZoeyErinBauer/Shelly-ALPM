@@ -7,6 +7,8 @@ public interface IUnprivilegedOperationService
 {
     Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages);
     Task<UnprivilegedOperationResult> ListFlatpakPackages();
+    
+    Task<UnprivilegedOperationResult> ListFlatpakUpdates();
 }
 
 public class UnprivilegedOperationResult

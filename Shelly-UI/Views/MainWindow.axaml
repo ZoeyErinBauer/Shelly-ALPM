@@ -198,7 +198,7 @@
                                     <TextBlock Text="Install Flatpak" FontSize="13" />
                                 </StackPanel>
                             </Button>
-                            <Button Command="{Binding GoUpdate}" Background="Transparent">
+                            <Button Command="{Binding GoFlatpakUpdate}" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                     <TextBlock Text="Update Flatpak" FontSize="13" />

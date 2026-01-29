@@ -7,15 +7,15 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Flatpak;
 
-public class FlatpakListCommand : Command<FlatpakListSettings>
+public class FlatpakListCommand : Command<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context,[NotNull] FlatpakListSettings settings)
+    public override int Execute([NotNull] CommandContext context,[NotNull] DefaultSettings settings)
     {
         var manager = new FlatpakManager();
 
         var packages = manager.SearchInstalled();
         
-        if (settings.UiMode)
+        if (settings.JsonOutput)
         {
             var json = JsonSerializer.Serialize(packages, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
             AnsiConsole.MarkupLine(json.EscapeMarkup());

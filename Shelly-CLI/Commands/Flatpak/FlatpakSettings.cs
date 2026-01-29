@@ -31,10 +31,3 @@ public class FlatpakPackageSettings : CommandSettings
     [Description("Package name to operate on")]
     public string Packages { get; set; } = string.Empty;
 }
-
-public class FlatpakListSettings : CommandSettings
-{
-    [CommandOption("--flatpak-ui-mode")]
-    [Description("Returns Raw json")]
-    public bool UiMode { get; set; }
-}

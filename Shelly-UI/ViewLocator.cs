@@ -29,6 +29,7 @@ public class ViewLocator : ReactiveUI.IViewLocator
         AurRemoveViewModel context => new RemoveAurWindow() { DataContext = context },
         AurUpdateViewModel context => new UpdateAurWindow() { DataContext = context },
         FlatpakRemoveViewModel context => new FlatpakRemoveWindow() { DataContext = context },
+        FlatpakUpdateViewModel context => new FlatpakUpdateWindow() { DataContext = context },
         _ => throw new ArgumentOutOfRangeException(nameof(viewModel))
     };
 }

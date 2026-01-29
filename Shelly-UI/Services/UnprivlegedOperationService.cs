@@ -16,7 +16,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 {
     private readonly string _cliPath;
 
-    public UnprivilegedOperationService(ICredentialManager credentialManager)
+    public UnprivilegedOperationService()
     {
         _cliPath = FindCliPath();
     }
@@ -65,6 +65,11 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     {
         return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list");
     }
+    
+    public async Task<UnprivilegedOperationResult> ListFlatpakUpdates()
+    {
+        return await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates");
+    }
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
     {
@@ -76,7 +81,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)
     {
-        var arguments = string.Join(" ", args) + " --flatpak-ui-mode";
+        var arguments = string.Join(" ", args) + " --json";
         var fullCommand = $"{_cliPath} {arguments}";
 
         Console.WriteLine($"Executing privileged command: {fullCommand}");

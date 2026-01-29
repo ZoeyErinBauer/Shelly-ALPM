@@ -7,28 +7,25 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
-using ReactiveUI;
 using PackageManager.Flatpak;
+using ReactiveUI;
 using Shelly_UI.BaseClasses;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 
 namespace Shelly_UI.ViewModels.Flatpak;
 
-public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
+public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
-    public IScreen HostScreen { get; }
+        public IScreen HostScreen { get; }
 
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<FlatpakModel>> _filteredPackages;
-    private readonly ICredentialManager _credentialManager;
 
-    public FlatpakRemoveViewModel(IScreen screen)
+    public FlatpakUpdateViewModel(IScreen screen)
     {
         HostScreen = screen;
 
@@ -44,6 +41,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
+        
         RemovePackageCommand = ReactiveCommand.Create<FlatpakModel>(RemovePackage);
 
         LoadData();
@@ -64,7 +62,8 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
     {
         try
         {
-            var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakPackages());
+            var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakUpdates());
+            Console.WriteLine($@"[DEBUG_LOG] Loaded {result.Output.Length} installed packages");
             var cleanOutput = result.Output.Replace(System.Environment.NewLine, "");
             var packages = JsonSerializer.Deserialize(
                 cleanOutput,
@@ -179,7 +178,7 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     private void RemovePackage(FlatpakModel package)
     {
         AvailablePackages.Remove(package);
