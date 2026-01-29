@@ -3,8 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 using ReactiveUI;
 using Shelly_UI.ViewModels;
 using Shelly_UI.ViewModels.AUR;
+using Shelly_UI.ViewModels.Flatpak;
 using Shelly_UI.Views;
 using Shelly_UI.Views.AUR;
+using Shelly_UI.Views.Flatpak;
 
 namespace Shelly_UI;
 
@@ -26,6 +28,7 @@ public class ViewLocator : ReactiveUI.IViewLocator
         AurViewModel context => new AurWindow() { DataContext = context },
         AurRemoveViewModel context => new RemoveAurWindow() { DataContext = context },
         AurUpdateViewModel context => new UpdateAurWindow() { DataContext = context },
+        FlatpakRemoveViewModel context => new FlatpakRemoveWindow() { DataContext = context },
         _ => throw new ArgumentOutOfRangeException(nameof(viewModel))
     };
 }

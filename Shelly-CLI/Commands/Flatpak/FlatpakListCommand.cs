@@ -1,18 +1,27 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using PackageManager.Flatpak;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Flatpak;
 
-public class FlatpakListCommand : Command
+public class FlatpakListCommand : Command<FlatpakListSettings>
 {
-    public override int Execute([NotNull] CommandContext context)
+    public override int Execute([NotNull] CommandContext context,[NotNull] FlatpakListSettings settings)
     {
         var manager = new FlatpakManager();
 
         var packages = manager.SearchInstalled();
-
+        
+        if (settings.UiMode)
+        {
+            var json = JsonSerializer.Serialize(packages, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+            AnsiConsole.MarkupLine(json.EscapeMarkup());
+            return 0;
+        }
+        
         var table = new Table();
         table.AddColumn("Name");
         table.AddColumn("Id");

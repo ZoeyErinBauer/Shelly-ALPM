@@ -18,7 +18,7 @@ public class FlathubSearchCommand : Command<FlathubSearchSettings>
         try
         {
             var manager = new FlatpakManager();
-            if (settings.noUi)
+            if (settings.UiMode)
             {
                 var results = manager.SearchFlathubJsonAsync(
                         settings.Query, page: settings.Page,

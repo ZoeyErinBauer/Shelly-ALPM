@@ -18,11 +18,11 @@ public sealed class FlathubSearchSettings : CommandSettings
     [Description("Page number (1-based)")]
     [DefaultValue(1)]
     public int Page { get; init; } = 1;
-
-    [CommandOption("--no-ui")]
+    
+    [CommandOption("--flatpak-ui-mode")]
     [Description("Returns Raw json")]
     [DefaultValue(false)]
-    public bool noUi { get; init; } = false;
+    public bool UiMode { get; init; } = false;
 }
 
 public class FlatpakPackageSettings : CommandSettings
@@ -30,4 +30,11 @@ public class FlatpakPackageSettings : CommandSettings
     [CommandArgument(0, "<package>")]
     [Description("Package name to operate on")]
     public string Packages { get; set; } = string.Empty;
+}
+
+public class FlatpakListSettings : CommandSettings
+{
+    [CommandOption("--flatpak-ui-mode")]
+    [Description("Returns Raw json")]
+    public bool UiMode { get; set; }
 }

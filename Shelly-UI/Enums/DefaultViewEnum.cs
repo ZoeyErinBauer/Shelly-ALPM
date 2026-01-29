@@ -9,7 +9,7 @@ public enum DefaultViewEnum
     InstallAur,
     RemoveAur,
     UpdateAur,
-    //InstallFlatpack,
-    // RemoveFlatpack,
-    // UpdateFlatpack,
+    InstallFlatpack,
+    RemoveFlatpack,
+    UpdateFlatpack,
 }

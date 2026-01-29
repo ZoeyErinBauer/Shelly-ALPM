@@ -168,55 +168,12 @@
                                 </StackPanel>
                             </ToggleButton>
                         </StackPanel>
-                        <Button Command="{Binding ToggleSnapMenu}"
-                                HorizontalAlignment="Stretch"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Padding="0"
-                                IsVisible="False">
-                            <Grid ColumnDefinitions="66, *" Height="40">
-                                <icons:MaterialIcon Kind="Snapchat" Width="22" Height="22"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Text="Snapd"
-                                           VerticalAlignment="Center"
-                                           IsVisible="{Binding $parent[SplitView].IsPaneOpen}" />
-                            </Grid>
-                        </Button>
-                        <StackPanel Margin="25,0,0,10" Spacing="5"
-                                    HorizontalAlignment="Left">
-                            <StackPanel.IsVisible>
-                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                    <Binding Path="IsSnapOpen" />
-                                    <Binding Path="$parent[SplitView].IsPaneOpen" />
-                                </MultiBinding>
-                            </StackPanel.IsVisible>
-                            <Button Command="{Binding GoPackages}" Background="Transparent">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
-                                    <TextBlock Text="Install Snapd" FontSize="13" />
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding GoUpdate}" Background="Transparent">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
-                                    <TextBlock Text="Update Snapd" FontSize="13" />
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding GoRemove}" Background="Transparent">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
-                                    <TextBlock Text="Remove Snapd" FontSize="13" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-
                         <Button Command="{Binding ToggleFlatpakMenu}"
                                 HorizontalAlignment="Stretch"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Padding="0"
-                                IsVisible="False">
+                                IsVisible="{Binding IsFlatpakEnabled}">
                             <Grid ColumnDefinitions="66, *" Height="40">
                                 <icons:MaterialIcon Kind="MusicAccidentalFlat" Width="22" Height="22"
                                                     HorizontalAlignment="Center"
@@ -247,7 +204,7 @@
                                     <TextBlock Text="Update Flatpak" FontSize="13" />
                                 </StackPanel>
                             </Button>
-                            <Button Command="{Binding GoRemove}" Background="Transparent">
+                            <Button Command="{Binding GoFlatpakRemove}" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
                                     <TextBlock Text="Remove Flatpak" FontSize="13" />
@@ -338,7 +295,7 @@
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="1"
                                 Width="100"
-                                HorizontalContentAlignment="Center"/>
+                                HorizontalContentAlignment="Center" />
                         <Button Content="No"
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="0"
@@ -398,8 +355,8 @@
                         ClipToBounds="True">
                         <Border CornerRadius="24" ClipToBounds="True">
                             <avalonia:RoutedViewHost
-                                                     Router="{Binding SettingRouter}"
-                                                     PageTransition="{x:Null}">
+                                Router="{Binding SettingRouter}"
+                                PageTransition="{x:Null}">
                                 <avalonia:RoutedViewHost.ViewLocator>
                                     <shellyUi:ViewLocator />
                                 </avalonia:RoutedViewHost.ViewLocator>
@@ -456,9 +413,10 @@
                     <TextBox Watermark="Password"
                              PasswordChar="●"
                              Text="{Binding PasswordInput}"
-                             HorizontalAlignment="Stretch"><TextBox.KeyBindings>
+                             HorizontalAlignment="Stretch">
+                        <TextBox.KeyBindings>
                             <KeyBinding
-                                Gesture ="Enter"
+                                Gesture="Enter"
                                 Command="{Binding SubmitPasswordCommand}" />
                         </TextBox.KeyBindings>
                     </TextBox>
@@ -472,7 +430,7 @@
                         <Button Content="Authenticate"
                                 Command="{Binding SubmitPasswordCommand}"
                                 Width="120"
-                                HorizontalContentAlignment="Center"/>
+                                HorizontalContentAlignment="Center" />
                         <Button Content="Cancel"
                                 Command="{Binding CancelPasswordCommand}"
                                 Width="100"

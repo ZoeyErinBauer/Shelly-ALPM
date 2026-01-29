@@ -19,6 +19,7 @@ using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
+using Shelly_UI.ViewModels.Flatpak;
 
 namespace Shelly_UI.ViewModels;
 
@@ -217,6 +218,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager)));
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
+        GoFlatpakRemove = ReactiveCommand.CreateFromObservable(() =>
+            Router.Navigate.Execute(new FlatpakRemoveViewModel(this)));
+
         _navigationMap = new()
         {
             { DefaultViewEnum.HomeScreen, GoHome },
@@ -226,6 +230,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             { DefaultViewEnum.UpdateAur, GoAurUpdate },
             { DefaultViewEnum.InstallAur, GoAur },
             { DefaultViewEnum.RemoveAur, GoAurRemove },
+            { DefaultViewEnum.InstallFlatpack, GoFlatpak },
+            { DefaultViewEnum.RemoveFlatpack, GoFlatpakRemove },
+            { DefaultViewEnum.UpdateFlatpack, GoFlatpakUpdate }
         };
 
         NavigateToDefaultView();
@@ -469,6 +476,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoAurUpdate { get; set; } = null!;
 
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpakUpdate { get; set; } = null!;
+
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpakRemove { get; set; } = null!;
+
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpak { get; set; } = null!;
+
     public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 
     #endregion
@@ -523,25 +536,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         set => _configService.LoadConfig().AurEnabled = value;
     }
 
-    private bool _isSnapOpen;
-
-    public bool IsSnapOpen
+    public bool IsFlatpakEnabled
     {
-        get => _isSnapOpen;
-        set => this.RaiseAndSetIfChanged(ref _isSnapOpen, value);
-    }
-
-    public void ToggleSnapMenu()
-    {
-        if (!IsPaneOpen)
-        {
-            IsPaneOpen = true;
-            IsSnapOpen = true;
-        }
-        else
-        {
-            IsSnapOpen = !IsSnapOpen;
-        }
+        get => _configService.LoadConfig().FlatPackEnabled;
+        set => _configService.LoadConfig().FlatPackEnabled = value;
     }
 
     private bool _isFlatpakOpen;
