@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using PackageManager.Utilities;
 using static PackageManager.Alpm.AlpmReference;
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
@@ -15,7 +16,8 @@ namespace PackageManager.Alpm;
 
 [SuppressMessage("ReSharper", "SuggestVarOrType_BuiltInTypes",
     Justification = "This class should be extra clear on the type definitions of the variables.")]
-[SuppressMessage("Compiler", "CS8618:Non-nullable field must contain a non-null value when exiting constructor. Consider adding the \'required\' modifier or declaring as nullable.")]
+[SuppressMessage("Compiler",
+    "CS8618:Non-nullable field must contain a non-null value when exiting constructor. Consider adding the \'required\' modifier or declaring as nullable.")]
 public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, IAlpmManager
 {
     private string _configPath = configPath;
@@ -269,9 +271,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (string.IsNullOrEmpty(localpath)) return -1;
 
-            // Return 1 if file exists and is identical (no update needed)
-            if (File.Exists(localpath) && force == 0) return 1;
-
             var directory = Path.GetDirectoryName(localpath);
             if (directory != null) Directory.CreateDirectory(directory);
 
@@ -295,7 +294,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         try
         {
-            Console.Error.WriteLine($"[DEBUG_LOG] Downloading {fullUrl} to {localpath}");
+            Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
 
             using var response = HttpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
@@ -360,6 +359,22 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 }
             }
 
+            //Compares files to determine if a replacement is needed
+            if (!FileComparison.DoFileReplace(localpath, tempPath))
+            {
+                // Files are identical, clean up temp file
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch
+                {
+                    Console.Error.WriteLine($"[DEBUG_LOG] Failed to delete temp file: {tempPath}");
+                }
+            
+                return 0;
+            }
+
             // Atomic rename: move temp file to final destination only after successful download
             try
             {
@@ -373,6 +388,18 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 Console.Error.WriteLine(
                     $"[DEBUG_LOG] Dest dir exists: {Directory.Exists(Path.GetDirectoryName(localpath))}");
                 return -1;
+            }
+
+            // If we just downloaded a .db file, also download the corresponding .db.sig file
+            // This ensures database and signature files stay in sync, preventing "signature invalid" errors
+            Console.Error.WriteLine($"[DEBUG_LOG] Downloading corresponding signature file: {fullUrl}.sig");
+            Console.Error.WriteLine($"[DEBUG_LOG] Destination: {localpath}.sig");
+            if (fullUrl.EndsWith(".db") && !fullUrl.EndsWith(".db.sig"))
+            {
+                var sigUrl = fullUrl + ".sig";
+                var sigLocalPath = localpath + ".sig";
+                Console.Error.WriteLine($"[DEBUG_LOG] Downloading corresponding signature file: {sigUrl}");
+                DownloadSignatureFile(sigUrl, sigLocalPath);
             }
 
             return 0;
@@ -391,6 +418,76 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
 
             return -1;
+        }
+    }
+
+    /// <summary>
+    /// Downloads a signature file (.sig) for a database file.
+    /// This is called automatically when a .db file is downloaded to ensure
+    /// the signature file stays in sync with the database file.
+    /// Failures are logged but don't cause the main download to fail.
+    /// </summary>
+    private void DownloadSignatureFile(string sigUrl, string sigLocalPath)
+    {
+        string tempPath = sigLocalPath + ".part";
+        try
+        {
+            Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading signature {sigUrl}");
+
+            using var response = HttpClient.GetAsync(sigUrl, HttpCompletionOption.ResponseContentRead)
+                .GetAwaiter()
+                .GetResult();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Signature file may not exist on the server (optional), just log and continue
+                Console.Error.WriteLine($"[DEBUG_LOG] Signature file not available: {sigUrl} ({response.StatusCode})");
+                // Delete any existing stale signature file to prevent mismatch
+                try
+                {
+                    File.Delete(sigLocalPath);
+                }
+                catch
+                {
+                    /* ignore */
+                }
+
+                return;
+            }
+
+            // Write to temporary file first
+            using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var stream = response.Content.ReadAsStream())
+            {
+                stream.CopyTo(fs);
+            }
+
+            // Move temp file to final destination
+            File.Move(tempPath, sigLocalPath, overwrite: true);
+            Console.Error.WriteLine($"[DEBUG_LOG] Signature file downloaded successfully: {sigLocalPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DEBUG_LOG] Failed to download signature file {sigUrl}: {ex.Message}");
+            // Clean up temp file on failure
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch
+            {
+                /* ignore */
+            }
+
+            // Delete any existing stale signature file to prevent mismatch
+            try
+            {
+                File.Delete(sigLocalPath);
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
     }
 
@@ -932,6 +1029,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             Release(_handle);
             _handle = IntPtr.Zero;
         }
+
         Initialize();
     }
 
