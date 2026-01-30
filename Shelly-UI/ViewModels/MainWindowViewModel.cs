@@ -224,7 +224,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         GoAurUpdate = ReactiveCommand.CreateFromObservable(() =>
         {
             var vm = new AurUpdateViewModel(this, _privilegedOperationService, _credentialManager);
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
         {
