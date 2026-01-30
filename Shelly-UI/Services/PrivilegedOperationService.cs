@@ -151,6 +151,74 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         }
     }
 
+    public async Task<List<AlpmPackageDto>> GetAvailablePackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("list-available", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(result.Output.Trim(), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse available packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    public async Task<List<AlpmPackageDto>> GetInstalledPackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("list-installed", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(result.Output.Trim(), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+
     private async Task<OperationResult> ExecuteCommandAsync(params string[] args)
     {
         var arguments = string.Join(" ", args);
@@ -171,39 +239,32 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             }
         };
 
-        var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
-
-        process.OutputDataReceived += (sender, e) =>
-        {
-            if (e.Data != null)
-            {
-                outputBuilder.AppendLine(e.Data);
-            }
-        };
-
-        process.ErrorDataReceived += (sender, e) =>
-        {
-            if (e.Data != null)
-            {
-                errorBuilder.AppendLine(e.Data);
-                Console.Error.WriteLine(e.Data);
-            }
-        };
-
         try
         {
             process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
+            
+            // Read output and error streams synchronously to avoid race conditions
+            // Use Task.WhenAll to read both streams concurrently
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            
+            await Task.WhenAll(outputTask, errorTask);
             await process.WaitForExitAsync();
+            
+            var output = await outputTask;
+            var error = await errorTask;
+            
+            // Log stderr for debugging
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.Error.WriteLine(error);
+            }
 
             return new OperationResult
             {
                 Success = process.ExitCode == 0,
-                Output = outputBuilder.ToString(),
-                Error = errorBuilder.ToString(),
+                Output = output,
+                Error = error,
                 ExitCode = process.ExitCode
             };
         }

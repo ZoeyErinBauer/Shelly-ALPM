@@ -16,6 +16,8 @@ public interface IPrivilegedOperationService
     Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages);
     Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync();
+    Task<List<AlpmPackageDto>> GetAvailablePackagesAsync();
+    Task<List<AlpmPackageDto>> GetInstalledPackagesAsync();
 }
 
 public class OperationResult

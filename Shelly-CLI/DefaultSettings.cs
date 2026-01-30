@@ -9,4 +9,7 @@ public class DefaultSettings : CommandSettings
     
     [CommandOption("-f|--force")]
     public bool Force { get; set; }
+    
+    [CommandOption("-s|--sync")]
+    public bool Sync { get; set; }
 }

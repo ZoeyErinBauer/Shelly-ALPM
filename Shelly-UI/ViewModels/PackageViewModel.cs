@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
@@ -20,7 +19,6 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
 {
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; } = new ViewModelActivator();
-    private IAlpmManager _alpmManager = AlpmService.Instance;
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
@@ -70,11 +68,10 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
 
-            // Re-initialize the local alpm manager to pick up synced data
-            await Task.Run(() => _alpmManager.Initialize());
             // Clear cache and reload data by storing null
             await _appCache.StoreAsync<List<PackageModel>?>(nameof(CacheEnums.PackageCache), null);
-            await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _alpmManager.GetInstalledPackages());
+            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
+            await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installed);
 
             RxApp.MainThreadScheduler.Schedule(() =>
             {
@@ -92,10 +89,9 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     {
         try
         {
-            await Task.Run(() => _alpmManager.Initialize());
-            var packages = await Task.Run(() => _alpmManager.GetAvailablePackages());
+            var packages = await _privilegedOperationService.GetAvailablePackagesAsync();
 
-            var installed = await Task.Run(() => _alpmManager.GetInstalledPackages());   
+            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();   
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
             var models = packages.Select(u => new PackageModel

@@ -14,6 +14,8 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(GitHubAsset[]))]
 [JsonSerializable(typeof(List<AlpmPackageUpdateDto>))]
 [JsonSerializable(typeof(AlpmPackageUpdateDto))]
+[JsonSerializable(typeof(List<AlpmPackageDto>))]
+[JsonSerializable(typeof(AlpmPackageDto))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext
 {
 }

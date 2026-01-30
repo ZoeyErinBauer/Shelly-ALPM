@@ -29,7 +29,11 @@ public class ListUpdatesCommand : Command<DefaultSettings>
         if (settings.JsonOutput)
         {
             var json = JsonSerializer.Serialize(updates, ShellyCLIJsonContext.Default.ListAlpmPackageUpdateDto);
-            Console.WriteLine(json);
+            // Write directly to stdout stream to bypass Spectre.Console redirection
+            using var stdout = Console.OpenStandardOutput();
+            using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+            writer.WriteLine(json);
+            writer.Flush();
             return 0;
         }
 
