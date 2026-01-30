@@ -74,9 +74,15 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecuteUnprivilegedCommandAsync("Install packages", "flatpak remove", packageArgs);
+        return await ExecuteUnprivilegedCommandAsync("Remove packages", "flatpak remove", packageArgs);
     }
 
+    public async Task<UnprivilegedOperationResult> ListAppstreamFlatpak()
+    {
+        return await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream");
+    }
+
+   
 
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)

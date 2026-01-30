@@ -9,6 +9,8 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> ListFlatpakPackages();
     
     Task<UnprivilegedOperationResult> ListFlatpakUpdates();
+    
+    Task<UnprivilegedOperationResult> ListAppstreamFlatpak();
 }
 
 public class UnprivilegedOperationResult

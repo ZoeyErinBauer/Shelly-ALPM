@@ -61,19 +61,15 @@ public class FlatpakInstallViewModel  : ConsoleEnabledViewModelBase, IRoutableVi
     {
         try
         {
-            var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakPackages());
+            var result = await Task.Run(() => _unprivilegedOperationService.ListAppstreamFlatpak());
             var cleanOutput = result.Output.Replace(System.Environment.NewLine, "");
-            var packages = JsonSerializer.Deserialize(
-                cleanOutput,
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto) ?? new List<FlatpakPackageDto>();
+            var packages = JsonSerializer.Deserialize(cleanOutput
+                ,AppstreamJsonContext.Default.ListAppstreamApp);
+            
             var models = packages.Select(u => new FlatpakModel
             {
                 Name = u.Name,
-                Version = u.Version,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/128x128/{u.Id}.png",
-                Kind = u.Kind == 0
-                ? "App"
-                : "Runtime",
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {

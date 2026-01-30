@@ -191,7 +191,7 @@
                                     <Binding Path="$parent[SplitView].IsPaneOpen" />
                                 </MultiBinding>
                             </StackPanel.IsVisible>
-                            <Button Command="{Binding GoPackages}"
+                            <Button Command="{Binding GoFlatpak}"
                                     Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
