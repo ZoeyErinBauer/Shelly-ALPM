@@ -8,10 +8,11 @@ Shelly is a modern reimagination of the Arch Linux package manager, designed to 
 
 ## Features
 
-- **Modern-CLI**: Provides a command-line interface for advanced users and automation, with a focus on ease of use.
+- **Modern UI**: Built using [Avalonia UI](https://avaloniaui.net/) for a modern and responsive user interface.
+- **Modern CLI**: Command-line interface for advanced users and automation.
 - **Native Arch Integration**: Directly interacts with `libalpm` for accurate and fast package management.
-- **Modern UI Framework**: Built using [Avalonia UI](https://avaloniaui.net/), ensuring a modern and responsive user interface.
-- **Package Management**: Supports searching for, installing, updating, and removing packages.
+- **Package Management**: Search, install, update, and remove packages with ease.
+- **AUR Support**: Install and manage packages from the Arch User Repository.
 - **Repository Management**: Synchronizes with official repositories to keep package lists up to date.
 
 ## Quick Install
@@ -37,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/we
 
 ## Getting Started
 
-See the [User Guide](wiki.md) for detailed instructions on using Shelly.
+See the [User Guide](UserGuide.md) for detailed instructions on using Shelly.
 
 ## License
 

@@ -1,61 +1,176 @@
-# What is Shelly?
-Shelly is a visual package manager meant to make installing, updating, and removing packages simple.
+# Shelly User Guide
 
-# How to install Shelly!
+Shelly is a visual package manager for Arch Linux that makes installing, updating, and removing packages simple and intuitive.
 
-Open the downloaded .tar.gz and open it in the terminal by navigating to its download location or opening it in a file explorer and opening it in your terminal of choice.
+## Installation
 
-Run the following commands within the location extracted from the .tar.gz:
+### Quick Install (Recommended)
+
+Install Shelly with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
+```
+
+### Manual Installation
+
+1. Download the latest release `.tar.gz` from the [Releases page](https://github.com/ZoeyErinBauer/Shelly-ALPM/releases)
+2. Extract the archive and navigate to the directory
+3. Run the installer:
 
 ```bash
 chmod +x install.sh
+sudo bash install.sh
 ```
 
-```bash
-sudo bash install.sh 
-```
+Shelly will now be available in your application menu.
 
-Shelly should now be installed to your system, and you will be able to search for it like any other program.
+---
 
-# How to use Shelly!
+## Using Shelly UI
 
+### Home Page
 
-### What is the home page?
+The home page displays important Arch Linux news. Always check this before updating your system, as some updates may require manual intervention.
 
-The home page includes some key information, such as Arch news. This is important to take a look at to see if any special actions might be needed before updating. We only display the 10 most recent pieces of news, but if you ever need more or more detail, please check out https://archlinux.org/news/
+> **Tip:** We display the 10 most recent news items. For more details, visit https://archlinux.org/news/
 
-### How to install packages:
+### Installing Packages
 
-To install a package, you will click on the package icon; this will drop down the menu, and you can click on Install Packages.
+1. Click on the **Packages** icon in the navigation menu
+2. Select **Install Packages** from the dropdown
 
 ![HomePagePackagesHighlighted.png](HomePagePackagesHighlighted.png)
 ![InstallPackagesHighlighted.png](InstallPackagesHighlighted.png)
 
-From here, you can search for any packages and install them by clicking on the checkbox and the download arrow on the bottom right.
+3. Search for the packages you want to install
+4. Check the boxes next to the packages you want
+5. Click the **download arrow** in the bottom right to install
 
 ![InstallGuide.png](InstallGuide.png)
 
-You can right click on packages for more info such as said packages website.
+> **Tip:** Right-click on any package to view more information, including the package's website.
 
-### How to update packages:
+### Updating Packages
 
-Click on the update package icon to pull up the update page.
+1. Click the **Update** icon to open the update page
 
 ![UpdateHighlighted.png](UpdateHighlighted.png)
 
-There are 2 ways to update packages: either by selecting the exact packages you want to update or by updating all.
+**Update specific packages:**
+- Check the boxes next to the packages you want to update
+- Click the **update arrow** in the bottom right
 
-To update only selected packages, check the box for the packages you want to select and click the update arrow at the bottom right.
 ![UpdateOne.png](UpdateOne.png)
 
-Updating all can be handled by selecting "Toggle all," which will check all boxes, and then hitting the update arrow in the bottom right.
+**Update all packages:**
+- Click **Toggle all** to select all packages
+- Click the **update arrow** in the bottom right
+
 ![UpdateMany.png](UpdateMany.png)
 
-### How to remove packages:
+### Removing Packages
 
-Click on the remove package icon to pull up the remove page.
+1. Click the **Remove** icon to open the remove page
+
 ![Remove.png](Remove.png)
 
-To remove a package, search for the packages you want to remove and select them (multiple can be selected at one time). Then, once you have selected all packages, you can remove them by clicking the trashcan icon in the bottom right.
+2. Search for packages you want to remove
+3. Check the boxes next to the packages (you can select multiple)
+4. Click the **trashcan icon** in the bottom right to remove
+
 ![RemoveOne.png](RemoveOne.png)
 
+---
+
+## AUR (Arch User Repository) Support
+
+Shelly supports installing, updating, and removing packages from the AUR.
+
+### Installing AUR Packages
+
+1. Click on the **Packages** icon in the navigation menu
+2. Select **AUR Packages** from the dropdown
+3. Search for the AUR package you want
+4. Select the package and click the download icon to install
+
+> **Note:** AUR packages are built from source and may take longer to install than official repository packages.
+
+### Updating AUR Packages
+
+1. Navigate to **Update** → **AUR Updates**
+2. Select the packages you want to update or use **Toggle all**
+3. Click the update arrow to begin updating
+
+### Removing AUR Packages
+
+1. Navigate to **Remove** → **AUR Packages**
+2. Search for and select the AUR packages to remove
+3. Click the trashcan icon to remove
+
+---
+
+## Settings
+
+Access settings by clicking the **gear icon**. Available options include:
+
+- Theme customization
+- Default view preferences
+- Other display settings
+
+---
+
+## Command Line Interface (CLI)
+
+Shelly also includes `shelly-cli` for terminal-based package management.
+
+### Basic Commands
+
+| Command | Description |
+|---------|-------------|
+| `shelly-cli sync` | Synchronize package databases |
+| `shelly-cli list-installed` | List all installed packages |
+| `shelly-cli list-available` | List all available packages |
+| `shelly-cli list-updates` | List packages with available updates |
+| `shelly-cli install <pkg>` | Install a package |
+| `shelly-cli remove <pkg>` | Remove a package |
+| `shelly-cli update <pkg>` | Update a specific package |
+| `shelly-cli upgrade` | Upgrade all packages |
+
+### Examples
+
+```bash
+# Sync databases and upgrade all packages
+shelly-cli sync
+shelly-cli upgrade
+
+# Install multiple packages
+shelly-cli install firefox vlc
+
+# Remove a package (skip confirmation)
+shelly-cli remove -y package-name
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Shelly won't start:**
+- Ensure you have the .NET 10.0 Runtime installed
+- Check that `libalpm` is available (provided by `pacman`)
+
+**Package database out of sync:**
+- Click the sync button or run `shelly-cli sync`
+
+**Permission errors:**
+- Shelly requires root privileges for package operations
+- Enter your password when prompted
+
+---
+
+## Getting Help
+
+- **GitHub Issues:** [Report bugs or request features](https://github.com/ZoeyErinBauer/Shelly-ALPM/issues)
+- **Wiki:** Check the [Home page](Home.md) for more information
