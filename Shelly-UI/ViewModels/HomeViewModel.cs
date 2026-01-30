@@ -3,6 +3,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
+using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,13 +20,11 @@ namespace Shelly_UI.ViewModels;
 
 public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
 {
-    private IAppCache _appCache;
     private readonly IPrivilegedOperationService _privilegedOperationService;
 
-    public HomeViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
+    public HomeViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
-        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         LoadData();
         LoadFeed();
@@ -39,7 +39,6 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
             {
                 InstalledPackages = new ObservableCollection<AlpmPackageDto>(packages);
                 this.RaisePropertyChanged(nameof(InstalledPackages));
-                _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), packages);
             });
         }
         catch (Exception e)

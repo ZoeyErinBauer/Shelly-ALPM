@@ -191,31 +191,23 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
             ActiveMenu = MenuOptions.None;
-            DisposeCurrentViewModel();
-            var vm = new HomeViewModel(this, appCache, _privilegedOperationService);
-            _currentViewModel = vm;
+            var vm = new HomeViewModel(this, _privilegedOperationService);
             return Router.NavigateAndReset.Execute(vm);
         });
         GoPackages = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
-            var vm = new PackageViewModel(this, appCache, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
-            return Router.NavigateAndReset.Execute(vm);
+            var vm = new PackageViewModel(this, _privilegedOperationService, _credentialManager);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoUpdate = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
             var vm = new UpdateViewModel(this, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoRemove = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
             var vm = new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
         {
@@ -226,24 +218,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         GoAur = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
             var vm = new AurViewModel(this, appCache, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoAurUpdate = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
             var vm = new AurUpdateViewModel(this, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
             return Router.NavigateAndReset.Execute(vm);
         });
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
         {
-            DisposeCurrentViewModel();
             var vm = new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
-            _currentViewModel = vm;
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
