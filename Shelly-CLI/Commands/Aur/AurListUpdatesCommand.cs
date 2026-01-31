@@ -1,13 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using PackageManager.Aur;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurListUpdatesCommand : Command
+public class AurListUpdatesCommand : Command<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context)
+    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
         try
         {
@@ -16,6 +17,16 @@ public class AurListUpdatesCommand : Command
 
             var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
 
+            if (settings.JsonOutput)
+            {
+                var json = JsonSerializer.Serialize(updates, ShellyCLIJsonContext.Default.ListAurUpdateDto);
+                using var stdout = System.Console.OpenStandardOutput();
+                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                writer.WriteLine(json);
+                writer.Flush();
+                return 0;
+            }
+            
             if (updates.Count == 0)
             {
                 AnsiConsole.MarkupLine("[green]All AUR packages are up to date.[/]");

@@ -13,10 +13,38 @@ namespace Shelly_UI.Views;
 
 public partial class RemoveWindow : ReactiveUserControl<RemoveViewModel>
 {
+    private DataGrid? _dataGrid;
+    
     public RemoveWindow()
     {
-        this.WhenActivated(disposables => { });
         AvaloniaXamlLoader.Load(this);
+        this.WhenActivated(disposables =>
+        {
+            _dataGrid = this.FindControl<DataGrid>("RemoveDataGrid"); // Use your actual DataGrid name
+        });
+        
+        this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+    
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (_dataGrid != null)
+        {
+            _dataGrid.ItemsSource = null;
+            _dataGrid = null;
+        }
+        
+        if (DataContext is RemoveViewModel and IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+        
+        DataContext = null;
+        
+        this.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+       
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
     
     private void DataGrid_DoubleTapped(object? sender, TappedEventArgs e)

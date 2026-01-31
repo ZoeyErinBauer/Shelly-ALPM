@@ -21,8 +21,9 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly IAppCache _appCache;
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
     private readonly ICredentialManager _credentialManager;
+    
+    private List<PackageModel> _avaliablePackages = new();
 
     public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
@@ -32,18 +33,33 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         AvailablePackages = new ObservableCollection<PackageModel>();
         _credentialManager = credentialManager;
         
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
+        // When search text changes, update the observable collection
+        this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+            .Subscribe(_ => ApplyFilter());
 
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
         
         LoadData();
+    }
+
+    private void ApplyFilter()
+    {
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _avaliablePackages
+            : _avaliablePackages.Where(p =>
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+        AvailablePackages.Clear();
+        
+        foreach (var package in filtered)
+        {
+            AvailablePackages.Add(package);
+        }
     }
 
     private async Task Refresh()
@@ -57,6 +73,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             }
             RxApp.MainThreadScheduler.Schedule(() =>
             {
+                _avaliablePackages.Clear();
                 AvailablePackages.Clear();
                 LoadData();
             });
@@ -79,32 +96,17 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 DownloadSize = u.Size,
                 IsChecked = false
             }).ToList();
+            
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                foreach (var pkg in models)
-                {
-                    AvailablePackages.Add(pkg);
-                }
-
-                this.RaisePropertyChanged(nameof(AvailablePackages));
+                _avaliablePackages = models;
+                ApplyFilter();
             });
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to load installed packages for removal: {e.Message}");
         }
-    }
-
-    private IEnumerable<PackageModel> Search(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return AvailablePackages;
-        }
-
-        return AvailablePackages.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            p.Version.Contains(searchText, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool _showConfirmDialog;
@@ -134,7 +136,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync("Remove Packages")) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -192,8 +194,6 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
-    public IEnumerable<PackageModel> FilteredPackages => _filteredPackages.Value;
-
     public string? SearchText
     {
         get => _searchText;
@@ -208,4 +208,14 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     }
     
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            _avaliablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

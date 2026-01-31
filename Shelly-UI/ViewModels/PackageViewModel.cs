@@ -15,39 +15,33 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IActivatableViewModel
+public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    public ViewModelActivator Activator { get; } = new ViewModelActivator();
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<PackageModel>> _filteredPackages;
+    
+    private List<PackageModel> _availablePackages = new();
 
     private readonly ConfigService _configService = new();
-
-    private IAppCache _appCache;
+    
     private readonly ICredentialManager _credentialManager;
 
-    public PackageViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService,
+    public PackageViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
         ICredentialManager credentialManager)
     {
         HostScreen = screen;
-        AvaliablePackages = new ObservableCollection<PackageModel>();
-
-        _appCache = appCache;
+        AvailablePackages = new ObservableCollection<PackageModel>();
+        
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
-
-        // Always initialize ConsoleLogService to ensure stderr interception is active
-        // This is needed even when console is disabled so that logs from CLI are captured
+        
         var _ = ConsoleLogService.Instance;
-
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.AvaliablePackages.Count, (s, c) => s)
+        
+        this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+            .Subscribe(_ => ApplyFilter());
 
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
@@ -57,6 +51,19 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
         LoadData();
     }
 
+    private void ApplyFilter()
+    {
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _availablePackages
+            : _availablePackages.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+        AvailablePackages.Clear();
+    
+        foreach (var package in filtered)
+        {
+            AvailablePackages.Add(package);
+        }
+    }
 
     private async Task Sync()
     {
@@ -67,15 +74,13 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
-
-            // Clear cache and reload data by storing null
-            await _appCache.StoreAsync<List<PackageModel>?>(nameof(CacheEnums.PackageCache), null);
+       
             var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
-            await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installed);
-
+            
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                AvaliablePackages.Clear();
+                _availablePackages.Clear();
+                AvailablePackages.Clear();
                 LoadData();
             });
         }
@@ -105,34 +110,17 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
                 IsInstalled = installedNames.Contains(u.Name),
                 Repository = u.Repository
             }).ToList();
-
-            await _appCache.StoreAsync(nameof(CacheEnums.PackageCache), models);
-
+            
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                foreach (var model in models)
-                {
-                    AvaliablePackages.Add(model);
-                }
-
-                this.RaisePropertyChanged(nameof(AvaliablePackages));
+                _availablePackages = models;
+                ApplyFilter();
             });
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to load available packages: {e.Message}");
         }
-    }
-
-    private IEnumerable<PackageModel> Search(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return AvaliablePackages;
-        }
-
-        return AvaliablePackages.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool _showConfirmDialog;
@@ -150,7 +138,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
 
     private async Task AlpmInstall()
     {
-        var selectedPackages = AvaliablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+        var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
 
         if (selectedPackages.Any())
         {
@@ -170,7 +158,6 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
 
                     if (!isValidated) return;
                 }
-
 
                 // Set busy
                 if (mainWindow != null)
@@ -217,9 +204,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
     public ReactiveCommand<Unit, Unit> SyncCommand { get; }
 
-    public ObservableCollection<PackageModel> AvaliablePackages { get; set; }
-
-    public IEnumerable<PackageModel> FilteredPackages => _filteredPackages.Value;
+    public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
     public string? SearchText
     {
@@ -228,4 +213,14 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel,
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            _availablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

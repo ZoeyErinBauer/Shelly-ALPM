@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using PackageManager.Alpm;
+using PackageManager.Aur.Models;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
 
@@ -210,6 +211,105 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             
             // If no JSON array found, try parsing the whole output
             var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+    
+    public async Task<List<AurPackageDto>> GetAurInstalledPackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("aur list", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+    
+    public async Task<List<AurUpdateDto>> GetAurUpdatePackagesAsync()
+    {
+        var result = await ExecuteCommandAsync("aur list-updates", "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurUpdateDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurUpdateDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed packages JSON: {ex.Message}");
+            return [];
+        }
+    }
+    
+    public async Task<List<AurPackageDto>> SearchAurPackagesAsync(string query)
+    {
+        var result = await ExecuteCommandAsync("aur search", query , "--json");
+        
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurPackageDto);
+                    return packages ?? [];
+                }
+            }
+            
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurPackageDto);
             return allPackages ?? [];
         }
         catch (Exception ex)

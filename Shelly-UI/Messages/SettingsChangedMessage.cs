@@ -1,9 +1,6 @@
 namespace Shelly_UI.Messages;
 
-public class SettingsChangedMessage
+public class AurEnableMessage
 {
-    public bool AurChanged { get; set; }
-    
-    public bool ConsoleChanged { get; set; }
  
 }

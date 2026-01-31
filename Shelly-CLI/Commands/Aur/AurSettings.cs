@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public sealed class AurSearchSettings : CommandSettings
+public sealed class AurSearchSettings : DefaultSettings
 {
     [CommandArgument(0, "<query>")]
     [Description("Search term for AUR packages")]

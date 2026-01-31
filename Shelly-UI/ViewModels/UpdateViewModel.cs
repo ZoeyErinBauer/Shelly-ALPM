@@ -18,9 +18,9 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     public IScreen HostScreen { get; }
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
     private readonly ICredentialManager _credentialManager;
-
+    
+    private List<UpdateModel> _allPackagesForUpdate = new();
 
     public UpdateViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
         ICredentialManager credentialManager)
@@ -29,19 +29,31 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         _privilegedOperationService = privilegedOperationService;
         PackagesForUpdating = new ObservableCollection<UpdateModel>();
         _credentialManager = credentialManager;
-
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.PackagesForUpdating.Count, (s, c) => s)
+        
+        this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+            .Subscribe(_ => ApplyFilter());
 
         AlpmUpdateCommand = ReactiveCommand.CreateFromTask(AlpmUpdate);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<UpdateModel>(TogglePackageCheck);
 
         LoadData();
+    }
+
+    private void ApplyFilter()
+    {
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _allPackagesForUpdate
+            : _allPackagesForUpdate.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+        PackagesForUpdating.Clear();
+        
+        foreach (var package in filtered)
+        {
+            PackagesForUpdating.Add(package);
+        }
     }
 
     private async Task Sync()
@@ -57,6 +69,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             // Reload data via CLI after sync
             RxApp.MainThreadScheduler.Schedule(() =>
             {
+                _allPackagesForUpdate.Clear();
                 PackagesForUpdating.Clear();
                 LoadData();
             });
@@ -69,7 +82,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
     private async Task AlpmUpdate()
     {
-        var selectedPackages = PackagesForUpdating.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+        var selectedPackages = _allPackagesForUpdate.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
             MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
@@ -89,7 +102,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 }
 
                 // Determine if this is a full system upgrade or selective update
-                var isFullUpgrade = selectedPackages.Count == PackagesForUpdating.Count;
+                var isFullUpgrade = selectedPackages.Count == _allPackagesForUpdate.Count;
 
                 // Set busy
                 if (mainWindow != null)
@@ -132,52 +145,35 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     }
 
     private async void LoadData()
+    {
+        try
         {
-            try
+            // Use CLI via PrivilegedOperationService to get packages needing update
+            var updates = await _privilegedOperationService.GetPackagesNeedingUpdateAsync();
+
+            var models = updates.Select(u => new UpdateModel
             {
-                // Use CLI via PrivilegedOperationService to get packages needing update
-                var updates = await _privilegedOperationService.GetPackagesNeedingUpdateAsync();
+                Name = u.Name,
+                CurrentVersion = u.CurrentVersion,
+                NewVersion = u.NewVersion,
+                DownloadSize = u.DownloadSize,
+                IsChecked = false
+            }).ToList();
 
-                var models = updates.Select(u => new UpdateModel
-                {
-                    Name = u.Name,
-                    CurrentVersion = u.CurrentVersion,
-                    NewVersion = u.NewVersion,
-                    DownloadSize = u.DownloadSize,
-                    IsChecked = false
-                }).ToList();
-
-                RxApp.MainThreadScheduler.Schedule(() =>
-                {
-                    foreach (var model in models)
-                    {
-                        PackagesForUpdating.Add(model);
-                    }
-
-                    this.RaisePropertyChanged(nameof(PackagesForUpdating));
-                });
-            }
-            catch (Exception e)
+            RxApp.MainThreadScheduler.Schedule(() =>
             {
-                Console.WriteLine($"Failed to load package updates: {e.Message}");
-            }
+                _allPackagesForUpdate = models;
+                ApplyFilter();
+            });
         }
-
-        private IEnumerable<UpdateModel> Search(string? searchText)
+        catch (Exception e)
         {
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                return PackagesForUpdating;
-            }
-
-            return PackagesForUpdating.Where(p =>
-                p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+            Console.WriteLine($"Failed to load package updates: {e.Message}");
         }
+    }
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AlpmUpdateCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SyncCommand { get; }
-
-    public IEnumerable<UpdateModel> FilteredPackages => _filteredPackages.Value;
+    public ReactiveCommand<Unit, Unit> AlpmUpdateCommand { get; }
+    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
 
     public string? SearchText
     {
@@ -187,9 +183,9 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
     public void CheckAll()
     {
-        var targetState = PackagesForUpdating.Any(x => !x.IsChecked);
+        var targetState = _allPackagesForUpdate.Any(x => !x.IsChecked);
 
-        foreach (var item in PackagesForUpdating)
+        foreach (var item in _allPackagesForUpdate)
         {
             item.IsChecked = targetState;
         }
@@ -207,4 +203,14 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     }
 
     public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            PackagesForUpdating?.Clear();
+            _allPackagesForUpdate?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

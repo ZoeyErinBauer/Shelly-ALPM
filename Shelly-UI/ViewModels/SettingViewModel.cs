@@ -106,7 +106,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             var config = _configService.LoadConfig();
             config.ConsoleEnabled = value;
             _configService.SaveConfig(config);
-            MessageBus.Current.SendMessage(new SettingsChangedMessage{ConsoleChanged = true});
+            MessageBus.Current.SendMessage(new ConsoleEnableMessage());
         }
     }
 
@@ -130,7 +130,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         {
             this.RaiseAndSetIfChanged(ref _enableAur, value);
             
-            MessageBus.Current.SendMessage(new SettingsChangedMessage{AurChanged = true});
+            MessageBus.Current.SendMessage(new AurEnableMessage());
             
             var config = _configService.LoadConfig();
             config.AurEnabled = value;

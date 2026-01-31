@@ -15,14 +15,39 @@ namespace Shelly_UI.Views;
 
 public partial class PackageWindow : ReactiveUserControl<PackageViewModel>
 {
+    private DataGrid? _dataGrid;
+    
     public PackageWindow()
     {
-      
         AvaloniaXamlLoader.Load(this);
+        
         this.WhenActivated(disposables =>
         {
-            
+            _dataGrid = this.FindControl<DataGrid>("PackageDataGrid"); 
         });
+        
+        this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+    
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (_dataGrid != null)
+        {
+            _dataGrid.ItemsSource = null;
+            _dataGrid = null;
+        }
+        
+        if (DataContext is PackageViewModel and IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+        
+        DataContext = null;
+     
+        this.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+        
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 
     private void OpenUrl_Click(object? sender, RoutedEventArgs e)
@@ -62,8 +87,7 @@ public partial class PackageWindow : ReactiveUserControl<PackageViewModel>
 
         if (row?.DataContext is not PackageModel package) return;
         if (DataContext is not PackageViewModel vm) return;
-
-
+        
         vm.TogglePackageCheckCommand.Execute(package).Subscribe();
     }
 }

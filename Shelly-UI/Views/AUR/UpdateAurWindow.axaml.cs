@@ -13,10 +13,39 @@ namespace Shelly_UI.Views.AUR;
 
 public partial class UpdateAurWindow : ReactiveUserControl<AurUpdateViewModel>
 {
+    private DataGrid? _dataGrid;
+    
     public UpdateAurWindow()
     {
-        this.WhenActivated(disposables => { });
         AvaloniaXamlLoader.Load(this);
+        
+        this.WhenActivated(disposables =>
+        {
+            _dataGrid = this.FindControl<DataGrid>("AurUpdateDataGrid"); 
+        });
+        
+        this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+    
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (_dataGrid != null)
+        {
+            _dataGrid.ItemsSource = null;
+            _dataGrid = null;
+        }
+        
+        if (DataContext is AurUpdateViewModel and IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+        
+        DataContext = null;
+     
+        this.DetachedFromVisualTree -= OnDetachedFromVisualTree;
+        
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
     
     private void DataGrid_DoubleTapped(object? sender, TappedEventArgs e)

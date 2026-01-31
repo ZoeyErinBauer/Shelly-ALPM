@@ -1,13 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using PackageManager.Aur;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurListInstalledCommand : Command
+public class AurListInstalledCommand : Command<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context)
+    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
         try
         {
@@ -16,6 +17,16 @@ public class AurListInstalledCommand : Command
 
             var packages = manager.GetInstalledPackages().GetAwaiter().GetResult();
 
+            if (settings.JsonOutput)
+            {
+                var json = JsonSerializer.Serialize(packages, ShellyCLIJsonContext.Default.ListAurPackageDto);
+                using var stdout = System.Console.OpenStandardOutput();
+                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                writer.WriteLine(json);
+                writer.Flush();
+                return 0;
+            }
+            
             var table = new Table().Border(TableBorder.Rounded);
             table.AddColumn("Name");
             table.AddColumn("Version");

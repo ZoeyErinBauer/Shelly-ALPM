@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using PackageManager.Alpm;
+using PackageManager.Aur.Models;
 using Shelly_UI.Models;
 
 namespace Shelly_UI;
@@ -8,6 +9,7 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(ShellyConfig))]
 [JsonSerializable(typeof(CachedRssModel))]
 [JsonSerializable(typeof(RssModel))]
+[JsonSerializable(typeof(List<RssModel>))]
 [JsonSerializable(typeof(GitHubRelease))]
 [JsonSerializable(typeof(GitHubAsset))]
 [JsonSerializable(typeof(GitHubAsset[]))]
@@ -15,6 +17,10 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(AlpmPackageUpdateDto))]
 [JsonSerializable(typeof(List<AlpmPackageDto>))]
 [JsonSerializable(typeof(AlpmPackageDto))]
+[JsonSerializable(typeof(List<AurPackageDto>))]
+[JsonSerializable(typeof(AurPackageDto))]
+[JsonSerializable(typeof(List<AurUpdateDto>))]
+[JsonSerializable(typeof(AurUpdateDto))]
 [JsonSerializable(typeof(FlatpakModel))]
 [JsonSerializable(typeof(List<FlatpakModel>))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
+using PackageManager.Aur.Models;
 
 namespace Shelly_UI.Services;
 
@@ -18,6 +19,9 @@ public interface IPrivilegedOperationService
     Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync();
     Task<List<AlpmPackageDto>> GetAvailablePackagesAsync();
     Task<List<AlpmPackageDto>> GetInstalledPackagesAsync();
+    Task<List<AurPackageDto>> GetAurInstalledPackagesAsync();
+    Task<List<AurUpdateDto>> GetAurUpdatePackagesAsync();
+    Task<List<AurPackageDto>> SearchAurPackagesAsync(string query);
 }
 
 public class OperationResult

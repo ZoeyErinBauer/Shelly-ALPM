@@ -70,6 +70,7 @@
                         </Grid>
                     </Border>
                     <DataGrid
+                        Name="AurDataGrid"
                         Grid.Row="1"
                         ItemsSource="{Binding SearchedPackages}"
                         AutoGenerateColumns="False"

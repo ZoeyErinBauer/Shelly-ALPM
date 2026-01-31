@@ -18,7 +18,6 @@ namespace Shelly_UI.ViewModels.AUR;
 public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAurPackageManager _aurPackageManager = new AurPackageManager();
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<UpdateModel>> _filteredPackages;
@@ -117,8 +116,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     {
         try
         {
-            await Task.Run(() => _aurPackageManager.Initialize());
-            var updates = await Task.Run(() => _aurPackageManager.GetPackagesNeedingUpdate());
+            var updates = await _privilegedOperationService.GetAurUpdatePackagesAsync();
 
             var models = updates.Select(u => new UpdateModel
             {
@@ -155,7 +153,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
         return PackagesForUpdating.Where(p =>
             p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
     }
-    
+
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AlpmUpdateCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SyncCommand { get; }
 
@@ -189,4 +187,15 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     }
 
     public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _filteredPackages?.Dispose();
+            PackagesForUpdating?.Clear();
+        }
+
+        base.Dispose(disposing);
+    }
 }

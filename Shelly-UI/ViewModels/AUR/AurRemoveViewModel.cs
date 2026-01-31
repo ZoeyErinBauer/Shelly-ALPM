@@ -20,9 +20,8 @@ namespace Shelly_UI.ViewModels.AUR;
 public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
-    private IAurPackageManager _aurManager = new AurPackageManager();
     private readonly IPrivilegedOperationService _privilegedOperationService;
-    private readonly IAppCache _appCache;
+  
     private string? _searchText;
     private readonly ObservableAsPropertyHelper<IEnumerable<AurModel>> _filteredPackages;
     private readonly ICredentialManager _credentialManager;
@@ -30,7 +29,6 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     public AurRemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
-        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<AurModel>();
         _credentialManager = credentialManager;
@@ -56,7 +54,7 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
         try
         {
             AvailablePackages.Clear();
-            await LoadData();
+            LoadData();
         }
         catch (Exception e)
         {
@@ -64,13 +62,12 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
         }
     }
 
-    private async Task LoadData()
+    private async void LoadData()
     {
         try
         {
-            await Task.Run(() => _aurManager.Initialize());
-            var packages = await Task.Run(() => _aurManager.GetInstalledPackages());
-            Console.WriteLine($@"[DEBUG_LOG] Loaded {packages.Count} installed packages");
+            var packages = await _privilegedOperationService.GetAurInstalledPackagesAsync();
+                            Console.WriteLine($@"[DEBUG_LOG] Loaded {packages.Count} installed packages");
             var models = packages.Select(u => new AurModel
             {
                 Name = u.Name,
@@ -132,7 +129,7 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync("Remove AUR Packages")) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -155,11 +152,6 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
-                }
-                else
-                {
-                    // Update the installed packages cache after successful removal
-                    await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), _aurManager.GetInstalledPackages());
                 }
 
                 await Refresh();
@@ -204,4 +196,14 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     }
     
     public ReactiveCommand<AurModel, Unit> TogglePackageCheckCommand { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _filteredPackages?.Dispose();
+            AvailablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

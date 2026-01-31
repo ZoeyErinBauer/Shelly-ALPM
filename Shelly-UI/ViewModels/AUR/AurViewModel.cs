@@ -20,8 +20,6 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
 {
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; } = new ViewModelActivator();
-    private IAurPackageManager _aurManager = new AurPackageManager();
-    private IAurSearchManager _aurSearchManager = new AurSearchManager(new HttpClient());
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
 
@@ -55,14 +53,14 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
         if (string.IsNullOrWhiteSpace(SearchText))
             return;
 
-        var result = await _aurSearchManager.SearchAsync(SearchText, cancellationToken: CancellationToken.None);
+        var result = await _privilegedOperationService.SearchAurPackagesAsync(SearchText);
 
-        Console.WriteLine($"[DEBUG_LOG] Search result: {result.Results.Count}");
+        Console.WriteLine($"[DEBUG_LOG] Search result: {result.Count}");
 
-        result.Results = result.Results.OrderByDescending(x => x.NumVotes).ToList();
+        result = result.OrderByDescending(x => x.NumVotes).ToList();
         
         SearchedPackages.Clear();
-        foreach (var dto in result.Results)
+        foreach (var dto in result)
         {
             SearchedPackages.Add(new AurModel
             {
@@ -180,4 +178,13 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            SearchedPackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }
