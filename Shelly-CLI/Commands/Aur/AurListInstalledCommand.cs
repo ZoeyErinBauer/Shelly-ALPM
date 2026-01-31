@@ -10,7 +10,7 @@ public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
-        AurPackageManager manager = null;
+        AurPackageManager? manager = null;
         try
         {
             manager = new AurPackageManager();
@@ -21,10 +21,10 @@ public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
             if (settings.JsonOutput)
             {
                 var json = JsonSerializer.Serialize(packages, ShellyCLIJsonContext.Default.ListAurPackageDto);
-                using var stdout = System.Console.OpenStandardOutput();
-                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
-                writer.WriteLine(json);
-                writer.Flush();
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
                 return 0;
             }
 

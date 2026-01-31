@@ -16,7 +16,7 @@ public class AurListUpdatesCommand : AsyncCommand<DefaultSettings>
             manager = new AurPackageManager();
             await manager.Initialize();
 
-            var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
+            var updates = await manager.GetPackagesNeedingUpdate();
 
             if (settings.JsonOutput)
             {

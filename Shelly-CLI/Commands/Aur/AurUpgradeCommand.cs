@@ -39,48 +39,63 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
                 }
             }
 
-            manager.PackageProgress += (sender, args) =>
-            {
-                var statusColor = args.Status switch
+            await AnsiConsole.Progress()
+                .Columns(
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new RemainingTimeColumn(),
+                    new SpinnerColumn()
+                )
+                .StartAsync(async ctx =>
                 {
-                    PackageProgressStatus.Downloading => "yellow",
-                    PackageProgressStatus.Building => "blue",
-                    PackageProgressStatus.Installing => "cyan",
-                    PackageProgressStatus.Completed => "green",
-                    PackageProgressStatus.Failed => "red",
-                    _ => "white"
-                };
+                    var mainTask = ctx.AddTask("[green]Upgrading AUR packages[/]", maxValue: updates.Count);
+                    var packageTask = ctx.AddTask("[blue]Initializing[/]", maxValue: 100);
 
-                AnsiConsole.MarkupLine(
-                    $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName}: {args.Status}[/]" +
-                    (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
-            };
+                    manager.PackageProgress += (sender, args) =>
+                    {
+                        mainTask.Value = args.CurrentIndex;
+                        packageTask.Description = $"[cyan]{args.PackageName}[/]: {args.Status}";
+                        packageTask.Value = args.Status == PackageProgressStatus.Completed ? 100 : 0;
 
-            manager.PkgbuildDiffRequest += (sender, args) =>
-            {
-                if (settings.NoConfirm)
-                {
-                    args.ProceedWithUpdate = true;
-                    return;
-                }
+                        if (args.Status == PackageProgressStatus.Completed)
+                        {
+                            mainTask.Increment(1);
+                        }
+                    };
 
-                var showDiff = AnsiConsole.Confirm(
-                    $"[yellow]PKGBUILD changed for {args.PackageName}. View diff?[/]", defaultValue: false);
+                    manager.PkgbuildDiffRequest += (sender, args) =>
+                    {
+                        if (settings.NoConfirm)
+                        {
+                            args.ProceedWithUpdate = true;
+                            return;
+                        }
 
-                if (showDiff)
-                {
-                    AnsiConsole.MarkupLine("[blue]--- Old PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.OldPkgbuild);
-                    AnsiConsole.MarkupLine("[blue]--- New PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.NewPkgbuild);
-                }
+                        // We need to stop the progress display to interact with the console
+                        // Actually, Spectre allows interaction if we handle it carefully, 
+                        // but it's safer to just handle it before or using a separate mechanism.
+                        // However, PkgbuildDiffRequest is triggered DURING UpdatePackages.
+                        
+                        AnsiConsole.MarkupLine($"\n[yellow]PKGBUILD changed for {args.PackageName}.[/]");
+                        if (AnsiConsole.Confirm("View diff?", defaultValue: false))
+                        {
+                            AnsiConsole.WriteLine(args.OldPkgbuild);
+                            AnsiConsole.WriteLine("---");
+                            AnsiConsole.WriteLine(args.NewPkgbuild);
+                        }
 
-                args.ProceedWithUpdate = AnsiConsole.Confirm(
-                    $"[yellow]Proceed with update for {args.PackageName}?[/]", defaultValue: true);
-            };
+                        args.ProceedWithUpdate = AnsiConsole.Confirm($"Proceed with update for {args.PackageName}?", defaultValue: true);
+                    };
 
-            var packageNames = updates.Select(u => u.Name).ToList();
-            await manager.UpdatePackages(packageNames);
+                    var packageNames = updates.Select(u => u.Name).ToList();
+                    await manager.UpdatePackages(packageNames);
+                    
+                    mainTask.Value = updates.Count;
+                    packageTask.Value = 100;
+                    packageTask.Description = "[green]Complete[/]";
+                });
+
             AnsiConsole.MarkupLine("[green]Upgrade complete.[/]");
 
             return 0;

@@ -42,7 +42,7 @@ public class AurInstallCommand : AsyncCommand<AurPackageSettings>
             await manager.InstallPackages(settings.Packages.ToList());
             AnsiConsole.MarkupLine("[green]Installation complete.[/]");
 
-           return 0;
+            return 0;
         }
         catch (Exception ex)
         {

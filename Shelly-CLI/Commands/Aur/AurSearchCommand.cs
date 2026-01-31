@@ -22,7 +22,7 @@ public class AurSearchCommand : AsyncCommand<AurSearchSettings>
             manager = new AurPackageManager();
             await manager.Initialize();
 
-            var results = manager.SearchPackages(settings.Query).GetAwaiter().GetResult();
+            var results = await manager.SearchPackages(settings.Query);
 
             if (settings.JsonOutput)
             {
