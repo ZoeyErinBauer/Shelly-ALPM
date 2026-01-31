@@ -67,6 +67,9 @@ public class Program
             config.AddCommand<ListUpdatesCommand>("list-updates")
                 .WithDescription("List packages that need updates");
 
+            config.AddCommand<SearchCommand>("search")
+                .WithDescription("Search for packages by name or description (paru-style)");
+
             config.AddCommand<InstallCommand>("install")
                 .WithDescription("Install one or more packages");
 
