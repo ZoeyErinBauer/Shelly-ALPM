@@ -4,7 +4,7 @@
 
 
 ### About
-Shelly is a modern reinmagination of the Arch Linux package manager, designed to be a more intuitive and user-friendly
+Shelly is a modern reimagination of the Arch Linux package manager, designed to be a more intuitive and user-friendly
 alternative to `pacman` and `octopi`. Unlike other Arch package managers, Shelly offers a modern, visual interface with a focus on
 user experience and ease of use; It **IS NOT** built as a `pacman` wrapper or front-end. It is a complete reimagination of how a user
 interacts with their Arch Linux system, providing a more streamlined and intuitive experience.
