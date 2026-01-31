@@ -6,9 +6,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurSearchCommand : Command<AurSearchSettings>
+public class AurSearchCommand : AsyncCommand<AurSearchSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] AurSearchSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurSearchSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.Query))
         {
@@ -16,20 +16,21 @@ public class AurSearchCommand : Command<AurSearchSettings>
             return 1;
         }
 
+        AurPackageManager? manager = null;
         try
         {
-            var manager = new AurPackageManager();
-            manager.Initialize().GetAwaiter().GetResult();
+            manager = new AurPackageManager();
+            await manager.Initialize();
 
-            var results = manager.SearchPackages(settings.Query).GetAwaiter().GetResult();
-            
+            var results = await manager.SearchPackages(settings.Query);
+
             if (settings.JsonOutput)
             {
                 var json = JsonSerializer.Serialize(results, ShellyCLIJsonContext.Default.ListAurPackageDto);
-                using var stdout = System.Console.OpenStandardOutput();
-                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
-                writer.WriteLine(json);
-                writer.Flush();
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
                 return 0;
             }
 
@@ -56,6 +57,10 @@ public class AurSearchCommand : Command<AurSearchSettings>
         {
             AnsiConsole.MarkupLine($"[red]Search failed:[/] {ex.Message.EscapeMarkup()}");
             return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
         }
     }
 }
