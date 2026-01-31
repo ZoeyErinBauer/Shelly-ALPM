@@ -1,8 +1,8 @@
 using System.Reflection;
-using Shelly_CLI.Commands;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Keyring;
+using Shelly_CLI.Commands.Standard;
 using Shelly;
 using Shelly.Writers;
 using Spectre.Console;
