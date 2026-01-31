@@ -10,11 +10,8 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
         [NotNull] AurPackageSettings settings)
     {
-        if (settings.Packages.Length == 0)
-        {
-            AnsiConsole.MarkupLine("[red]No packages specified.[/]");
-            return 1;
-        }
+        var packageList = settings.Packages.ToList();
+        bool isUpdateAll = packageList.Any(p => p.Equals("all", StringComparison.OrdinalIgnoreCase));
 
         AurPackageManager? manager = null;
         try
@@ -22,48 +19,82 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
 
-            manager.PackageProgress += (sender, args) =>
+            if (isUpdateAll)
             {
-                var statusColor = args.Status switch
+                var updates = await manager.GetPackagesNeedingUpdate();
+                if (updates.Count == 0)
                 {
-                    PackageProgressStatus.Downloading => "yellow",
-                    PackageProgressStatus.Building => "blue",
-                    PackageProgressStatus.Installing => "cyan",
-                    PackageProgressStatus.Completed => "green",
-                    PackageProgressStatus.Failed => "red",
-                    _ => "white"
-                };
-
-                AnsiConsole.MarkupLine(
-                    $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName}: {args.Status}[/]" +
-                    (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
-            };
-
-            manager.PkgbuildDiffRequest += (sender, args) =>
+                    AnsiConsole.MarkupLine("[green]All AUR packages are up to date.[/]");
+                    return 0;
+                }
+                packageList = updates.Select(u => u.Name).ToList();
+                AnsiConsole.MarkupLine($"[yellow]Updating {packageList.Count} AUR packages...[/]");
+            }
+            else
             {
-                if (settings.NoConfirm)
+                AnsiConsole.MarkupLine($"[yellow]Updating AUR packages:[/] {string.Join(", ", packageList)}");
+            }
+
+            if (!settings.NoConfirm)
+            {
+                if (!AnsiConsole.Confirm("Do you want to proceed?"))
                 {
-                    args.ProceedWithUpdate = true;
-                    return;
+                    AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                    return 0;
                 }
+            }
 
-                var showDiff = AnsiConsole.Confirm(
-                    $"[yellow]PKGBUILD changed for {args.PackageName}. View diff?[/]", defaultValue: false);
-
-                if (showDiff)
+            await AnsiConsole.Progress()
+                .Columns(
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new RemainingTimeColumn(),
+                    new SpinnerColumn()
+                )
+                .StartAsync(async ctx =>
                 {
-                    AnsiConsole.MarkupLine("[blue]--- Old PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.OldPkgbuild);
-                    AnsiConsole.MarkupLine("[blue]--- New PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.NewPkgbuild);
-                }
+                    var mainTask = ctx.AddTask("[green]AUR Update[/]", maxValue: packageList.Count);
+                    var detailTask = ctx.AddTask("[blue]Initializing[/]", maxValue: 100);
 
-                args.ProceedWithUpdate = AnsiConsole.Confirm(
-                    $"[yellow]Proceed with update for {args.PackageName}?[/]", defaultValue: true);
-            };
+                    manager.PackageProgress += (sender, args) =>
+                    {
+                        mainTask.Value = args.CurrentIndex;
+                        detailTask.Description = $"[cyan]{args.PackageName}[/]: {args.Status}";
+                        detailTask.Value = args.Status == PackageProgressStatus.Completed ? 100 : 0;
 
-            AnsiConsole.MarkupLine($"[yellow]Updating AUR packages: {string.Join(", ", settings.Packages)}[/]");
-            await manager.UpdatePackages(settings.Packages.ToList());
+                        if (args.Status == PackageProgressStatus.Completed)
+                        {
+                            mainTask.Increment(1);
+                        }
+                    };
+
+                    manager.PkgbuildDiffRequest += (sender, args) =>
+                    {
+                        if (settings.NoConfirm)
+                        {
+                            args.ProceedWithUpdate = true;
+                            return;
+                        }
+
+                        AnsiConsole.MarkupLine($"\n[yellow]PKGBUILD changed for {args.PackageName}.[/]");
+                        if (AnsiConsole.Confirm("View diff?", defaultValue: false))
+                        {
+                            AnsiConsole.WriteLine(args.OldPkgbuild);
+                            AnsiConsole.WriteLine("---");
+                            AnsiConsole.WriteLine(args.NewPkgbuild);
+                        }
+
+                        args.ProceedWithUpdate = AnsiConsole.Confirm($"Proceed with update for {args.PackageName}?", defaultValue: true);
+                    };
+
+                    await manager.UpdatePackages(packageList);
+                    
+                    mainTask.Value = packageList.Count;
+                    detailTask.Value = 100;
+                    detailTask.Description = "[green]Complete[/]";
+                });
+
             AnsiConsole.MarkupLine("[green]Update complete.[/]");
 
             return 0;
