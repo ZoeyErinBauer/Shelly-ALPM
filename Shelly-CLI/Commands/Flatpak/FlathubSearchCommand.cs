@@ -5,9 +5,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Flatpak;
 
-public class FlathubSearchCommand : Command<FlathubSearchSettings>
+public class FlathubSearchCommand : AsyncCommand<FlathubSearchSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] FlathubSearchSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] FlathubSearchSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.Query))
         {
@@ -20,20 +20,18 @@ public class FlathubSearchCommand : Command<FlathubSearchSettings>
             var manager = new FlatpakManager();
             if (settings.noUi)
             {
-                var results = manager.SearchFlathubJsonAsync(
+                var results = await manager.SearchFlathubJsonAsync(
                         settings.Query, page: settings.Page,
-                        limit: settings.Limit, ct: CancellationToken.None)
-                    .GetAwaiter().GetResult();
+                        limit: settings.Limit, ct: CancellationToken.None);
                 AnsiConsole.MarkupLine($"[grey]Response JSON:[/] {results.EscapeMarkup()}");
             }
             else
             {
-                var results = manager.SearchFlathubAsync(
+                var results = await manager.SearchFlathubAsync(
                         settings.Query,
                         page: settings.Page,
                         limit: settings.Limit,
-                        ct: CancellationToken.None)
-                    .GetAwaiter().GetResult();
+                        ct: CancellationToken.None);
 
                 Render(results, settings.Limit);
             }

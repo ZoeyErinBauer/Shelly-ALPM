@@ -1,18 +1,10 @@
 using System;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace Shelly_CLI.Commands;
-
-public class UpgradeSettings : DefaultSettings
-{
-    [CommandOption("--no-confirm")]
-    [Description("Skip confirmation prompt")]
-    public bool NoConfirm { get; set; }
-}
+namespace Shelly_CLI.Commands.Standard;
 
 public class UpgradeCommand : Command<UpgradeSettings>
 {

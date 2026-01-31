@@ -39,6 +39,7 @@ public class FlatpakManager
 
                 if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
                 {
+                    FlatpakReference.GErrorFree( refsError);
                     FlatpakReference.GObjectUnref(installationPtr);
                     continue;
                 }
@@ -66,6 +67,7 @@ public class FlatpakManager
         finally
         {
             FlatpakReference.GPtrArrayUnref(installationsPtr);
+           
         }
 
         return packages;
@@ -131,6 +133,8 @@ public class FlatpakManager
 
         if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree( refsError);
+            FlatpakReference.GObjectUnref(installationPtr);
             return null;
         }
 
@@ -254,6 +258,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -330,6 +336,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || remotesPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(remotesPtr);
             return null;
         }
 
@@ -366,6 +374,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -437,6 +447,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return "Failed to get system installations.";
         }
 
@@ -511,6 +523,8 @@ public class FlatpakManager
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
         {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
             return packages;
         }
 

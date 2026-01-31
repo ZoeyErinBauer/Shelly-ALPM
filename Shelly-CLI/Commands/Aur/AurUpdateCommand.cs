@@ -5,9 +5,10 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurUpdateCommand : Command<AurPackageSettings>
+public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
+        [NotNull] AurPackageSettings settings)
     {
         if (settings.Packages.Length == 0)
         {
@@ -15,10 +16,11 @@ public class AurUpdateCommand : Command<AurPackageSettings>
             return 1;
         }
 
+        AurPackageManager? manager = null;
         try
         {
-            var manager = new AurPackageManager();
-            manager.Initialize(root: true).GetAwaiter().GetResult();
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
 
             manager.PackageProgress += (sender, args) =>
             {
@@ -61,7 +63,7 @@ public class AurUpdateCommand : Command<AurPackageSettings>
             };
 
             AnsiConsole.MarkupLine($"[yellow]Updating AUR packages: {string.Join(", ", settings.Packages)}[/]");
-            manager.UpdatePackages(settings.Packages.ToList()).GetAwaiter().GetResult();
+            await manager.UpdatePackages(settings.Packages.ToList());
             AnsiConsole.MarkupLine("[green]Update complete.[/]");
 
             return 0;
@@ -70,6 +72,10 @@ public class AurUpdateCommand : Command<AurPackageSettings>
         {
             AnsiConsole.MarkupLine($"[red]Update failed:[/] {ex.Message.EscapeMarkup()}");
             return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
         }
     }
 }

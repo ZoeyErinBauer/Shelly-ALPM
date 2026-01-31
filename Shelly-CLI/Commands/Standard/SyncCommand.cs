@@ -1,17 +1,9 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace Shelly_CLI.Commands;
-
-public class SyncSettings : CommandSettings
-{
-    [CommandOption("-f|--force")]
-    [Description("Force synchronization even if databases are up to date")]
-    public bool Force { get; set; }
-}
+namespace Shelly_CLI.Commands.Standard;
 
 public class SyncCommand : Command<SyncSettings>
 {

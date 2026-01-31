@@ -1,7 +1,8 @@
 using System.Reflection;
-using Shelly_CLI.Commands;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
+using Shelly_CLI.Commands.Keyring;
+using Shelly_CLI.Commands.Standard;
 using Shelly;
 using Shelly.Writers;
 using Spectre.Console;
@@ -108,7 +109,7 @@ public class Program
                 aur.AddCommand<AurSearchCommand>("search")
                     .WithDescription("Search for AUR packages");
 
-                aur.AddCommand<AurListInstalledCommand>("list")
+                aur.AddCommand<AurListInstalledCommand>("list-installed")
                     .WithDescription("List installed AUR packages");
 
                 aur.AddCommand<AurListUpdatesCommand>("list-updates")

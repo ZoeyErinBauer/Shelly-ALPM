@@ -222,7 +222,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     
     public async Task<List<AurPackageDto>> GetAurInstalledPackagesAsync()
     {
-        var result = await ExecuteCommandAsync("aur list", "--json");
+        var result = await ExecuteCommandAsync("aur list-installed", "--json");
         
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {

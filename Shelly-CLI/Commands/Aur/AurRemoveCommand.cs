@@ -5,10 +5,11 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurRemoveCommand : Command<AurPackageSettings>
+public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
     {
+        AurPackageManager? manager = null;
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]No packages specified.[/]");
@@ -17,11 +18,11 @@ public class AurRemoveCommand : Command<AurPackageSettings>
 
         try
         {
-            var manager = new AurPackageManager();
-            manager.Initialize(root: true).GetAwaiter().GetResult();
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
 
             AnsiConsole.MarkupLine($"[yellow]Removing AUR packages: {string.Join(", ", settings.Packages)}[/]");
-            manager.RemovePackages(settings.Packages.ToList()).GetAwaiter().GetResult();
+            await manager.RemovePackages(settings.Packages.ToList());
             AnsiConsole.MarkupLine("[green]Removal complete.[/]");
 
             return 0;
@@ -30,6 +31,10 @@ public class AurRemoveCommand : Command<AurPackageSettings>
         {
             AnsiConsole.MarkupLine($"[red]Removal failed:[/] {ex.Message.EscapeMarkup()}");
             return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
         }
     }
 }
