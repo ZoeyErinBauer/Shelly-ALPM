@@ -9,6 +9,8 @@
         <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+        <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
     </PropertyGroup>
 
     <PropertyGroup>

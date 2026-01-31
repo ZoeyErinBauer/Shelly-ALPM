@@ -63,7 +63,7 @@ You can also build the project manually using the .NET CLI:
 
 ```bash
 dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
-dotnet publish Shelly-CLI/Shelly-CLI.csproj -C Release -o publish/shelly-cli
+dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli
 ```
 alternatively you can run
 ```bash
@@ -72,6 +72,14 @@ sudo ./local-install.sh
 This will build and perform the functions of install.sh
 
 The binary will be located in the `/publish/shelly-ui/` directory.
+
+### Uninstallation
+
+To remove Shelly and all its components, run the provided uninstall script as root:
+```bash
+sudo ./uninstall.sh
+```
+This will remove the installation directory, symlinks, desktop entries, and icons.
 
 ## Usage
 

@@ -1,5 +1,27 @@
+# Build outputs
 bin/
 obj/
+publish/
+out/
+
+# NuGet packages
 /packages/
+*.nupkg
+
+# IDE files
 riderModule.iml
 /_ReSharper.Caches/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Build/test output logs
+*_output.txt
+*_warnings.txt
+*_fail.txt
+*_clean.txt
+
+# Debug symbols (optional - remove if you want to commit these)
+*.pdb
+*.dbg

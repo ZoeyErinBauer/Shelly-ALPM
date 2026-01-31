@@ -26,15 +26,20 @@ build() {
 package() {
   cd "$srcdir/${pkgname}"
   
-  # Install Shelly-UI binary
-  install -Dm755 out/Shelly-UI "$pkgdir/usr/bin/shelly-ui"
+  # Prepare installation directory
+  mkdir -p "$pkgdir/opt/shelly"
   
-  # Install native libraries (SkiaSharp and HarfBuzzSharp) alongside Shelly-UI
-  install -Dm755 out/libSkiaSharp.so "$pkgdir/usr/bin/libSkiaSharp.so"
-  install -Dm755 out/libHarfBuzzSharp.so "$pkgdir/usr/bin/libHarfBuzzSharp.so"
+  # Install Shelly-UI binary and libraries to /opt/shelly
+  install -Dm755 out/Shelly-UI "$pkgdir/opt/shelly/shelly-ui"
+  install -m755 out/*.so -t "$pkgdir/opt/shelly/"
   
-  # Install Shelly-CLI binary
-  install -Dm755 out-cli/shelly "$pkgdir/usr/bin/shelly"
+  # Install Shelly-CLI binary to /opt/shelly
+  install -Dm755 out-cli/shelly "$pkgdir/opt/shelly/shelly"
+  
+  # Create symlinks in /usr/bin
+  mkdir -p "$pkgdir/usr/bin"
+  ln -s "/opt/shelly/shelly-ui" "$pkgdir/usr/bin/shelly-ui"
+  ln -s "/opt/shelly/shelly" "$pkgdir/usr/bin/shelly"
   
   # Install desktop entry
   echo "[Desktop Entry]

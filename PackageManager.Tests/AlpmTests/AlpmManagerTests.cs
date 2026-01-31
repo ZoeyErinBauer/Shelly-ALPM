@@ -152,10 +152,10 @@ public class AlpmManagerTests
     public void ProgressEvent_IsTriggered()
     {
         _manager.Initialize();
-        bool progressTriggered = false;
+        // bool progressTriggered = false;
         _manager.Progress += (sender, args) =>
         {
-            progressTriggered = true;
+            // progressTriggered = true;
             Console.WriteLine($"[TEST_LOG] Progress: {args.ProgressType} - {args.PackageName} - {args.Percent}%");
         };
 

@@ -40,26 +40,30 @@ if [ -z "$EXTRACT_DIR" ]; then
     EXTRACT_DIR="$TMP_DIR"
 fi
 
-echo "Installing binaries to /usr/bin..."
+INSTALL_DIR="/opt/shelly"
+echo "Installing to $INSTALL_DIR..."
 
-# Install Shelly-UI binary
+# Prepare installation directory
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+# Install Shelly-UI binary and libraries
 if [ -f "$EXTRACT_DIR/Shelly-UI" ]; then
-    install -Dm755 "$EXTRACT_DIR/Shelly-UI" /usr/bin/shelly-ui
+    install -Dm755 "$EXTRACT_DIR/Shelly-UI" "$INSTALL_DIR/shelly-ui"
 fi
 
-# Install native libraries alongside binaries (same as PKGBUILD)
-if [ -f "$EXTRACT_DIR/libSkiaSharp.so" ]; then
-    install -Dm755 "$EXTRACT_DIR/libSkiaSharp.so" /usr/bin/libSkiaSharp.so
-fi
-
-if [ -f "$EXTRACT_DIR/libHarfBuzzSharp.so" ]; then
-    install -Dm755 "$EXTRACT_DIR/libHarfBuzzSharp.so" /usr/bin/libHarfBuzzSharp.so
-fi
+# Install all native libraries
+cp "$EXTRACT_DIR/"*.so "$INSTALL_DIR/" 2>/dev/null || true
 
 # Install Shelly-CLI binary
 if [ -f "$EXTRACT_DIR/shelly" ]; then
-    install -Dm755 "$EXTRACT_DIR/shelly" /usr/bin/shelly
+    install -Dm755 "$EXTRACT_DIR/shelly" "$INSTALL_DIR/shelly"
 fi
+
+# Create symlinks
+echo "Creating symlinks in /usr/bin..."
+ln -sf "$INSTALL_DIR/shelly-ui" /usr/bin/shelly-ui
+ln -sf "$INSTALL_DIR/shelly" /usr/bin/shelly
 
 REAL_USER=${SUDO_USER:-$USER}
 USER_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
