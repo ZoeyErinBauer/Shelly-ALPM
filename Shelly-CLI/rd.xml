@@ -3,7 +3,6 @@
     <Assembly Name="Spectre.Console" Dynamic="Required All" />
     <Assembly Name="Spectre.Console.Cli" Dynamic="Required All" />
     <Assembly Name="shelly" Dynamic="Required All">
-      <!-- Standard commands -->
       <Type Name="Shelly_CLI.Commands.Standard.VersionCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Standard.SyncSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Standard.SyncCommand" Dynamic="Required All" />
@@ -16,7 +15,8 @@
       <Type Name="Shelly_CLI.Commands.Standard.UpdateCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Standard.UpgradeSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Standard.UpgradeCommand" Dynamic="Required All" />
-      <!-- Keyring commands -->
+      <Type Name="Shelly_CLI.Commands.Standard.SearchSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Standard.SearchCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringInitCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringPopulateCommand" Dynamic="Required All" />
@@ -24,6 +24,7 @@
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringLsignCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringListCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Keyring.KeyringRefreshCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.DefaultSettings" Dynamic="Required All" />
       <!-- AUR commands -->
       <Type Name="Shelly_CLI.Commands.Aur.AurSearchSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Aur.AurSearchCommand" Dynamic="Required All" />
