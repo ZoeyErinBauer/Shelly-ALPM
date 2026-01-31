@@ -15,13 +15,14 @@
       <Type Name="Shelly_CLI.Commands.UpdateCommand" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.UpgradeSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.UpgradeCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringSettings" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringInitCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringPopulateCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringRecvCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringLsignCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringListCommand" Dynamic="Required All" />
-      <Type Name="Shelly_CLI.Commands.KeyringRefreshCommand" Dynamic="Required All" />
+      <!-- Keyring commands -->
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringSettings" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringInitCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringPopulateCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringRecvCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringLsignCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringListCommand" Dynamic="Required All" />
+      <Type Name="Shelly_CLI.Commands.Keyring.KeyringRefreshCommand" Dynamic="Required All" />
       <!-- AUR commands -->
       <Type Name="Shelly_CLI.Commands.Aur.AurSearchSettings" Dynamic="Required All" />
       <Type Name="Shelly_CLI.Commands.Aur.AurSearchCommand" Dynamic="Required All" />
