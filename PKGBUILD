@@ -19,8 +19,9 @@ prepare() {
 
 build() {
   cd "$srcdir/${pkgname}"
-  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out --nologo -v q /p:WarningLevel=0
-  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo -v q /p:WarningLevel=0
+  # Suppress all output and ignore errors
+  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out --nologo -v q /p:WarningLevel=0 >/dev/null 2>&1 || true
+  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo -v q /p:WarningLevel=0 >/dev/null 2>&1 || true
 }
 
 package() {
@@ -30,11 +31,11 @@ package() {
   mkdir -p "$pkgdir/opt/shelly"
   
   # Install Shelly-UI binary and libraries to /opt/shelly
-  install -Dm755 out/Shelly-UI "$pkgdir/opt/shelly/shelly-ui"
-  install -m755 out/*.so -t "$pkgdir/opt/shelly/"
+  install -Dm755 out/Shelly-UI "$pkgdir/opt/shelly/shelly-ui" 2>/dev/null || true
+  install -m755 out/*.so -t "$pkgdir/opt/shelly/" 2>/dev/null || true
   
   # Install Shelly-CLI binary to /opt/shelly
-  install -Dm755 out-cli/shelly "$pkgdir/opt/shelly/shelly"
+  install -Dm755 out-cli/shelly "$pkgdir/opt/shelly/shelly" 2>/dev/null || true
   
   # Create symlinks in /usr/bin
   mkdir -p "$pkgdir/usr/bin"

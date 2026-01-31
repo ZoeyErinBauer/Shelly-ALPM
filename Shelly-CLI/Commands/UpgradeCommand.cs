@@ -18,6 +18,12 @@ public class UpgradeCommand : Command<UpgradeSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         Dictionary<string, int> packageProgress = new();
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 

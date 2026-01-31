@@ -23,6 +23,12 @@ public class InstallCommand : Command<PackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -81,6 +87,12 @@ public class RemoveCommand : Command<PackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -139,6 +151,12 @@ public class UpdateCommand : Command<PackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -146,8 +164,16 @@ public class UpdateCommand : Command<PackageSettings>
         }
 
         var packageList = settings.Packages.ToList();
+        bool updateAll = packageList.Count == 1 && packageList[0].Equals("all", StringComparison.OrdinalIgnoreCase);
 
-        AnsiConsole.MarkupLine($"[yellow]Packages to update:[/] {string.Join(", ", packageList)}");
+        if (updateAll)
+        {
+            AnsiConsole.MarkupLine("[yellow]Updating all packages (System Upgrade)...[/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[yellow]Packages to update:[/] {string.Join(", ", packageList)}");
+        }
 
         if (!settings.NoConfirm)
         {
@@ -185,8 +211,16 @@ public class UpdateCommand : Command<PackageSettings>
         AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
         manager.IntializeWithSync();
 
-        AnsiConsole.MarkupLine("[yellow]Updating packages...[/]");
-        manager.UpdatePackages(packageList);
+        if (updateAll)
+        {
+            AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
+            manager.UpdateAll();
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[yellow]Updating packages...[/]");
+            manager.UpdatePackages(packageList);
+        }
 
         AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
         return 0;

@@ -17,6 +17,12 @@ public class SyncCommand : Command<SyncSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] SyncSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         using var manager = new AlpmManager();
 
         AnsiConsole.Status()

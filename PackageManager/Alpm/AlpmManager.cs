@@ -54,11 +54,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             try
             {
+                // Only try to remove it if we have root privileges, otherwise libalpm will report the lock error
                 File.Delete(lockFilePath);
             }
-            catch (IOException)
+            catch
             {
-                //Do nothing accept natural failure
+                // Ignore failures to delete lock file; libalpm will provide a proper error later
+                // if it's actually locked by another process or due to permissions.
             }
         }
 

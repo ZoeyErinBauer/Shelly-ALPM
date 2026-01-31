@@ -20,6 +20,12 @@ public class KeyringInitCommand : Command
 {
     public override int Execute([NotNull] CommandContext context)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         AnsiConsole.MarkupLine("[yellow]Initializing pacman keyring...[/]");
         var result = PacmanKeyRunner.Run("--init");
         if (result == 0)
@@ -39,6 +45,12 @@ public class KeyringPopulateCommand : Command<KeyringSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         var args = "--populate";
         if (settings.Keys?.Length > 0)
         {
@@ -68,6 +80,12 @@ public class KeyringRecvCommand : Command<KeyringSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         if (settings.Keys == null || settings.Keys.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
@@ -99,6 +117,12 @@ public class KeyringLsignCommand : Command<KeyringSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] KeyringSettings settings)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         if (settings.Keys == null || settings.Keys.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");
@@ -135,6 +159,12 @@ public class KeyringRefreshCommand : Command
 {
     public override int Execute([NotNull] CommandContext context)
     {
+        if (Environment.UserName != "root")
+        {
+            AnsiConsole.MarkupLine("[red]Error: This operation requires root privileges. Please run with sudo.[/]");
+            return 1;
+        }
+
         AnsiConsole.MarkupLine("[yellow]Refreshing keys from keyserver...[/]");
         var result = PacmanKeyRunner.Run("--refresh-keys");
         if (result == 0)
