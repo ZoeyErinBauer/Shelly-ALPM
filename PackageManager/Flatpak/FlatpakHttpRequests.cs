@@ -52,7 +52,7 @@ public class FlatpakHttpRequests
             
         // AnsiConsole.MarkupLine($"[grey]Response JSON (first 500 chars):[/] {body.EscapeMarkup()}");
 
-        return root ?? new FlatpakApiResponse { hits = new List<Hit>() };
+        return root ?? new FlatpakApiResponse { Hits = [] };
     }
     
     public async Task<string> SearchJsonAsync(
@@ -121,12 +121,6 @@ public class FlatpakHttpRequests
 [JsonSerializable(typeof(Flatpak.FlatpakApiResponse))]
 [JsonSerializable(typeof(Flatpak.Hit))]
 [JsonSerializable(typeof(List<Flatpak.Hit>))]
-[JsonSerializable(typeof(Flatpak.Translations))]
-[JsonSerializable(typeof(Flatpak.FacetDistribution))]
-[JsonSerializable(typeof(Flatpak.FacetStats))]
-[JsonSerializable(typeof(Flatpak.AdditionalProp1))]
-[JsonSerializable(typeof(Flatpak.AdditionalProp2))]
-[JsonSerializable(typeof(Flatpak.AdditionalProp3))]
 internal partial class FlathubJsonContext : JsonSerializerContext
 {
 }

@@ -6,7 +6,7 @@ using PackageManager.Utilities;
 
 namespace PackageManager.Flatpak;
 
-public class FlatpackPackage(IntPtr pkgPtr)
+public class FlatpakPackage(IntPtr pkgPtr)
 {
 
     public string Id => PtrToStringSafe(FlatpakReference.RefGetName(pkgPtr));
@@ -24,16 +24,16 @@ public class FlatpackPackage(IntPtr pkgPtr)
         return ptr == IntPtr.Zero ? string.Empty : Marshal.PtrToStringUTF8(ptr) ?? string.Empty;
     }
     
-    public static List<FlatpackPackage> FromList(IntPtr listPtr)
+    public static List<FlatpakPackage> FromList(IntPtr listPtr)
     {
-        var packages = new List<FlatpackPackage>();
+        var packages = new List<FlatpakPackage>();
         var currentPtr = listPtr;
         while (currentPtr != IntPtr.Zero)
         {
             var node = Marshal.PtrToStructure<FlatpakList>(currentPtr);
             if (node.Data != IntPtr.Zero)
             {
-                packages.Add(new FlatpackPackage(node.Data));
+                packages.Add(new FlatpakPackage(node.Data));
             }
 
             currentPtr = node.Next;

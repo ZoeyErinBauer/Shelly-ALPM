@@ -53,7 +53,7 @@ public class FlatpakManager
                         var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                         if (refPtr == IntPtr.Zero) continue;
 
-                        var package = new FlatpackPackage(refPtr);
+                        var package = new FlatpakPackage(refPtr);
                         packages.Add(package.ToDto());
                     }
                 }
@@ -144,7 +144,7 @@ public class FlatpakManager
                 var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                 if (refPtr == IntPtr.Zero) continue;
 
-                var package = new FlatpackPackage(refPtr);
+                var package = new FlatpakPackage(refPtr);
                 
                 if (string.Equals(package.Id, nameOrId, StringComparison.OrdinalIgnoreCase) ||
                     package.Id.Contains(nameOrId, StringComparison.OrdinalIgnoreCase) ||
@@ -542,7 +542,7 @@ public class FlatpakManager
                         var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                         if (refPtr == IntPtr.Zero) continue;
 
-                        var package = new FlatpackPackage(refPtr);
+                        var package = new FlatpakPackage(refPtr);
                         packages.Add(package.ToDto());
                     }
                 }

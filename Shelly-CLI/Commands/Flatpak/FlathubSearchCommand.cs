@@ -55,22 +55,22 @@ public class FlathubSearchCommand : Command<FlathubSearchSettings>
         table.AddColumn("Summary");
 
         var count = 0;
-        if (root.hits is not null)
+        if (root.Hits is not null)
         {
-            foreach (var item in root.hits)
+            foreach (var item in root.Hits)
             {
                 if (count++ >= limit) break;
 
                 table.AddRow(
-                    item.name.EscapeMarkup(),
-                    item.app_id.EscapeMarkup(),
-                    item.summary.EscapeMarkup().Truncate(70)
+                    (item.Name ?? "Unknown").EscapeMarkup(),
+                    (item.AppId ?? "Unknown").EscapeMarkup(),
+                    (item.Summary ?? "").EscapeMarkup().Truncate(70)
                 );
             }
         }
 
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine(
-            $"[blue]Shown:[/] {Math.Min(limit, root.hits.Count)} / [blue]Total Pages:[/] {root.totalPages} / [blue]Current Page:[/] {root.page} / [blue]Total hits:[/] {root.totalHits}");
+            $"[blue]Shown:[/] {Math.Min(limit, root.Hits?.Count ?? 0)} / [blue]Total Pages:[/] {root.TotalPages} / [blue]Current Page:[/] {root.Page} / [blue]Total hits:[/] {root.TotalHits}");
     }
 }
