@@ -35,7 +35,7 @@ jobs:
     - name: Publish Shelly-UI
       run: |
         dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
-        cp install.sh publish/shelly-ui/
+        cp release-install.sh publish/shelly-ui/install.sh
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cp publish/shelly-cli/shelly publish/shelly-ui/
         cd publish/shelly-ui
