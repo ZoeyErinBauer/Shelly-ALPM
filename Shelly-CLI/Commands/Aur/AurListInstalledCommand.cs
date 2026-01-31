@@ -6,27 +6,28 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurListInstalledCommand : Command<DefaultSettings>
+public class AurListInstalledCommand : AsyncCommand<DefaultSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
+        AurPackageManager? manager = null;
         try
         {
-            var manager = new AurPackageManager();
-            manager.Initialize().GetAwaiter().GetResult();
+            manager = new AurPackageManager();
+            await manager.Initialize();
 
-            var packages = manager.GetInstalledPackages().GetAwaiter().GetResult();
+            var packages = await manager.GetInstalledPackages();
 
             if (settings.JsonOutput)
             {
                 var json = JsonSerializer.Serialize(packages, ShellyCLIJsonContext.Default.ListAurPackageDto);
-                using var stdout = System.Console.OpenStandardOutput();
-                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
-                writer.WriteLine(json);
-                writer.Flush();
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
                 return 0;
             }
-            
+
             var table = new Table().Border(TableBorder.Rounded);
             table.AddColumn("Name");
             table.AddColumn("Version");
@@ -50,6 +51,10 @@ public class AurListInstalledCommand : Command<DefaultSettings>
         {
             AnsiConsole.MarkupLine($"[red]Failed to list packages:[/] {ex.Message.EscapeMarkup()}");
             return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
         }
     }
 }

@@ -5,10 +5,11 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Aur;
 
-public class AurInstallCommand : Command<AurPackageSettings>
+public class AurInstallCommand : AsyncCommand<AurPackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
     {
+        AurPackageManager? manager = null;
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]No packages specified.[/]");
@@ -17,8 +18,8 @@ public class AurInstallCommand : Command<AurPackageSettings>
 
         try
         {
-            var manager = new AurPackageManager();
-            manager.Initialize(root: true).GetAwaiter().GetResult();
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
 
             manager.PackageProgress += (sender, args) =>
             {
@@ -38,7 +39,7 @@ public class AurInstallCommand : Command<AurPackageSettings>
             };
 
             AnsiConsole.MarkupLine($"[yellow]Installing AUR packages: {string.Join(", ", settings.Packages)}[/]");
-            manager.InstallPackages(settings.Packages.ToList()).GetAwaiter().GetResult();
+            await manager.InstallPackages(settings.Packages.ToList());
             AnsiConsole.MarkupLine("[green]Installation complete.[/]");
 
             return 0;
@@ -47,6 +48,10 @@ public class AurInstallCommand : Command<AurPackageSettings>
         {
             AnsiConsole.MarkupLine($"[red]Installation failed:[/] {ex.Message.EscapeMarkup()}");
             return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
         }
     }
 }
