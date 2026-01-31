@@ -12,6 +12,12 @@
         <PublishSingleFile>true</PublishSingleFile>
         <!-- Optimization: Remove symbols for smaller binary -->
         <StripSymbols>true</StripSymbols>
+        <DebuggerSupport Condition="'$(Configuration)' == 'Release'">false</DebuggerSupport>
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        
+        <!-- AOT/Trimming Warnings Suppression (for cleaner production build) -->
+        <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+        <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
         
         <!-- Targets x86-64-v3 (AVX, AVX2, BMI1, BMI2, FMA, LZCNT, MOVBE, OSXSAVE) -->
         <InstructionSet>x86-64-v3</InstructionSet>
@@ -56,10 +62,5 @@
     <ItemGroup>
         <ProjectReference Include="..\PackageManager\PackageManager.csproj"/>
         <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-      <Reference Include="Avalonia.Controls.ColorPicker">
-        <HintPath>..\..\..\.nuget\packages\avalonia.controls.colorpicker\11.3.10\lib\net8.0\Avalonia.Controls.ColorPicker.dll</HintPath>
-      </Reference>
     </ItemGroup>
 </Project>
