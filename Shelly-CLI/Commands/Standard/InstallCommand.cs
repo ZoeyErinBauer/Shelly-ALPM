@@ -32,16 +32,10 @@ public class InstallCommand : Command<PackageSettings>
 
         using var manager = new AlpmManager();
 
-        manager.Progress += (sender, args) =>
-        {
-            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
-        };
-
         manager.Question += (sender, args) =>
         {
             if (settings.NoConfirm)
             {
-                // Machine-readable format for UI integration
                 Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                 Console.Error.Flush();
                 var input = Console.ReadLine();
@@ -54,11 +48,44 @@ public class InstallCommand : Command<PackageSettings>
             }
         };
 
-        AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
-        manager.IntializeWithSync();
+        AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .Start("[yellow]Initializing and syncing ALPM...[/]", ctx =>
+            {
+                manager.IntializeWithSync();
+            });
 
-        AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-        manager.InstallPackages(packageList);
+        AnsiConsole.Progress()
+            .Columns(
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new RemainingTimeColumn(),
+                new SpinnerColumn()
+            )
+            .Start(ctx =>
+            {
+                var mainTask = ctx.AddTask("[green]Installing packages[/]", maxValue: packageList.Count);
+                var detailTask = ctx.AddTask("[blue]Waiting...[/]", maxValue: 100);
+
+                manager.Progress += (sender, args) =>
+                {
+                    if (args.HowMany.HasValue && args.HowMany.Value > 0)
+                    {
+                        mainTask.MaxValue = (double)args.HowMany.Value;
+                        mainTask.Value = (double)args.Current.GetValueOrDefault();
+                    }
+                    
+                    detailTask.Description = $"[cyan]{args.PackageName ?? "Processing"}[/]";
+                    detailTask.Value = args.Percent.GetValueOrDefault();
+                };
+
+                manager.InstallPackages(packageList);
+                
+                mainTask.Value = mainTask.MaxValue;
+                detailTask.Value = 100;
+                detailTask.Description = "[green]Done[/]";
+            });
 
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;
