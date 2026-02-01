@@ -172,7 +172,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     {
         UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache))
             ? "Update Available Click to Download"
-            : "Checking for updates...";
+            : "No Update Available";
     }
 
     private string _updateAvailable = "Checking for updates...";
