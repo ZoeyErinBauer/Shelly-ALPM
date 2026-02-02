@@ -82,7 +82,9 @@ public class Program
                 .WithExample("install", "firefox", "--make-deps")
                 .WithExample("install", "firefox", "-m")
                 .WithExample("install", "firefox", "--build-deps", "--make-deps")
-                .WithExample("install", "firefox", "-o", "-m");
+                .WithExample("install", "firefox", "-o", "-m")
+                .WithExample("install", "firefox", "--no-deps")
+                .WithExample("install", "firefox", "-d");
 
             config.AddCommand<RemoveCommand>("remove")
                 .WithDescription("Remove one or more packages")
