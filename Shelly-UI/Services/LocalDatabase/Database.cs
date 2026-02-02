@@ -82,4 +82,11 @@ public class Database
         }
         return Task.CompletedTask;
     }
+
+    public bool CollectionExists(string collectionName)
+    {
+        using var db = new LiteDatabase(dbFolder);
+        var col = db.GetCollection<FlatpakModel>("flatpaks");
+        return col.Count() > 0;
+    }
 }

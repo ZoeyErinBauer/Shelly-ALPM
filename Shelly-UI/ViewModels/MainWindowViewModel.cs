@@ -235,13 +235,23 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
 
         GoFlatpakRemove = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new FlatpakRemoveViewModel(this)));
-        
+        {
+            var vm = new FlatpakRemoveViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
         GoFlatpakUpdate = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new FlatpakUpdateViewModel(this)));
-        
+        {
+            var vm = new FlatpakUpdateViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
         GoFlatpak = ReactiveCommand.CreateFromObservable(() =>
-            Router.Navigate.Execute(new FlatpakInstallViewModel(this)));
+        {
+            var vm = new FlatpakInstallViewModel(this);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+        });
+
 
         _navigationMap = new()
         {
@@ -304,13 +314,25 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 }
             });
 
-        MessageBus.Current.Listen<AurEnableMessage>()
+        MessageBus.Current.Listen<MainWindowMessage>()
             .Subscribe(RefreshUi)
             .DisposeWith(Disposables);
     }
 
-    private void RefreshUi(AurEnableMessage msg)
+    private void RefreshUi(MainWindowMessage msg)
     {
+        if (msg.FlatpakEnable)
+        {
+            IsFlatpakEnabled = !IsFlatpakEnabled;
+            if (IsFlatpakOpen)
+            {
+                IsFlatpakOpen = false;
+            }
+
+            this.RaisePropertyChanged(nameof(IsFlatpakEnabled));
+            return;
+        }
+        
         IsAurEnabled = !IsAurEnabled;
         if (IsAurOpen)
         {
@@ -671,6 +693,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             disposable.Dispose();
         }
+
         _currentViewModel = null;
     }
 

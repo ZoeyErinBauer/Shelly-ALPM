@@ -21,8 +21,9 @@
                     <ToggleSwitch Content="Enable AUR (Beta)"
                                   IsChecked="{Binding EnableAur, Mode=TwoWay}">
                     </ToggleSwitch>
-                    <ToggleSwitch Content="Enable FlatPack (WIP)" IsEnabled="False"
-                                  IsChecked="{Binding EnableFlatpak, Mode=TwoWay}">
+                    <ToggleSwitch Content="Enable FlatPack (Alpha)"
+                                  IsChecked="{Binding EnableFlatpak, Mode=TwoWay}"
+                                  PointerPressed="OnFlatpakPointerPressed">
                     </ToggleSwitch>
                     <Button Content="{x:Static lang:Resources.ForceSync}"
                             Command="{Binding ForceSyncUpdateCommand}"
@@ -80,5 +81,34 @@
                 </Grid>
             </Button>
         </StackPanel>
+        <Border Background="#80000000"
+                IsVisible="{Binding ShowFlatpakDialog}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource SystemChromeLowColor}"
+                    BorderBrush="{DynamicResource SystemBaseLowColor}"
+                    CornerRadius="8"
+                    Padding="20"
+                    Width="300"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="0 10 30 0 #A0000000">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="Enabling requires flatpak" FontWeight="Bold" FontSize="18"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="Press confirm to install now or please install yourself" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" TextAlignment="Center" />
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                
+                                Command="{Binding CancelFlatpakDialog}" />
+                        <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}"
+                                Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
+                                Command="{Binding InstallFlatpakCommand}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

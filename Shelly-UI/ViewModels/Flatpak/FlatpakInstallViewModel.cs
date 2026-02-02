@@ -48,6 +48,11 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         InstallPackagesCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(InstallPackage);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
 
+        if (!_db.CollectionExists("flatpaks"))
+        {
+            Refresh();
+            LoadingData = true;
+        }
         //LoadData();
     }
 
@@ -80,6 +85,12 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         catch (Exception e)
         {
             Console.WriteLine($"Failed to refresh installed packages: {e.Message}");
+        }
+
+        if (LoadingData)
+        {
+            LoadInitialDataAsync();
+            LoadingData = false;
         }
     }
 
@@ -147,18 +158,14 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
             p.Version.Contains(searchText, StringComparison.OrdinalIgnoreCase));
     }
 
-    private bool _showConfirmDialog;
+    private bool _loadingData;
 
-    public bool ShowConfirmDialog
+    public bool LoadingData
     {
-        get => _showConfirmDialog;
-        set => this.RaiseAndSetIfChanged(ref _showConfirmDialog, value);
+        get => _loadingData;
+        set => this.RaiseAndSetIfChanged(ref _loadingData, value);
     }
-
-    public void ToggleConfirmAction()
-    {
-        ShowConfirmDialog = !ShowConfirmDialog;
-    }
+    
 
     public async Task InstallPackage(FlatpakModel package)
     {

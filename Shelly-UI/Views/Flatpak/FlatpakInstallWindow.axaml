@@ -107,8 +107,17 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"  IsVisible="{Binding LoadingData}">
+                        <ProgressBar Grid.Row="0" IsIndeterminate="True"
+                                    
+                                     Width="50"
+                                     Height="50" />
+                        <TextBlock Text="Loading flatpak information this may take a moment on first load."></TextBlock>
+                    </StackPanel>
+
                 </Grid>
             </Grid>
+
         </customControls:ConsoleSplitControl.MainContent>
         <customControls:ConsoleSplitControl.BottomContent>
             <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">

@@ -55,7 +55,7 @@
                         </Grid>
                     </Border>
                     <ScrollViewer Grid.Row="1">
-                        <ItemsControl ItemsSource="{Binding FilteredPackages}">
+                        <ItemsControl ItemsSource="{Binding AvailablePackages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:FlatpakModel">
                                     <Border
@@ -81,6 +81,9 @@
                                                            FontWeight="Bold" />
                                                 <TextBlock
                                                     Text="{Binding Summary}"
+                                                    Margin="0,4,0,0" />
+                                                <TextBlock
+                                                    Text="{Binding Version}"
                                                     Margin="0,4,0,0" />
                                             </StackPanel>
                                             <Button

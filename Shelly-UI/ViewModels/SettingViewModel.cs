@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Shelly_UI.Enums;
 using Shelly_UI.Messages;
@@ -44,12 +45,15 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _isDarkMode = config.DarkMode;
         _enableConsole = config.ConsoleEnabled;
         _enableAur = config.AurEnabled;
+        _enableFlatpak = config.FlatPackEnabled;
 
         _ = SetUpdateText();
-
+        _ = CheckAndEnableFlatpakAsync();
 
         CheckForUpdatesCommand = ReactiveCommand.CreateFromTask(CheckForUpdates);
         ForceSyncUpdateCommand = ReactiveCommand.CreateFromTask(ForceSyncUpdate);
+        CancelFlatpakDialog = ReactiveCommand.Create(() => { ShowFlatpakDialog = false; });
+        InstallFlatpakCommand = ReactiveCommand.CreateFromTask(InstallFlatpakAsync);
     }
 
     private Color _accentHex;
@@ -61,7 +65,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private bool _enableAur;
 
     private bool _enableFlatpak;
-    
+
 
     public Color AccentHex
     {
@@ -102,7 +106,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _enableConsole, value);
-            
+
             var config = _configService.LoadConfig();
             config.ConsoleEnabled = value;
             _configService.SaveConfig(config);
@@ -110,18 +114,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-    public bool EnableFlatpak
-    {
-        get => _enableFlatpak;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref _enableFlatpak, value);
-
-            var config = _configService.LoadConfig();
-            config.FlatPackEnabled = value;
-            _configService.SaveConfig(config);
-        }
-    }
 
     public bool EnableAur
     {
@@ -129,12 +121,137 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _enableAur, value);
-            
-            MessageBus.Current.SendMessage(new AurEnableMessage());
-            
+
+            MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
+
             var config = _configService.LoadConfig();
             config.AurEnabled = value;
             _configService.SaveConfig(config);
+        }
+    }
+
+
+    private bool _showFlatpakDialog;
+
+    public bool ShowFlatpakDialog
+    {
+        get => _showFlatpakDialog;
+        set => this.RaiseAndSetIfChanged(ref _showFlatpakDialog, value);
+    }
+
+
+    public bool EnableFlatpak
+    {
+        get => _enableFlatpak;
+        set
+        {
+            var oldValue = _enableFlatpak;
+            this.RaiseAndSetIfChanged(ref _enableFlatpak, value);
+
+            if (value && !IsFlatbackToggleEnabled)
+            {
+                ShowFlatpakDialog = true;
+                
+                Task.Run(async () =>
+                {
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _enableFlatpak = false;
+                        this.RaisePropertyChanged(nameof(EnableFlatpak));
+                    });
+                });
+
+                return;
+            }
+
+            if (value == oldValue) return;
+            var config = _configService.LoadConfig();
+            config.FlatPackEnabled = value;
+            _configService.SaveConfig(config);
+            MessageBus.Current.SendMessage(new MainWindowMessage { FlatpakEnable = true });
+        }
+    }
+
+    private Task SetEnableFlatpakAsync(bool value)
+    {
+        _enableFlatpak = value;
+        this.RaisePropertyChanged(nameof(EnableFlatpak));
+
+        MessageBus.Current.SendMessage(new MainWindowMessage { FlatpakEnable = true });
+
+        var config = _configService.LoadConfig();
+        config.FlatPackEnabled = value;
+        _configService.SaveConfig(config);
+        return Task.CompletedTask;
+    }
+
+    private bool _isFlatbackToggleEnabled = false;
+
+    public bool IsFlatbackToggleEnabled
+    {
+        get => _isFlatbackToggleEnabled;
+        private set => this.RaiseAndSetIfChanged(ref _isFlatbackToggleEnabled, value);
+    }
+
+    private async Task CheckAndEnableFlatpakAsync()
+    {
+        var result = await App.Services.GetService<IPrivilegedOperationService>()?.GetInstalledPackagesAsync()!;
+        var flatpakInstalled = result!.Any(x => x.Name == "flatpak");
+        IsFlatbackToggleEnabled = flatpakInstalled;
+    }
+
+
+    private async Task<bool> InstallFlatpakAsync()
+    {
+        using var mainWindow = HostScreen as MainWindowViewModel;
+        try
+        {
+            var credManager = App.Services.GetService<ICredentialManager>();
+            if (!credManager!.IsValidated)
+            {
+                if (!await credManager.RequestCredentialsAsync("Install flatpak") || string.IsNullOrEmpty(credManager.GetPassword()))
+                {
+                    ShowFlatpakDialog = false;
+                    return false;
+                }
+
+                var isValidated = await credManager.ValidateInputCredentials();
+
+                if (!isValidated)
+                {
+                    ShowFlatpakDialog = false;
+                    return false;
+                }
+            }
+
+            if (mainWindow != null)
+            {
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Installing flatpak...";
+            }
+
+            var result =
+                await App.Services.GetService<IPrivilegedOperationService>()?.InstallPackagesAsync(["flatpak"])!;
+
+            if (mainWindow != null) mainWindow.IsGlobalBusy = false;
+            ShowFlatpakDialog = false;
+
+            if (!result.Success) return result.Success;
+            
+            await CheckAndEnableFlatpakAsync();
+            
+            await SetEnableFlatpakAsync(true);
+
+            return result.Success;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Flatpak failed to install: {ex}");
+            if (mainWindow != null) mainWindow.IsGlobalBusy = false;
+            ShowFlatpakDialog = false;
+            return false;
         }
     }
 
@@ -145,6 +262,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     public ReactiveCommand<Unit, Unit> CheckForUpdatesCommand { get; }
 
     public ReactiveCommand<Unit, Unit> ForceSyncUpdateCommand { get; }
+
+    public ReactiveCommand<Unit, Unit> CancelFlatpakDialog { get; }
+
+    public ReactiveCommand<Unit, bool> InstallFlatpakCommand { get; }
+
 
     public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
                                         !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
@@ -182,7 +304,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         get => _updateAvailable;
         set => this.RaiseAndSetIfChanged(ref _updateAvailable, value);
     }
-    
+
     public string AppVersion { get; } = GetAppVersion();
 
     private static string GetAppVersion()
@@ -191,18 +313,18 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         var nameVer = asm.GetName().Version?.ToString();
         return !string.IsNullOrWhiteSpace(nameVer) ? $"v{nameVer}" : "unknown";
     }
-    
+
     public IEnumerable<DefaultViewEnum> DefaultViews { get; } =
         Enum.GetValues<DefaultViewEnum>();
-    
+
     private DefaultViewEnum _defaultScreenEnum;
-    
+
     public DefaultViewEnum DefaultScreenEnum
     {
         get => _configService.LoadConfig().DefaultView;
         set
         {
-            this.RaiseAndSetIfChanged(ref _defaultScreenEnum, value); 
+            this.RaiseAndSetIfChanged(ref _defaultScreenEnum, value);
             var config = _configService.LoadConfig();
             config.DefaultView = value;
             _configService.SaveConfig(config);

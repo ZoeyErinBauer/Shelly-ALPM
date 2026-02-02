@@ -10,5 +10,8 @@ public enum MenuOptions
     UpdatePackage,
     InstallAurPackage,
     RemoveAurPackage,
-    UpdateAurPackage
+    UpdateAurPackage,
+    InstallFlatpak,
+    RemoveFlatpak,
+    UpdateFlatpak,
 }

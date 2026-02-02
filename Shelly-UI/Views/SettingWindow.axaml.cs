@@ -1,9 +1,14 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
+using Shelly_UI.Services;
 using Shelly_UI.ViewModels;
 
 namespace Shelly_UI.Views;
@@ -16,6 +21,18 @@ public partial class SettingWindow : ReactiveUserControl<SettingViewModel>
         AvaloniaXamlLoader.Load(this);
     }
     
+    private void OnFlatpakPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (sender is not ToggleSwitch toggleSwitch || DataContext is not SettingViewModel viewModel) return;
+        var currentValue = viewModel.EnableFlatpak;
+        var wouldBeNewValue = !currentValue;
+
+        if (!wouldBeNewValue || viewModel.IsFlatbackToggleEnabled) return;
+        e.Handled = true;
+                
+        viewModel.ShowFlatpakDialog = true;
+    }
+
     private void OpenUrlCrossPlatform(object? sender, RoutedEventArgs routedEventArgs)
     {
         try

@@ -24,7 +24,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<FlatpakModel>> _filteredPackages;
+    private List<FlatpakModel> _avaliablePackages = new();
 
     public FlatpakUpdateViewModel(IScreen screen)
     {
@@ -33,12 +33,10 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         AvailablePackages = new ObservableCollection<FlatpakModel>();
 
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
+        this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+            .Subscribe(_ => ApplyFilter());
 
         RefreshCommand = ReactiveCommand.Create(LoadData);
 
@@ -62,6 +60,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             {
                 Name = u.Name,
                 Version = u.Version,
+                Summary = u.Summary,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Id = u.Id,
                 Kind = u.Kind == 0
@@ -70,12 +69,8 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                foreach (var pkg in models)
-                {
-                    AvailablePackages.Add(pkg);
-                }
-
-                this.RaisePropertyChanged(nameof(AvailablePackages));
+                _avaliablePackages = models;
+                ApplyFilter();
             });
         }
         catch (Exception e)
@@ -84,16 +79,20 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         }
     }
 
-    private IEnumerable<FlatpakModel> Search(string? searchText)
+    private void ApplyFilter()
     {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return AvailablePackages;
-        }
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _avaliablePackages
+            : _avaliablePackages.Where(p =>
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
-        return AvailablePackages.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            p.Version.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+        AvailablePackages.Clear();
+
+        foreach (var package in filtered)
+        {
+            AvailablePackages.Add(package);
+        }
     }
 
     private bool _showConfirmDialog;
@@ -150,11 +149,22 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
     public ReactiveCommand<FlatpakModel, Unit> UpdatePackageCommand { get; set; }
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-    public IEnumerable<FlatpakModel> FilteredPackages => _filteredPackages.Value;
+
 
     public string? SearchText
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            _avaliablePackages?.Clear();
+        }
+
+        base.Dispose(disposing);
     }
 }

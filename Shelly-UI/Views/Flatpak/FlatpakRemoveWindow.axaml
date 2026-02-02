@@ -54,7 +54,7 @@
                         </Grid>
                     </Border>
                     <ScrollViewer Grid.Row="1">
-                        <ItemsControl ItemsSource="{Binding FilteredPackages}">
+                        <ItemsControl ItemsSource="{Binding AvailablePackages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:FlatpakModel">
                                     <Border
@@ -79,7 +79,7 @@
                                                 <TextBlock Text="{Binding Name}"
                                                            FontWeight="Bold" />
                                                 <TextBlock
-                                                    Text="{Binding Summary}"
+                                                    Text="{Binding Version}"
                                                     Margin="0,4,0,0" />
                                             </StackPanel>
                                             <Button
@@ -90,7 +90,7 @@
                                                 Background="Transparent"
                                                 Command="{Binding $parent[ItemsControl].((vm:FlatpakRemoveViewModel)DataContext).RemovePackageCommand}"
                                                 CommandParameter="{Binding}">
-                                                <avalonia:MaterialIcon Kind="Download"
+                                                <avalonia:MaterialIcon Kind="TrashCan"
                                                                        Foreground="{DynamicResource SystemBaseHighColor}"
                                                                        Width="20" Height="20" />
                                             </Button>

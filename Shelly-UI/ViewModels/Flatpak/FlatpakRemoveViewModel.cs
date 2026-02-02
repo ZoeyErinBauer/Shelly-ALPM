@@ -24,9 +24,9 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
+    private List<FlatpakModel> _avaliablePackages = new();
+    
     private string? _searchText;
-    private readonly ObservableAsPropertyHelper<IEnumerable<FlatpakModel>> _filteredPackages;
-    private readonly ICredentialManager _credentialManager;
 
     public FlatpakRemoveViewModel(IScreen screen)
     {
@@ -34,13 +34,11 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         AvailablePackages = new ObservableCollection<FlatpakModel>();
-
-        _filteredPackages = this
-            .WhenAnyValue(x => x.SearchText, x => x.AvailablePackages.Count, (s, c) => s)
+        
+        this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Select(Search)
-            .ToProperty(this, x => x.FilteredPackages);
+            .Subscribe(_ => ApplyFilter());
         
         RefreshCommand = ReactiveCommand.Create(LoadData);
         RemovePackageCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(RemovePackage);
@@ -48,8 +46,26 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
         LoadData();
     }
     
+    private void ApplyFilter()
+    {
+        var filtered = string.IsNullOrWhiteSpace(SearchText)
+            ? _avaliablePackages
+            : _avaliablePackages.Where(p =>
+                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+        AvailablePackages.Clear();
+        
+        foreach (var package in filtered)
+        {
+            AvailablePackages.Add(package);
+        }
+    }
+    
     private async void LoadData()
     {
+        _avaliablePackages.Clear();
+        AvailablePackages.Clear();
         try
         {
             var result = await Task.Run(() => _unprivilegedOperationService.ListFlatpakPackages());
@@ -69,33 +85,17 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                AvailablePackages.Clear();
-                foreach (var pkg in models)
-                {
-                    AvailablePackages.Add(pkg);
-                }
-
-                this.RaisePropertyChanged(nameof(AvailablePackages));
+                _avaliablePackages = models;
+                ApplyFilter();
             });
+            
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to load installed packages for removal: {e.Message}");
         }
     }
-
-    private IEnumerable<FlatpakModel> Search(string? searchText)
-    {
-        if (string.IsNullOrWhiteSpace(searchText))
-        {
-            return AvailablePackages;
-        }
-
-        return AvailablePackages.Where(p =>
-            p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            p.Version.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-    }
-
+    
     private bool _showConfirmDialog;
 
     public bool ShowConfirmDialog
@@ -152,14 +152,21 @@ public class FlatpakRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableView
     public ReactiveCommand<FlatpakModel, Unit> RemovePackageCommand { get; }
 
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-
-    public IEnumerable<FlatpakModel> FilteredPackages => _filteredPackages.Value;
+    
 
     public string? SearchText
     {
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-
-    public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
+    
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            _avaliablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }
