@@ -41,7 +41,31 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         manager.Question += (sender, args) =>
         {
-            if (settings.NoConfirm)
+            // Handle SelectProvider differently - it needs a selection, not yes/no
+            if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+            {
+                if (settings.NoConfirm)
+                {
+                    // Machine-readable format for UI integration
+                    Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                    for (int i = 0; i < args.ProviderOptions.Count; i++)
+                    {
+                        Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                    }
+                    Console.Error.Flush();
+                    var input = Console.ReadLine();
+                    args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                }
+                else
+                {
+                    var selection = AnsiConsole.Prompt(
+                        new SelectionPrompt<string>()
+                            .Title($"[yellow]{args.QuestionText}[/]")
+                            .AddChoices(args.ProviderOptions));
+                    args.Response = args.ProviderOptions.IndexOf(selection);
+                }
+            }
+            else if (settings.NoConfirm)
             {
                 // Machine-readable format for UI integration
                 Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");

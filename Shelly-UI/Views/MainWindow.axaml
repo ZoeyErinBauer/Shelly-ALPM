@@ -333,7 +333,9 @@
                                TextWrapping="Wrap"
                                TextAlignment="Center" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                    <!-- Yes/No buttons for regular questions -->
+                    <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center"
+                                IsVisible="{Binding !IsSelectProviderQuestion}">
                         <Button Content="Yes"
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="1"
@@ -343,6 +345,26 @@
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="0"
                                 Width="100"
+                                HorizontalContentAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Provider selection for SelectProvider questions -->
+                    <StackPanel Spacing="15" IsVisible="{Binding IsSelectProviderQuestion}">
+                        <ListBox ItemsSource="{Binding ProviderOptions}"
+                                 SelectedIndex="{Binding SelectedProviderIndex}"
+                                 MaxHeight="200"
+                                 MinWidth="300">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Padding="10,5" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Button Content="Select"
+                                Command="{Binding RespondToQuestion}"
+                                CommandParameter="{Binding SelectedProviderIndex}"
+                                HorizontalAlignment="Center"
+                                Width="120"
                                 HorizontalContentAlignment="Center" />
                     </StackPanel>
                 </StackPanel>

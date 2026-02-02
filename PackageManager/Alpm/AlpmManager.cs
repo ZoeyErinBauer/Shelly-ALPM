@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -191,6 +192,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         var question = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
         var questionType = (AlpmQuestionType)question.Type;
 
+        // Handle SelectProvider specially - it has a different structure
+        if (questionType == AlpmQuestionType.SelectProvider)
+        {
+            HandleSelectProviderQuestion(questionPtr);
+            return;
+        }
+
         var questionText = questionType switch
         {
             AlpmQuestionType.InstallIgnorePkg => "Install IgnorePkg?",
@@ -198,7 +206,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             AlpmQuestionType.ConflictPkg => "Conflict found. Remove?",
             AlpmQuestionType.CorruptedPkg => "Corrupted pkg. Delete?",
             AlpmQuestionType.ImportKey => "Import GPG key?",
-            AlpmQuestionType.SelectProvider => "Select provider?",
             _ => $"Unknown question type: {question.Type}"
         };
 
@@ -210,6 +217,73 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Write the response back to the answer field.
         question.Answer = args.Response;
         Marshal.StructureToPtr(question, questionPtr, false);
+    }
+
+    private void HandleSelectProviderQuestion(IntPtr questionPtr)
+    {
+        var selectQuestion = Marshal.PtrToStructure<AlpmQuestionSelectProvider>(questionPtr);
+
+        // Extract the dependency name
+        string? dependencyName = null;
+        if (selectQuestion.Depend != IntPtr.Zero)
+        {
+            var depStringPtr = DepComputeString(selectQuestion.Depend);
+            if (depStringPtr != IntPtr.Zero)
+            {
+                dependencyName = Marshal.PtrToStringUTF8(depStringPtr);
+                // Note: alpm_dep_compute_string returns a malloc'd string that should be freed
+                // but we don't have access to free() easily, so we accept a small leak here
+            }
+        }
+
+        // Extract the list of provider package names
+        var providerOptions = new List<string>();
+        var currentPtr = selectQuestion.Providers;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                // node.Data is an alpm_pkg_t*, get its name
+                var pkgNamePtr = GetPkgName(node.Data);
+                if (pkgNamePtr != IntPtr.Zero)
+                {
+                    var pkgName = Marshal.PtrToStringUTF8(pkgNamePtr);
+                    if (!string.IsNullOrEmpty(pkgName))
+                    {
+                        providerOptions.Add(pkgName);
+                    }
+                }
+            }
+
+            currentPtr = node.Next;
+        }
+
+        // Build the question text
+        var questionText = $"Select a provider for '{dependencyName ?? "dependency"}':";
+
+        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText}");
+        for (int i = 0; i < providerOptions.Count; i++)
+        {
+            Console.Error.WriteLine($"  [{i}] {providerOptions[i]}");
+        }
+
+        var args = new AlpmQuestionEventArgs(
+            AlpmQuestionType.SelectProvider,
+            questionText,
+            providerOptions,
+            dependencyName);
+
+        // Default to first provider (index 0) if no handler responds
+        args.Response = 0;
+
+        Question?.Invoke(this, args);
+
+        Console.Error.WriteLine($"[ALPM_QUESTION] Selected provider index: {args.Response}");
+
+        // Write the response back to the UseIndex field
+        selectQuestion.UseIndex = args.Response;
+        Marshal.StructureToPtr(selectQuestion, questionPtr, false);
     }
 
     private int DownloadFile(IntPtr ctx, IntPtr urlPtr, IntPtr localpathPtr, int force)
@@ -291,12 +365,23 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Use a temporary file for atomic writes - prevents corruption if download is interrupted
         string tempPath = localpath + ".part";
         Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
-
+        SocketsHttpHandler? handler = null;
+        HttpClient? client = null;
         try
         {
             Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
 
-            using var response = HttpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
+            handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 10
+            };
+            client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMinutes(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM/1.0 (compatible)");
+            using var response = client.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
 
@@ -371,7 +456,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     Console.Error.WriteLine($"[DEBUG_LOG] Failed to delete temp file: {tempPath}");
                 }
-            
+
                 return 0;
             }
 
@@ -416,7 +501,35 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             {
                 /* Ignore cleanup errors */
             }
+        }
+        finally
+        {
+            client?.Dispose();
+            handler?.Dispose();
+        }
 
+        try
+        {
+            // We've fallen out of the custom downloader attempt to use curl
+            if (!string.IsNullOrEmpty(_config.TransferCommand))
+            {
+                // Replace placeholders: %o = output file, %u = URL
+                var command = _config.TransferCommand
+                    .Replace("%o", localpath)
+                    .Replace("%u", fullUrl);
+
+                // Execute external command
+                var process = Process.Start("/bin/sh", $"-c \"{command}\"");
+                process.WaitForExit();
+                return process.ExitCode == 0 ? 0 : -1;
+            }
+
+            Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: curl not available");
+            return -1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DEBUG_LOG] Failed to execute custom transfer command: {ex.Message}");
             return -1;
         }
     }

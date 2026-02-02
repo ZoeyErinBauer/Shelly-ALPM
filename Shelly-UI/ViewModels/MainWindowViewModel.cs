@@ -179,6 +179,20 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 var args = pattern.EventArgs;
                 QuestionTitle = GetQuestionTitle(args.QuestionType);
                 QuestionText = args.QuestionText;
+                
+                // Handle SelectProvider questions with a selection list
+                if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+                {
+                    IsSelectProviderQuestion = true;
+                    ProviderOptions = args.ProviderOptions;
+                    SelectedProviderIndex = 0;
+                }
+                else
+                {
+                    IsSelectProviderQuestion = false;
+                    ProviderOptions = null;
+                }
+                
                 ShowQuestion = true;
 
                 // Wait for user response
@@ -413,6 +427,30 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         get => _questionText;
         set => this.RaiseAndSetIfChanged(ref _questionText, value);
+    }
+
+    private List<string>? _providerOptions;
+
+    public List<string>? ProviderOptions
+    {
+        get => _providerOptions;
+        set => this.RaiseAndSetIfChanged(ref _providerOptions, value);
+    }
+
+    private bool _isSelectProviderQuestion;
+
+    public bool IsSelectProviderQuestion
+    {
+        get => _isSelectProviderQuestion;
+        set => this.RaiseAndSetIfChanged(ref _isSelectProviderQuestion, value);
+    }
+
+    private int _selectedProviderIndex;
+
+    public int SelectedProviderIndex
+    {
+        get => _selectedProviderIndex;
+        set => this.RaiseAndSetIfChanged(ref _selectedProviderIndex, value);
     }
 
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
