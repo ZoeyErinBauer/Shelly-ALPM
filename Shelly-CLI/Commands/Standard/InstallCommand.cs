@@ -99,6 +99,7 @@ public class InstallCommand : Command<InstallPackageSettings>
 
             AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
             manager.InstallDependenciesOnly(packageList.First(), false, AlpmTransFlag.None);
+            AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
 
@@ -107,6 +108,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             AnsiConsole.MarkupLine("[yellow]Skipping dependency installation.[/]");
             AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
             manager.InstallPackages(packageList, AlpmTransFlag.NoDeps);
+            AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
 
