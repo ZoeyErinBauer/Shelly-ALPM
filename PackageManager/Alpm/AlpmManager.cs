@@ -191,6 +191,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         var question = Marshal.PtrToStructure<AlpmQuestionAny>(questionPtr);
         var questionType = (AlpmQuestionType)question.Type;
 
+        // Handle SelectProvider specially - it has a different structure
+        if (questionType == AlpmQuestionType.SelectProvider)
+        {
+            HandleSelectProviderQuestion(questionPtr);
+            return;
+        }
+
         var questionText = questionType switch
         {
             AlpmQuestionType.InstallIgnorePkg => "Install IgnorePkg?",
@@ -198,7 +205,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             AlpmQuestionType.ConflictPkg => "Conflict found. Remove?",
             AlpmQuestionType.CorruptedPkg => "Corrupted pkg. Delete?",
             AlpmQuestionType.ImportKey => "Import GPG key?",
-            AlpmQuestionType.SelectProvider => "Select provider?",
             _ => $"Unknown question type: {question.Type}"
         };
 
@@ -210,6 +216,72 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Write the response back to the answer field.
         question.Answer = args.Response;
         Marshal.StructureToPtr(question, questionPtr, false);
+    }
+
+    private void HandleSelectProviderQuestion(IntPtr questionPtr)
+    {
+        var selectQuestion = Marshal.PtrToStructure<AlpmQuestionSelectProvider>(questionPtr);
+        
+        // Extract the dependency name
+        string? dependencyName = null;
+        if (selectQuestion.Depend != IntPtr.Zero)
+        {
+            var depStringPtr = DepComputeString(selectQuestion.Depend);
+            if (depStringPtr != IntPtr.Zero)
+            {
+                dependencyName = Marshal.PtrToStringUTF8(depStringPtr);
+                // Note: alpm_dep_compute_string returns a malloc'd string that should be freed
+                // but we don't have access to free() easily, so we accept a small leak here
+            }
+        }
+
+        // Extract the list of provider package names
+        var providerOptions = new List<string>();
+        var currentPtr = selectQuestion.Providers;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
+            {
+                // node.Data is an alpm_pkg_t*, get its name
+                var pkgNamePtr = GetPkgName(node.Data);
+                if (pkgNamePtr != IntPtr.Zero)
+                {
+                    var pkgName = Marshal.PtrToStringUTF8(pkgNamePtr);
+                    if (!string.IsNullOrEmpty(pkgName))
+                    {
+                        providerOptions.Add(pkgName);
+                    }
+                }
+            }
+            currentPtr = node.Next;
+        }
+
+        // Build the question text
+        var questionText = $"Select a provider for '{dependencyName ?? "dependency"}':";
+        
+        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText}");
+        for (int i = 0; i < providerOptions.Count; i++)
+        {
+            Console.Error.WriteLine($"  [{i}] {providerOptions[i]}");
+        }
+
+        var args = new AlpmQuestionEventArgs(
+            AlpmQuestionType.SelectProvider, 
+            questionText, 
+            providerOptions, 
+            dependencyName);
+        
+        // Default to first provider (index 0) if no handler responds
+        args.Response = 0;
+        
+        Question?.Invoke(this, args);
+
+        Console.Error.WriteLine($"[ALPM_QUESTION] Selected provider index: {args.Response}");
+
+        // Write the response back to the UseIndex field
+        selectQuestion.UseIndex = args.Response;
+        Marshal.StructureToPtr(selectQuestion, questionPtr, false);
     }
 
     private int DownloadFile(IntPtr ctx, IntPtr urlPtr, IntPtr localpathPtr, int force)
