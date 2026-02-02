@@ -7,9 +7,9 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Standard;
 
-public class InstallCommand : Command<PackageSettings>
+public class InstallCommand : Command<InstallPackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
+    public override int Execute([NotNull] CommandContext context, [NotNull] InstallPackageSettings settings)
     {
         if (settings.Packages.Length == 0)
         {
@@ -50,6 +50,7 @@ public class InstallCommand : Command<PackageSettings>
                     {
                         Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
                     }
+
                     Console.Error.Flush();
                     var input = Console.ReadLine();
                     args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
@@ -80,6 +81,26 @@ public class InstallCommand : Command<PackageSettings>
 
         AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
         manager.IntializeWithSync();
+
+        if (settings.BuildDepsOn)
+        {
+            if (settings.Packages.Length > 1)
+            {
+                AnsiConsole.MarkupLine("[yellow]Cannot build dependencies for multiple packages at once.[/]");
+                return 0;
+            }
+
+            if (settings.MakeDepsOn)
+            {
+                AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+                manager.InstallDependenciesOnly(packageList.First(), true, AlpmTransFlag.None);
+                return 0;
+            }
+
+            AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+            manager.InstallDependenciesOnly(packageList.First(), false, AlpmTransFlag.None);
+            return 0;
+        }
 
         AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
         manager.InstallPackages(packageList);

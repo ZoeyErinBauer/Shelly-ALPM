@@ -1137,7 +1137,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     }
 
     public void InstallDependenciesOnly(string packageName,
-        AlpmTransFlag flags = AlpmTransFlag.None | AlpmTransFlag.NoHooks | AlpmTransFlag.NoScriptlet)
+        bool includeMakeDeps = false,
+        AlpmTransFlag flags = AlpmTransFlag.None)
     {
         if (_handle == IntPtr.Zero) Initialize();
         var syncDbsPtr = GetSyncDbs(_handle);
@@ -1164,13 +1165,20 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         var dependencies = GetDependencyList(GetPkgDepends(pkgPtr));
 
+
+        if (includeMakeDeps)
+        {
+            var makeDepends = GetDependencyList(GetPkgMakeDepends(pkgPtr));
+            dependencies = dependencies.Concat(makeDepends).ToList();
+        }
+
+
         var installedPackages = GetInstalledPackages().ToDictionary(x => x.Name, x => x.Version);
         var dependencyToInstall = dependencies.Where(x => !installedPackages.ContainsKey(x)).ToList();
-        
-        if(dependencyToInstall.Count == 0) return;
-        
+
+        if (dependencyToInstall.Count == 0) return;
+
         InstallPackages(dependencyToInstall, flags);
-        
     }
 
     public void Refresh()
