@@ -6,10 +6,10 @@ namespace Shelly_CLI.Commands.Standard;
 public class PackageSettings : DefaultSettings
 {
     [CommandArgument(0, "<packages>")]
-    [Description("Package name(s) to operate on")]
+    [Description("One or more package names to operate on (space-separated)")]
     public string[] Packages { get; set; } = [];
 
-    [CommandOption("--no-confirm")]
-    [Description("Skip confirmation prompt")]
+    [CommandOption("-n|--no-confirm")]
+    [Description("Proceed without asking for user confirmation")]
     public bool NoConfirm { get; set; }
 }

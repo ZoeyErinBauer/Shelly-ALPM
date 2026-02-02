@@ -5,7 +5,7 @@ namespace Shelly_CLI.Commands.Standard;
 
 public class UpgradeSettings : DefaultSettings
 {
-    [CommandOption("--no-confirm")]
-    [Description("Skip confirmation prompt")]
+    [CommandOption("-n|--no-confirm")]
+    [Description("Proceed with system upgrade without asking for user confirmation")]
     public bool NoConfirm { get; set; }
 }
