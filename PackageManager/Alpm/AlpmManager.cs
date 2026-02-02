@@ -291,12 +291,23 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Use a temporary file for atomic writes - prevents corruption if download is interrupted
         string tempPath = localpath + ".part";
         Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
-
+        SocketsHttpHandler? handler = null;
+        HttpClient? client = null;
         try
         {
             Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
 
-            using var response = HttpClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
+            handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 10
+            };
+            client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMinutes(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM/1.0 (compatible)");
+            using var response = client.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
 
@@ -371,7 +382,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     Console.Error.WriteLine($"[DEBUG_LOG] Failed to delete temp file: {tempPath}");
                 }
-            
+
                 return 0;
             }
 
@@ -418,6 +429,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
 
             return -1;
+        }
+        finally
+        {
+            client?.Dispose();
+            handler?.Dispose();
         }
     }
 
