@@ -164,11 +164,12 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
                 return;
             }
 
+            SendFlatpakMessager();
             if (value == oldValue) return;
             var config = _configService.LoadConfig();
             config.FlatPackEnabled = value;
             _configService.SaveConfig(config);
-            MessageBus.Current.SendMessage(new MainWindowMessage { FlatpakEnable = true });
+         
         }
     }
 
@@ -177,12 +178,17 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _enableFlatpak = value;
         this.RaisePropertyChanged(nameof(EnableFlatpak));
 
-        MessageBus.Current.SendMessage(new MainWindowMessage { FlatpakEnable = true });
+        SendFlatpakMessager();
 
         var config = _configService.LoadConfig();
         config.FlatPackEnabled = value;
         _configService.SaveConfig(config);
         return Task.CompletedTask;
+    }
+
+    private void SendFlatpakMessager()
+    {
+        MessageBus.Current.SendMessage(new MainWindowMessage { FlatpakEnable = true });
     }
 
     private bool _isFlatbackToggleEnabled = false;
@@ -243,6 +249,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             await CheckAndEnableFlatpakAsync();
             
             await SetEnableFlatpakAsync(true);
+
+            IsFlatbackToggleEnabled = true;
 
             return result.Success;
         }
