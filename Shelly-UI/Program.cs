@@ -72,13 +72,14 @@ sealed class Program
             return builder
                 .With(new X11PlatformOptions()
                 {
+                    //This option should allow for native scaling support
                     EnableIme = true,
                     EnableMultiTouch = true,
                     UseDBusMenu = true,
                     UseDBusFilePicker = true
                 })
                 .With(new AvaloniaNativePlatformOptions())
-                .UsePlatformDetect(); // Will now prefer Wayland
+                .UsePlatformDetect(); 
         }
     
         return builder.UsePlatformDetect();
