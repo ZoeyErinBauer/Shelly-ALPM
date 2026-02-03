@@ -21,7 +21,7 @@ sealed class Program
     public static void Main(string[] args)
     {
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
-        var logPath = Path.Combine(EnvironmentManager.UserPath, "Documents", "Shelly");
+        var logPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly","logs");
         Directory.CreateDirectory(logPath);
         var logWriter = new LogTextWriter(Console.Error, logPath);
         Console.SetError(logWriter);
