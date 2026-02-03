@@ -54,14 +54,16 @@ public class AurPackageManager(string? configPath = null)
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmProgressEventArgs>? Progress;
 
-    public Task Initialize(bool root = false)
+    public async Task Initialize(bool root = false)
     {
         _alpm = configPath is null ? new AlpmManager() : new AlpmManager(configPath);
         _alpm.Initialize(root);
         _alpm.Question += (sender, args) => Question?.Invoke(this, args);
         _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
-        return Task.CompletedTask;
+        
+        // Import caches from other AUR helpers (paru, yay) for installed foreign packages
+        await ImportOtherAurHelperCaches();
     }
 
     public async Task<List<AurPackageDto>> GetInstalledPackages()
@@ -785,5 +787,130 @@ public class AurPackageManager(string? configPath = null)
             "=" => cmp == 0,
             _ => true
         };
+    }
+
+    /// <summary>
+    /// Imports cached AUR package data from other AUR helpers (paru and yay) into Shelly's cache.
+    /// This allows Shelly to show PKGBUILD diffs for packages that were originally installed via paru or yay.
+    /// </summary>
+    private async Task ImportOtherAurHelperCaches()
+    {
+        try
+        {
+            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+            var home = $"/home/{user}";
+            var shellyCachePath = System.IO.Path.Combine(home, ".cache", "Shelly");
+            
+            // Get list of installed foreign (AUR) packages
+            var foreignPackages = _alpm.GetForeignPackages().Select(p => p.Name).ToHashSet();
+            
+            // Define cache locations for other AUR helpers
+            var paruCachePath = System.IO.Path.Combine(home, ".cache", "paru", "clone");
+            var yayCachePath = System.IO.Path.Combine(home, ".cache", "yay");
+            
+            // Import from paru cache
+            if (System.IO.Directory.Exists(paruCachePath))
+            {
+                await ImportFromAurHelperCache(paruCachePath, shellyCachePath, foreignPackages, user);
+            }
+            
+            // Import from yay cache
+            if (System.IO.Directory.Exists(yayCachePath))
+            {
+                await ImportFromAurHelperCache(yayCachePath, shellyCachePath, foreignPackages, user);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail initialization if cache import fails
+            Console.Error.WriteLine($"Warning: Failed to import AUR helper caches: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Imports package caches from a specific AUR helper's cache directory.
+    /// </summary>
+    private async Task ImportFromAurHelperCache(string sourceCachePath, string shellyCachePath, HashSet<string> foreignPackages, string user)
+    {
+        try
+        {
+            var packageDirs = System.IO.Directory.GetDirectories(sourceCachePath);
+            
+            foreach (var packageDir in packageDirs)
+            {
+                var packageName = System.IO.Path.GetFileName(packageDir);
+                
+                // Only import if the package is currently installed as a foreign package
+                if (!foreignPackages.Contains(packageName))
+                    continue;
+                
+                var shellyPackagePath = System.IO.Path.Combine(shellyCachePath, packageName);
+                
+                // Skip if Shelly already has a cache for this package
+                if (System.IO.Directory.Exists(shellyPackagePath))
+                    continue;
+                
+                // Check if source has a PKGBUILD
+                var sourcePkgbuild = System.IO.Path.Combine(packageDir, "PKGBUILD");
+                if (!System.IO.File.Exists(sourcePkgbuild))
+                    continue;
+                
+                // Create Shelly cache directory for this package
+                var mkdirProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} mkdir -p {shellyPackagePath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                mkdirProcess.Start();
+                await mkdirProcess.WaitForExitAsync();
+                
+                // Copy the PKGBUILD and other relevant files
+                var copyProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} cp -r {packageDir}/. {shellyPackagePath}/",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                copyProcess.Start();
+                await copyProcess.WaitForExitAsync();
+                
+                // Remove any .git directory to save space (we don't need git history)
+                var gitDir = System.IO.Path.Combine(shellyPackagePath, ".git");
+                if (System.IO.Directory.Exists(gitDir))
+                {
+                    var rmGitProcess = new System.Diagnostics.Process
+                    {
+                        StartInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "sudo",
+                            Arguments = $"-u {user} rm -rf {gitDir}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    rmGitProcess.Start();
+                    await rmGitProcess.WaitForExitAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Warning: Failed to import from {sourceCachePath}: {ex.Message}");
+        }
     }
 }

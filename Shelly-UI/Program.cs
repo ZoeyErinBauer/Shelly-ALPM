@@ -60,28 +60,20 @@ sealed class Program
     public static AppBuilder BuildAvaloniaApp()
     {
 
-        var builder = AppBuilder.Configure<App>()
+        return AppBuilder.Configure<App>()
             .WithInterFont()
             .LogToTrace()
-            .UseReactiveUI();
-
-        var sessionType = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE");
-        if (sessionType == "wayland")
-        {
-            // Force Wayland backend, no X11 fallback
-            return builder
-                .With(new X11PlatformOptions()
-                {
-                    //This option should allow for native scaling support
-                    EnableIme = true,
-                    EnableMultiTouch = true,
-                    UseDBusMenu = true,
-                    UseDBusFilePicker = true
-                })
-                .With(new AvaloniaNativePlatformOptions())
-                .UsePlatformDetect(); 
-        }
-    
-        return builder.UsePlatformDetect();
+            .UseReactiveUI()
+            .With(new X11PlatformOptions()
+            {
+                //This option should allow for native scaling support
+                EnableIme = true,
+                EnableMultiTouch = true,
+                UseDBusMenu = true,
+                UseDBusFilePicker = true
+            })
+            .With(new AvaloniaNativePlatformOptions())
+            .UsePlatformDetect(); 
+        
     }
 }

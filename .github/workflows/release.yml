@@ -41,6 +41,18 @@ jobs:
         rm -f *.dbg *.pdb
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .
         cd ../..
+
+    - name: Generate SHA256 checksums
+      run: |
+        cd publish
+        # Download the source tarball from GitHub and generate its checksum
+        VERSION=${GITHUB_REF#refs/tags/}
+        curl -sL "https://github.com/ZoeyErinBauer/Shelly-ALPM/archive/${VERSION}.tar.gz" -o "source-${VERSION}.tar.gz"
+        sha256sum "source-${VERSION}.tar.gz" | sed "s/source-${VERSION}.tar.gz/${VERSION}.tar.gz/" > SHA256SUMS.txt
+        # Add binary tarballs checksums
+        sha256sum Shelly-ALPM-linux-x64.tar.gz Shelly-CLI-linux-x64.tar.gz >> SHA256SUMS.txt
+        rm "source-${VERSION}.tar.gz"
+        cat SHA256SUMS.txt
         
     - name: Create Release
       uses: softprops/action-gh-release@v2
@@ -48,6 +60,7 @@ jobs:
         files: |
           publish/Shelly-ALPM-linux-x64.tar.gz
           publish/Shelly-CLI-linux-x64.tar.gz
+          publish/SHA256SUMS.txt
         draft: false
         prerelease: false
       env:
