@@ -27,17 +27,18 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     private static string FindCliPath()
     {
-        #if DEBUG
+#if DEBUG
         var home = EnvironmentManager.UserPath;
         if (home == null)
         {
             throw new InvalidOperationException("HOME environment variable is not set.");
         }
+
         var debugPath =
-            Path.Combine(home!,"RiderProjects/Shelly-ALPM/Shelly-CLI/bin/Debug/net10.0/linux-x64/shelly");
+            Path.Combine(home!, "RiderProjects/Shelly-ALPM/Shelly-CLI/bin/Debug/net10.0/linux-x64/shelly");
         Console.Error.WriteLine($"Debug path: {debugPath}");
-        #endif
-        
+#endif
+
         // Check common installation paths
         var possiblePaths = new[]
         {
@@ -50,7 +51,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             Path.Combine(AppContext.BaseDirectory, "Shelly"),
             // Development path - relative to UI executable
             Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory) ?? "", "Shelly", "Shelly"),
-
         };
 
         foreach (var path in possiblePaths)
@@ -73,19 +73,19 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install packages", "install", "--no-confirm", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Install packages", "install", packageArgs, "--no-confirm");
     }
 
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove packages", "remove", "--no-confirm", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Remove packages", "remove", packageArgs, "--no-confirm");
     }
 
     public async Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update packages", "update", "--no-confirm", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Update packages", "update", packageArgs, "--no-confirm");
     }
 
     public async Task<OperationResult> UpgradeSystemAsync()
@@ -93,35 +93,36 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Upgrade system", "upgrade", "--no-confirm");
     }
 
-    public async  Task<OperationResult> ForceSyncDatabaseAsync()
+    public async Task<OperationResult> ForceSyncDatabaseAsync()
     {
         return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");
-        
     }
-    
+
     public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install AUR packages", "aur", "install", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Install AUR packages", "aur", "install", packageArgs,
+            "--no-confirm");
     }
-    
+
     public async Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove AUR packages", "aur", "remove", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Remove AUR packages", "aur", "remove", packageArgs, "--no-confirm");
     }
-    
+
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update", "--no-confirm", packageArgs);
+        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update",
+            packageArgs,"--no-confirm");
     }
 
     public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
     {
         // Use privileged execution to sync databases and get updates
         var result = await ExecutePrivilegedCommandAsync("Check for Updates", "list-updates", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -136,13 +137,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
                     return updates ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAlpmPackageUpdateDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -155,7 +158,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<List<AlpmPackageDto>> GetAvailablePackagesAsync()
     {
         var result = await ExecuteCommandAsync("list-available", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -170,13 +173,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAlpmPackageDto);
                     return packages ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAlpmPackageDto);
             return allPackages ?? [];
         }
         catch (Exception ex)
@@ -189,7 +194,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<List<AlpmPackageDto>> GetInstalledPackagesAsync()
     {
         var result = await ExecuteCommandAsync("list-installed", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -204,13 +209,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAlpmPackageDto);
                     return packages ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAlpmPackageDto);
             return allPackages ?? [];
         }
         catch (Exception ex)
@@ -219,11 +226,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             return [];
         }
     }
-    
+
     public async Task<List<AurPackageDto>> GetAurInstalledPackagesAsync()
     {
         var result = await ExecuteCommandAsync("aur list-installed", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -237,13 +244,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurPackageDto);
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAurPackageDto);
                     return packages ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurPackageDto);
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAurPackageDto);
             return allPackages ?? [];
         }
         catch (Exception ex)
@@ -252,11 +261,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             return [];
         }
     }
-    
+
     public async Task<List<AurUpdateDto>> GetAurUpdatePackagesAsync()
     {
         var result = await ExecuteCommandAsync("aur list-updates", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -270,13 +279,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurUpdateDto);
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAurUpdateDto);
                     return packages ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurUpdateDto);
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAurUpdateDto);
             return allPackages ?? [];
         }
         catch (Exception ex)
@@ -285,11 +296,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             return [];
         }
     }
-    
+
     public async Task<List<AurPackageDto>> SearchAurPackagesAsync(string query)
     {
-        var result = await ExecuteCommandAsync("aur search", query , "--json");
-        
+        var result = await ExecuteCommandAsync("aur search", query, "--json");
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -303,13 +314,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.ListAurPackageDto);
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAurPackageDto);
                     return packages ?? [];
                 }
             }
-            
+
             // If no JSON array found, try parsing the whole output
-            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), ShellyUIJsonContext.Default.ListAurPackageDto);
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAurPackageDto);
             return allPackages ?? [];
         }
         catch (Exception ex)
@@ -342,18 +355,18 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         try
         {
             process.Start();
-            
+
             // Read output and error streams synchronously to avoid race conditions
             // Use Task.WhenAll to read both streams concurrently
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
-            
+
             await Task.WhenAll(outputTask, errorTask);
             await process.WaitForExitAsync();
-            
+
             var output = await outputTask;
             var error = await errorTask;
-            
+
             // Log stderr for debugging
             if (!string.IsNullOrEmpty(error))
             {
@@ -408,7 +421,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         }
 
         var arguments = string.Join(" ", args);
-        var fullCommand = $"{_cliPath} {arguments} --no-confirm";
+        var fullCommand = $"{_cliPath} {arguments}";
 
         Console.WriteLine($"Executing privileged command: sudo {fullCommand}");
 
@@ -451,20 +464,22 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                     {
                         var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                         Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
-                        
+
                         // Show dialog on UI thread and get response
                         var response = await Dispatcher.UIThread.InvokeAsync(async () =>
                         {
-                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop 
+                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
+                                    desktop
                                 && desktop.MainWindow != null)
                             {
                                 var dialog = new QuestionDialog(questionText);
                                 var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
                                 return result;
                             }
+
                             return true; // Default to yes if no window available
                         });
-                        
+
                         // Send response to CLI via stdin
                         if (stdinWriter != null)
                         {
@@ -493,12 +508,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
-            
+
             // Close stdin after process exits
             stdinWriter.Close();
 
             var success = process.ExitCode == 0;
-            
+
             // Update credential validation status based on result
             if (success)
             {
@@ -508,7 +523,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             {
                 // Check if it was an authentication failure
                 var errorOutput = errorBuilder.ToString();
-                if (errorOutput.Contains("incorrect password") || 
+                if (errorOutput.Contains("incorrect password") ||
                     errorOutput.Contains("Sorry, try again") ||
                     errorOutput.Contains("Authentication failure") ||
                     process.ExitCode == 1 && errorOutput.Contains("sudo"))
@@ -544,7 +559,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         if (string.IsNullOrEmpty(input))
             return input;
-        
+
         // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
         return input.TrimStart('\uFEFF');
     }

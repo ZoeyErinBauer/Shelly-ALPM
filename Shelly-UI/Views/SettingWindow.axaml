@@ -32,15 +32,15 @@
                             Background="{DynamicResource SystemAccentColor}"
                             Foreground="{DynamicResource SystemBaseHighColor}"
                             Width="250"/>
-                    <!-- <Button Content="{Binding UpdateAvailableText}" -->
-                    <!--         Command="{Binding CheckForUpdatesCommand}" -->
-                    <!--         IsVisible="{Binding IsUpdateCheckVisible}" -->
-                    <!--         HorizontalAlignment="Left" -->
-                    <!--         HorizontalContentAlignment="Center" -->
-                    <!--         Padding="0,10" -->
-                    <!--         Background="{DynamicResource SystemAccentColor}" -->
-                    <!--         Foreground="{DynamicResource SystemBaseHighColor}" -->
-                    <!--         Width="250"/> -->
+                    <Button Content="{Binding UpdateAvailableText}"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            IsVisible="{Binding IsUpdateCheckVisible}"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            Background="{DynamicResource SystemAccentColor}"
+                            Foreground="{DynamicResource SystemBaseHighColor}"
+                            Width="250"/>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Appearance">

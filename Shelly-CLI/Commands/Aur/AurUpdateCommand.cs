@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using PackageManager.Alpm;
 using PackageManager.Aur;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -37,6 +38,53 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
                 AnsiConsole.MarkupLine(
                     $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName}: {args.Status}[/]" +
                     (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
+            };
+
+            manager.Progress += (sender, args) =>
+            {
+                AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
+            };
+
+            manager.Question += (sender, args) =>
+            {
+                // Handle SelectProvider differently - it needs a selection, not yes/no
+                if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+                {
+                    if (settings.NoConfirm)
+                    {
+                        // Machine-readable format for UI integration
+                        Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                        for (int i = 0; i < args.ProviderOptions.Count; i++)
+                        {
+                            Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        }
+
+                        Console.Error.Flush();
+                        var input = Console.ReadLine();
+                        args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                    }
+                    else
+                    {
+                        var selection = AnsiConsole.Prompt(
+                            new SelectionPrompt<string>()
+                                .Title($"[yellow]{args.QuestionText}[/]")
+                                .AddChoices(args.ProviderOptions));
+                        args.Response = args.ProviderOptions.IndexOf(selection);
+                    }
+                }
+                else if (settings.NoConfirm)
+                {
+                    // Machine-readable format for UI integration
+                    Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
+                    Console.Error.Flush();
+                    var input = Console.ReadLine();
+                    args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+                }
+                else
+                {
+                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                    args.Response = response ? 1 : 0;
+                }
             };
 
             manager.PkgbuildDiffRequest += (sender, args) =>
