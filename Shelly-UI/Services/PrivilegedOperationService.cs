@@ -337,14 +337,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var arguments = string.Join(" ", args);
         var fullCommand = $"{_cliPath} {arguments}";
 
-        Console.WriteLine($"Executing command: {fullCommand}");
+        Console.WriteLine($"Executing command: {fullCommand} --ui-mode");
 
         var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = _cliPath,
-                Arguments = arguments,
+                Arguments = string.IsNullOrWhiteSpace(arguments) ? "--ui-mode" : arguments + " --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -430,7 +430,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "sudo",
-                Arguments = $"-S {fullCommand}",
+                Arguments = $"-S {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -442,6 +442,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         StreamWriter? stdinWriter = null;
+
+        // State for provider selection handling
+        var providerOptions = new List<string>();
+        string? providerQuestion = null;
+        var awaitingProviderSelection = false;
 
         process.OutputDataReceived += (sender, e) =>
         {
@@ -459,8 +464,57 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
-                    // Check for ALPM question (with Shelly prefix)
-                    if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
+                    // Handle provider selection protocol
+                    if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
+                    {
+                        awaitingProviderSelection = true;
+                        providerOptions.Clear();
+                        providerQuestion = e.Data.Substring("[Shelly][ALPM_SELECT_PROVIDER]".Length);
+                        Console.Error.WriteLine($"[Shelly]Select provider for: {providerQuestion}");
+                    }
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION]"))
+                    {
+                        var payload = e.Data.Substring("[Shelly][ALPM_PROVIDER_OPTION]".Length);
+                        var parts = payload.Split(':', 2);
+                        if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
+                        {
+                            // Ensure list size
+                            while (providerOptions.Count <= idx) providerOptions.Add(string.Empty);
+                            providerOptions[idx] = parts[1];
+                        }
+                        else
+                        {
+                            providerOptions.Add(payload);
+                        }
+                    }
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]") && awaitingProviderSelection)
+                    {
+                        // Show selection dialog and send index
+                        var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+                            {
+                                var title = string.IsNullOrWhiteSpace(providerQuestion) ? "Select provider" : providerQuestion;
+                                var dialog = new Shelly_UI.Views.ProviderSelectionDialog(title, providerOptions);
+                                var result = await dialog.ShowDialog<int>(desktop.MainWindow);
+                                return result;
+                            }
+                            return 0; // Default to first option
+                        });
+
+                        if (stdinWriter != null)
+                        {
+                            await stdinWriter.WriteLineAsync(selectedIndex.ToString());
+                            await stdinWriter.FlushAsync();
+                        }
+
+                        // Reset state
+                        awaitingProviderSelection = false;
+                        providerQuestion = null;
+                        providerOptions.Clear();
+                    }
+                    // Check for generic ALPM question (yes/no)
+                    else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
                     {
                         var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                         Console.Error.WriteLine($"[Shelly]Question received: {questionText}");

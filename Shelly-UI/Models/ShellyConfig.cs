@@ -13,6 +13,8 @@ public class ShellyConfig
 
     public bool AurEnabled { get; set; } = false;
     
+    public bool AurWarningConfirmed { get; set; } = false;
+    
     public bool FlatPackEnabled { get; set; } = false;
     
     public bool ConsoleEnabled { get; set; } = false;

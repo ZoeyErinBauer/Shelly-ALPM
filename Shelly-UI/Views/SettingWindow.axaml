@@ -110,5 +110,33 @@
                 </StackPanel>
             </Border>
         </Border>
+        <Border Background="#80000000"
+                IsVisible="{Binding ShowAurDialog}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource SystemChromeLowColor}"
+                    BorderBrush="{DynamicResource SystemBaseLowColor}"
+                    CornerRadius="8"
+                    Padding="20"
+                    Width="300"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="0 10 30 0 #A0000000">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="AUR Warning" FontWeight="UltraBold" FontSize="18"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="AUR packages are user-submitted and not officially supported. Use at your own risk." TextWrapping="Wrap"
+                               HorizontalAlignment="Center" FontWeight="ExtraBold" TextAlignment="Center" />
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                Command="{Binding CancelAurDialog}" />
+                        <Button Grid.Column="1" Content="{x:Static lang:Resources.Confirm}"
+                                Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
+                                Command="{Binding ConfirmAurWarningCommand}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

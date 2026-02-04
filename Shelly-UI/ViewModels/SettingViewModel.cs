@@ -54,6 +54,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         ForceSyncUpdateCommand = ReactiveCommand.CreateFromTask(ForceSyncUpdate);
         CancelFlatpakDialog = ReactiveCommand.Create(() => { ShowFlatpakDialog = false; });
         InstallFlatpakCommand = ReactiveCommand.CreateFromTask(InstallFlatpakAsync);
+        CancelAurDialog = ReactiveCommand.Create(() => { ShowAurDialog = false; });
+        ConfirmAurWarningCommand = ReactiveCommand.Create(ConfirmAurWarning);
     }
 
     private Color _accentHex;
@@ -120,14 +122,54 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         get => _enableAur;
         set
         {
+            var config = _configService.LoadConfig();
+            
+            // Show warning dialog if enabling AUR for the first time
+            if (value && !config.AurWarningConfirmed)
+            {
+                ShowAurDialog = true;
+                
+                // Reset toggle to off until user confirms
+                Task.Run(async () =>
+                {
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _enableAur = false;
+                        this.RaisePropertyChanged(nameof(EnableAur));
+                    });
+                });
+                
+                return;
+            }
+            
             this.RaiseAndSetIfChanged(ref _enableAur, value);
 
             MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
 
-            var config = _configService.LoadConfig();
             config.AurEnabled = value;
             _configService.SaveConfig(config);
         }
+    }
+
+    private bool _showAurDialog;
+
+    public bool ShowAurDialog
+    {
+        get => _showAurDialog;
+        set => this.RaiseAndSetIfChanged(ref _showAurDialog, value);
+    }
+
+    public ReactiveCommand<Unit, Unit> CancelAurDialog { get; }
+    public ReactiveCommand<Unit, Unit> ConfirmAurWarningCommand { get; }
+
+    private void ConfirmAurWarning()
+    {
+        var config = _configService.LoadConfig();
+        config.AurWarningConfirmed = true;
+        _configService.SaveConfig(config);
+        
+        ShowAurDialog = false;
+        EnableAur = true;
     }
 
 

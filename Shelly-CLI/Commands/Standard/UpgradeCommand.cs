@@ -46,15 +46,24 @@ public class UpgradeCommand : Command<UpgradeSettings>
             {
                 if (settings.NoConfirm)
                 {
-                    // Machine-readable format for UI integration
-                    Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                    for (int i = 0; i < args.ProviderOptions.Count; i++)
+                    if (Program.IsUiMode)
                     {
-                        Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        // Machine-readable format for UI integration
+                        Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                        for (int i = 0; i < args.ProviderOptions.Count; i++)
+                        {
+                            Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        }
+                        Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+                        Console.Error.Flush();
+                        var input = Console.ReadLine();
+                        args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
                     }
-                    Console.Error.Flush();
-                    var input = Console.ReadLine();
-                    args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                    else
+                    {
+                        // Non-interactive CLI mode: default to the first provider
+                        args.Response = 0;
+                    }
                 }
                 else
                 {
@@ -67,11 +76,19 @@ public class UpgradeCommand : Command<UpgradeSettings>
             }
             else if (settings.NoConfirm)
             {
-                // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                Console.Error.Flush();
-                var input = Console.ReadLine();
-                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+                if (Program.IsUiMode)
+                {
+                    // Machine-readable format for UI integration
+                    Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
+                    Console.Error.Flush();
+                    var input = Console.ReadLine();
+                    args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
+                }
+                else
+                {
+                    // Non-interactive CLI mode: automatically confirm
+                    args.Response = 1;
+                }
             }
             else
             {
