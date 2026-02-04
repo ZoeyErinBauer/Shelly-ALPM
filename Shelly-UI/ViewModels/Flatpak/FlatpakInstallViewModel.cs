@@ -100,7 +100,17 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         _currentPage = 0;
 
         var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
-        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
+        var items = await Task.Run(() => Database.GetNextPage<FlatpakModel, string>(
+            "flatpaks",
+            _currentPage,
+            20,
+            x => x.Name,  // This is the orderBySelector (returns string)
+            x => (string.IsNullOrWhiteSpace(SearchText) || 
+                  x.Name.Contains(SearchText) || 
+                  x.Summary.Contains(SearchText)) &&
+                 (string.IsNullOrWhiteSpace(category) || 
+                  x.Categories.Contains(category))  // This is the predicate (returns bool)
+        ));
 
         foreach (var item in items)
         {
@@ -114,7 +124,17 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         _currentPage = 0;
 
         var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
-        var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
+        var items = await Task.Run(() => Database.GetNextPage(
+            "flatpaks",
+            _currentPage,
+            20,
+            (FlatpakModel x) => x.Name,
+            x => (string.IsNullOrWhiteSpace(SearchText) || 
+                  x.Name.Contains(SearchText) || 
+                  x.Summary.Contains(SearchText)) &&
+                 (string.IsNullOrWhiteSpace(category) || 
+                  x.Categories.Contains(category))
+        ));
 
         foreach (var item in items)
         {
@@ -131,8 +151,18 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         try
         {
             var category = CategoryEnum != Enums.FlatpakCategories.None ? CategoryEnum.ToString() : null;
-            var items = await Task.Run(() => _db.GetNextPage(_currentPage, SearchText, category));
-          
+            var items = await Task.Run(() => Database.GetNextPage(
+                "flatpaks",
+                _currentPage,
+                20,
+                (FlatpakModel x) => x.Name,
+                x => (string.IsNullOrWhiteSpace(SearchText) || 
+                      x.Name.Contains(SearchText) || 
+                      x.Summary.Contains(SearchText)) &&
+                     (string.IsNullOrWhiteSpace(category) || 
+                      x.Categories.Contains(category))
+            ));
+            
             if (items.Count != 0)
             {
                 foreach (var item in items)

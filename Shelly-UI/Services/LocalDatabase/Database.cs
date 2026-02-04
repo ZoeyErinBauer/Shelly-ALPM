@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using LiteDB;
 using Shelly_UI.Models;
@@ -9,7 +11,7 @@ namespace Shelly_UI.Services.LocalDatabase;
 
 public class Database
 {
-    private static readonly string dbFolder = Path.Combine(
+    private static readonly string DbFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Shelly/Shelly.db");
 
@@ -20,7 +22,7 @@ public class Database
       
         try
         {
-            using var db = new LiteDatabase(dbFolder);
+            using var db = new LiteDatabase(DbFolder);
             var col = db.GetCollection<FlatpakModel>("flatpaks");
             foreach (var model in models)
             {
@@ -35,52 +37,65 @@ public class Database
         _ = Task.Run(EnsureIndex);
         return true;
     }
-
-    public async Task<List<FlatpakModel>> SearchDataBaseName(string search)
+    
+    public async Task<bool> AddToDatabasePackages(List<PackageModel> packages)
     {
-        using var db = new LiteDatabase(dbFolder);
-        var col = db.GetCollection<FlatpakModel>("flatpaks");
-
-        var results = col.Query()
-            .Where(x => x.Name.Contains(search))
-            .OrderBy(x => x.Name)
-            .Select(x => new FlatpakModel() { Id = x.Id, Name = x.Name })
-            .ToList();
-
-        return results;
-    }
-
-    public List<FlatpakModel> GetNextPage(int pageNumber, string? searchTerm = null, string? searchCategory = null)
-    {
-        using (var db = new LiteDatabase(dbFolder))
+      
+        try
         {
-            var col = db.GetCollection<FlatpakModel>("flatpaks");
-
-            var query = col.Query();
-
-            // Apply search filter if provided
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            using var db = new LiteDatabase(DbFolder);
+            var col = db.GetCollection<PackageModel>("packages");
+            foreach (var model in packages)
             {
-                query = query.Where(x => x.Name.Contains(searchTerm) ||
-                                         x.Summary.Contains(searchTerm));
+                col.Upsert(model);
             }
-            
-            if (!string.IsNullOrWhiteSpace(searchCategory))
-            {
-                query = query.Where(x => x.Categories.Contains(searchCategory));
-            }
-
-            return query
-                .OrderBy(x => x.Name)
-                .Skip(pageNumber * PageSize)
-                .Limit(PageSize)
-                .ToList();
         }
+        catch (Exception e)
+        {
+            Console.WriteLine("error" + e);
+        }
+
+        //_ = Task.Run(EnsureIndex);
+        return true;
     }
 
-    public Task EnsureIndex()
+    public List<PackageModel> GetPackages()
     {
-        using (var db = new LiteDatabase(dbFolder))
+        using var db = new LiteDatabase(DbFolder);
+        var col = db.GetCollection<PackageModel>("packages");
+        
+        var packages = col.FindAll();
+        return packages.ToList();
+    }
+
+    
+    public static List<T> GetNextPage<T, TKey>(
+        string collection, 
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, TKey>> orderBySelector, 
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        using var db = new LiteDatabase(DbFolder);
+        var col = db.GetCollection<T>(collection);
+
+        var query = col.Query();
+
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
+
+        return query
+            .OrderBy(orderBySelector)
+            .Skip(pageNumber * pageSize)
+            .Limit(pageSize)
+            .ToList();
+    }
+
+    private static Task EnsureIndex()
+    {
+        using (var db = new LiteDatabase(DbFolder))
         {
             var col = db.GetCollection<FlatpakModel>("flatpaks");
             col.EnsureIndex(x => x.Name);
@@ -91,8 +106,8 @@ public class Database
 
     public bool CollectionExists(string collectionName)
     {
-        using var db = new LiteDatabase(dbFolder);
-        var col = db.GetCollection<FlatpakModel>("flatpaks");
+        using var db = new LiteDatabase(DbFolder);
+        var col = db.GetCollection<FlatpakModel>(collectionName);
         return col.Count() > 0;
     }
 }

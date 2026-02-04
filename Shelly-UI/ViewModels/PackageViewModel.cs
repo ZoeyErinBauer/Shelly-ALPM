@@ -6,6 +6,13 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Models.TreeDataGrid;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Layout;
+using Avalonia.Media;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
@@ -26,7 +33,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly ConfigService _configService = new();
     
     private readonly ICredentialManager _credentialManager;
-
+    public HierarchicalTreeDataGridSource<PackageModel> Source { get; }
     public PackageViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
         ICredentialManager credentialManager)
     {
@@ -35,6 +42,77 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
+        
+        Source = new HierarchicalTreeDataGridSource<PackageModel>(AvailablePackages)
+        {
+            Columns =
+            {
+                new HierarchicalExpanderColumn<PackageModel>(
+                    new TextColumn<PackageModel, string>("Name", x => x.Name),
+                    x => x.Children,  // Child selector - returns IEnumerable<PackageModel>
+                    x => x.HasChildren,  // Has children predicate
+                    x => x.IsExpanded  // Is expanded predicate
+                ),
+                new TextColumn<PackageModel, string>("Version", x => x.Version, width: GridLength.Parse("150")),
+                new TextColumn<PackageModel, string>("Size", x => x.SizeString, width: GridLength.Auto),
+                new TextColumn<PackageModel, string>("Package Repository", x => x.Repository, width: GridLength.Auto), new TemplateColumn<PackageModel>(
+                    "", 
+                    new FuncDataTemplate<PackageModel>((model, _) => 
+                        new CheckBox 
+                        { 
+                            [!CheckBox.IsCheckedProperty] = new Binding("IsChecked"),
+                            HorizontalAlignment = HorizontalAlignment.Center 
+                        }
+                    ),
+                    width: GridLength.Parse("60")
+                )}
+               /*new TemplateColumn<PackageModel>(
+            "Name",
+            new FuncDataTemplate<PackageModel>((model, _) =>
+            {
+                var panel = new StackPanel 
+                { 
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Margin = new Thickness(12, 0)
+                };
+                
+                panel.Children.Add(new TextBlock 
+                { 
+                    [!TextBlock.TextProperty] = new Binding("Name"),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                
+                var icon = new Material.Icons.Avalonia.MaterialIcon
+                {
+                    Kind = Material.Icons.MaterialIconKind.CheckCircle,
+                    Foreground = Brushes.Green,
+                    Width = 16,
+                    Height = 16,
+                    [!Visual.IsVisibleProperty] = new Binding("IsInstalled")
+                };
+                panel.Children.Add(icon);
+                
+                return panel;
+            }),
+            width: GridLength.Parse("200")
+        ),
+                new TextColumn<PackageModel, string>("Version", x => x.Version, width:GridLength.Parse("150")),
+                new TextColumn<PackageModel, string>("Size", x => x.SizeString, width:GridLength.Auto),
+                new TextColumn<PackageModel, string>("Package Repository", x => x.Repository, width:GridLength.Auto),
+                new TemplateColumn<PackageModel>(
+                    "", 
+                    new FuncDataTemplate<PackageModel>((model, _) => 
+                        new CheckBox 
+                        { 
+                            [!CheckBox.IsCheckedProperty] = new Binding("IsChecked"),
+                            HorizontalAlignment = HorizontalAlignment.Center 
+                        }
+                    ),
+                    width: GridLength.Parse("60")
+                )
+            },*/
+        };
         
         var _ = ConsoleLogService.Instance;
         
@@ -49,6 +127,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
         // Load data when the view model is activated (navigated to)
         LoadData();
+        
     }
 
     private void ApplyFilter()
@@ -108,7 +187,22 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 Url = u.Url,
                 IsChecked = false,
                 IsInstalled = installedNames.Contains(u.Name),
-                Repository = u.Repository
+                Repository = u.Repository,
+                Children = new ObservableCollection<PackageModel>
+                {
+                    new PackageModel
+                    {
+                        Name = $"Description: {u.Description}",
+                        Version = null,
+                        DownloadSize = 0
+                    },
+                    new PackageModel
+                    {
+                        Name = $"URL: {u.Url}",
+                        Version = null,
+                        DownloadSize = 0
+                    }
+                }
             }).ToList();
             
             RxApp.MainThreadScheduler.Schedule(() =>
@@ -191,7 +285,14 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             ShowConfirmDialog = false;
         }
     }
-
+    
+    private FlatTreeDataGridSource<PackageModel>? _packageSource;
+    public FlatTreeDataGridSource<PackageModel>? PackageSource
+    {
+        get => _packageSource;
+        private set => this.RaiseAndSetIfChanged(ref _packageSource, value);
+    }
+    
     private void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
