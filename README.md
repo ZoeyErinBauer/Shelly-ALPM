@@ -17,6 +17,10 @@ Recommended install for Shelly with a single command:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
 ```
+
+This will download and install the latest release, including the UI and CLI tools.
+
+
 To install with an AUR helper like yay or paru.
 
 ```bash
@@ -39,7 +43,6 @@ To uninstall the quick installer version is you wish to switch to the AUR manage
 curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/uninstall.sh | sudo bash
 ```
 
-This will download and install the latest release, including the UI and CLI tools.
 
 ## Features
 
