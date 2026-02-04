@@ -18,4 +18,13 @@ public class ListSettings : DefaultSettings
     [CommandOption("-f|--filter <FILTER>")]
     [Description("Filter packages by name (case-insensitive substring match)")]
     public string? Filter { get; set; }
+    
+    [CommandOption("-p|--page <PAGE>")]
+    [Description("The page to render")]
+    public int Page { get; set; } = 1;
+    
+    [CommandOption("-t|--take <TAKE>")]
+    [Description("The number of packages to render per page")]
+    public int Take { get; set; } = 100;
+    
 }

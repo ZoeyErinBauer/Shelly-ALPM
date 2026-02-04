@@ -61,8 +61,12 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
             table.AddColumn("Installed");
             table.AddColumn("Available");
             table.AddColumn("Description");
+            
+            var skip = (settings.Page - 1) * settings.Take;
+            var displayPackages = sortedUpdates.Skip(skip).Take(settings.Take).ToList();
 
-            foreach (var pkg in sortedUpdates)
+            foreach (var pkg in 
+                     displayPackages)
             {
                 table.AddRow(
                     pkg.Name.EscapeMarkup(),
@@ -73,7 +77,7 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
             }
 
             AnsiConsole.Write(table);
-            AnsiConsole.MarkupLine($"[blue]Total:[/] {updates.Count} packages need updates");
+            AnsiConsole.MarkupLine($"[blue]Total:[/] {displayPackages.Count} packages need updates");
 
             return 0;
         }

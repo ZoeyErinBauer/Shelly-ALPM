@@ -29,7 +29,8 @@ public class ListInstalledCommand : Command<ListSettings>
         // Apply filter if specified
         if (!string.IsNullOrWhiteSpace(settings.Filter))
         {
-            packages = packages.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            packages = packages.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
 
         // Apply sorting based on settings
@@ -65,7 +66,10 @@ public class ListInstalledCommand : Command<ListSettings>
         table.AddColumn("Size");
         table.AddColumn("Description");
 
-        foreach (var pkg in sortedPackages)
+        var skip = (settings.Page - 1) * settings.Take;
+        var displayPackages = sortedPackages.Skip(skip).Take(settings.Take).ToList();
+
+        foreach (var pkg in displayPackages)
         {
             table.AddRow(
                 pkg.Name,
@@ -76,7 +80,7 @@ public class ListInstalledCommand : Command<ListSettings>
         }
 
         AnsiConsole.Write(table);
-        AnsiConsole.MarkupLine($"[blue]Total: {packages.Count} packages[/]");
+        AnsiConsole.MarkupLine($"[blue]Total: {displayPackages.Count} packages[/]");
         return 0;
     }
 

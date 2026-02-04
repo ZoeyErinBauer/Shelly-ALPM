@@ -69,6 +69,6 @@ public class FlathubSearchCommand : AsyncCommand<FlathubSearchSettings>
 
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine(
-            $"[blue]Shown:[/] {Math.Min(limit, root.hits.Count)} / [blue]Total Pages:[/] {root.totalPages} / [blue]Current Page:[/] {root.page} / [blue]Total hits:[/] {root.totalHits}");
+            $"[blue]Shown:[/] {Math.Min(limit, root?.hits?.Count ?? 0)} / [blue]Total Pages:[/] {root?.totalPages ?? 0} / [blue]Current Page:[/] {root?.page ?? 0} / [blue]Total hits:[/] {root?.totalHits ?? 0}");
     }
 }

@@ -10,7 +10,7 @@ public class AurListInstalledCommand : AsyncCommand<ListSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
-        AurPackageManager manager = null;
+        AurPackageManager? manager = null;
         try
         {
             manager = new AurPackageManager();
@@ -54,8 +54,11 @@ public class AurListInstalledCommand : AsyncCommand<ListSettings>
             table.AddColumn("Name");
             table.AddColumn("Version");
             table.AddColumn("Description");
+            
+            var skip = (settings.Page - 1) * settings.Take;
+            var displayPackages = sortedPackages.Skip(skip).Take(settings.Take).ToList();
 
-            foreach (var pkg in sortedPackages)
+            foreach (var pkg in displayPackages)
             {
                 table.AddRow(
                     pkg.Name.EscapeMarkup(),

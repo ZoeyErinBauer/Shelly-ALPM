@@ -81,8 +81,11 @@ public class ListAvailableCommand : Command<ListSettings>
             table.AddColumn("Version");
             table.AddColumn("Repository");
             table.AddColumn("Description");
+            
+            var skip = (settings.Page - 1) * settings.Take;
+            var displayPackages = sortedPackages.Skip(skip).Take(settings.Take).ToList();
 
-            foreach (var pkg in sortedPackages.Take(100))
+            foreach (var pkg in displayPackages)
             {
                 table.AddRow(
                     pkg.Name,
@@ -93,7 +96,7 @@ public class ListAvailableCommand : Command<ListSettings>
             }
 
             AnsiConsole.Write(table);
-            AnsiConsole.MarkupLine($"[blue]Showing first 100 of {packages.Count} available packages[/]");
+            AnsiConsole.MarkupLine($"[blue]Showing {settings.Take} of {packages.Count} available packages[/]");
             return 0;
         }
         catch (Exception ex)
