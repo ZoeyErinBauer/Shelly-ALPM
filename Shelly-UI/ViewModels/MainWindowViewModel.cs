@@ -501,6 +501,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _selectedProviderIndex;
         set => this.RaiseAndSetIfChanged(ref _selectedProviderIndex, value);
     }
+    
+
+    public string SuccessColor
+    {
+        get => _configService.LoadConfig().AccentColor ?? "#2E7D32";
+        set => _configService.LoadConfig().AccentColor = value;
+    }
 
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
 
@@ -713,6 +720,54 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _showNotification;
         set => this.RaiseAndSetIfChanged(ref _showNotification, value);
     }
+
+    #endregion
+
+    #region ActionToast
+
+    private bool _showActionToast;
+    public bool ShowActionToast
+    {
+        get => _showActionToast;
+        set => this.RaiseAndSetIfChanged(ref _showActionToast, value);
+    }
+
+    private string _actionToastMessage = string.Empty;
+    public string ActionToastMessage
+    {
+        get => _actionToastMessage;
+        set => this.RaiseAndSetIfChanged(ref _actionToastMessage, value);
+    }
+
+    private bool _actionToastIsSuccess = true;
+    public bool ActionToastIsSuccess
+    {
+        get => _actionToastIsSuccess;
+        set => this.RaiseAndSetIfChanged(ref _actionToastIsSuccess, value);
+    }
+
+    private IDisposable? _toastDismissTimer;
+
+    public void ShowToast(string message, bool isSuccess = true, int durationMs = 4000)
+    {
+        _toastDismissTimer?.Dispose();
+        
+        ActionToastMessage = message;
+        ActionToastIsSuccess = isSuccess;
+        ShowActionToast = true;
+
+        _toastDismissTimer = Observable.Timer(TimeSpan.FromMilliseconds(durationMs))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(_ => ShowActionToast = false);
+    }
+
+    public void DismissToast()
+    {
+        _toastDismissTimer?.Dispose();
+        ShowActionToast = false;
+    }
+
+    public ICommand DismissToastCommand => ReactiveCommand.Create(DismissToast);
 
     #endregion
 

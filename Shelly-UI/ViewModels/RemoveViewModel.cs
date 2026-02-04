@@ -160,12 +160,15 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
+                    mainWindow?.ShowToast($"Removal failed: {result.Error}", isSuccess: false);
                 }
                 else
                 {
                     // Update the installed packages cache after successful removal
                     var installedPackages = await _privilegedOperationService.GetInstalledPackagesAsync();
                     await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
+                    var packageCount = selectedPackages.Count;
+                    mainWindow?.ShowToast($"Successfully removed {packageCount} package{(packageCount > 1 ? "s" : "")}");
                 }
 
                 await Refresh();

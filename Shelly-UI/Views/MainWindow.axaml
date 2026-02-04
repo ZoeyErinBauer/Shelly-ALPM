@@ -457,5 +457,58 @@
                            HorizontalAlignment="Center" />
             </StackPanel>
         </Panel>
+        <!-- Action Toast Notification -->
+        <Border x:Name="ActionToastBorder"
+                IsVisible="{Binding ShowActionToast}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="20"
+                Padding="16,12"
+                CornerRadius="8"
+                MinWidth="250"
+                MaxWidth="400"
+                BoxShadow="0 4 16 0 #40000000"
+                Classes.success="{Binding ActionToastIsSuccess}"
+                Classes.error="{Binding !ActionToastIsSuccess}">
+            <Border.Styles>
+                <Style Selector="Border.success">
+                    <Setter Property="Background" Value="{Binding SuccessColor}" />
+                </Style>
+                <Style Selector="Border.error">
+                    <Setter Property="Background" Value="#C62828" />
+                </Style>
+            </Border.Styles>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <icons:MaterialIcon Grid.Column="0"
+                                    Width="20" Height="20"
+                                    Margin="0,0,12,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="White"
+                                    Kind="CheckCircle"
+                                    IsVisible="{Binding ActionToastIsSuccess}" />
+                <icons:MaterialIcon Grid.Column="0"
+                                    Width="20" Height="20"
+                                    Margin="0,0,12,0"
+                                    VerticalAlignment="Center"
+                                    Foreground="White"
+                                    Kind="AlertCircle"
+                                    IsVisible="{Binding !ActionToastIsSuccess}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ActionToastMessage}"
+                           Foreground="White"
+                           FontSize="14"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="2"
+                        Content="✕"
+                        Background="Transparent"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Padding="8,4"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Command="{Binding DismissToastCommand}" />
+            </Grid>
+        </Border>
     </Grid>
 </Window>

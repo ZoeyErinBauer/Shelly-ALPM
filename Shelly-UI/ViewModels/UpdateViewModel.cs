@@ -129,6 +129,12 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to update packages: {result.Error}");
+                    mainWindow?.ShowToast($"Update failed: {result.Error}", isSuccess: false);
+                }
+                else
+                {
+                    var packageCount = selectedPackages.Count;
+                    mainWindow?.ShowToast($"Successfully updated {packageCount} package{(packageCount > 1 ? "s" : "")}");
                 }
 
                 await Sync();
