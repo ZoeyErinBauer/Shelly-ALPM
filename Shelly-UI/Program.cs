@@ -21,7 +21,7 @@ sealed class Program
     public static void Main(string[] args)
     {
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
-        var logPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly","logs");
+        var logPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly", "logs");
         Directory.CreateDirectory(logPath);
         var logWriter = new LogTextWriter(Console.Error, logPath);
         Console.SetError(logWriter);
@@ -50,7 +50,7 @@ sealed class Program
             Console.Error.WriteLine("Shelly-UI is exclusively for Arch Linux.");
             return;
         }
-        
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }
@@ -59,7 +59,6 @@ sealed class Program
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-
         return AppBuilder.Configure<App>()
             .WithInterFont()
             .LogToTrace()
@@ -70,10 +69,11 @@ sealed class Program
                 EnableIme = true,
                 EnableMultiTouch = true,
                 UseDBusMenu = true,
-                UseDBusFilePicker = true
+                UseDBusFilePicker = true,
+                RenderingMode = [X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software
+                ],
+                
             })
-            .With(new AvaloniaNativePlatformOptions())
-            .UsePlatformDetect(); 
-        
+            .UsePlatformDetect();
     }
 }
