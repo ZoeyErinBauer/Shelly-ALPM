@@ -12,8 +12,12 @@ of how a user
 interacts with their Arch Linux system, providing a more streamlined and intuitive experience.
 
 ## Quick Install
+Recommended install for Shelly with a single command:
 
-Recommended install is to use an initial AUR helper like yay or paru.
+```bash
+curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
+```
+To install with an AUR helper like yay or paru.
 
 ```bash
 yay -S shelly
@@ -28,15 +32,8 @@ paru -S shelly
 **Note:** -bin packages will be made available soon and will allow you to install without needing to run makepkg every
 update.
 
-If you don't want to use an AUR helper, however you will need to manually update it every time a new release is
-available.
-Install Shelly with a single command:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
-```
-
-To uninstall the above version is you wish to switch to the AUR managed version:
+## Uninstall
+To uninstall the quick installer version is you wish to switch to the AUR managed version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/uninstall.sh | sudo bash
@@ -123,16 +120,16 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 #### Package Management
 
-| Command              | Description                     |
-|----------------------|---------------------------------|
-| `sync`               | Synchronize package databases   |
-| `list-installed`     | List all installed packages     |
-| `list-available`     | List all available packages     |
+| Command              | Description                   |
+|----------------------|-------------------------------|
+| `sync`               | Synchronize package databases |
+| `list-installed`     | List all installed packages   |
+| `list-available`     | List all available packages   |
 | `list-updates`       | List packages that need updates |
-| `install <packages>` | Install one or more packages    |
-| `remove <packages>`  | Remove one or more packages     |
-| `update <packages>`  | Update one or more packages     |
-| `upgrade`            | Perform a full system upgrade   |
+| `install <packages>` | Install one or more packages  |
+| `remove <packages>`  | Remove one or more packages   |
+| `update <packages>`  | Update one or more packages   |
+| `upgrade`            | Perform a full system upgrade |
 
 #### Keyring Management (`keyring`)
 
@@ -209,15 +206,17 @@ shelly list-updates
 shelly install firefox vim
 
 # Install without confirmation
-shelly install --no-confirm firefox
+shelly install firefox --no-confirm
 
 # Remove packages
 shelly remove firefox
 
 # Update specific packages
+# This should not be done unless you know what you're doing
 shelly update firefox vim
 
 # Perform full system upgrade
+# Preferred way to update your system
 shelly upgrade
 
 # System upgrade without confirmation
