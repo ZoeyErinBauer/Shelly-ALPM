@@ -37,6 +37,7 @@ jobs:
         dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cp publish/shelly-cli/shelly publish/shelly-ui/
+        cp install.sh publish/shelly-ui/
         cd publish/shelly-ui
         rm -f *.dbg *.pdb
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .
