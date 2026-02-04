@@ -460,8 +460,8 @@
         <!-- Action Toast Notification -->
         <Border x:Name="ActionToastBorder"
                 IsVisible="{Binding ShowActionToast}"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
                 Margin="20"
                 Padding="16,12"
                 CornerRadius="8"
@@ -472,7 +472,7 @@
                 Classes.error="{Binding !ActionToastIsSuccess}">
             <Border.Styles>
                 <Style Selector="Border.success">
-                    <Setter Property="Background" Value="#2E7D32" />
+                    <Setter Property="Background" Value="{Binding SuccessColor}" />
                 </Style>
                 <Style Selector="Border.error">
                     <Setter Property="Background" Value="#C62828" />

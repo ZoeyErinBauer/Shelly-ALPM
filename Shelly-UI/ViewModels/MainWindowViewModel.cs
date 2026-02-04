@@ -501,6 +501,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _selectedProviderIndex;
         set => this.RaiseAndSetIfChanged(ref _selectedProviderIndex, value);
     }
+    
+
+    public string SuccessColor
+    {
+        get => _configService.LoadConfig().AccentColor ?? "#2E7D32";
+        set => _configService.LoadConfig().AccentColor = value;
+    }
 
     public ReactiveCommand<string, Unit> RespondToQuestion { get; }
 
