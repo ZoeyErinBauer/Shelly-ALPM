@@ -12,14 +12,16 @@ namespace Shelly_CLI;
 
 public class Program
 {
+    public static bool IsUiMode { get; private set; }
+
     public static int Main(string[] args)
     {
         // Check if running in UI mode (--ui-mode flag passed by Shelly-UI)
         var argsList = args.ToList();
-        var isUiMode = argsList.Remove("--ui-mode");
+        IsUiMode = argsList.Remove("--ui-mode");
         args = argsList.ToArray();
 
-        if (isUiMode)
+        if (IsUiMode)
         {
             // Configure stderr to use prefix for UI integration
             var stderrWriter = new StderrPrefixWriter(Console.Error);
