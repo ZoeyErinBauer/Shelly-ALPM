@@ -2,6 +2,12 @@
 
 ![Shelly Wiki](https://img.shields.io/badge/Shelly-Wiki-blue)
 
+<p align="center">
+  <img src="demo_part1.gif" width="32%">
+  <img src="demo_part2.gif" width="32%">
+  <img src="demo_part3.gif" width="32%">
+</p>
+
 ### About
 
 Shelly is a modern reimagination of the Arch Linux package manager, designed to be a more intuitive and user-friendly
