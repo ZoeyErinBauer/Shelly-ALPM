@@ -6,8 +6,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Models;
+using Shelly_UI.Views;
 
 namespace Shelly_UI.Services;
 
@@ -16,6 +22,7 @@ public class GitHubUpdateService : IUpdateService
     private readonly HttpClient _httpClient;
     private const string RepoOwner = "ZoeyErinBauer";
     private const string RepoName = "Shelly-ALPM";
+    private const string Url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
     private GitHubRelease? _latestRelease;
 
     public GitHubUpdateService()
@@ -28,11 +35,11 @@ public class GitHubUpdateService : IUpdateService
     {
         try
         {
-            var url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
-            Console.Error.WriteLine("[DEBUG] Checking for updates...");
-            Console.Error.WriteLine($"[DEBUG] URL: {url}");
-            _latestRelease = await _httpClient.GetFromJsonAsync(url, ShellyUIJsonContext.Default.GitHubRelease);
-            Console.Error.WriteLine($"[DEBUG] Latest release: {_latestRelease?.TagName}");
+            
+            await Console.Error.WriteLineAsync("[DEBUG] Checking for updates...");
+            await Console.Error.WriteLineAsync($"[DEBUG] URL: {Url}");
+            _latestRelease = await _httpClient.GetFromJsonAsync(Url, ShellyUIJsonContext.Default.GitHubRelease);
+            await Console.Error.WriteLineAsync($"[DEBUG] Latest release: {_latestRelease?.TagName}");
             if (_latestRelease == null) return false;
 
             var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
@@ -94,7 +101,6 @@ public class GitHubUpdateService : IUpdateService
             await File.WriteAllBytesAsync(tempPath, data);
 
             Console.WriteLine("Extracting update...");
-            // Change the check to handle GitHub's tarball URL or the specific tempPath extension
             if (asset.Name.Contains(".tar.gz") || tempPath.EndsWith(".tar.gz"))
             {
                 await ExtractTarGz(tempPath, extractPath);
@@ -107,8 +113,6 @@ public class GitHubUpdateService : IUpdateService
             Console.WriteLine("Installing update...");
             await RunInstallScript(extractPath);
 
-            // Optionally notify user or restart.
-            // For now, we've fulfilled the requirement.
         }
         catch (Exception ex)
         {
@@ -117,8 +121,6 @@ public class GitHubUpdateService : IUpdateService
         finally
         {
             if (File.Exists(tempPath)) File.Delete(tempPath);
-            // We might want to keep extractPath if installation failed, but usually it's better to clean up.
-            // if (Directory.Exists(extractPath)) Directory.Delete(extractPath, true);
         }
     }
 
@@ -149,75 +151,101 @@ public class GitHubUpdateService : IUpdateService
 
     private async Task RunInstallScript(string extractPath)
     {
-        // Assuming there is an install.sh in the extracted contents or we just copy files.
-        // Given the requirement "reinstall the application", and that we are running as root (per Program.cs),
-        // we can move files to /usr/bin or wherever it was installed.
-        // But usually it's safer to run a script if provided.
-
-        string installScript = Path.Combine(extractPath, "install.sh");
+        var installScript = Path.Combine(extractPath, "install.sh");
         if (!File.Exists(installScript))
         {
-            // Fallback: If no install script, maybe it's just the binaries.
-            // For now let's assume install.sh exists as it's common in Arch projects.
-            // If not, we might need a different strategy.
             Console.WriteLine("No install.sh found in update package.");
             return;
         }
 
-        // Run install script in a terminal window so user can see progress
-        var terminalEmulators = new[]
+        // Get credentials via PrivilegedOperationService's credential manager
+        var credentialManager = App.Services.GetRequiredService<ICredentialManager>();
+        var hasCredentials = await credentialManager.RequestCredentialsAsync("Install Shelly update");
+        if (!hasCredentials)
         {
-            ("konsole", $"--hold -e pkexec bash \"{installScript}\""),
-            ("gnome-terminal", $"-- pkexec bash \"{installScript}\""),
-            ("xfce4-terminal", $"--hold -e \"pkexec bash \\\"{installScript}\\\"\""),
-            ("xterm", $"-hold -e pkexec bash \"{installScript}\""),
-            ("alacritty", $"--hold -e pkexec bash \"{installScript}\""),
-            ("kitty", $"--hold pkexec bash \"{installScript}\"")
+            Console.WriteLine("Update cancelled: Authentication cancelled by user.");
+            return;
+        }
+
+        var password = credentialManager.GetPassword();
+        if (string.IsNullOrEmpty(password))
+        {
+            Console.WriteLine("Update cancelled: No password available.");
+            return;
+        }
+
+        // Delay so it doesn't open in the wrong location
+        await Task.Delay(100);
+        
+    
+        var dialog = await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var d = new UpdateProgressDialog();
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+            {
+                d.Show(desktop.MainWindow);
+            }
+            else
+            {
+                d.Show();
+            }
+            return d;
+        });
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "sudo",
+                Arguments = $"-S bash \"{installScript}\"",
+                WorkingDirectory = extractPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
+            }
         };
 
-        Process? process = null;
-        foreach (var (terminal, args) in terminalEmulators)
+        process.OutputDataReceived += (_, e) =>
         {
-            try
-            {
-                process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = terminal,
-                        Arguments = args,
-                        WorkingDirectory = extractPath,
-                        UseShellExecute = false,
-                        CreateNoWindow = false
-                    }
-                };
-                process.Start();
-                break;
-            }
-            catch
-            {
-                // Terminal not found, try next
-                process = null;
-            }
-        }
+            if (!string.IsNullOrEmpty(e.Data))
+                dialog.AppendOutput(e.Data);
+        };
 
-        if (process == null)
+        process.ErrorDataReceived += (_, e) =>
         {
-            throw new Exception("No supported terminal emulator found. Please install konsole, gnome-terminal, xfce4-terminal, xterm, alacritty, or kitty.");
-        }
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                // Filter out sudo password prompt
+                if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
+                    dialog.AppendOutput(e.Data);
+            }
+        };
 
+        process.Start();
+        
+        await process.StandardInput.WriteLineAsync(password);
+        await process.StandardInput.FlushAsync();
+        
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         await process.WaitForExitAsync();
 
-        if (process.ExitCode != 0)
+        var success = process.ExitCode == 0;
+        dialog.SetComplete(success);
+        
+        await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            if (process.ExitCode == 126 || process.ExitCode == 127)
+            while (dialog.IsVisible)
             {
-                throw new Exception("Installation cancelled or authentication failed.");
+                await Task.Delay(100);
             }
+        });
 
+        if (!success)
+        {
             throw new Exception($"Installation script failed with exit code: {process.ExitCode}");
         }
-
-        Console.WriteLine("Update installed successfully. Please restart the application.");
     }
 }

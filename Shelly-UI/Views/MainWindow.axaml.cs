@@ -1,3 +1,6 @@
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
@@ -16,7 +19,11 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
         this.WhenActivated(disposables => { });
         AvaloniaXamlLoader.Load(this);
         
-        Opened += (_, _) => RestoreWindow();
+        Opened += async (_, _) =>
+        {
+            RestoreWindow();
+            await CheckForUpdateAsync();
+        };
         Closing += (_, _) => SaveWindow();
     }
     
@@ -36,14 +43,50 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
         WindowState = config.WindowState;
     }
 
+    private async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            // Small delay to ensure window is fully positioned before showing dialog
+            await Task.Delay(100);
+            
+            var updateService = new GitHubUpdateService();
+            var hasUpdate = await updateService.CheckForUpdateAsync();
+            if (!hasUpdate) return;
+
+            // Brief delay before showing the update prompt dialog
+            await Task.Delay(100);
+
+            var dialog = new QuestionDialog("A new version of Shelly is available. Would you like to update now?");
+            var result = await dialog.ShowDialog<bool>(this);
+            if (!result) return;
+
+            await updateService.DownloadAndInstallUpdateAsync();
+            
+            // Restart application
+            var currentProcess = Environment.ProcessPath;
+            if (currentProcess != null)
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = currentProcess,
+                    UseShellExecute = true
+                });
+            }
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            await Console.Error.WriteLineAsync($"Update check failed: {ex.Message}");
+        }
+    }
+
     private void SaveWindow()
     {
         var configService = App.Services.GetRequiredService<IConfigService>();
 
-        var size = this.ClientSize;
-        var width = size.Width;
-        var height = size.Height;
-        
+        var (width, height) = this.ClientSize;
+
         var state = WindowState;
         
         var config = configService.LoadConfig();
