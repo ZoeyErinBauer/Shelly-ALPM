@@ -1,10 +1,7 @@
 ﻿using Avalonia;
 using ReactiveUI.Avalonia;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using PackageManager.User;
 using Shelly_UI.Enums;
 using Shelly.Utilities.System;
 
@@ -55,9 +52,8 @@ sealed class Program
             .StartWithClassicDesktopLifetime(args);
     }
 
-
     // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp()
+    private static AppBuilder BuildAvaloniaApp()
     {
         return AppBuilder.Configure<App>()
             .WithInterFont()
@@ -70,9 +66,10 @@ sealed class Program
                 EnableMultiTouch = true,
                 UseDBusMenu = true,
                 UseDBusFilePicker = true,
-                RenderingMode = [X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software
+                RenderingMode =
+                [
+                    X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software
                 ],
-                
             })
             .UsePlatformDetect();
     }
