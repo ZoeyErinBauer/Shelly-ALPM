@@ -708,7 +708,7 @@ public class FlatpakManager
     /// <returns>JSON string of available applications</returns>
     public string GetAvailableAppsFromAppstreamJson(string? remoteName = null, string? arch = null)
     {
-        var apps = GetAvailableAppsFromAppstream(remoteName, arch);
+        var apps = GetAvailableAppsFromAppstream(remoteName ?? string.Empty, arch);
         return JsonSerializer.Serialize(apps, AppstreamJsonContext.Default.ListAppstreamApp);
     }
 

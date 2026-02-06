@@ -6,14 +6,14 @@ using PackageManager.Alpm;
 
 namespace PackageManager.Utilities;
 
-internal static class PacmanConfParser
+internal static class ConfigurationParser
 {
-    internal static PacmanConf Parse(string path = "/etc/pacman.conf")
+    internal static Configuration Parse(string path = "/etc/pacman.conf")
     {
-        var conf = new PacmanConf();
+        var conf = new Configuration();
         if (!File.Exists(path)) return conf;
 
-        string currentSection = "";
+        var currentSection = "";
         Repository? currentRepo = null;
 
         ParseFile(path, conf, ref currentSection, ref currentRepo);
@@ -26,7 +26,7 @@ internal static class PacmanConfParser
         return conf;
     }
 
-    private static void ParseFile(string path, PacmanConf conf, ref string currentSection, ref Repository? currentRepo)
+    private static void ParseFile(string path, Configuration conf, ref string currentSection, ref Repository? currentRepo)
     {
         if (!File.Exists(path)) return;
 
@@ -73,7 +73,7 @@ internal static class PacmanConfParser
         }
     }
 
-    private static void ParseOption(string key, string value, PacmanConf conf)
+    private static void ParseOption(string key, string value, Configuration conf)
     {
         switch (key.ToLowerInvariant())
         {
@@ -103,7 +103,7 @@ internal static class PacmanConfParser
         }
     }
 
-    private static void ParseRepoOption(string key, string value, Repository repo, PacmanConf conf, ref string currentSection)
+    private static void ParseRepoOption(string key, string value, Repository repo, Configuration conf, ref string currentSection)
     {
         switch (key.ToLowerInvariant())
         {
@@ -133,7 +133,7 @@ internal static class PacmanConfParser
     
     private static AlpmSigLevel ParseSigLevel(IEnumerable<string> levels)
     {
-        AlpmSigLevel result = AlpmSigLevel.None;
+        var result = AlpmSigLevel.None;
 
         foreach (var level in levels)
         {

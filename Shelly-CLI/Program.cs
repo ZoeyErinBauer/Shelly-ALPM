@@ -47,13 +47,13 @@ public class Program
                 Out = new AnsiConsoleOutput(filteringStdout)
             });
         }
-
+        
         var app = new CommandApp();
         app.Configure(config =>
         {
             config.SetApplicationName("shelly");
             config.SetApplicationVersion(Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "unknown");
-
+            
             config.AddCommand<VersionCommand>("version")
                 .WithDescription("Display the application version")
                 .WithExample("version");

@@ -35,4 +35,8 @@
         <RdXmlFile Include="rd.xml" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Commands\Configuration\" />
+    </ItemGroup>
+
 </Project>

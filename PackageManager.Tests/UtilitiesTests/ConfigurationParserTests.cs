@@ -7,7 +7,7 @@ using PackageManager.Alpm;
 namespace PackageManager.Tests.UtilitiesTests;
 
 [TestFixture]
-internal class PacmanConfParserTests
+internal class ConfigurationParserTests
 {
     private string _testConfPath;
 
@@ -44,7 +44,7 @@ Server = https://another-mirror.example.com/extra/os/$arch
     [Test]
     public void Parse_ValidConfig_ReturnsPopulatedRecord()
     {
-        var conf = PacmanConfParser.Parse(_testConfPath);
+        var conf = ConfigurationParser.Parse(_testConfPath);
 
         Assert.Multiple(() =>
         {
@@ -77,7 +77,7 @@ Server = https://another-mirror.example.com/extra/os/$arch
 
         try
         {
-            var conf = PacmanConfParser.Parse(mainPath);
+            var conf = ConfigurationParser.Parse(mainPath);
             Assert.That(conf.Architecture, Is.EqualTo("arm64"));
             Assert.That(conf.CheckSpace, Is.True);
         }
@@ -91,7 +91,7 @@ Server = https://another-mirror.example.com/extra/os/$arch
     [Test]
     public void Parse_SystemConfig_DoesNotThrow()
     {
-        Assert.DoesNotThrow(() => PacmanConfParser.Parse());
+        Assert.DoesNotThrow(() => ConfigurationParser.Parse());
     }
 
     [Test]
@@ -107,7 +107,7 @@ Server = https://another-mirror.example.com/extra/os/$arch
 
         try
         {
-            var conf = PacmanConfParser.Parse(mainPath);
+            var conf = ConfigurationParser.Parse(mainPath);
             Assert.That(conf.SigLevel, Is.EqualTo(expected));
         }
         finally

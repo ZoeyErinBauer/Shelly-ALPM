@@ -3,7 +3,7 @@ using PackageManager.Alpm;
 
 namespace PackageManager.Utilities;
 
-internal record PacmanConf
+internal record Configuration
 {
     public string RootDirectory { get; set; } = "/";
     public string DbPath { get; set; } = "/var/lib/pacman";

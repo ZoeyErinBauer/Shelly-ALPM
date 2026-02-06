@@ -22,8 +22,7 @@ namespace PackageManager.Alpm;
     "CS8618:Non-nullable field must contain a non-null value when exiting constructor. Consider adding the \'required\' modifier or declaring as nullable.")]
 public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, IAlpmManager
 {
-    private string _configPath = configPath;
-    private PacmanConf _config;
+    private Configuration _config;
     private IntPtr _handle = IntPtr.Zero;
     private static readonly HttpClient HttpClient = new();
     private AlpmFetchCallback _fetchCallback;
@@ -50,7 +49,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             _handle = IntPtr.Zero;
         }
 
-        _config = PacmanConfParser.Parse(_configPath);
+        _config = ConfigurationParser.Parse(configPath);
         var lockFilePath = Path.Combine(_config.DbPath, "db.lck");
         if (File.Exists(lockFilePath))
         {
@@ -60,7 +59,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
             catch (IOException)
             {
-                //Do nothing accept natural failure
+                //Do nothing accept natural failure.
             }
         }
 
