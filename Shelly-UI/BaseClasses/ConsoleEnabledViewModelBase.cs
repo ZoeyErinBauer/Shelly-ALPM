@@ -39,8 +39,8 @@ public abstract class ConsoleEnabledViewModelBase : ReactiveObject, IDisposable
         _isBottomPanelVisible = consoleEnabled;
 
         MessageBus.Current.Listen<ConsoleEnableMessage>()
-            .Subscribe(RefreshUi)
-            .DisposeWith(_disposables);
+            .Subscribe(RefreshUi);
+        //will be disposed by message bus in main
     }
 
     private void RefreshUi(ConsoleEnableMessage msg)
