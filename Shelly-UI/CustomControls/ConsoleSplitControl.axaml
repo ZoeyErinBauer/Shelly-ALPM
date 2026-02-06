@@ -6,6 +6,7 @@
              xmlns:converters="clr-namespace:Shelly_UI.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.CustomControls.ConsoleSplitControl"
+             x:CompileBindings="True"
              Name="Root">
     <UserControl.Resources>
         <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />

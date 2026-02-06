@@ -262,3 +262,6 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 
 Shelly is in active development. It comes with no guarantees and may contain bugs, however if you experience issues
 please report them by opening an issue on this page and we will do our best to resolve the issues.
+
+## Inspirations
+- Some UI controls were inspired by [Aura.UI](https://github.com/PieroCastillo/Aura.UI)
