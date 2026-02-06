@@ -96,7 +96,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _isDarkMode, value);
-            new ThemeService().SetTheme(value);
+            ThemeService.SetTheme(value);
 
             var config = _configService.LoadConfig();
             config.DarkMode = value;
@@ -191,14 +191,43 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             var sessionDesktop = Environment.GetEnvironmentVariable("XDG_SESSION_DESKTOP");
-            if (sessionDesktop == "KDE")
+            if (sessionDesktop != "KDE") return;
+
+            if (!value)
             {
+                var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
+                if (fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var currentDark) &&
+                    currentDark is { } darkPalette)
+                {
+                    var themeService = new ThemeService();
+                    themeService.ApplyAltHighColor(Color.FromRgb(255, 255, 255));
+                    themeService.ApplyCustomAccent(AccentHex);
+                    themeService.ApplyLowChromeColor(Color.FromRgb(23, 23, 23));
+                    themeService.ApplySecondaryBackground(Color.FromRgb(31, 31, 31));
+                }
+                else
+                {
+                    var themeService = new ThemeService();
+                    themeService.ApplyAltHighColor(Color.FromRgb(0, 0, 0));
+                    themeService.ApplyCustomAccent(AccentHex);
+                    themeService.ApplyLowChromeColor(Color.FromRgb(242, 242, 242));
+                    themeService.ApplySecondaryBackground(Color.FromRgb(230, 230, 230));
+                }
+                var config = _configService.LoadConfig();
+                config.UseKdeTheme = value;
+                _configService.SaveConfig(config);
+            }
+            else
+            {
+
                 new ThemeService().ApplyKdeTheme();
                 var config = _configService.LoadConfig();
                 config.UseKdeTheme = value;
                 _configService.SaveConfig(config);
             }
+
             this.RaiseAndSetIfChanged(ref _useKdeColor, value);
+
         }
     }
  

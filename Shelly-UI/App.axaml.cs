@@ -50,12 +50,12 @@ public partial class App : Application
             var config = configService.LoadConfig();
             if (config.UseKdeTheme)
             {
-               // themeService.ParseAndSetKdeTheme();
+                themeService.ApplyKdeTheme();
             }
             else
             {
                 if (config.AccentColor != null) themeService.ApplyCustomAccent(Color.Parse(config.AccentColor));
-                themeService.SetTheme(config.DarkMode);
+                ThemeService.SetTheme(config.DarkMode);
             }
             
             Assets.Resources.Culture = config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");

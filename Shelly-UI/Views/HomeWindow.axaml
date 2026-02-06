@@ -8,7 +8,7 @@
              x:Class="Shelly_UI.Views.HomeWindow"
              x:DataType="viewModels:HomeViewModel"
              x:CompileBindings="True">
-    <UniformGrid Columns="2">
+    <UniformGrid Columns="2" Background="{DynamicResource SystemChromeLowColor}">
         <Border Grid.Column="0"
                 Background="{DynamicResource SystemChromeLowColor}"
                 CornerRadius="12"

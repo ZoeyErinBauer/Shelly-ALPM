@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 
@@ -62,11 +63,6 @@ public class ThemeService
                 currentDark is { } darkPalette)
             {
                 darkPalette.BaseHigh = accent;
-                darkPalette.BaseMedium = accent;
-                darkPalette.BaseMediumHigh= accent;
-                darkPalette.BaseLow = accent;
-                darkPalette.BaseMediumLow = accent;
-                darkPalette.AltHigh = accent;
                 fluentTheme.Palettes[ThemeVariant.Dark] = darkPalette;
             }
 
@@ -74,7 +70,6 @@ public class ThemeService
                 currentLight is { } lightPalette)
             {
                 lightPalette.BaseHigh = accent;
-                lightPalette.BaseMedium = accent;
                 fluentTheme.Palettes[ThemeVariant.Light] = lightPalette;
             }
         }
@@ -126,7 +121,7 @@ public class ThemeService
         ApplyAltHighColor(parser.Text);
     }
 
-    public void SetTheme(bool isDark)
+    public static void SetTheme(bool isDark)
     {
         if (Application.Current != null)
         {
