@@ -13,8 +13,10 @@
         ShowInTaskbar="False"
         SystemDecorations="BorderOnly"
         x:CompileBindings="True">
-    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
-        <Grid Margin="20" RowDefinitions="*, Auto">
+    <Panel Background="{DynamicResource SystemChromeLowColor}">
+        <Border CornerRadius="12" ClipToBounds="True"  BorderThickness="3"
+                                  BorderBrush="{DynamicResource SystemChromeMediumColor}" Background="{DynamicResource SystemChromeLowColor}">
+            <Grid Margin="20" RowDefinitions="*, Auto">
             <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="15">
                 <icons:MaterialIcon Kind="HelpCircle" Width="32" Height="32"
                                     HorizontalAlignment="Center"
@@ -25,7 +27,6 @@
                            TextAlignment="Center"
                            FontSize="14" />
             </StackPanel>
-
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Center"
@@ -33,12 +34,17 @@
                 <Button x:Name="YesButton"
                         Content="Yes"
                         Width="80"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
                         Click="YesButton_Click" />
                 <Button x:Name="NoButton"
                         Content="No"
                         Width="80"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
                         Click="NoButton_Click" />
             </StackPanel>
-        </Grid>
-    </Border>
+            </Grid>
+        </Border>
+    </Panel>
 </Window>

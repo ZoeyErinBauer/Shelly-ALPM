@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
@@ -83,6 +85,24 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private async Task AlpmUpdate()
     {
         var selectedPackages = _allPackagesForUpdate.Where(x => x.IsChecked).Select(x => x.Name).ToList();
+
+        // Check if any packages are unchecked
+        var hasUncheckedPackages = _allPackagesForUpdate.Any(x => !x.IsChecked);
+
+        if (hasUncheckedPackages)
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+            {
+                var dialog = new Views.QuestionDialog("Some packages are not selected. A full system upgrade is always recommended when updating.", "Continue", "Cancel");
+                var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
+
+                if (!result)
+                {
+                    return; // User cancelled
+                }
+            }
+        }
+
         if (selectedPackages.Any())
         {
             MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
@@ -163,7 +183,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 CurrentVersion = u.CurrentVersion,
                 NewVersion = u.NewVersion,
                 DownloadSize = u.DownloadSize,
-                IsChecked = false
+                IsChecked = true
             }).ToList();
 
             RxApp.MainThreadScheduler.Schedule(() =>
