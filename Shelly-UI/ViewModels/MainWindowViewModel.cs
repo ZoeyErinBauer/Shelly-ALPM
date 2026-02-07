@@ -286,6 +286,26 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
         NavigateToDefaultView();
 
+        Router.CurrentViewModel
+            .Select(vm => vm switch
+            {
+                HomeViewModel => "Shelly - Home",
+                PackageViewModel => "Shelly - Install Packages",
+                UpdateViewModel => "Shelly - Update Packages",
+                RemoveViewModel => "Shelly - Remove Packages",
+                SettingViewModel => "Shelly - Settings",
+                AurViewModel => "Shelly - AUR Install",
+                AurUpdateViewModel => "Shelly - AUR Update",
+                AurRemoveViewModel => "Shelly - AUR Remove",
+                FlatpakInstallViewModel => "Shelly - Flatpak Install",
+                FlatpakUpdateViewModel => "Shelly - Flatpak Update",
+                FlatpakRemoveViewModel => "Shelly - Flatpak Remove",
+                _ => "Shelly"
+            })
+            .ObserveOn(scheduler)
+            .Subscribe(title => Title = title)
+            .DisposeWith(_disposables);
+
         Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
                 h => ConsoleLogService.Instance.Logs.CollectionChanged += h,
                 h => ConsoleLogService.Instance.Logs.CollectionChanged -= h)
@@ -566,6 +586,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     public RoutingState Router { get; } = new RoutingState();
 
     public RoutingState SettingRouter { get; } = new RoutingState();
+
+    private string _title = "Shelly";
+
+    public string Title
+    {
+        get => _title;
+        set => this.RaiseAndSetIfChanged(ref _title, value);
+    }
 
     #region ReactiveCommands
 

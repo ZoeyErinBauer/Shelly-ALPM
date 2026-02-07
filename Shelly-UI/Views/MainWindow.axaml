@@ -14,7 +14,7 @@
         x:DataType="vm:MainWindowViewModel"
         x:CompileBindings="True"
         Icon="/Assets/shellylogo.png"
-        Title="Shelly"
+        Title="{Binding Title}"
         MinHeight="600"
         MinWidth="800"
         Width="800"
