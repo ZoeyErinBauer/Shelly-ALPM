@@ -349,6 +349,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     private void RefreshUi(MainWindowMessage msg)
     {
+        if (msg.MenuLayoutChanged)
+        {
+            this.RaisePropertyChanged(nameof(UseHorizontalMenu));
+            return;
+        }
+
         if (msg.FlatpakEnable)
         {
             IsFlatpakEnabled = !IsFlatpakEnabled;
@@ -643,6 +649,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         get => _configService.LoadConfig().FlatPackEnabled;
         set => _configService.LoadConfig().FlatPackEnabled = value;
+    }
+
+    public bool UseHorizontalMenu
+    {
+        get => _configService.LoadConfig().UseHorizontalMenu;
+        set => _configService.LoadConfig().UseHorizontalMenu = value;
     }
 
     private bool _isFlatpakOpen;
