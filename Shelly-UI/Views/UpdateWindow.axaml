@@ -20,108 +20,113 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-
-    <customControls:ConsoleSplitControl 
-        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
-        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
-        <customControls:ConsoleSplitControl.MainContent>
-            <Grid Background="{DynamicResource SystemChromeLowColor}">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                            <TextBlock
-                                Text="{x:Static lang:Resources.UpdatePackages}"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource SystemBaseHighColor}"
-                                VerticalAlignment="Center" />
-                            <TextBox
-                                Grid.Column="1"
-                                Width="220"
-                                Margin="12,0"
-                                Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                Background="{DynamicResource ChromeWhite}"
-                                Foreground="{DynamicResource AltMediumLow}"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
-                            <Button
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Padding="8"
-                                Background="Transparent"
-                                Command="{Binding SyncCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}" Width="20" Height="20"/>
-                            </Button>
-                            <Button
-                                Grid.Column="3"
-                                Content="{x:Static lang:Resources.ToggleAll}"
-                                Padding="10,4"
-                                Margin="12,0,0,0"
-                                Command="{Binding CheckAll}" />
-                        </Grid>
-                    </Border>
-                    <DataGrid
-                        Grid.Row="1"
-                        Name="UpdateDataGrid"
-                        ItemsSource="{Binding PackagesForUpdating}"
-                        AutoGenerateColumns="False"
-                        IsReadOnly="True"
-                        CanUserResizeColumns="True"
-                        GridLinesVisibility="None"
-                        DoubleTapped="DataGrid_DoubleTapped">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.Name}"
-                                Binding="{Binding Name}"
-                                Width="*" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.CurrentVersion}"
-                                Binding="{Binding CurrentVersion}"
-                                Width="160" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageNewVersion}"
-                                Binding="{Binding NewVersion}"
-                                Width="160" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageSize}"
-                                Binding="{Binding SizeString}"
-                                Width="100" />
-                            <DataGridTemplateColumn
-                                Header=""
-                                CanUserResize="False"
-                                Width="60">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" HorizontalAlignment="Center" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-                <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                        Margin="30"
-                        CornerRadius="30"
-                        BoxShadow="0 4 15 0 #60000000">
-                    <Button Width="60" Height="60"
-                            Padding="0"
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <customControls:ConsoleSplitControl
+            IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+            IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+            <customControls:ConsoleSplitControl.MainContent>
+                <Grid Background="{DynamicResource SystemChromeLowColor}">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Static lang:Resources.UpdatePackages}"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SystemBaseHighColor}"
+                                    VerticalAlignment="Center" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Width="220"
+                                    Margin="12,0"
+                                    Watermark="{x:Static lang:Resources.SearchPackages}"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    Background="{DynamicResource ChromeWhite}"
+                                    Foreground="{DynamicResource AltMediumLow}"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                    CornerRadius="4" />
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="12,0,0,0"
+                                    Padding="8"
+                                    Background="Transparent"
+                                    Command="{Binding SyncCommand}"
+                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                    <avalonia:MaterialIcon Kind="Sync"
+                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                           Width="20" Height="20" />
+                                </Button>
+                                <Button
+                                    Grid.Column="3"
+                                    Content="{x:Static lang:Resources.ToggleAll}"
+                                    Padding="10,4"
+                                    Margin="12,0,0,0"
+                                    Command="{Binding CheckAll}" />
+                            </Grid>
+                        </Border>
+                        <DataGrid
+                            Grid.Row="1"
+                            Name="UpdateDataGrid"
+                            ItemsSource="{Binding PackagesForUpdating}"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True"
+                            CanUserResizeColumns="True"
+                            GridLinesVisibility="None"
+                            DoubleTapped="DataGrid_DoubleTapped">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.Name}"
+                                    Binding="{Binding Name}"
+                                    Width="*" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.CurrentVersion}"
+                                    Binding="{Binding CurrentVersion}"
+                                    Width="160" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageNewVersion}"
+                                    Binding="{Binding NewVersion}"
+                                    Width="160" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageSize}"
+                                    Binding="{Binding SizeString}"
+                                    Width="100" />
+                                <DataGridTemplateColumn
+                                    Header=""
+                                    CanUserResize="False"
+                                    Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                      HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                            Margin="30"
                             CornerRadius="30"
-                            Command="{Binding AlpmUpdateCommand}">
-                        <avalonia:MaterialIcon Kind="Download" Width="30" Height="30" Foreground="{DynamicResource SystemAccentColor}" />
-                    </Button>
-                </Border>
-            </Grid>
-        </customControls:ConsoleSplitControl.MainContent>
-        <customControls:ConsoleSplitControl.BottomContent>
-            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
-                <ScrollViewer>
-                <customControls:RichConsoleControl Logs="{Binding Logs}" />
-                </ScrollViewer>
-            </Grid>
-        </customControls:ConsoleSplitControl.BottomContent>
-    </customControls:ConsoleSplitControl>
+                            BoxShadow="0 4 15 0 #60000000">
+                        <Button Width="60" Height="60"
+                                Padding="0"
+                                CornerRadius="30"
+                                Command="{Binding AlpmUpdateCommand}">
+                            <avalonia:MaterialIcon Kind="Download" Width="30" Height="30"
+                                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        </Button>
+                    </Border>
+                </Grid>
+            </customControls:ConsoleSplitControl.MainContent>
+            <customControls:ConsoleSplitControl.BottomContent>
+                <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                    <ScrollViewer>
+                        <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                    </ScrollViewer>
+                </Grid>
+            </customControls:ConsoleSplitControl.BottomContent>
+        </customControls:ConsoleSplitControl>
+    </Border>
 </UserControl>

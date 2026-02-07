@@ -10,35 +10,37 @@
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         ShowInTaskbar="False"
-        SystemDecorations="BorderOnly">
-    
-    <Grid Margin="20" RowDefinitions="Auto, *, Auto">
-        <TextBlock Grid.Row="0" 
-                   Text="Installing Update..."
-                   FontSize="16"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,10" />
-        
-        <Border Grid.Row="1" 
-                Background="#1E1E1E" 
-                CornerRadius="4"
-                Padding="10">
-            <ScrollViewer x:Name="OutputScrollViewer">
-                <TextBlock x:Name="OutputText"
-                           FontFamily="Consolas,Menlo,monospace"
-                           FontSize="12"
-                           Foreground="#CCCCCC"
-                           TextWrapping="Wrap" />
-            </ScrollViewer>
-        </Border>
-        
-        <Button x:Name="CloseButton"
-                Grid.Row="2"
-                Content="Close"
-                Width="80"
-                HorizontalAlignment="Right"
-                Margin="0,10,0,0"
-                IsEnabled="False"
-                Click="CloseButton_Click" />
-    </Grid>
+        SystemDecorations="BorderOnly"
+        x:CompileBindings="True">
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <Grid Margin="20" RowDefinitions="Auto, *, Auto">
+            <TextBlock Grid.Row="0"
+                       Text="Installing Update..."
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,10" />
+
+            <Border Grid.Row="1"
+                    Background="#1E1E1E"
+                    CornerRadius="4"
+                    Padding="10">
+                <ScrollViewer x:Name="OutputScrollViewer">
+                    <TextBlock x:Name="OutputText"
+                               FontFamily="Consolas,Menlo,monospace"
+                               FontSize="12"
+                               Foreground="#CCCCCC"
+                               TextWrapping="Wrap" />
+                </ScrollViewer>
+            </Border>
+
+            <Button x:Name="CloseButton"
+                    Grid.Row="2"
+                    Content="Close"
+                    Width="80"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0"
+                    IsEnabled="False"
+                    Click="CloseButton_Click" />
+        </Grid>
+    </Border>
 </Window>

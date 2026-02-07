@@ -39,16 +39,29 @@
         <!-- Horizontal Menu -->
         <menus:HorizontalMenu Grid.Row="0" DataContext="{Binding}" IsVisible="{Binding UseHorizontalMenu}" />
         
-        <SplitView Grid.Row="1"
-                   IsPaneOpen="{Binding IsPaneOpen}"
-                   CompactPaneLength="66"
-                   DisplayMode="CompactInline"
-                   OpenPaneLength="200"
-                   PaneBackground="{DynamicResource SystemChromeMediumColor}">
-            <SplitView.Pane>
-                <menus:VerticalMenu DataContext="{Binding}" IsVisible="{Binding !UseHorizontalMenu}" />
-            </SplitView.Pane>
-            <avalonia:RoutedViewHost Router="{Binding Router}" PageTransition="{x:Null}">
+        <Panel Grid.Row="1">
+            <SplitView IsPaneOpen="{Binding IsPaneOpen}"
+                       CompactPaneLength="66"
+                       DisplayMode="CompactInline"
+                       OpenPaneLength="200"
+                       IsVisible="{Binding !UseHorizontalMenu}"
+                       PaneBackground="{DynamicResource SystemChromeMediumColor}">
+                <SplitView.Pane>
+                    <menus:VerticalMenu DataContext="{Binding}" />
+                </SplitView.Pane>
+                <avalonia:RoutedViewHost Router="{Binding Router}" PageTransition="{x:Null}">
+                    <avalonia:RoutedViewHost.DefaultContent>
+                        <TextBlock Text="Default content"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </avalonia:RoutedViewHost.DefaultContent>
+                    <avalonia:RoutedViewHost.ViewLocator>
+                        <shellyUi:ViewLocator />
+                    </avalonia:RoutedViewHost.ViewLocator>
+                </avalonia:RoutedViewHost>
+            </SplitView>
+            <avalonia:RoutedViewHost Router="{Binding Router}" PageTransition="{x:Null}"
+                                     IsVisible="{Binding UseHorizontalMenu}">
                 <avalonia:RoutedViewHost.DefaultContent>
                     <TextBlock Text="Default content"
                                HorizontalAlignment="Center"
@@ -58,7 +71,7 @@
                     <shellyUi:ViewLocator />
                 </avalonia:RoutedViewHost.ViewLocator>
             </avalonia:RoutedViewHost>
-        </SplitView>
+        </Panel>
         <Panel IsVisible="{Binding IsProcessing}" Background="#80000000" Grid.RowSpan="2">
             <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                     CornerRadius="12"

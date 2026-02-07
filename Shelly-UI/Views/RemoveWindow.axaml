@@ -21,124 +21,128 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
-    <customControls:ConsoleSplitControl
-        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
-        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
-        <customControls:ConsoleSplitControl.MainContent>
-            <Grid Background="{DynamicResource SystemChromeLowColor}">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
-                            <TextBlock
-                                Text="{x:Static lang:Resources.RemovePackages}"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource SystemBaseHighColor}"
-                                VerticalAlignment="Center" />
-                            <TextBox
-                                Grid.Column="1"
-                                Width="220"
-                                Margin="12,0"
-                                Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                Background="{DynamicResource ChromeWhite}"
-                                Foreground="{DynamicResource AltMediumLow}"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
-                            <Button
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Padding="8"
-                                Background="Transparent"
-                                Command="{Binding RefreshCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Refresh}">
-                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}"
-                                                       Width="20" Height="20" />
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <DataGrid
-                        Name="RemoveDataGrid"
-                        Grid.Row="1"
-                        ItemsSource="{Binding AvailablePackages}"
-                        AutoGenerateColumns="False"
-                        CanUserResizeColumns="True"
-                        IsReadOnly="True"
-                        GridLinesVisibility="None"
-                        DoubleTapped="DataGrid_DoubleTapped">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageName}"
-                                Binding="{Binding Name}"
-                                Width="*" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.Version}"
-                                Binding="{Binding Version}"
-                                Width="160" />
-                            <DataGridTemplateColumn
-                                Header=""
-                                CanUserResize="False"
-                                Width="60">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                  HorizontalAlignment="Center" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-                <Border Background="#80000000"
-                        IsVisible="{Binding ShowConfirmDialog}"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch">
-                    <Border Background="{DynamicResource SystemChromeLowColor}"
-                            BorderBrush="{DynamicResource SystemBaseLowColor}"
-                            CornerRadius="8"
-                            Padding="20"
-                            Width="300"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            BoxShadow="0 10 30 0 #A0000000">
-                        <StackPanel Spacing="15">
-                            <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
-                                       HorizontalAlignment="Center" />
-                            <TextBlock Text="{x:Static lang:Resources.WillRemovePackages}" TextWrapping="Wrap"
-                                       HorizontalAlignment="Center" TextAlignment="Center" />
-                            <Grid ColumnDefinitions="*,*">
-                                <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
-                                        HorizontalAlignment="Stretch" Margin="0,0,5,0"
-                                        Command="{Binding ToggleConfirmAction}" />
-                                <Button Grid.Column="1" Content="{x:Static lang:Resources.Remove}"
-                                        Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
-                                        Command="{Binding RemovePackagesCommand}" />
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <customControls:ConsoleSplitControl
+            IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+            IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+            <customControls:ConsoleSplitControl.MainContent>
+                <Grid Background="{DynamicResource SystemChromeLowColor}">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Static lang:Resources.RemovePackages}"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SystemBaseHighColor}"
+                                    VerticalAlignment="Center" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Width="220"
+                                    Margin="12,0"
+                                    Watermark="{x:Static lang:Resources.SearchPackages}"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    Background="{DynamicResource ChromeWhite}"
+                                    Foreground="{DynamicResource AltMediumLow}"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                    CornerRadius="4" />
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="12,0,0,0"
+                                    Padding="8"
+                                    Background="Transparent"
+                                    Command="{Binding RefreshCommand}"
+                                    ToolTip.Tip="{x:Static lang:Resources.Refresh}">
+                                    <avalonia:MaterialIcon Kind="Sync"
+                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                           Width="20" Height="20" />
+                                </Button>
                             </Grid>
-                        </StackPanel>
+                        </Border>
+                        <DataGrid
+                            Name="RemoveDataGrid"
+                            Grid.Row="1"
+                            ItemsSource="{Binding AvailablePackages}"
+                            AutoGenerateColumns="False"
+                            CanUserResizeColumns="True"
+                            IsReadOnly="True"
+                            GridLinesVisibility="None"
+                            DoubleTapped="DataGrid_DoubleTapped">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageName}"
+                                    Binding="{Binding Name}"
+                                    Width="*" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.Version}"
+                                    Binding="{Binding Version}"
+                                    Width="160" />
+                                <DataGridTemplateColumn
+                                    Header=""
+                                    CanUserResize="False"
+                                    Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                      HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    <Border Background="#80000000"
+                            IsVisible="{Binding ShowConfirmDialog}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <Border Background="{DynamicResource SystemChromeLowColor}"
+                                BorderBrush="{DynamicResource SystemBaseLowColor}"
+                                CornerRadius="8"
+                                Padding="20"
+                                Width="300"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                BoxShadow="0 10 30 0 #A0000000">
+                            <StackPanel Spacing="15">
+                                <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Static lang:Resources.WillRemovePackages}" TextWrapping="Wrap"
+                                           HorizontalAlignment="Center" TextAlignment="Center" />
+                                <Grid ColumnDefinitions="*,*">
+                                    <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                            HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                            Command="{Binding ToggleConfirmAction}" />
+                                    <Button Grid.Column="1" Content="{x:Static lang:Resources.Remove}"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding RemovePackagesCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </Border>
-                </Border>
-                <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                        Margin="30"
-                        CornerRadius="30"
-                        BoxShadow="0 4 15 0 #60000000">
-                    <Button Width="60" Height="60"
-                            Padding="0"
+                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                            Margin="30"
                             CornerRadius="30"
-                            Command="{Binding ToggleConfirmAction}">
-                        <avalonia:MaterialIcon Kind="Delete" Width="30" Height="30"
-                                               Foreground="{DynamicResource SystemAccentColor}" />
-                    </Button>
-                </Border>
-            </Grid>
-        </customControls:ConsoleSplitControl.MainContent>
-        <customControls:ConsoleSplitControl.BottomContent>
-            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
-                <ScrollViewer>
-                <customControls:RichConsoleControl Logs="{Binding Logs}" />
-                </ScrollViewer>
-            </Grid>
-        </customControls:ConsoleSplitControl.BottomContent>
-    </customControls:ConsoleSplitControl>
+                            BoxShadow="0 4 15 0 #60000000">
+                        <Button Width="60" Height="60"
+                                Padding="0"
+                                CornerRadius="30"
+                                Command="{Binding ToggleConfirmAction}">
+                            <avalonia:MaterialIcon Kind="Delete" Width="30" Height="30"
+                                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        </Button>
+                    </Border>
+                </Grid>
+            </customControls:ConsoleSplitControl.MainContent>
+            <customControls:ConsoleSplitControl.BottomContent>
+                <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                    <ScrollViewer>
+                        <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                    </ScrollViewer>
+                </Grid>
+            </customControls:ConsoleSplitControl.BottomContent>
+        </customControls:ConsoleSplitControl>
+    </Border>
 </UserControl>

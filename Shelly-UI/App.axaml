@@ -3,28 +3,29 @@
              x:Class="Shelly_UI.App"
              xmlns:local="using:Shelly_UI"
              xmlns:icons="using:Material.Icons.Avalonia"
-             RequestedThemeVariant="Dark">
+             RequestedThemeVariant="Dark"
+             x:CompileBindings="True">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
     <Application.Styles>
         <FluentTheme>
-                <FluentTheme.Palettes>
-                    <ColorPaletteResources x:Key="Light" Accent="#ff018574" RegionColor="White" ErrorText="Red"/>
-                    <ColorPaletteResources x:Key="Dark" Accent="#ff018574" RegionColor="Black" ErrorText="Yellow" />
-                </FluentTheme.Palettes>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Light" Accent="#ff018574" RegionColor="White" ErrorText="Red" />
+                <ColorPaletteResources x:Key="Dark" Accent="#ff018574" RegionColor="Black" ErrorText="Yellow" />
+            </FluentTheme.Palettes>
         </FluentTheme>
         <Style Selector="TextBox.Header">
-            <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColorDark1}"/>
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColorDark1}" />
         </Style>
         <icons:MaterialIconStyles />
-        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
     </Application.Styles>
     <Application.Resources>
-        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="{DynamicResource SystemBaseHighColor}"/>
-        <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{DynamicResource SystemBaseHighColor}"/>
-        <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{DynamicResource SystemBaseHighColor}"/>
-        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource SystemBaseHighColor}"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="{DynamicResource SystemBaseHighColor}" />
+        <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="{DynamicResource SystemBaseHighColor}" />
+        <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{DynamicResource SystemBaseHighColor}" />
+        <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource SystemBaseHighColor}" />
     </Application.Resources>
 </Application>

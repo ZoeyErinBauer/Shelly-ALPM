@@ -10,105 +10,109 @@
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:FlatpakRemoveViewModel"
-             x:Class="Shelly_UI.Views.Flatpak.FlatpakRemoveWindow">
+             x:Class="Shelly_UI.Views.Flatpak.FlatpakRemoveWindow"
+             x:CompileBindings="True">
     <UserControl.Resources>
         <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
         <converters:FilePathToBitmapConverter x:Key="FilePathToBitmapConverter" />
     </UserControl.Resources>
-    <customControls:ConsoleSplitControl
-        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
-        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
-        <customControls:ConsoleSplitControl.MainContent>
-            <Grid Background="{DynamicResource SystemChromeLowColor}">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                            <TextBlock
-                                Text="{x:Static lang:Resources.InstallPackages}"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource SystemBaseHighColor}"
-                                VerticalAlignment="Center" />
-                            <TextBox
-                                Grid.Column="1"
-                                Width="220"
-                                Margin="12,0"
-                                Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                Background="{DynamicResource ChromeWhite}"
-                                Foreground="{DynamicResource AltMediumLow}"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
-                            <Button
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Padding="8"
-                                Background="Transparent"
-                                Command="{Binding RefreshCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}"
-                                                       Width="20" Height="20" />
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <ScrollViewer Grid.Row="1">
-                        <ItemsControl ItemsSource="{Binding AvailablePackages}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:FlatpakModel">
-                                    <Border
-                                        Padding="12"
-                                        Margin="12,12,12,0"
-                                        Background="{DynamicResource ChromeWhite}"
-                                        CornerRadius="8"
-                                        HorizontalAlignment="Stretch"
-                                        BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                        BorderThickness="1"
-                                        BoxShadow="0 6 16 0 #33000000">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Image
-                                                Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
-                                                Width="64"
-                                                Height="64"
-                                                Stretch="Uniform"
-                                                VerticalAlignment="Center"
-                                                HorizontalAlignment="Left"
-                                                Margin="0,0,0,8" />
-                                            <StackPanel Margin="12,0" Grid.Column="1">
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontWeight="Bold" />
-                                                <TextBlock
-                                                    Text="{Binding Version}"
-                                                    Margin="0,4,0,0" />
-                                            </StackPanel>
-                                            <Button
-                                                Grid.Column="2"
-                                                Margin="12,0,0,0"
-                                                Padding="8"
-                                                HorizontalAlignment="Right"
-                                                Background="Transparent"
-                                                Command="{Binding $parent[ItemsControl].((vm:FlatpakRemoveViewModel)DataContext).RemovePackageCommand}"
-                                                CommandParameter="{Binding}">
-                                                <avalonia:MaterialIcon Kind="TrashCan"
-                                                                       Foreground="{DynamicResource SystemBaseHighColor}"
-                                                                       Width="20" Height="20" />
-                                            </Button>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <customControls:ConsoleSplitControl
+            IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+            IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+            <customControls:ConsoleSplitControl.MainContent>
+                <Grid Background="{DynamicResource SystemChromeLowColor}">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Static lang:Resources.InstallPackages}"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SystemBaseHighColor}"
+                                    VerticalAlignment="Center" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Width="220"
+                                    Margin="12,0"
+                                    Watermark="{x:Static lang:Resources.SearchPackages}"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    Background="{DynamicResource ChromeWhite}"
+                                    Foreground="{DynamicResource AltMediumLow}"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                    CornerRadius="4" />
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="12,0,0,0"
+                                    Padding="8"
+                                    Background="Transparent"
+                                    Command="{Binding RefreshCommand}"
+                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                    <avalonia:MaterialIcon Kind="Sync"
+                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                           Width="20" Height="20" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <ScrollViewer Grid.Row="1">
+                            <ItemsControl ItemsSource="{Binding AvailablePackages}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:FlatpakModel">
+                                        <Border
+                                            Padding="12"
+                                            Margin="12,12,12,0"
+                                            Background="{DynamicResource ChromeWhite}"
+                                            CornerRadius="8"
+                                            HorizontalAlignment="Stretch"
+                                            BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                            BorderThickness="1"
+                                            BoxShadow="0 6 16 0 #33000000">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <Image
+                                                    Source="{Binding IconPath, Converter={StaticResource FilePathToBitmapConverter}}"
+                                                    Width="64"
+                                                    Height="64"
+                                                    Stretch="Uniform"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="0,0,0,8" />
+                                                <StackPanel Margin="12,0" Grid.Column="1">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontWeight="Bold" />
+                                                    <TextBlock
+                                                        Text="{Binding Version}"
+                                                        Margin="0,4,0,0" />
+                                                </StackPanel>
+                                                <Button
+                                                    Grid.Column="2"
+                                                    Margin="12,0,0,0"
+                                                    Padding="8"
+                                                    HorizontalAlignment="Right"
+                                                    Background="Transparent"
+                                                    Command="{Binding $parent[ItemsControl].((vm:FlatpakRemoveViewModel)DataContext).RemovePackageCommand}"
+                                                    CommandParameter="{Binding}">
+                                                    <avalonia:MaterialIcon Kind="TrashCan"
+                                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                                           Width="20" Height="20" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </customControls:ConsoleSplitControl.MainContent>
+            <customControls:ConsoleSplitControl.BottomContent>
+                <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                    <ScrollViewer>
+                        <customControls:RichConsoleControl Logs="{Binding Logs}" />
                     </ScrollViewer>
                 </Grid>
-            </Grid>
-        </customControls:ConsoleSplitControl.MainContent>
-        <customControls:ConsoleSplitControl.BottomContent>
-            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
-                <ScrollViewer>
-                    <customControls:RichConsoleControl Logs="{Binding Logs}" />
-                </ScrollViewer>
-            </Grid>
-        </customControls:ConsoleSplitControl.BottomContent>
-    </customControls:ConsoleSplitControl>
+            </customControls:ConsoleSplitControl.BottomContent>
+        </customControls:ConsoleSplitControl>
+    </Border>
 </UserControl>
