@@ -12,192 +12,199 @@
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:PackageViewModel"
-             x:Class="Shelly_UI.Views.PackageWindow">
-    <UserControl.Styles>
-        <Style Selector="DataGridColumnHeader">
-            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
-            <Setter Property="SeparatorBrush" Value="Transparent" />
-        </Style>
-    </UserControl.Styles>
-    <UserControl.Resources>
-        <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
-    </UserControl.Resources>
-    <customControls:ConsoleSplitControl
-        IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
-        IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
-        <customControls:ConsoleSplitControl.MainContent>
-            <Grid Background="{DynamicResource SystemChromeLowColor}">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                            <TextBlock
-                                Text="{x:Static lang:Resources.InstallPackages}"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource SystemBaseHighColor}"
-                                VerticalAlignment="Center" />
-                            <TextBox
-                                Grid.Column="1"
-                                Width="220"
-                                Margin="12,0"
-                                Watermark="{x:Static lang:Resources.SearchPackages}"
-                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                HorizontalContentAlignment="Left"
-                                VerticalContentAlignment="Center"
-                                Background="{DynamicResource ChromeWhite}"
-                                Foreground="{DynamicResource AltMediumLow}"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                CornerRadius="4" />
-                            <Button
-                                Grid.Column="2"
-                                Margin="12,0,0,0"
-                                Padding="8"
-                                Background="Transparent"
-                                Command="{Binding SyncCommand}"
-                                ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                <avalonia:MaterialIcon Kind="Sync" Foreground="{DynamicResource SystemBaseHighColor}"
-                                                       Width="20" Height="20" />
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <DataGrid
-                        Name="PackageDataGrid"
-                        Grid.Row="1"
-                        ItemsSource="{Binding AvailablePackages}"
-                        AutoGenerateColumns="False"
-                        CanUserResizeColumns="True"
-                        IsReadOnly="True"
-                        GridLinesVisibility="None"
-                        DoubleTapped="DataGrid_DoubleTapped">
-                        <DataGrid.Styles>
-                            <Style Selector="DataGridRow" x:DataType="models:PackageModel">
-                                <Setter Property="ContextMenu">
-                                    <Setter.Value>
-                                        <ContextMenu x:DataType="models:PackageModel">
-                                            <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
-                                            <Separator />
-                                            <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
-                                                      IsEnabled="False" />
-                                            <MenuItem Header="{Binding SizeString, StringFormat='Size: {0}'}"
-                                                      IsEnabled="False" />
-                                            <MenuItem IsEnabled="False">
-                                                <MenuItem.Header>
-                                                    <TextBlock
-                                                        Text="{Binding Description, StringFormat='Description: {0}'}"
-                                                        TextWrapping="Wrap"
-                                                        MaxWidth="300" />
-                                                </MenuItem.Header>
-                                            </MenuItem>
-                                            <MenuItem Click="OpenUrl_Click" CommandParameter="{Binding Url}">
-                                                <MenuItem.Header>
-                                                    <TextBlock Text="{Binding Url}"
-                                                               Foreground="#1976D2"
-                                                               TextDecorations="Underline" />
-                                                </MenuItem.Header>
-                                            </MenuItem>
-                                        </ContextMenu>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </DataGrid.Styles>
-                        <DataGrid.Columns>
-                            <DataGridTemplateColumn
-                                Header="{x:Static lang:Resources.Name}"
-                                MinWidth="200"
-                                Width="*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate DataType="models:PackageModel">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
-                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                            <avalonia:MaterialIcon
-                                                Kind="CheckCircle"
-                                                Foreground="Green"
-                                                Width="16" Height="16"
-                                                Margin="8,0,0,0"
-                                                IsVisible="{Binding IsInstalled}"
-                                                ToolTip.Tip="{x:Static lang:Resources.Installed}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.Version}"
-                                Binding="{Binding Version}"
-                                Width="*" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageSize}"
-                                Binding="{Binding SizeString}"
-                                Width="*" />
-                            <DataGridTextColumn
-                                Header="{x:Static lang:Resources.PackageRepository}"
-                                Binding="{Binding Repository}"
-                                Width="*" />
-                            <DataGridTemplateColumn
-                                Header=""
-                                CanUserResize="False"
-                                Width="60">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                  HorizontalAlignment="Center" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-                <Border Background="#80000000"
-                        IsVisible="{Binding ShowConfirmDialog}"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch">
-                    <Border Background="{DynamicResource SystemChromeLowColor}"
-                            BorderBrush="{DynamicResource SystemBaseLowColor}"
-                            CornerRadius="8"
-                            Padding="20"
-                            Width="300"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            BoxShadow="0 10 30 0 #A0000000">
-                        <StackPanel Spacing="15">
-                            <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
-                                       HorizontalAlignment="Center" />
-                            <TextBlock Text="{x:Static lang:Resources.WillInstallPackages}" TextWrapping="Wrap"
-                                       HorizontalAlignment="Center" TextAlignment="Center" />
-                            <Grid ColumnDefinitions="*,*">
-                                <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
-                                        HorizontalAlignment="Stretch" Margin="0,0,5,0"
-                                        Command="{Binding ToggleConfirmAction}" />
-                                <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}"
-                                        Background="{DynamicResource SystemAccentColor}" HorizontalAlignment="Stretch"
-                                        Command="{Binding AlpmInstallCommand}" />
+             x:Class="Shelly_UI.Views.PackageWindow"
+             x:CompileBindings="True">
+
+        <UserControl.Styles>
+            <Style Selector="DataGridColumnHeader">
+                <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemBaseHighColor}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+                <Setter Property="SeparatorBrush" Value="Transparent" />
+            </Style>
+        </UserControl.Styles>
+        <UserControl.Resources>
+            <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
+        </UserControl.Resources>
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <customControls:ConsoleSplitControl
+            IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
+            IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
+            <customControls:ConsoleSplitControl.MainContent>
+                <Grid Background="{DynamicResource SystemChromeLowColor}">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Static lang:Resources.InstallPackages}"
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource SystemBaseHighColor}"
+                                    VerticalAlignment="Center" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    Width="220"
+                                    Margin="12,0"
+                                    Watermark="{x:Static lang:Resources.SearchPackages}"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                    HorizontalContentAlignment="Left"
+                                    VerticalContentAlignment="Center"
+                                    Background="{DynamicResource ChromeWhite}"
+                                    Foreground="{DynamicResource AltMediumLow}"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
+                                    CornerRadius="4" />
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="12,0,0,0"
+                                    Padding="8"
+                                    Background="Transparent"
+                                    Command="{Binding SyncCommand}"
+                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
+                                    <avalonia:MaterialIcon Kind="Sync"
+                                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                                           Width="20" Height="20" />
+                                </Button>
                             </Grid>
-                        </StackPanel>
+                        </Border>
+                        <DataGrid
+                            Name="PackageDataGrid"
+                            Grid.Row="1"
+                            ItemsSource="{Binding AvailablePackages}"
+                            AutoGenerateColumns="False"
+                            CanUserResizeColumns="True"
+                            IsReadOnly="True"
+                            GridLinesVisibility="None"
+                            DoubleTapped="DataGrid_DoubleTapped">
+                            <DataGrid.Styles>
+                                <Style Selector="DataGridRow" x:DataType="models:PackageModel">
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu x:DataType="models:PackageModel">
+                                                <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
+                                                <Separator />
+                                                <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
+                                                          IsEnabled="False" />
+                                                <MenuItem Header="{Binding SizeString, StringFormat='Size: {0}'}"
+                                                          IsEnabled="False" />
+                                                <MenuItem IsEnabled="False">
+                                                    <MenuItem.Header>
+                                                        <TextBlock
+                                                            Text="{Binding Description, StringFormat='Description: {0}'}"
+                                                            TextWrapping="Wrap"
+                                                            MaxWidth="300" />
+                                                    </MenuItem.Header>
+                                                </MenuItem>
+                                                <MenuItem Click="OpenUrl_Click" CommandParameter="{Binding Url}">
+                                                    <MenuItem.Header>
+                                                        <TextBlock Text="{Binding Url}"
+                                                                   Foreground="#1976D2"
+                                                                   TextDecorations="Underline" />
+                                                    </MenuItem.Header>
+                                                </MenuItem>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.Styles>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn
+                                    Header="{x:Static lang:Resources.Name}"
+                                    MinWidth="200"
+                                    Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate DataType="models:PackageModel">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                        Margin="12,0">
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                                <avalonia:MaterialIcon
+                                                    Kind="CheckCircle"
+                                                    Foreground="Green"
+                                                    Width="16" Height="16"
+                                                    Margin="8,0,0,0"
+                                                    IsVisible="{Binding IsInstalled}"
+                                                    ToolTip.Tip="{x:Static lang:Resources.Installed}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.Version}"
+                                    Binding="{Binding Version}"
+                                    Width="*" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageSize}"
+                                    Binding="{Binding SizeString}"
+                                    Width="*" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageRepository}"
+                                    Binding="{Binding Repository}"
+                                    Width="*" />
+                                <DataGridTemplateColumn
+                                    Header=""
+                                    CanUserResize="False"
+                                    Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                      HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    <Border Background="#80000000"
+                            IsVisible="{Binding ShowConfirmDialog}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <Border Background="{DynamicResource SystemChromeLowColor}"
+                                BorderBrush="{DynamicResource SystemBaseLowColor}"
+                                CornerRadius="8"
+                                Padding="20"
+                                Width="300"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                BoxShadow="0 10 30 0 #A0000000">
+                            <StackPanel Spacing="15">
+                                <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Static lang:Resources.WillInstallPackages}" TextWrapping="Wrap"
+                                           HorizontalAlignment="Center" TextAlignment="Center" />
+                                <Grid ColumnDefinitions="*,*">
+                                    <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                            HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                            Command="{Binding ToggleConfirmAction}" />
+                                    <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding AlpmInstallCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </Border>
-                </Border>
-                <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                        Margin="30"
-                        CornerRadius="30"
-                        BoxShadow="0 4 15 0 #60000000">
-                    <Button Width="60" Height="60"
-                            Padding="0"
+                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                            Margin="30"
                             CornerRadius="30"
-                            Command="{Binding ToggleConfirmAction}">
-                        <avalonia:MaterialIcon Kind="Download" Width="30" Height="30"
-                                               Foreground="{DynamicResource SystemAccentColor}" />
-                    </Button>
-                </Border>
-            </Grid>
-        </customControls:ConsoleSplitControl.MainContent>
-        <customControls:ConsoleSplitControl.BottomContent>
-            <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
-                <ScrollViewer>
-                <customControls:RichConsoleControl Logs="{Binding Logs}" />
-                </ScrollViewer>
-            </Grid>
-        </customControls:ConsoleSplitControl.BottomContent>
-    </customControls:ConsoleSplitControl>
+                            BoxShadow="0 4 15 0 #60000000">
+                        <Button Width="60" Height="60"
+                                Padding="0"
+                                CornerRadius="30"
+                                Command="{Binding ToggleConfirmAction}">
+                            <avalonia:MaterialIcon Kind="Download" Width="30" Height="30"
+                                                   Foreground="{DynamicResource SystemAccentColor}" />
+                        </Button>
+                    </Border>
+                </Grid>
+            </customControls:ConsoleSplitControl.MainContent>
+            <customControls:ConsoleSplitControl.BottomContent>
+                <Grid IsVisible="{Binding !IsBottomPanelCollapsed}">
+                    <ScrollViewer>
+                        <customControls:RichConsoleControl Logs="{Binding Logs}" />
+                    </ScrollViewer>
+                </Grid>
+            </customControls:ConsoleSplitControl.BottomContent>
+        </customControls:ConsoleSplitControl>
+    </Border>
 </UserControl>

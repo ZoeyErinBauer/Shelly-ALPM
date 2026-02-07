@@ -48,6 +48,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _enableAur = config.AurEnabled;
         _enableFlatpak = config.FlatPackEnabled;
         _useKdeColor = config.UseKdeTheme;
+        _useHorizontalMenu = config.UseHorizontalMenu;
 
         _ = SetUpdateText();
         _ = CheckAndEnableFlatpakAsync();
@@ -70,6 +71,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private bool _enableFlatpak;
 
+    private bool _useHorizontalMenu;
 
     public Color AccentHex
     {
@@ -230,8 +232,20 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
         }
     }
- 
 
+    public bool UseHorizontalMenu
+    {
+        get => _useHorizontalMenu;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _useHorizontalMenu, value);
+
+            var config = _configService.LoadConfig();
+            config.UseHorizontalMenu = value;
+            _configService.SaveConfig(config);
+            MessageBus.Current.SendMessage(new MainWindowMessage { MenuLayoutChanged = true });
+        }
+    }
 
     public bool EnableFlatpak
     {

@@ -11,32 +11,34 @@
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         ShowInTaskbar="False"
-        SystemDecorations="BorderOnly">
-    
-    <Grid Margin="20" RowDefinitions="*, Auto">
-        <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="15">
-            <icons:MaterialIcon Kind="HelpCircle" Width="32" Height="32" 
-                                HorizontalAlignment="Center"
-                                Foreground="{DynamicResource SystemAccentColor}" />
-            <TextBlock x:Name="QuestionText" 
-                       Text="Question text goes here"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       FontSize="14" />
-        </StackPanel>
-        
-        <StackPanel Grid.Row="1" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center" 
-                    Spacing="15">
-            <Button x:Name="YesButton" 
-                    Content="Yes" 
-                    Width="80"
-                    Click="YesButton_Click" />
-            <Button x:Name="NoButton" 
-                    Content="No" 
-                    Width="80"
-                    Click="NoButton_Click" />
-        </StackPanel>
-    </Grid>
+        SystemDecorations="BorderOnly"
+        x:CompileBindings="True">
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <Grid Margin="20" RowDefinitions="*, Auto">
+            <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="15">
+                <icons:MaterialIcon Kind="HelpCircle" Width="32" Height="32"
+                                    HorizontalAlignment="Center"
+                                    Foreground="{DynamicResource SystemAccentColor}" />
+                <TextBlock x:Name="QuestionText"
+                           Text="Question text goes here"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           FontSize="14" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="15">
+                <Button x:Name="YesButton"
+                        Content="Yes"
+                        Width="80"
+                        Click="YesButton_Click" />
+                <Button x:Name="NoButton"
+                        Content="No"
+                        Width="80"
+                        Click="NoButton_Click" />
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>

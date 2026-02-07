@@ -8,81 +8,84 @@
              x:Class="Shelly_UI.Views.HomeWindow"
              x:DataType="viewModels:HomeViewModel"
              x:CompileBindings="True">
-    <UniformGrid Columns="2" Background="{DynamicResource SystemChromeLowColor}">
-        <Border Grid.Column="0"
+    <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
+        <UniformGrid Columns="2" Background="{DynamicResource SystemChromeLowColor}">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SystemChromeLowColor}"
+                    CornerRadius="12"
+                    BorderBrush="{DynamicResource SystemBaseLowColor}"
+                    BorderThickness="1"
+                    Margin="8,4,4,4">
+                <Grid RowDefinitions="Auto, *">
+                    <TextBlock Text="{x:Static lang:Resources.ArchNews}" FontWeight="Bold"
+                               FontSize="18" Margin="10, 5,0 ,0">
+                    </TextBlock>
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                        <ListBox ItemsSource="{Binding FeedItems}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding PubDate}"
+                                                   FontWeight="Bold"
+                                                   FontSize="10"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   Foreground="{DynamicResource SystemBaseMediumColor}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="5,5,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="6" />
+                                    <Setter Property="CornerRadius" Value="8" />
+                                    <Setter Property="Margin" Value="0,2" />
+                                </Style>
+                            </ListBox.Styles>
+                        </ListBox>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+            <Border
                 Background="{DynamicResource SystemChromeLowColor}"
                 CornerRadius="12"
                 BorderBrush="{DynamicResource SystemBaseLowColor}"
                 BorderThickness="1"
-                Margin="8,4,4,4">
-            <Grid RowDefinitions="Auto, *">
-                <TextBlock Text="{x:Static lang:Resources.ArchNews}" FontWeight="Bold"
-                           FontSize="18" Margin="10, 5,0 ,0">
-                </TextBlock>
-                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                    <ListBox ItemsSource="{Binding FeedItems}"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                Margin="4,4,8,4">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="{x:Static lang:Resources.InstalledPackages}" FontSize="18" FontWeight="Bold"
+                                   Margin="10, 5,0 ,0" />
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding InstalledPackages}" Background="Transparent" BorderThickness="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{Binding Title}"
-                                               FontWeight="Bold"
-                                               FontSize="16"
-                                               TextWrapping="Wrap" /> 
-                                    <TextBlock Text="{Binding PubDate}"
-                                               FontWeight="Bold"
-                                               FontSize="10"
-                                               TextWrapping="Wrap" /> 
-                                    <TextBlock Text="{Binding Description}"
-                                               Foreground="{DynamicResource SystemBaseMediumColor}"
-                                               TextWrapping="Wrap"
-                                               Margin="5,5,0,0" />
-                                </StackPanel>
+                                <Grid ColumnDefinitions="Auto, *">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#999999" />
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
-                                <Setter Property="Padding" Value="6" />
+                                <Setter Property="Padding" Value="6,0" />
                                 <Setter Property="CornerRadius" Value="8" />
-                                <Setter Property="Margin" Value="0,2" />
+                                <Setter Property="Margin" Value="2,2" />
                             </Style>
                         </ListBox.Styles>
                     </ListBox>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-        <Border
-            Background="{DynamicResource SystemChromeLowColor}"
-            CornerRadius="12"
-            BorderBrush="{DynamicResource SystemBaseLowColor}"
-            BorderThickness="1"
-            Margin="4,4,8,4">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top">
-                    <TextBlock Text="{x:Static lang:Resources.InstalledPackages}" FontSize="18" FontWeight="Bold" Margin="10, 5,0 ,0" />
-                </StackPanel>
-                <ListBox ItemsSource="{Binding InstalledPackages}" Background="Transparent" BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid ColumnDefinitions="Auto, *">
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#999999" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                    <ListBox.Styles>
-                    <Style Selector="ListBoxItem">
-                        <Setter Property="Padding" Value="6,0" />
-                        <Setter Property="CornerRadius" Value="8" />
-                        <Setter Property="Margin" Value="2,2" />
-                    </Style>
-                    </ListBox.Styles>
-                </ListBox>
-            </DockPanel>
-        </Border>
-    </UniformGrid>
+                </DockPanel>
+            </Border>
+        </UniformGrid>
+    </Border>
 </UserControl>

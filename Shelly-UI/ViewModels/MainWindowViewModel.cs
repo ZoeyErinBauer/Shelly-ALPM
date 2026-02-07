@@ -286,6 +286,26 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
         NavigateToDefaultView();
 
+        Router.CurrentViewModel
+            .Select(vm => vm switch
+            {
+                HomeViewModel => "Shelly - Home",
+                PackageViewModel => "Shelly - Install Packages",
+                UpdateViewModel => "Shelly - Update Packages",
+                RemoveViewModel => "Shelly - Remove Packages",
+                SettingViewModel => "Shelly - Settings",
+                AurViewModel => "Shelly - AUR Install",
+                AurUpdateViewModel => "Shelly - AUR Update",
+                AurRemoveViewModel => "Shelly - AUR Remove",
+                FlatpakInstallViewModel => "Shelly - Flatpak Install",
+                FlatpakUpdateViewModel => "Shelly - Flatpak Update",
+                FlatpakRemoveViewModel => "Shelly - Flatpak Remove",
+                _ => "Shelly"
+            })
+            .ObserveOn(scheduler)
+            .Subscribe(title => Title = title)
+            .DisposeWith(_disposables);
+
         Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
                 h => ConsoleLogService.Instance.Logs.CollectionChanged += h,
                 h => ConsoleLogService.Instance.Logs.CollectionChanged -= h)
@@ -349,6 +369,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     private void RefreshUi(MainWindowMessage msg)
     {
+        if (msg.MenuLayoutChanged)
+        {
+            this.RaisePropertyChanged(nameof(UseHorizontalMenu));
+            return;
+        }
+
         if (msg.FlatpakEnable)
         {
             IsFlatpakEnabled = !IsFlatpakEnabled;
@@ -561,6 +587,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public RoutingState SettingRouter { get; } = new RoutingState();
 
+    private string _title = "Shelly";
+
+    public string Title
+    {
+        get => _title;
+        set => this.RaiseAndSetIfChanged(ref _title, value);
+    }
+
     #region ReactiveCommands
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoHome { get; set; } = null!;
@@ -643,6 +677,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         get => _configService.LoadConfig().FlatPackEnabled;
         set => _configService.LoadConfig().FlatPackEnabled = value;
+    }
+
+    public bool UseHorizontalMenu
+    {
+        get => _configService.LoadConfig().UseHorizontalMenu;
+        set => _configService.LoadConfig().UseHorizontalMenu = value;
     }
 
     private bool _isFlatpakOpen;
