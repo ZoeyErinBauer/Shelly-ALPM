@@ -1,9 +1,9 @@
-using System.Reactive.Concurrency;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -12,26 +12,26 @@ using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
+using Shelly_UI.Views;
 
 namespace Shelly_UI.ViewModels;
 
 public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
-    public IScreen HostScreen { get; }
-    private readonly IPrivilegedOperationService _privilegedOperationService;
-    private string? _searchText;
     private readonly ICredentialManager _credentialManager;
-    
-    private List<UpdateModel> _allPackagesForUpdate = new();
+    private readonly IPrivilegedOperationService _privilegedOperationService;
+
+    private List<UpdateModel> _allPackagesForUpdate = [];
+    private string? _searchText;
 
     public UpdateViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
         ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
-        PackagesForUpdating = new ObservableCollection<UpdateModel>();
+        PackagesForUpdating = [];
         _credentialManager = credentialManager;
-        
+
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
             .ObserveOn(RxApp.MainThreadScheduler)
@@ -44,6 +44,22 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         LoadData();
     }
 
+    public ReactiveCommand<Unit, Unit> AlpmUpdateCommand { get; }
+    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
+
+    public string? SearchText
+    {
+        get => _searchText;
+        set => this.RaiseAndSetIfChanged(ref _searchText, value);
+    }
+
+    public ObservableCollection<UpdateModel> PackagesForUpdating { get; set; }
+
+    public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
+    public IScreen HostScreen { get; }
+
+    public string UrlPathSegment { get; } = Guid.NewGuid().ToString()[..5];
+
     private void ApplyFilter()
     {
         var filtered = string.IsNullOrWhiteSpace(SearchText)
@@ -51,11 +67,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             : _allPackagesForUpdate.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         PackagesForUpdating.Clear();
-        
-        foreach (var package in filtered)
-        {
-            PackagesForUpdating.Add(package);
-        }
+
+        foreach (var package in filtered) PackagesForUpdating.Add(package);
     }
 
     private async Task Sync()
@@ -63,10 +76,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         try
         {
             var result = await _privilegedOperationService.SyncDatabasesAsync();
-            if (!result.Success)
-            {
-                Console.WriteLine($"Failed to sync databases: {result.Error}");
-            }
+            if (!result.Success) Console.WriteLine($"Failed to sync databases: {result.Error}");
 
             // Reload data via CLI after sync
             RxApp.MainThreadScheduler.Schedule(() =>
@@ -86,26 +96,27 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         var selectedPackages = _allPackagesForUpdate.Where(x => x.IsChecked).Select(x => x.Name).ToList();
 
-        // Check if any packages are unchecked
+
         var hasUncheckedPackages = _allPackagesForUpdate.Any(x => !x.IsChecked);
 
         if (hasUncheckedPackages)
-        {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
+                {
+                    MainWindow: not null
+                } desktop)
             {
-                var dialog = new Views.QuestionDialog("Some packages are not selected. A full system upgrade is always recommended when updating.", "Continue", "Cancel");
+                var dialog =
+                    new QuestionDialog(
+                        "Some packages are not selected. A full system upgrade is always recommended when updating.",
+                        "Continue", "Cancel");
                 var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
 
-                if (!result)
-                {
-                    return; // User cancelled
-                }
+                if (!result) return; // User cancelled
             }
-        }
 
-        if (selectedPackages.Any())
+        if (selectedPackages.Count != 0)
         {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+            var mainWindow = HostScreen as MainWindowViewModel;
 
             try
             {
@@ -130,31 +141,28 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = isFullUpgrade 
-                        ? "Performing full system upgrade..." 
+                    mainWindow.GlobalBusyMessage = isFullUpgrade
+                        ? "Performing full system upgrade..."
                         : "Updating selected packages...";
                 }
 
                 // Use full system upgrade when all packages are selected, otherwise update specific packages
                 OperationResult result;
                 if (isFullUpgrade)
-                {
                     result = await _privilegedOperationService.UpgradeSystemAsync();
-                }
                 else
-                {
                     result = await _privilegedOperationService.UpdatePackagesAsync(selectedPackages);
-                }
-                
+
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to update packages: {result.Error}");
-                    mainWindow?.ShowToast($"Update failed: {result.Error}", isSuccess: false);
+                    mainWindow?.ShowToast($"Update failed: {result.Error}", false);
                 }
                 else
                 {
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully updated {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(
+                        $"Successfully updated {packageCount} package{(packageCount > 1 ? "s" : "")}");
                 }
 
                 await Sync();
@@ -162,10 +170,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             finally
             {
                 //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                mainWindow?.IsGlobalBusy = false;
             }
         }
     }
@@ -198,37 +203,19 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         }
     }
 
-    public ReactiveCommand<Unit, Unit> AlpmUpdateCommand { get; }
-    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
-
-    public string? SearchText
-    {
-        get => _searchText;
-        set => this.RaiseAndSetIfChanged(ref _searchText, value);
-    }
-
     public void CheckAll()
     {
         var targetState = _allPackagesForUpdate.Any(x => !x.IsChecked);
 
-        foreach (var item in _allPackagesForUpdate)
-        {
-            item.IsChecked = targetState;
-        }
+        foreach (var item in _allPackagesForUpdate) item.IsChecked = targetState;
     }
 
-    public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
-
-    public ObservableCollection<UpdateModel> PackagesForUpdating { get; set; }
-
-    private void TogglePackageCheck(UpdateModel package)
+    private static void TogglePackageCheck(UpdateModel package)
     {
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-
-    public ReactiveCommand<UpdateModel, Unit> TogglePackageCheckCommand { get; }
 
     protected override void Dispose(bool disposing)
     {
@@ -237,6 +224,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             PackagesForUpdating?.Clear();
             _allPackagesForUpdate?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }
