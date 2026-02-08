@@ -269,6 +269,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
 
+        GoMetaSearch = ReactiveCommand.CreateFromObservable(() =>
+        {
+            var vm = new MetaSearchViewModel(this, _privilegedOperationService, _credentialManager);
+            vm.SearchText = MetaSearchString;
+            return Router.NavigateAndReset.Execute(vm);
+        });
+
 
         _navigationMap = new()
         {
@@ -300,6 +307,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 FlatpakInstallViewModel => "Shelly - Flatpak Install",
                 FlatpakUpdateViewModel => "Shelly - Flatpak Update",
                 FlatpakRemoveViewModel => "Shelly - Flatpak Remove",
+                MetaSearchViewModel => "Shelly - Search",
                 _ => "Shelly"
             })
             .ObserveOn(scheduler)
@@ -618,6 +626,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpakRemove { get; set; } = null!;
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpak { get; set; } = null!;
+
+    public ReactiveCommand<Unit, IRoutableViewModel> GoMetaSearch { get; set; } = null!;
 
     public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 

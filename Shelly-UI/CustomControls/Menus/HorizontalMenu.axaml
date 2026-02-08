@@ -118,9 +118,10 @@
                         </MenuFlyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
-                <TextBox Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Stretch"
-                         MinWidth="250" MaxWidth="500" Text="{Binding MetaSearchString, Mode=TwoWay}" />
-                <Button Command="" Background="Transparent" BorderThickness="0" Padding="12 8">
+                <TextBox x:Name="SearchBox" Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Stretch"
+                         MinWidth="250" MaxWidth="500" Text="{Binding MetaSearchString, Mode=TwoWay}"
+                         KeyDown="SearchBox_KeyDown" />
+                <Button Command="{Binding GoMetaSearch}" Background="Transparent" BorderThickness="0" Padding="12 8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <icons:MaterialIcon Kind="Search" Width="20" Height="20"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
