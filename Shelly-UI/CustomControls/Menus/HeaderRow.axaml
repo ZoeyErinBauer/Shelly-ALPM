@@ -41,6 +41,7 @@
                 Grid.Column="2"
                 Width="220"
                 Margin="12,0"
+                IsVisible="{Binding #Root.ShowSearchBox}"
                 Watermark="{Binding #Root.SearchWatermark}"
                 Text="{Binding #Root.SearchText, Mode=TwoWay}"
                 HorizontalContentAlignment="Left"

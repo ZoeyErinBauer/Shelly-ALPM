@@ -35,8 +35,7 @@
                             Title="Meta Search"
                             TitleIcon="Search"
                             ShowTitleButton="False"
-                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
-                            SearchText="{Binding SearchText, Mode=TwoWay}"/>
+                            ShowSearchBox="False"/>
                         <DataGrid
                             Name="MetaSearchDataGrid"
                             Grid.Row="1"

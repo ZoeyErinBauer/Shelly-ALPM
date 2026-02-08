@@ -38,6 +38,9 @@ public partial class HeaderRow : UserControl
     public static readonly StyledProperty<ICommand> SearchCommandProperty =
         AvaloniaProperty.Register<HeaderRow, ICommand>(nameof(SearchCommand));
 
+    public static readonly StyledProperty<bool> ShowSearchBoxProperty =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowSearchBox), true);
+
     public static readonly StyledProperty<bool> ShowComboBoxProperty =
         AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowComboBox), false);
 
@@ -108,6 +111,12 @@ public partial class HeaderRow : UserControl
     {
         get => GetValue(SearchCommandProperty);
         set => SetValue(SearchCommandProperty, value);
+    }
+
+    public bool ShowSearchBox
+    {
+        get => GetValue(ShowSearchBoxProperty);
+        set => SetValue(ShowSearchBoxProperty, value);
     }
 
     public bool ShowComboBox
