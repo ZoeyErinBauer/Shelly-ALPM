@@ -7,6 +7,7 @@
              xmlns:models="clr-namespace:Shelly_UI.Models"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
+             xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.RemoveWindow"
              x:DataType="viewModels:RemoveViewModel"
@@ -28,39 +29,15 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                            <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="{x:Static lang:Resources.RemovePackages}"
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource SystemBaseHighColor}"
-                                    VerticalAlignment="Center" />
-                                <TextBox
-                                    Grid.Column="1"
-                                    Width="220"
-                                    Margin="12,0"
-                                    Watermark="{x:Static lang:Resources.SearchPackages}"
-                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Background="{DynamicResource ChromeWhite}"
-                                    Foreground="{DynamicResource AltMediumLow}"
-                                    BorderThickness="1"
-                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                    CornerRadius="4" />
-                                <Button
-                                    Grid.Column="2"
-                                    Margin="12,0,0,0"
-                                    Padding="8"
-                                    Background="Transparent"
-                                    Command="{Binding RefreshCommand}"
-                                    ToolTip.Tip="{x:Static lang:Resources.Refresh}">
-                                    <avalonia:MaterialIcon Kind="Sync"
-                                                           Foreground="{DynamicResource SystemBaseHighColor}"
-                                                           Width="20" Height="20" />
-                                </Button>
-                            </Grid>
-                        </Border>
+                        <menus:HeaderRow
+                            Title="Remove Packages"
+                            TitleIcon="Trash"
+                            TitleCommand="{Binding ToggleConfirmAction}"
+                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                            SearchText="{Binding SearchText, Mode=TwoWay}"
+                            SyncCommand="{Binding RefreshCommand}"
+                            SyncTooltip="{x:Static lang:Resources.Sync}"
+                            SyncIcon="Sync"/>
                         <DataGrid
                             Name="RemoveDataGrid"
                             Grid.Row="1"
@@ -121,18 +98,6 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-                    </Border>
-                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Margin="30"
-                            CornerRadius="30"
-                            BoxShadow="0 4 15 0 #60000000">
-                        <Button Width="60" Height="60"
-                                Padding="0"
-                                CornerRadius="30"
-                                Command="{Binding ToggleConfirmAction}">
-                            <avalonia:MaterialIcon Kind="Delete" Width="30" Height="30"
-                                                   Foreground="{DynamicResource SystemAccentColor}" />
-                        </Button>
                     </Border>
                 </Grid>
             </customControls:ConsoleSplitControl.MainContent>

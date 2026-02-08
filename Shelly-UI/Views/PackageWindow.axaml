@@ -10,6 +10,7 @@
              xmlns:views="clr-namespace:Shelly_UI.Views"
              xmlns:converters="clr-namespace:Shelly_UI.Converters"
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
+             xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:PackageViewModel"
              x:Class="Shelly_UI.Views.PackageWindow"
@@ -35,39 +36,15 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="{x:Static lang:Resources.InstallPackages}"
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource SystemBaseHighColor}"
-                                    VerticalAlignment="Center" />
-                                <TextBox
-                                    Grid.Column="1"
-                                    Width="220"
-                                    Margin="12,0"
-                                    Watermark="{x:Static lang:Resources.SearchPackages}"
-                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Background="{DynamicResource ChromeWhite}"
-                                    Foreground="{DynamicResource AltMediumLow}"
-                                    BorderThickness="1"
-                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                    CornerRadius="4" />
-                                <Button
-                                    Grid.Column="2"
-                                    Margin="12,0,0,0"
-                                    Padding="8"
-                                    Background="Transparent"
-                                    Command="{Binding SyncCommand}"
-                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                    <avalonia:MaterialIcon Kind="Sync"
-                                                           Foreground="{DynamicResource SystemBaseHighColor}"
-                                                           Width="20" Height="20" />
-                                </Button>
-                            </Grid>
-                        </Border>
+                        <menus:HeaderRow
+                            Title="Install Package(s)"
+                            TitleIcon="Download"
+                            TitleCommand="{Binding ToggleConfirmAction}"
+                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                            SearchText="{Binding SearchText, Mode=TwoWay}"
+                            SyncCommand="{Binding SyncCommand}"
+                            SyncTooltip="{x:Static lang:Resources.Sync}"
+                            SyncIcon="Sync"/>
                         <DataGrid
                             Name="PackageDataGrid"
                             Grid.Row="1"
@@ -183,18 +160,6 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-                    </Border>
-                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Margin="30"
-                            CornerRadius="30"
-                            BoxShadow="0 4 15 0 #60000000">
-                        <Button Width="60" Height="60"
-                                Padding="0"
-                                CornerRadius="30"
-                                Command="{Binding ToggleConfirmAction}">
-                            <avalonia:MaterialIcon Kind="Download" Width="30" Height="30"
-                                                   Foreground="{DynamicResource SystemAccentColor}" />
-                        </Button>
                     </Border>
                 </Grid>
             </customControls:ConsoleSplitControl.MainContent>
