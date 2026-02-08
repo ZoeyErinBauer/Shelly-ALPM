@@ -5,15 +5,12 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using PackageManager.Flatpak;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.LocalDatabase;
 
 namespace Shelly_UI.ViewModels.Flatpak;
 
@@ -24,14 +21,13 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private string? _searchText;
-    private List<FlatpakModel> _avaliablePackages = new();
+    private List<FlatpakModel> _availablePackages = [];
 
     public FlatpakUpdateViewModel(IScreen screen)
     {
         HostScreen = screen;
 
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
-        AvailablePackages = new ObservableCollection<FlatpakModel>();
 
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -67,21 +63,21 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             }).ToList();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                _avaliablePackages = models;
+                _availablePackages = models;
                 ApplyFilter();
             });
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Failed to load installed packages for removal: {e.Message}");
+            Console.WriteLine($@"Failed to load installed packages for update: {e.Message}");
         }
     }
 
     private void ApplyFilter()
     {
         var filtered = string.IsNullOrWhiteSpace(SearchText)
-            ? _avaliablePackages
-            : _avaliablePackages.Where(p =>
+            ? _availablePackages
+            : _availablePackages.Where(p =>
                 p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
@@ -95,7 +91,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
     private bool _showConfirmDialog;
 
-    public bool ShowConfirmDialog
+    private bool ShowConfirmDialog
     {
         get => _showConfirmDialog;
         set => this.RaiseAndSetIfChanged(ref _showConfirmDialog, value);
@@ -108,7 +104,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
 
     public async Task UpdateCommand(FlatpakModel package)
     {
-        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+        var mainWindow = HostScreen as MainWindowViewModel;
 
         try
         {
@@ -126,7 +122,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             var result = await _unprivilegedOperationService.UpdateFlatpakPackage(package.Id);
             if (!result.Success)
             {
-                Console.WriteLine($"Failed to remove packages: {result.Error}");
+                Console.WriteLine($@"Failed to remove packages: {result.Error}");
             }
 
             LoadData();
@@ -141,10 +137,12 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         }
     }
 
-    public async Task UpdateAllCommand()
+    private async Task UpdateAllCommand()
     {
         var mainWindow = HostScreen as MainWindowViewModel;
 
+        if (_availablePackages.Count == 0) return;
+        
         try
         {
             // Set busy
@@ -161,7 +159,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             var result = await _unprivilegedOperationService.FlatpakUpgrade();
             if (!result.Success)
             {
-                Console.WriteLine($"Failed to remove packages: {result.Error}");
+                Console.WriteLine($@"Failed to update packages: {result.Error}");
             }
 
             LoadData();
@@ -173,13 +171,13 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         }
     }
     
-    public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+    public string UrlPathSegment { get; } = Guid.NewGuid().ToString()[..5];
 
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
     public ReactiveCommand<FlatpakModel, Unit> UpdatePackageCommand { get; set; }
     public ReactiveCommand<Unit, Unit> UpgradeCommand { get; set; }
     
-    public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
+    public ObservableCollection<FlatpakModel> AvailablePackages { get; set; } = [];
 
 
     public string? SearchText
@@ -192,8 +190,8 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
     {
         if (disposing)
         {
-            AvailablePackages?.Clear();
-            _avaliablePackages?.Clear();
+            AvailablePackages.Clear();
+            _availablePackages.Clear();
         }
 
         base.Dispose(disposing);
