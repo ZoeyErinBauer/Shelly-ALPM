@@ -192,6 +192,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         get => _useKdeColor;
         set
         {
+            this.RaiseAndSetIfChanged(ref _useKdeColor, value);
+            var config = _configService.LoadConfig();
+            config.UseKdeTheme = value;
+            _configService.SaveConfig(config);
+            
             var sessionDesktop = Environment.GetEnvironmentVariable("XDG_SESSION_DESKTOP");
             if (sessionDesktop != "KDE") return;
 
@@ -215,20 +220,13 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
                     themeService.ApplyLowChromeColor(Color.FromRgb(242, 242, 242));
                     themeService.ApplySecondaryBackground(Color.FromRgb(230, 230, 230));
                 }
-                var config = _configService.LoadConfig();
-                config.UseKdeTheme = value;
-                _configService.SaveConfig(config);
             }
             else
             {
-
                 new ThemeService().ApplyKdeTheme();
-                var config = _configService.LoadConfig();
-                config.UseKdeTheme = value;
-                _configService.SaveConfig(config);
             }
 
-            this.RaiseAndSetIfChanged(ref _useKdeColor, value);
+          
 
         }
     }
