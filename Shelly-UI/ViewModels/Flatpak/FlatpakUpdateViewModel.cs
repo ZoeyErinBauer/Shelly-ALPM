@@ -39,6 +39,8 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             .Subscribe(_ => ApplyFilter());
 
         RefreshCommand = ReactiveCommand.Create(LoadData);
+        
+        UpgradeCommand = ReactiveCommand.CreateFromTask(UpdateAllCommand);
 
         UpdatePackageCommand = ReactiveCommand.CreateFromTask<FlatpakModel>(UpdateCommand);
 
@@ -139,11 +141,44 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
         }
     }
 
+    public async Task UpdateAllCommand()
+    {
+        var mainWindow = HostScreen as MainWindowViewModel;
 
+        try
+        {
+            // Set busy
+            if (mainWindow != null)
+            {
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Updated selected package...";
+            }
+
+            //do work
+
+            var result = await _unprivilegedOperationService.FlatpakUpgrade();
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to remove packages: {result.Error}");
+            }
+
+            LoadData();
+        }
+        finally
+        {
+            //always exit globally busy in case of failure
+            mainWindow?.IsGlobalBusy = false;
+        }
+    }
+    
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
     public ReactiveCommand<FlatpakModel, Unit> UpdatePackageCommand { get; set; }
+    public ReactiveCommand<Unit, Unit> UpgradeCommand { get; set; }
+    
     public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
 
 
