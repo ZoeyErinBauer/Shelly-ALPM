@@ -118,19 +118,27 @@
                     </MenuFlyout>
                 </DropDownButton.Flyout>
             </DropDownButton>
+            
+            <Button Command="" Background="Transparent" BorderThickness="0" Padding="12 8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <icons:MaterialIcon Kind="Search" Width="20" Height="20" Foreground="{DynamicResource SystemBaseHighColor}"/>
+                </StackPanel>
+            </Button>
 
             <!-- Settings -->
             <Button Command="{Binding GoSetting}"
                     Background="Transparent"
                     BorderThickness="0"
-                    Padding="12,8">
+                    Padding="12,8"
+                    HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <icons:MaterialIcon Kind="Settings" Width="20" Height="20"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="Settings" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
+                    <!-- <TextBlock Text="Settings" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemBaseHighColor}" />-->
                 </StackPanel>
             </Button>
+          
         </StackPanel>
     </Border>
 </UserControl>
