@@ -625,6 +625,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     #region MenuItemSelectionNav
 
+    private string _metaSearchString;
+
+    public string MetaSearchString
+    {
+        get => _metaSearchString;
+        set => this.RaiseAndSetIfChanged(ref _metaSearchString, value);
+    }
     private bool _isPackageOpen;
 
     public bool IsPackageOpen
