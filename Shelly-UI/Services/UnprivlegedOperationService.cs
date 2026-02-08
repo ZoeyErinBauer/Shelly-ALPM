@@ -180,6 +180,11 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak install", package);
     }
 
+    public async Task<UnprivilegedOperationResult> FlatpakUpgrade()
+    {
+        return await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
+    }
+
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)
     {

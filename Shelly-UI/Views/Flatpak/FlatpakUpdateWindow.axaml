@@ -26,7 +26,10 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            ShowTitleButton="False"
+                            ShowTitleButton="True"
+                            TitleCommand="{Binding UpgradeCommand}"
+                            TitleIcon="Download"
+                            Title="Upgrade All Flatpak"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"
                             SyncCommand="{Binding RefreshCommand}"
