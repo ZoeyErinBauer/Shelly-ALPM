@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:icons="using:Material.Icons.Avalonia"
+             xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="60"
+             x:Class="Shelly_UI.CustomControls.Menus.HeaderRow"
+             x:Name="Root"
+             x:CompileBindings="True">
+    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+            <Button
+                HorizontalAlignment="Left"
+                IsVisible="{Binding #Root.ShowTitleButton}"
+                Command="{Binding #Root.TitleCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <icons:MaterialIcon
+                        Kind="{Binding #Root.TitleIcon}"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        Width="20" Height="20"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Text="{Binding #Root.Title}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            <ComboBox
+                Grid.Column="1"
+                HorizontalAlignment="Right"
+                SelectedIndex="{Binding #Root.ComboBoxSelectedIndex, Mode=TwoWay}"
+                Width="150"
+                Height="38"
+                Margin="12,0"
+                ItemsSource="{Binding #Root.ComboBoxItemsSource}"
+                SelectedItem="{Binding #Root.ComboBoxSelectedItem, Mode=TwoWay}"
+                IsVisible="{Binding #Root.ShowComboBox}" />
+            <TextBox
+                Grid.Column="2"
+                Width="220"
+                Margin="12,0"
+                Watermark="{Binding #Root.SearchWatermark}"
+                Text="{Binding #Root.SearchText, Mode=TwoWay}"
+                HorizontalContentAlignment="Left"
+                VerticalContentAlignment="Center"
+                Background="{DynamicResource ChromeWhite}"
+                Foreground="{DynamicResource AltMediumLow}"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource SystemBaseHighColor}"
+                CornerRadius="4" >
+                <TextBox.KeyBindings>
+                    <KeyBinding
+                        Gesture="Enter"
+                        Command="{Binding #Root.SearchCommand}" />
+                    </TextBox.KeyBindings>
+            </TextBox>
+            <Button
+                Grid.Column="3"
+                Margin="12,0,0,0"
+                Padding="8"
+                Background="Transparent"
+                Command="{Binding #Root.SyncCommand}"
+                ToolTip.Tip="{Binding #Root.SyncTooltip}">
+                <icons:MaterialIcon Kind="{Binding #Root.SyncIcon}"
+                                    Foreground="{DynamicResource SystemBaseHighColor}"
+                                    Width="20" Height="20" />
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

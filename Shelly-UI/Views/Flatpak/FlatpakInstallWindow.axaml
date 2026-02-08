@@ -9,6 +9,7 @@
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:Shelly_UI.Models"
              xmlns:enums="clr-namespace:Shelly_UI.Enums"
+             xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="vm:FlatpakInstallViewModel"
              x:Class="Shelly_UI.Views.Flatpak.FlatpakInstallWindow"
@@ -24,52 +25,19 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="Install Flatpak"
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource SystemBaseHighColor}"
-                                    VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="1"
-                                          HorizontalAlignment="Right" SelectedIndex="0"
-                                          Width="150"
-                                          Height="40"
-                                          ItemsSource="{Binding FlatpakCategories}"
-                                          SelectedItem="{Binding CategoryEnum}">
-                                </ComboBox>
-                                <TextBox Grid.Column="2"
-                                         Width="220"
-                                         Margin="12,0"
-                                         Watermark="{x:Static lang:Resources.SearchPackages}"
-                                         Text="{Binding SearchText}"
-                                         HorizontalContentAlignment="Left"
-                                         VerticalContentAlignment="Center"
-                                         Background="{DynamicResource ChromeWhite}"
-                                         Foreground="{DynamicResource AltMediumLow}"
-                                         BorderThickness="1"
-                                         BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                         CornerRadius="4">
-
-                                    <TextBox.KeyBindings>
-                                        <KeyBinding
-                                            Gesture="Enter"
-                                            Command="{Binding SearchCommand}" />
-                                    </TextBox.KeyBindings>
-                                </TextBox>
-                                <Button
-                                    Grid.Column="3"
-                                    Margin="12,0,0,0"
-                                    Padding="8"
-                                    Background="Transparent"
-                                    Command="{Binding RefreshCommand}"
-                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                    <avalonia:MaterialIcon Kind="Sync"
-                                                           Foreground="{DynamicResource SystemBaseHighColor}"
-                                                           Width="20" Height="20" />
-                                </Button>
-                            </Grid>
-                        </Border>
+                       
+                        <menus:HeaderRow
+                            Title="Install Flatpak"
+                            ShowTitleButton="False"
+                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                            SearchText="{Binding SearchText, Mode=TwoWay}"
+                            SearchCommand="{Binding SearchCommand}"
+                            SyncCommand="{Binding RefreshCommand}"
+                            SyncTooltip="{x:Static lang:Resources.Sync}"
+                            ShowComboBox="True"
+                            ComboBoxItemsSource="{Binding FlatpakCategories}"
+                            ComboBoxSelectedItem="{Binding CategoryEnum, Mode=TwoWay}"
+                            ComboBoxSelectedIndex="0" />
                         <ScrollViewer Grid.Row="1"
                                       Name="FlatpakScrollViewer">
                             <ItemsControl ItemsSource="{Binding Flatpaks}">

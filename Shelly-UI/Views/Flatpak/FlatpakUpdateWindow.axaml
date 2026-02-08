@@ -9,6 +9,7 @@
              xmlns:flatpak="clr-namespace:Shelly_UI.Views.Flatpak"
              xmlns:converters="clr-namespace:Shelly_UI.Converters"
              xmlns:flatpak1="clr-namespace:Shelly_UI.ViewModels.Flatpak"
+             xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.Flatpak.FlatpakUpdateWindow"
              x:DataType="flatpak1:FlatpakUpdateViewModel"
@@ -24,39 +25,13 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="Update Flatpak"
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource SystemBaseHighColor}"
-                                    VerticalAlignment="Center" />
-                                <TextBox
-                                    Grid.Column="1"
-                                    Width="220"
-                                    Margin="12,0"
-                                    Watermark="{x:Static lang:Resources.SearchPackages}"
-                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                    HorizontalContentAlignment="Left"
-                                    VerticalContentAlignment="Center"
-                                    Background="{DynamicResource ChromeWhite}"
-                                    Foreground="{DynamicResource AltMediumLow}"
-                                    BorderThickness="1"
-                                    BorderBrush="{DynamicResource SystemBaseHighColor}"
-                                    CornerRadius="4" />
-                                <Button
-                                    Grid.Column="2"
-                                    Margin="12,0,0,0"
-                                    Padding="8"
-                                    Background="Transparent"
-                                    Command="{Binding RefreshCommand}"
-                                    ToolTip.Tip="{x:Static lang:Resources.Sync}">
-                                    <avalonia:MaterialIcon Kind="Sync"
-                                                           Foreground="{DynamicResource SystemBaseHighColor}"
-                                                           Width="20" Height="20" />
-                                </Button>
-                            </Grid>
-                        </Border>
+                        <menus:HeaderRow
+                            ShowTitleButton="False"
+                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                            SearchText="{Binding SearchText, Mode=TwoWay}"
+                            SyncCommand="{Binding RefreshCommand}"
+                            SyncTooltip="{x:Static lang:Resources.Sync}"
+                            SyncIcon="Sync"/>
                         <ScrollViewer Grid.Row="1">
                             <ItemsControl ItemsSource="{Binding AvailablePackages}">
                                 <ItemsControl.ItemTemplate>
