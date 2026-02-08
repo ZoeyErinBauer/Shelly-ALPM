@@ -31,6 +31,7 @@
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
                             Title="Remove AUR Package(s)"
+                            ShowTitleButton="True"
                             TitleIcon="Delete"
                             TitleCommand="{Binding ToggleConfirmAction}"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
@@ -98,18 +99,6 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-                    </Border>
-                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Margin="30"
-                            CornerRadius="30"
-                            BoxShadow="0 4 15 0 #60000000">
-                        <Button Width="60" Height="60"
-                                Padding="0"
-                                CornerRadius="30"
-                                Command="{Binding ToggleConfirmAction}">
-                            <avalonia:MaterialIcon Kind="Delete" Width="30" Height="30"
-                                                   Foreground="{DynamicResource SystemAccentColor}" />
-                        </Button>
                     </Border>
                 </Grid>
             </customControls:ConsoleSplitControl.MainContent>

@@ -28,17 +28,16 @@
             IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}" RowDefinitions="Auto,*">
-                    <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-                        <menus:HeaderRow
-                            Title="Update AUR Package(s)"
-                            TitleIcon="Download"
-                            TitleCommand="{Binding AlpmUpdateCommand}"
-                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
-                            SearchText="{Binding SearchText, Mode=TwoWay}"
-                            SyncCommand="{Binding SyncCommand}"
-                            SyncTooltip="{x:Static lang:Resources.Sync}"
-                            SyncIcon="Sync"/>
-                    </Border>
+                    <menus:HeaderRow
+                        Title="Update AUR Package(s)"
+                        ShowTitleButton="True"
+                        TitleIcon="Download"
+                        TitleCommand="{Binding AlpmUpdateCommand}"
+                        SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                        SearchText="{Binding SearchText, Mode=TwoWay}"
+                        SyncCommand="{Binding SyncCommand}"
+                        SyncTooltip="{x:Static lang:Resources.Sync}"
+                        SyncIcon="Sync" />
                     <DataGrid
                         Name="AurUpdateDataGrid"
                         Grid.Row="1"

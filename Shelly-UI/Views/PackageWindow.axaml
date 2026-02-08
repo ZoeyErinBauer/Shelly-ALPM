@@ -40,6 +40,7 @@
                             Title="Install Package(s)"
                             TitleIcon="Download"
                             TitleCommand="{Binding ToggleConfirmAction}"
+                            ShowTitleButton="True"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"
                             SyncCommand="{Binding SyncCommand}"

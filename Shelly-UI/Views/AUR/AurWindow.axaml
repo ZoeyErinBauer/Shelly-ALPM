@@ -27,7 +27,6 @@
         <converters:BottomPanelHeightConverter x:Key="BottomPanelHeightConverter" />
     </UserControl.Resources>
     <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
-
         <customControls:ConsoleSplitControl
             IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
             IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
@@ -39,6 +38,7 @@
                         <menus:HeaderRow
                             Title="Install AUR Package(s)"
                             TitleIcon="Download"
+                            ShowTitleButton="True"
                             TitleCommand="{Binding ToggleConfirmAction}"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"

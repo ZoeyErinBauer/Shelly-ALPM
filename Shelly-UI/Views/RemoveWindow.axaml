@@ -32,6 +32,7 @@
                         <menus:HeaderRow
                             Title="Remove Packages"
                             TitleIcon="Trash"
+                            ShowTitleButton="True"
                             TitleCommand="{Binding ToggleConfirmAction}"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"

@@ -12,7 +12,6 @@
         <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
             <Button
                 HorizontalAlignment="Left"
-                Background="Transparent"
                 IsVisible="{Binding #Root.ShowTitleButton}"
                 Command="{Binding #Root.TitleCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8">

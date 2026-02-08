@@ -29,6 +29,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}" RowDefinitions="Auto,*">
                     <menus:HeaderRow
                         Title="Update Package(s)"
+                        ShowTitleButton="True"
                         TitleIcon="Download"
                         TitleCommand="{Binding AlpmUpdateCommand}"
                         SearchWatermark="{x:Static lang:Resources.SearchPackages}"
