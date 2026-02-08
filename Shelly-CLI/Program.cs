@@ -251,6 +251,10 @@ public class Program
                 flatpak.AddCommand<FlathubGetRemote>("get-remote-appstream")
                     .WithDescription("Returns remote appstream json")
                     .WithExample("flatpak", "sync-get-remote-appstream");
+
+                flatpak.AddCommand<FlatpakUpgrade>("upgrade")
+                    .WithDescription("Upgrade all flatpak apps")
+                    .WithExample("flatpak", "upgrade");
             });
         });
 
