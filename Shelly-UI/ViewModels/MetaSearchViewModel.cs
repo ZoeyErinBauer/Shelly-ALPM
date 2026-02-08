@@ -43,34 +43,20 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
+        LoadData();
 
         this.WhenAnyValue(x => x.SearchText)
-            .Throttle(TimeSpan.FromMilliseconds(250))
+            .Skip(1)
+            .Throttle(TimeSpan.FromMilliseconds(400))
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(_ => ApplyFilter());
-
-        LoadData();
-    }
-
-    private void ApplyFilter()
-    {
-        var filtered = string.IsNullOrWhiteSpace(SearchText)
-            ? _allPackages
-            : _allPackages.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
-
-        AvailablePackages.Clear();
-
-        foreach (var package in filtered)
-        {
-            AvailablePackages.Add(package);
-        }
+            .Subscribe(_ => LoadData());
     }
 
     private async void LoadData()
     {
         try
         {
-            var available = await _privilegedOperationService.GetAvailablePackagesAsync();
+            var available = await _privilegedOperationService.SearchPackagesAsync(SearchText ?? "");
             var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
@@ -85,13 +71,12 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 IsInstalled = installedNames.Contains(u.Name),
                 Repository = u.Repository
             }).ToList();
-
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                _allPackages = models;
-                ApplyFilter();
+                AvailablePackages = new ObservableCollection<PackageModel>(models);
             });
         }
+
         catch (Exception e)
         {
             Console.WriteLine($"Failed to load packages: {e.Message}");

@@ -70,6 +70,42 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Synchronize package databases", "sync");
     }
 
+    public async Task<List<AlpmPackageDto>> SearchPackagesAsync(string query)
+    {
+         var result = await ExecuteCommandAsync("list-available", $"--filter {query}",
+            "--no-confirm","--json");
+         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+         {
+             return [];
+         }
+
+         try
+         {
+             // The output may contain multiple lines, find the JSON line
+             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+             foreach (var line in lines)
+             {
+                 var trimmedLine = StripBom(line.Trim());
+                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                 {
+                     var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                         ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                     return packages ?? [];
+                 }
+             }
+
+             // If no JSON array found, try parsing the whole output
+             var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                 ShellyUIJsonContext.Default.ListAlpmPackageDto);
+             return allPackages ?? [];
+         }
+         catch (Exception ex)
+         {
+             Console.WriteLine($"Failed to parse available packages JSON: {ex.Message}");
+             return [];
+         }
+    }
+
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);

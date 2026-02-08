@@ -5,4 +5,5 @@ public enum PackageType
     ALPM,
     AUR,
     FLATPAK,
+    UNKNOWN
 }
