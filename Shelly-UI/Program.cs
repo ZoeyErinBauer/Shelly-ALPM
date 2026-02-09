@@ -17,6 +17,11 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANGOHUD")))
+        {
+            Environment.SetEnvironmentVariable("MANGOHUD", "0");
+        }
+
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
         var logPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly", "logs");
         Directory.CreateDirectory(logPath);
@@ -68,7 +73,7 @@ sealed class Program
                 UseDBusFilePicker = true,
                 RenderingMode =
                 [
-                    X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software
+                    X11RenderingMode.Glx, X11RenderingMode.Vulkan,X11RenderingMode.Egl, X11RenderingMode.Software
                 ],
             })
             .UsePlatformDetect();
