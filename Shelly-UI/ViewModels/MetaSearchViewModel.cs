@@ -18,6 +18,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
 
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly ICredentialManager _credentialManager;
+    private readonly IUnprivilegedOperationService _unprivilegedOperationService;
 
     private List<PackageModel> _allPackages = new();
 
@@ -38,11 +39,13 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
     }
 
     public MetaSearchViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
+        IUnprivilegedOperationService unprivilegedOperationService,
         ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
+        _unprivilegedOperationService = unprivilegedOperationService;
         LoadData();
 
         this.WhenAnyValue(x => x.SearchText)
@@ -56,11 +59,12 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
     {
         try
         {
-            var available = await _privilegedOperationService.SearchPackagesAsync(SearchText ?? "");
-            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
-            var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
+            var standardAvailable = await _privilegedOperationService.SearchPackagesAsync(SearchText ?? "");
+            var standardInstalled = await _privilegedOperationService.GetInstalledPackagesAsync();
+            var flatPakAvailable = 
+            var installedNames = new HashSet<string>(standardInstalled?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
-            var models = available.Select(u => new PackageModel
+            var models = standardAvailable.Select(u => new PackageModel
             {
                 Name = u.Name,
                 Version = u.Version,
