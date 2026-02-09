@@ -2,7 +2,7 @@ namespace Shelly_UI.Models;
 
 public enum PackageType
 {
-    ALPM,
+    STANDARD,
     AUR,
     FLATPAK,
     UNKNOWN

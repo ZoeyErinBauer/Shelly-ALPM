@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -43,6 +44,16 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         set => this.RaiseAndSetIfChanged(ref _availablePackages, value);
     }
 
+    private bool _showConfirmDialog;
+
+    public bool ShowConfirmDialog
+    {
+        get => _showConfirmDialog;
+        set => this.RaiseAndSetIfChanged(ref _showConfirmDialog, value);
+    }
+
+    public ReactiveCommand<Unit, Unit> InstallCommand { get; }
+
     public MetaSearchViewModel(IScreen screen)
     {
         HostScreen = screen;
@@ -51,6 +62,9 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         _databaseService = App.Services.GetRequiredService<IDatabaseService>();
         _configService = App.Services.GetRequiredService<IConfigService>();
+
+        InstallCommand = ReactiveCommand.CreateFromTask(InstallSelectedPackages);
+
         LoadData();
 
         this.WhenAnyValue(x => x.SearchText)
@@ -58,6 +72,111 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
             .Throttle(TimeSpan.FromMilliseconds(400))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => LoadData());
+    }
+
+    public void ToggleConfirmAction()
+    {
+        ShowConfirmDialog = !ShowConfirmDialog;
+    }
+
+    private async Task InstallSelectedPackages()
+    {
+        var selected = AvailablePackages.Where(x => x.IsChecked).ToList();
+
+        if (!selected.Any())
+        {
+            ShowConfirmDialog = false;
+            return;
+        }
+
+        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+        try
+        {
+            ShowConfirmDialog = false;
+
+            if (!_credentialManager.IsValidated)
+            {
+                if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+
+                if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
+
+                var isValidated = await _credentialManager.ValidateInputCredentials();
+
+                if (!isValidated) return;
+            }
+
+            if (mainWindow != null)
+            {
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Installing selected packages...";
+            }
+
+            var standardPackages = selected.Where(x => x.PackageType == PackageType.STANDARD).Select(x => x.Name).ToList();
+            var aurPackages = selected.Where(x => x.PackageType == PackageType.AUR).Select(x => x.Name).ToList();
+            var flatpakPackages = selected.Where(x => x.PackageType == PackageType.FLATPAK).Select(x => x.Id).ToList();
+
+            if (standardPackages.Count != 0)
+            {
+                var result = await _privilegedOperationService.InstallPackagesAsync(standardPackages);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to install standard packages: {result.Error}");
+                    mainWindow?.ShowToast($"Standard installation failed: {result.Error}", isSuccess: false);
+                }
+                else
+                {
+                    mainWindow?.ShowToast($"Successfully installed {standardPackages.Count} standard package{(standardPackages.Count > 1 ? "s" : "")}");
+                }
+            }
+
+            if (aurPackages.Count != 0)
+            {
+                var result = await _privilegedOperationService.InstallAurPackagesAsync(aurPackages);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to install AUR packages: {result.Error}");
+                    mainWindow?.ShowToast($"AUR installation failed: {result.Error}", isSuccess: false);
+                }
+                else
+                {
+                    mainWindow?.ShowToast($"Successfully installed {aurPackages.Count} AUR package{(aurPackages.Count > 1 ? "s" : "")}");
+                }
+            }
+
+            if (flatpakPackages.Count != 0)
+            {
+                foreach (var package in flatpakPackages)
+                {
+                    var result = await _unprivilegedOperationService.InstallFlatpakPackage(package);
+                    if (!result.Success)
+                    {
+                        Console.WriteLine($"Failed to install Flatpak package {package}: {result.Error}");
+                        mainWindow?.ShowToast($"Flatpak installation failed: {result.Error}", isSuccess: false);
+                    }
+                    else
+                    {
+                        mainWindow?.ShowToast($"Successfully installed Flatpak package {package}");
+                    }
+                }
+            }
+
+            LoadData();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to install packages: {e.Message}");
+            mainWindow?.ShowToast($"Installation failed: {e.Message}", isSuccess: false);
+        }
+        finally
+        {
+            if (mainWindow != null)
+            {
+                mainWindow.IsGlobalBusy = false;
+            }
+        }
     }
 
     private async void LoadData()
@@ -79,11 +198,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
             {
                 var standardInstalled = await _privilegedOperationService.GetInstalledPackagesAsync().ContinueWith(x =>
                     x.Result.Select(y => new MetaPackageModel(y.Name, y.Name, y.Version, y.Description,
-                        PackageType.ALPM, y.Description, y.Repository, true)).ToList());
+                        PackageType.STANDARD, y.Description, y.Repository, true)).ToList());
                 var standardAvailable = await _privilegedOperationService.SearchPackagesAsync(SearchText ?? "")
                     .ContinueWith(x =>
                         x.Result.Select(y => new MetaPackageModel(y.Name, y.Name, y.Version, y.Description,
-                            PackageType.ALPM, y.Description, y.Repository,
+                            PackageType.STANDARD, y.Description, y.Repository,
                             standardInstalled.Any(z => z.Name == y.Name))).ToList());
                 return standardAvailable;
             });

@@ -32,9 +32,10 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Meta Search"
-                            TitleIcon="Search"
-                            ShowTitleButton="False"
+                            Title="Install Package(s)"
+                            TitleIcon="Download"
+                            TitleCommand="{Binding ToggleConfirmAction}"
+                            ShowTitleButton="True"
                             ShowSearchBox="False" />
                         <DataGrid
                             Name="MetaSearchDataGrid"
@@ -113,9 +114,49 @@
                                     Header="Summary"
                                     Binding="{Binding Summary}"
                                     Width="*" />
+                                <DataGridTemplateColumn
+                                    Header=""
+                                    CanUserResize="False"
+                                    Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                      HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
+                    <Border Background="#80000000"
+                            IsVisible="{Binding ShowConfirmDialog}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <Border Background="{DynamicResource SystemChromeLowColor}"
+                                BorderBrush="{DynamicResource SystemBaseLowColor}"
+                                CornerRadius="8"
+                                Padding="20"
+                                Width="300"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                BoxShadow="0 10 30 0 #A0000000">
+                            <StackPanel Spacing="15">
+                                <TextBlock Text="{x:Static lang:Resources.AreYouSure}" FontWeight="Bold" FontSize="18"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{x:Static lang:Resources.WillInstallPackages}" TextWrapping="Wrap"
+                                           HorizontalAlignment="Center" TextAlignment="Center" />
+                                <Grid ColumnDefinitions="*,*">
+                                    <Button Grid.Column="0" Content="{x:Static lang:Resources.Cancel}"
+                                            HorizontalAlignment="Stretch" Margin="0,0,5,0"
+                                            Command="{Binding ToggleConfirmAction}" />
+                                    <Button Grid.Column="1" Content="{x:Static lang:Resources.Install}"
+                                            Background="{DynamicResource SystemAccentColor}"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding InstallCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Border>
                 </Grid>
             </customControls:ConsoleSplitControl.MainContent>
             <customControls:ConsoleSplitControl.BottomContent>

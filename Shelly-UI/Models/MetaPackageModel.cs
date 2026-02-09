@@ -1,6 +1,8 @@
+using ReactiveUI;
+
 namespace Shelly_UI.Models;
 
-public struct MetaPackageModel(
+public class MetaPackageModel(
     string id,
     string name,
     string version,
@@ -8,7 +10,7 @@ public struct MetaPackageModel(
     PackageType packageType,
     string summary,
     string repository,
-    bool isInstalled)
+    bool isInstalled) : ReactiveObject
 {
     public string Id { get; init; } = id;
 
@@ -25,4 +27,12 @@ public struct MetaPackageModel(
     public string Repository { get; init; } = repository;
 
     public bool IsInstalled { get; init; } = isInstalled;
+
+    private bool _isChecked;
+
+    public bool IsChecked
+    {
+        get => _isChecked;
+        set => this.RaiseAndSetIfChanged(ref _isChecked, value);
+    }
 }
