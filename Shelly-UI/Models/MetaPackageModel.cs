@@ -6,7 +6,9 @@ public struct MetaPackageModel(
     string version,
     string description,
     PackageType packageType,
-    string summary)
+    string summary,
+    string repository,
+    bool isInstalled)
 {
     public string Id { get; init; } = id;
 
@@ -19,4 +21,8 @@ public struct MetaPackageModel(
     public PackageType PackageType { get; init; } = packageType;
 
     public string Summary { get; init; } = summary;
+
+    public string Repository { get; init; } = repository;
+
+    public bool IsInstalled { get; init; } = isInstalled;
 }

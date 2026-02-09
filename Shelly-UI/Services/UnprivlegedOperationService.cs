@@ -164,6 +164,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
             return [];
         }
     }
+    
 
     public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
     {

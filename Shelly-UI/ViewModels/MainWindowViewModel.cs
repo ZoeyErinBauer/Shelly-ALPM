@@ -271,7 +271,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
         GoMetaSearch = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new MetaSearchViewModel(this, _privilegedOperationService, _credentialManager);
+            var vm = new MetaSearchViewModel(this);
             vm.SearchText = MetaSearchString;
             return Router.NavigateAndReset.Execute(vm);
         });
