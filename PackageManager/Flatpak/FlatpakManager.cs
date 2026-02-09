@@ -531,6 +531,72 @@ public class FlatpakManager
     }
 
     /// <summary>
+    /// Updates all flatpak installations
+    /// </summary>
+    /// <returns>A result message indicating success or failure</returns>
+    public string UpdateAllFlatpak()
+    {
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out var error);
+
+        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+        {
+            FlatpakReference.GErrorFree(error);
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
+            return "Failed to get system installations.";
+        }
+
+        try
+        {
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+
+            var installationPtr = Marshal.ReadIntPtr(dataPtr);
+
+            var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                installationPtr, IntPtr.Zero, out IntPtr transactionError);
+
+            var packagesWithUpdates = GetPackagesWithUpdates();
+
+            if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+            {
+                return "Failed to create update transaction.";
+            }
+
+            foreach (var packageDto in packagesWithUpdates)
+            {
+                var refString = BuildRefString(packageDto);
+
+                var addSuccess = FlatpakReference.TransactionAddUpdate(
+                    transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
+
+                if (addSuccess && addError == IntPtr.Zero) continue;
+                var response = FlatpakReference.GetErrorMessage(addError);
+                return
+                    $"Failed to add {packageDto.Id} to update queue. Error: {response} App may already be up to date.";
+            }
+
+            
+            var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+            var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+            FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                IntPtr.Zero, IntPtr.Zero, 0);
+            
+            var runSuccess = FlatpakReference.TransactionRun(
+                transactionPtr, IntPtr.Zero, out IntPtr runError);
+
+            if (!runSuccess || runError != IntPtr.Zero)
+            {
+                return $"Full system update failed";
+            }
+
+            return $"Successfully updated {packagesWithUpdates.Count} packages.";
+        }
+        finally
+        {
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
+        }
+    }
+
+    /// <summary>
     /// Retrieve flatpak that require updates
     /// <returns>List of FlatpakPackageDto</returns>
     /// </summary>
