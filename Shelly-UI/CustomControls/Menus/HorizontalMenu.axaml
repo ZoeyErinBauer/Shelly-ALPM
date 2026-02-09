@@ -15,8 +15,9 @@
         <StreamGeometry x:Key="FlatpakIcon">M12 0c-0.556 0 -1.111 0.144 -1.61 0.432l-7.603 4.39a3.217 3.217 0 0 0 -1.61 2.788v8.78c0 1.151 0.612 2.212 1.61 2.788l7.603 4.39a3.217 3.217 0 0 0 3.22 0l7.603 -4.39a3.217 3.217 0 0 0 1.61 -2.788V7.61a3.217 3.217 0 0 0 -1.61 -2.788L13.61 0.432A3.218 3.218 0 0 0 12 0Zm0 2.358c0.15 0 0.299 0.039 0.431 0.115l7.604 4.39c0.132 0.077 0.24 0.187 0.315 0.316L12 12v9.642a0.863 0.863 0 0 1 -0.431 -0.116l-7.604 -4.39a0.866 0.866 0 0 1 -0.431 -0.746V7.61c0 -0.153 0.041 -0.302 0.116 -0.43L12 12Z</StreamGeometry>
     </UserControl.Resources>
     <Border Background="{DynamicResource SystemChromeMediumColor}" Padding="8,4" CornerRadius="8">
-        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+        <Grid ColumnDefinitions="*,Auto">
             <!-- Home -->
+
             <Button Command="{Binding GoHome}"
                     Background="Transparent"
                     BorderThickness="0"
@@ -24,113 +25,123 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <icons:MaterialIcon Kind="Home" Width="20" Height="20"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="Home" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
                 </StackPanel>
             </Button>
 
-            <!-- Packages Menu -->
-            <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <icons:MaterialIcon Kind="PackageVariant" Width="20" Height="20"
-                                        Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="Packages" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
-                </StackPanel>
-                <DropDownButton.Flyout>
-                    <MenuFlyout>
-                        <MenuItem Header="Install Packages" Command="{Binding GoPackages}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Update Packages" Command="{Binding GoUpdate}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Remove Packages" Command="{Binding GoRemove}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                    </MenuFlyout>
-                </DropDownButton.Flyout>
-            </DropDownButton>
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                <!-- Packages Menu -->
+                <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <icons:MaterialIcon Kind="PackageVariant" Width="20" Height="20"
+                                            Foreground="{DynamicResource SystemBaseHighColor}" />
+                        <TextBlock Text="Packages" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Install Packages" Command="{Binding GoPackages}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Update Packages" Command="{Binding GoUpdate}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Remove Packages" Command="{Binding GoRemove}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
 
-            <!-- AUR Menu -->
-            <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8"
-                            IsVisible="{Binding IsAurEnabled}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <icons:MaterialIcon Kind="Arch" Width="20" Height="20"
-                                        Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="AUR" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
-                </StackPanel>
-                <DropDownButton.Flyout>
-                    <MenuFlyout>
-                        <MenuItem Header="Install AUR" Command="{Binding GoAur}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Update AUR" Command="{Binding GoAurUpdate}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Remove AUR" Command="{Binding GoAurRemove}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                    </MenuFlyout>
-                </DropDownButton.Flyout>
-            </DropDownButton>
+                <!-- AUR Menu -->
+                <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8"
+                                IsVisible="{Binding IsAurEnabled}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <icons:MaterialIcon Kind="Arch" Width="20" Height="20"
+                                            Foreground="{DynamicResource SystemBaseHighColor}" />
+                        <TextBlock Text="AUR" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Install AUR" Command="{Binding GoAur}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Update AUR" Command="{Binding GoAurUpdate}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Remove AUR" Command="{Binding GoAurRemove}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
 
-            <!-- Flatpak Menu -->
-            <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8"
-                            IsVisible="{Binding IsFlatpakEnabled}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <PathIcon Data="{StaticResource FlatpakIcon}"
-                              Foreground="{DynamicResource SystemBaseHighColor}"
-                              Width="18" Height="18" />
-                    <TextBlock Text="Flatpak" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
-                </StackPanel>
-                <DropDownButton.Flyout>
-                    <MenuFlyout>
-                        <MenuItem Header="Install Flatpak" Command="{Binding GoFlatpak}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Update Flatpak" Command="{Binding GoFlatpakUpdate}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="Remove Flatpak" Command="{Binding GoFlatpakRemove}">
-                            <MenuItem.Icon>
-                                <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
-                            </MenuItem.Icon>
-                        </MenuItem>
-                    </MenuFlyout>
-                </DropDownButton.Flyout>
-            </DropDownButton>
+                <!-- Flatpak Menu -->
+                <DropDownButton Background="Transparent" BorderThickness="0" Padding="12,8"
+                                IsVisible="{Binding IsFlatpakEnabled}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource FlatpakIcon}"
+                                  Foreground="{DynamicResource SystemBaseHighColor}"
+                                  Width="18" Height="18" />
+                        <TextBlock Text="Flatpak" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Install Flatpak" Command="{Binding GoFlatpak}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Update Flatpak" Command="{Binding GoFlatpakUpdate}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Remove Flatpak" Command="{Binding GoFlatpakRemove}">
+                                <MenuItem.Icon>
+                                    <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+                <TextBox x:Name="SearchBox" Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Stretch"
+                         MinWidth="250" MaxWidth="500" Text="{Binding MetaSearchString, Mode=TwoWay}"
+                         KeyDown="SearchBox_KeyDown" />
+                <Button Command="{Binding GoMetaSearch}" Background="Transparent" BorderThickness="0" Padding="12 8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <icons:MaterialIcon Kind="Search" Width="20" Height="20"
+                                            Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                </Button>
 
+            </StackPanel>
             <!-- Settings -->
-            <Button Command="{Binding GoSetting}"
+            <Button Grid.Column="1" Command="{Binding GoSetting}"
                     Background="Transparent"
                     BorderThickness="0"
-                    Padding="12,8">
+                    Padding="12,8"
+                    HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <icons:MaterialIcon Kind="Settings" Width="20" Height="20"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="Settings" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SystemBaseHighColor}" />
+                    <!-- <TextBlock Text="Settings" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemBaseHighColor}" />-->
                 </StackPanel>
             </Button>
-        </StackPanel>
+        </Grid>
     </Border>
 </UserControl>

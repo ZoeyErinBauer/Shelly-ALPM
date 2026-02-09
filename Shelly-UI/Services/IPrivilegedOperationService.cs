@@ -8,6 +8,7 @@ namespace Shelly_UI.Services;
 public interface IPrivilegedOperationService
 {
     Task<OperationResult> SyncDatabasesAsync();
+    Task<List<AlpmPackageDto>> SearchPackagesAsync(string query);
     Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages);
