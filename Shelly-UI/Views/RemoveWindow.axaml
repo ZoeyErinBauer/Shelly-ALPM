@@ -30,7 +30,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Remove Packages"
+                            Title="{x:Static lang:Resources.RemovePackages}"
                             TitleIcon="Trash"
                             ShowTitleButton="True"
                             TitleCommand="{Binding ToggleConfirmAction}"

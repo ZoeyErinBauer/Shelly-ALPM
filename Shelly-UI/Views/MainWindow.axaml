@@ -9,6 +9,7 @@
         xmlns:converters="clr-namespace:Shelly_UI.Converters"
         xmlns:enums="clr-namespace:Shelly_UI.Enums"
         xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
+        xmlns:lang="clr-namespace:Shelly_UI.Assets"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Shelly_UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -46,7 +47,7 @@
                 </SplitView.Pane>
                 <avalonia:RoutedViewHost Router="{Binding Router}" PageTransition="{x:Null}">
                     <avalonia:RoutedViewHost.DefaultContent>
-                        <TextBlock Text="Default content"
+                        <TextBlock Text="{x:Static lang:Resources.DefaultContent}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center" />
                     </avalonia:RoutedViewHost.DefaultContent>
@@ -58,7 +59,7 @@
             <avalonia:RoutedViewHost Router="{Binding Router}" PageTransition="{x:Null}"
                                      IsVisible="{Binding UseHorizontalMenu}">
                 <avalonia:RoutedViewHost.DefaultContent>
-                    <TextBlock Text="Default content"
+                    <TextBlock Text="{x:Static lang:Resources.DefaultContent}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
                 </avalonia:RoutedViewHost.DefaultContent>
@@ -76,7 +77,7 @@
                     MinWidth="400"
                     BoxShadow="0 8 32 0 #60000000">
                 <StackPanel Spacing="20">
-                    <TextBlock Text="Package Operations"
+                    <TextBlock Text="{x:Static lang:Resources.PackageOperations}"
                                FontSize="20"
                                FontWeight="Bold"
                                HorizontalAlignment="Center" />
@@ -120,12 +121,12 @@
                     <!-- Yes/No buttons for regular questions -->
                     <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center"
                                 IsVisible="{Binding !IsSelectProviderQuestion}">
-                        <Button Content="Yes"
+                        <Button Content="{x:Static lang:Resources.Yes}"
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="1"
                                 Width="100"
                                 HorizontalContentAlignment="Center" />
-                        <Button Content="No"
+                        <Button Content="{x:Static lang:Resources.No}"
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="0"
                                 Width="100"
@@ -144,7 +145,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <Button Content="Select"
+                        <Button Content="{x:Static lang:Resources.SelectText}"
                                 Command="{Binding RespondToQuestion}"
                                 CommandParameter="{Binding SelectedProviderIndex}"
                                 HorizontalAlignment="Center"
@@ -206,13 +207,13 @@
                 <StackPanel Spacing="20">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
                         <icons:MaterialIcon Kind="ShieldLock" Width="28" Height="28" />
-                        <TextBlock Text="Authentication Required"
+                        <TextBlock Text="{x:Static lang:Resources.AuthenticationRequired}"
                                    FontSize="20"
                                    FontWeight="Bold"
                                    VerticalAlignment="Center" />
                     </StackPanel>
 
-                    <TextBlock Text="{Binding PasswordPromptReason, StringFormat='Action: {0}'}"
+                    <TextBlock Text="{Binding PasswordPromptReason, StringFormat={x:Static lang:Resources.ActionFormat}}"
                                HorizontalAlignment="Center"
                                FontSize="14"
                                TextWrapping="Wrap"
@@ -220,14 +221,14 @@
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
 
                     <TextBlock
-                        Text="Enter your password to continue. Your password will be remembered for this session. Multiple failed attempts may cause a lockout."
+                        Text="{x:Static lang:Resources.PasswordSessionReminder}"
                         HorizontalAlignment="Center"
                         FontSize="12"
                         TextWrapping="Wrap"
                         TextAlignment="Center"
                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
 
-                    <TextBox Watermark="Password"
+                    <TextBox Watermark="{x:Static lang:Resources.PasswordWatermark}"
                              PasswordChar="●"
                              Text="{Binding PasswordInput}"
                              HorizontalAlignment="Stretch">
@@ -244,11 +245,11 @@
                                IsVisible="{Binding PasswordErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
-                        <Button Content="Authenticate"
+                        <Button Content="{x:Static lang:Resources.Authenticate}"
                                 Command="{Binding SubmitPasswordCommand}"
                                 Width="120"
                                 HorizontalContentAlignment="Center" />
-                        <Button Content="Cancel"
+                        <Button Content="{x:Static lang:Resources.Cancel}"
                                 Command="{Binding CancelPasswordCommand}"
                                 Width="100"
                                 HorizontalContentAlignment="Center" />

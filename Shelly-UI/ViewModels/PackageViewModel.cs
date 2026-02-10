@@ -7,6 +7,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
@@ -150,7 +151,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.InstallPackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -165,7 +166,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.InstallingSelectedPackages;
                 }
 
                 //do work
@@ -173,12 +174,12 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
-                    mainWindow?.ShowToast($"Installation failed: {result.Error}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.InstallationFailedFormat, result.Error), isSuccess: false);
                 }
                 else
                 {
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully installed {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.SuccessfullyInstalledFormat, packageCount));
                 }
 
                 await Sync();

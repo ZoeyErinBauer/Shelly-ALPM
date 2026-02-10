@@ -7,6 +7,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
@@ -136,7 +137,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Remove Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.RemovePackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -151,7 +152,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.RemovingSelectedPackages;
                 }
 
                 //do work
@@ -160,7 +161,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
-                    mainWindow?.ShowToast($"Removal failed: {result.Error}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.RemovalFailedFormat, result.Error), isSuccess: false);
                 }
                 else
                 {
@@ -168,7 +169,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     var installedPackages = await _privilegedOperationService.GetInstalledPackagesAsync();
                     await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully removed {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.SuccessfullyRemovedFormat, packageCount));
                 }
 
                 await Refresh();

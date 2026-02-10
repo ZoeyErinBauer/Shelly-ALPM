@@ -6,6 +6,7 @@
              xmlns:converters="clr-namespace:Shelly_UI.Converters"
              xmlns:enums="clr-namespace:Shelly_UI.Enums"
              xmlns:vm="using:Shelly_UI.ViewModels"
+             xmlns:lang="clr-namespace:Shelly_UI.Assets"
              mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="600"
              x:Class="Shelly_UI.CustomControls.Menus.VerticalMenu"
              x:DataType="vm:MainWindowViewModel"
@@ -33,7 +34,7 @@
                     <icons:MaterialIcon Kind="Home" Width="24" Height="24" HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Grid.Column="1" Text="Home" VerticalAlignment="Center"
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.Home}" VerticalAlignment="Center"
                                IsVisible="{Binding IsPaneOpen}"
                                Foreground="{DynamicResource SystemBaseHighColor}" />
                 </Grid>
@@ -48,7 +49,7 @@
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Grid.Column="1" Text="Packages"
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.Packages}"
                                VerticalAlignment="Center"
                                IsVisible="{Binding IsPaneOpen}"
                                Foreground="{DynamicResource SystemBaseHighColor}" />
@@ -70,7 +71,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Install Packages" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.InstallPackages}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -82,7 +83,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Update" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Update Packages" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.UpdatePackages}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -94,7 +95,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Delete" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Remove Packages" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.RemovePackages}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -110,7 +111,7 @@
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Grid.Column="1" Text="AUR"
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.AUR}"
                                VerticalAlignment="Center"
                                IsVisible="{Binding IsPaneOpen}"
                                Foreground="{DynamicResource SystemBaseHighColor}" />
@@ -132,7 +133,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Install AUR" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.InstallAUR}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -144,7 +145,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Update" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Update AUR" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.UpdateAUR}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -156,7 +157,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Delete" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Remove AUR" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.RemoveAUR}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -172,7 +173,7 @@
                               Foreground="{DynamicResource SystemBaseHighColor}"
                               Width="18"
                               Height="18" />
-                    <TextBlock Grid.Column="1" Text="Flatpak"
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.FlatpakLabel}"
                                VerticalAlignment="Center"
                                IsVisible="{Binding IsPaneOpen}"
                                Foreground="{DynamicResource SystemBaseHighColor}" />
@@ -194,7 +195,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="PlusBox" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Install Flatpak" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.InstallFlatpak}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -206,7 +207,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Update" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Update Flatpak" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.UpdateFlatpak}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -218,7 +219,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Delete" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Remove Flatpak" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.RemoveFlatpak}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
@@ -234,7 +235,7 @@
                 <icons:MaterialIcon Kind="Settings" Width="24" Height="24" HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Foreground="{DynamicResource SystemBaseHighColor}" />
-                <TextBlock Grid.Column="1" Text="Settings" VerticalAlignment="Center"
+                <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.Settings}" VerticalAlignment="Center"
                            IsVisible="{Binding IsPaneOpen}"
                            Foreground="{DynamicResource SystemBaseHighColor}" />
             </Grid>

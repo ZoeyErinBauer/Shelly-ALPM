@@ -25,7 +25,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                             Title="Install Package(s)"
+                             Title="{x:Static lang:Resources.RemoveFlatpak}"
                              ShowTitleButton="False"
                              SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                              SearchText="{Binding SearchText, Mode=TwoWay}"

@@ -144,4 +144,334 @@
     <data name="UpdateAUR" xml:space="preserve">
         <value>Update AUR</value>
     </data>
+    <data name="DefaultContent" xml:space="preserve">
+        <value>Default content</value>
+    </data>
+    <data name="PackageOperations" xml:space="preserve">
+        <value>Package Operations</value>
+    </data>
+    <data name="Yes" xml:space="preserve">
+        <value>Yes</value>
+    </data>
+    <data name="No" xml:space="preserve">
+        <value>No</value>
+    </data>
+    <data name="SelectText" xml:space="preserve">
+        <value>Select</value>
+    </data>
+    <data name="AuthenticationRequired" xml:space="preserve">
+        <value>Authentication Required</value>
+    </data>
+    <data name="PasswordSessionReminder" xml:space="preserve">
+        <value>Enter your password to continue. Your password will be remembered for this session. Multiple failed attempts may cause a lockout.</value>
+    </data>
+    <data name="PasswordWatermark" xml:space="preserve">
+        <value>Password</value>
+    </data>
+    <data name="Authenticate" xml:space="preserve">
+        <value>Authenticate</value>
+    </data>
+    <data name="AppSettings" xml:space="preserve">
+        <value>App Settings</value>
+    </data>
+    <data name="EnableConsole" xml:space="preserve">
+        <value>Enable Console</value>
+    </data>
+    <data name="EnableAurBeta" xml:space="preserve">
+        <value>Enable AUR (Beta)</value>
+    </data>
+    <data name="EnableFlatpakAlpha" xml:space="preserve">
+        <value>Enable FlatPack (Alpha)</value>
+    </data>
+    <data name="UseHorizontalMenuSetting" xml:space="preserve">
+        <value>Use Horizontal Menu</value>
+    </data>
+    <data name="ToggleDarkLightMode" xml:space="preserve">
+        <value>Toggle Dark/Light Mode</value>
+    </data>
+    <data name="DefaultPageOnStartup" xml:space="preserve">
+        <value>Default Page on startup</value>
+    </data>
+    <data name="UseKdeColorScheme" xml:space="preserve">
+        <value>Use KDE Color Scheme</value>
+    </data>
+    <data name="BuyMeACoffee" xml:space="preserve">
+        <value>Buy me a coffee</value>
+    </data>
+    <data name="EnablingRequiresFlatpak" xml:space="preserve">
+        <value>Enabling requires flatpak</value>
+    </data>
+    <data name="PressConfirmToInstall" xml:space="preserve">
+        <value>Press confirm to install now or please install yourself</value>
+    </data>
+    <data name="AurWarning" xml:space="preserve">
+        <value>AUR Warning</value>
+    </data>
+    <data name="AurWarningText" xml:space="preserve">
+        <value>AUR packages are user-submitted and not officially supported. Use at your own risk.</value>
+    </data>
+    <data name="Question" xml:space="preserve">
+        <value>Question</value>
+    </data>
+    <data name="UpdatingShelly" xml:space="preserve">
+        <value>Updating Shelly</value>
+    </data>
+    <data name="InstallingUpdate" xml:space="preserve">
+        <value>Installing Update...</value>
+    </data>
+    <data name="Close" xml:space="preserve">
+        <value>Close</value>
+    </data>
+    <data name="SearchToGetStarted" xml:space="preserve">
+        <value>Search To get started!</value>
+    </data>
+    <data name="RightClickForInfo" xml:space="preserve">
+        <value>Right click for additional information</value>
+    </data>
+    <data name="Votes" xml:space="preserve">
+        <value>Votes</value>
+    </data>
+    <data name="PopularityColumn" xml:space="preserve">
+        <value>Popularity</value>
+    </data>
+    <data name="InstallFlatpak" xml:space="preserve">
+        <value>Install Flatpak</value>
+    </data>
+    <data name="RemoveFlatpak" xml:space="preserve">
+        <value>Remove Flatpak</value>
+    </data>
+    <data name="UpdateFlatpak" xml:space="preserve">
+        <value>Update Flatpak</value>
+    </data>
+    <data name="UpgradeAllFlatpak" xml:space="preserve">
+        <value>Upgrade All Flatpak</value>
+    </data>
+    <data name="LoadingFlatpakInfo" xml:space="preserve">
+        <value>Loading flatpak information this may take a moment on first load.</value>
+    </data>
+    <data name="AUR" xml:space="preserve">
+        <value>AUR</value>
+    </data>
+    <data name="FlatpakLabel" xml:space="preserve">
+        <value>Flatpak</value>
+    </data>
+    <data name="ShellySearch" xml:space="preserve">
+        <value>Shelly Search</value>
+    </data>
+    <data name="IdColumn" xml:space="preserve">
+        <value>Id</value>
+    </data>
+    <data name="PackageTypeColumn" xml:space="preserve">
+        <value>Package Type</value>
+    </data>
+    <data name="DescriptionColumn" xml:space="preserve">
+        <value>Description</value>
+    </data>
+    <data name="SummaryColumn" xml:space="preserve">
+        <value>Summary</value>
+    </data>
+    <data name="OK" xml:space="preserve">
+        <value>OK</value>
+    </data>
+    <data name="SelectProviderFallback" xml:space="preserve">
+        <value>Select provider</value>
+    </data>
+    <data name="Validating" xml:space="preserve">
+        <value>Validating...</value>
+    </data>
+    <data name="InvalidPassword" xml:space="preserve">
+        <value>Invalid password. Please try again.</value>
+    </data>
+    <data name="PasswordCannotBeEmpty" xml:space="preserve">
+        <value>Password cannot be empty.</value>
+    </data>
+    <data name="CompletingActions" xml:space="preserve">
+        <value>Completing requested actions: {0}</value>
+    </data>
+    <data name="StartingTransaction" xml:space="preserve">
+        <value>Starting transaction...</value>
+    </data>
+    <data name="Processing" xml:space="preserve">
+        <value>Processing...</value>
+    </data>
+    <data name="ShellyHome" xml:space="preserve">
+        <value>Shelly - Home</value>
+    </data>
+    <data name="ShellyInstallPackages" xml:space="preserve">
+        <value>Shelly - Install Packages</value>
+    </data>
+    <data name="ShellyUpdatePackages" xml:space="preserve">
+        <value>Shelly - Update Packages</value>
+    </data>
+    <data name="ShellyRemovePackages" xml:space="preserve">
+        <value>Shelly - Remove Packages</value>
+    </data>
+    <data name="ShellySettings" xml:space="preserve">
+        <value>Shelly - Settings</value>
+    </data>
+    <data name="ShellyAurInstall" xml:space="preserve">
+        <value>Shelly - AUR Install</value>
+    </data>
+    <data name="ShellyAurUpdate" xml:space="preserve">
+        <value>Shelly - AUR Update</value>
+    </data>
+    <data name="ShellyAurRemove" xml:space="preserve">
+        <value>Shelly - AUR Remove</value>
+    </data>
+    <data name="ShellyFlatpakInstall" xml:space="preserve">
+        <value>Shelly - Flatpak Install</value>
+    </data>
+    <data name="ShellyFlatpakUpdate" xml:space="preserve">
+        <value>Shelly - Flatpak Update</value>
+    </data>
+    <data name="ShellyFlatpakRemove" xml:space="preserve">
+        <value>Shelly - Flatpak Remove</value>
+    </data>
+    <data name="ShellySearchTitle" xml:space="preserve">
+        <value>Shelly - Search</value>
+    </data>
+    <data name="Shelly" xml:space="preserve">
+        <value>Shelly</value>
+    </data>
+    <data name="Downloading" xml:space="preserve">
+        <value>Downloading</value>
+    </data>
+    <data name="Reinstalling" xml:space="preserve">
+        <value>Reinstalling</value>
+    </data>
+    <data name="InstallingAction" xml:space="preserve">
+        <value>Installing</value>
+    </data>
+    <data name="UpdatingAction" xml:space="preserve">
+        <value>Updating</value>
+    </data>
+    <data name="RemovingAction" xml:space="preserve">
+        <value>Removing</value>
+    </data>
+    <data name="ProcessingPackage" xml:space="preserve">
+        <value>Processing {0}...</value>
+    </data>
+    <data name="InstallIgnorePackageQuestion" xml:space="preserve">
+        <value>Install Ignore Package?</value>
+    </data>
+    <data name="ReplacePackageQuestion" xml:space="preserve">
+        <value>Replace Package?</value>
+    </data>
+    <data name="PackageConflict" xml:space="preserve">
+        <value>Package Conflict</value>
+    </data>
+    <data name="CorruptedPackage" xml:space="preserve">
+        <value>Corrupted Package</value>
+    </data>
+    <data name="ImportGpgKey" xml:space="preserve">
+        <value>Import GPG Key?</value>
+    </data>
+    <data name="SelectProvider" xml:space="preserve">
+        <value>Select Provider</value>
+    </data>
+    <data name="PackageManagerQuestion" xml:space="preserve">
+        <value>Package Manager Question</value>
+    </data>
+    <data name="PartialUpdateWarning" xml:space="preserve">
+        <value>Some packages are not selected. A full system upgrade is always recommended when updating.</value>
+    </data>
+    <data name="Continue" xml:space="preserve">
+        <value>Continue</value>
+    </data>
+    <data name="PerformingFullUpgrade" xml:space="preserve">
+        <value>Performing full system upgrade...</value>
+    </data>
+    <data name="UpdatingSelectedPackages" xml:space="preserve">
+        <value>Updating selected packages...</value>
+    </data>
+    <data name="UpdateFailedFormat" xml:space="preserve">
+        <value>Update failed: {0}</value>
+    </data>
+    <data name="SuccessfullyUpdatedFormat" xml:space="preserve">
+        <value>Successfully updated {0} package(s)</value>
+    </data>
+    <data name="RemovingSelectedPackages" xml:space="preserve">
+        <value>Removing selected packages...</value>
+    </data>
+    <data name="RemovalFailedFormat" xml:space="preserve">
+        <value>Removal failed: {0}</value>
+    </data>
+    <data name="SuccessfullyRemovedFormat" xml:space="preserve">
+        <value>Successfully removed {0} package(s)</value>
+    </data>
+    <data name="InstallingSelectedPackages" xml:space="preserve">
+        <value>Installing selected packages...</value>
+    </data>
+    <data name="InstallationFailedFormat" xml:space="preserve">
+        <value>Installation failed: {0}</value>
+    </data>
+    <data name="SuccessfullyInstalledFormat" xml:space="preserve">
+        <value>Successfully installed {0} package(s)</value>
+    </data>
+    <data name="StandardInstallFailedFormat" xml:space="preserve">
+        <value>Standard installation failed: {0}</value>
+    </data>
+    <data name="SuccessfullyInstalledStandardFormat" xml:space="preserve">
+        <value>Successfully installed {0} standard package(s)</value>
+    </data>
+    <data name="AurInstallFailedFormat" xml:space="preserve">
+        <value>AUR installation failed: {0}</value>
+    </data>
+    <data name="SuccessfullyInstalledAurFormat" xml:space="preserve">
+        <value>Successfully installed {0} AUR package(s)</value>
+    </data>
+    <data name="FlatpakInstallFailedFormat" xml:space="preserve">
+        <value>Flatpak installation failed: {0}</value>
+    </data>
+    <data name="SuccessfullyInstalledFlatpakFormat" xml:space="preserve">
+        <value>Successfully installed Flatpak package {0}</value>
+    </data>
+    <data name="RemoveAURPackages" xml:space="preserve">
+        <value>Remove AUR Packages</value>
+    </data>
+    <data name="UpdatingSelectedPackage" xml:space="preserve">
+        <value>Updating selected package...</value>
+    </data>
+    <data name="InstallingPackage" xml:space="preserve">
+        <value>Installing package...</value>
+    </data>
+    <data name="InstallingFlatpak" xml:space="preserve">
+        <value>Installing flatpak...</value>
+    </data>
+    <data name="CheckingForUpdates" xml:space="preserve">
+        <value>Checking for updates...</value>
+    </data>
+    <data name="UpdateAvailableClickToDownload" xml:space="preserve">
+        <value>Update Available Click to Download</value>
+    </data>
+    <data name="NoUpdateAvailable" xml:space="preserve">
+        <value>No Update Available</value>
+    </data>
+    <data name="CheckForUpdateButton" xml:space="preserve">
+        <value>Check for update</value>
+    </data>
+    <data name="NewVersionAvailable" xml:space="preserve">
+        <value>A new version of Shelly is available. Would you like to update now?</value>
+    </data>
+    <data name="UpdateCompletedSuccessfully" xml:space="preserve">
+        <value>Update completed successfully!</value>
+    </data>
+    <data name="UpdateFailedShort" xml:space="preserve">
+        <value>Update failed.</value>
+    </data>
+    <data name="AuthCancelledByUser" xml:space="preserve">
+        <value>Authentication cancelled by user.</value>
+    </data>
+    <data name="NoPasswordAvailable" xml:space="preserve">
+        <value>No password available.</value>
+    </data>
+    <data name="InstallShellyUpdate" xml:space="preserve">
+        <value>Install Shelly update</value>
+    </data>
+    <data name="ActionFormat" xml:space="preserve">
+        <value>Action: {0}</value>
+    </data>
+    <data name="InstallFlatpakCredential" xml:space="preserve">
+        <value>Install flatpak</value>
+    </data>
 </root>

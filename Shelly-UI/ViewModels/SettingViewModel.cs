@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Shelly_UI.Assets;
 using Avalonia.Themes.Fluent;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
@@ -319,7 +320,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             var credManager = App.Services.GetService<ICredentialManager>();
             if (!credManager!.IsValidated)
             {
-                if (!await credManager.RequestCredentialsAsync("Install flatpak") ||
+                if (!await credManager.RequestCredentialsAsync(Resources.InstallFlatpakCredential) ||
                     string.IsNullOrEmpty(credManager.GetPassword()))
                 {
                     ShowFlatpakDialog = false;
@@ -340,7 +341,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Installing flatpak...";
+                mainWindow.GlobalBusyMessage = Resources.InstallingFlatpak;
             }
 
             var result =
@@ -394,7 +395,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
 #endif
 
-        UpdateAvailableText = "Checking for updates...";
+        UpdateAvailableText = Resources.CheckingForUpdates;
         bool updateAvailable = await _updateService.CheckForUpdateAsync();
         await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), updateAvailable);
         await SetUpdateText();
@@ -410,11 +411,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private async Task SetUpdateText()
     {
         UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache))
-            ? "Update Available Click to Download"
-            : "No Update Available";
+            ? Resources.UpdateAvailableClickToDownload
+            : Resources.NoUpdateAvailable;
     }
 
-    private string _updateAvailable = "Check for update";
+    private string _updateAvailable = Resources.CheckForUpdateButton;
 
     public string UpdateAvailableText
     {

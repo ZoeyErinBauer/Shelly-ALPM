@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Shelly_UI.Assets;
 
 namespace Shelly_UI.Views;
 
@@ -14,11 +15,11 @@ public partial class QuestionDialog : Window
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
     }
 
-    public QuestionDialog(string questionText, string yesButtonText = "Yes", string noButtonText = "No") : this()
+    public QuestionDialog(string questionText, string? yesButtonText = null, string? noButtonText = null) : this()
     {
         QuestionText.Text = questionText;
-        YesButton.Content = yesButtonText;
-        NoButton.Content = noButtonText;
+        YesButton.Content = yesButtonText ?? Resources.Yes;
+        NoButton.Content = noButtonText ?? Resources.No;
     }
 
     private void YesButton_Click(object? sender, RoutedEventArgs e)

@@ -30,7 +30,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Remove AUR Package(s)"
+                            Title="{x:Static lang:Resources.RemoveAUR}"
                             ShowTitleButton="True"
                             TitleIcon="Delete"
                             TitleCommand="{Binding ToggleConfirmAction}"

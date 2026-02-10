@@ -27,7 +27,7 @@
                     <Grid RowDefinitions="Auto,*">
                        
                         <menus:HeaderRow
-                            Title="Install Flatpak"
+                            Title="{x:Static lang:Resources.InstallFlatpak}"
                             ShowTitleButton="False"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"
@@ -92,7 +92,7 @@
 
                                          Width="50"
                                          Height="50" />
-                            <TextBlock Text="Loading flatpak information this may take a moment on first load."></TextBlock>
+                            <TextBlock Text="{x:Static lang:Resources.LoadingFlatpakInfo}"></TextBlock>
                         </StackPanel>
 
                     </Grid>

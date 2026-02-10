@@ -8,6 +8,7 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
 using System.Reactive.Subjects;
+using Shelly_UI.Assets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -70,7 +71,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             if (!string.IsNullOrEmpty(PasswordInput))
             {
                 _credentialManager.StorePassword(PasswordInput);
-                PasswordErrorMessage = "Validating...";
+                PasswordErrorMessage = Resources.Validating;
 
                 await _credentialManager.CompleteCredentialRequestAsync(true);
 
@@ -82,12 +83,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 }
                 else
                 {
-                    PasswordErrorMessage = "Invalid password. Please try again.";
+                    PasswordErrorMessage = Resources.InvalidPassword;
                 }
             }
             else
             {
-                PasswordErrorMessage = "Password cannot be empty.";
+                PasswordErrorMessage = Resources.PasswordCannotBeEmpty;
             }
         });
 
@@ -118,15 +119,15 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         IsProcessing = true;
                         if (!string.IsNullOrEmpty(args.PackageName))
                         {
-                            ProcessingMessage = $"Completing requested actions: {args.PackageName}";
+                            ProcessingMessage = string.Format(Resources.CompletingActions, args.PackageName);
                         }
                         else if (args.EventType == AlpmEventType.TransactionStart)
                         {
-                            ProcessingMessage = "Starting transaction...";
+                            ProcessingMessage = Resources.StartingTransaction;
                         }
                         else
                         {
-                            ProcessingMessage = "Processing...";
+                            ProcessingMessage = Resources.Processing;
                         }
 
                         ProgressValue = 0;
@@ -296,19 +297,19 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         Router.CurrentViewModel
             .Select(vm => vm switch
             {
-                HomeViewModel => "Shelly - Home",
-                PackageViewModel => "Shelly - Install Packages",
-                UpdateViewModel => "Shelly - Update Packages",
-                RemoveViewModel => "Shelly - Remove Packages",
-                SettingViewModel => "Shelly - Settings",
-                AurViewModel => "Shelly - AUR Install",
-                AurUpdateViewModel => "Shelly - AUR Update",
-                AurRemoveViewModel => "Shelly - AUR Remove",
-                FlatpakInstallViewModel => "Shelly - Flatpak Install",
-                FlatpakUpdateViewModel => "Shelly - Flatpak Update",
-                FlatpakRemoveViewModel => "Shelly - Flatpak Remove",
-                MetaSearchViewModel => "Shelly - Search",
-                _ => "Shelly"
+                HomeViewModel => Resources.ShellyHome,
+                PackageViewModel => Resources.ShellyInstallPackages,
+                UpdateViewModel => Resources.ShellyUpdatePackages,
+                RemoveViewModel => Resources.ShellyRemovePackages,
+                SettingViewModel => Resources.ShellySettings,
+                AurViewModel => Resources.ShellyAurInstall,
+                AurUpdateViewModel => Resources.ShellyAurUpdate,
+                AurRemoveViewModel => Resources.ShellyAurRemove,
+                FlatpakInstallViewModel => Resources.ShellyFlatpakInstall,
+                FlatpakUpdateViewModel => Resources.ShellyFlatpakUpdate,
+                FlatpakRemoveViewModel => Resources.ShellyFlatpakRemove,
+                MetaSearchViewModel => Resources.ShellySearchTitle,
+                _ => Resources.Shelly
             })
             .ObserveOn(scheduler)
             .Subscribe(title => Title = title)
@@ -335,11 +336,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     {
                         var action = progressType switch
                         {
-                            "PackageDownload" => "Downloading",
-                            "ReinstallStart" => "Reinstalling",
-                            "AddStart" => "Installing",
-                            "UpgradeStart" => "Updating",
-                            "RemoveStart" => "Removing",
+                            "PackageDownload" => Resources.Downloading,
+                            "ReinstallStart" => Resources.Reinstalling,
+                            "AddStart" => Resources.InstallingAction,
+                            "UpgradeStart" => Resources.UpdatingAction,
+                            "RemoveStart" => Resources.RemovingAction,
                             _ => progressType.Replace("Start", "ing")
                         };
 
@@ -355,7 +356,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         var status = matchFlatpak.Groups[2].Value.Trim();
                         GlobalProgressValue = percent;
                         GlobalProgressText = $"{percent}%";
-                        GlobalBusyMessage = "Installing";
+                        GlobalBusyMessage = Resources.InstallingAction;
                     }
                 }
                 else if (matchFormatted.Success)
@@ -365,7 +366,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     {
                         GlobalProgressValue = percent;
                         GlobalProgressText = $"{percent}%";
-                        GlobalBusyMessage = $"Processing {pkg}...";
+                        GlobalBusyMessage = string.Format(Resources.ProcessingPackage, pkg);
                     }
                 }
             });
@@ -424,7 +425,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         set => this.RaiseAndSetIfChanged(ref _isGlobalBusy, value);
     }
 
-    private string _globalBusyMessage = "Processing...";
+    private string _globalBusyMessage = Resources.Processing;
 
     public string GlobalBusyMessage
     {
@@ -595,7 +596,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public RoutingState SettingRouter { get; } = new RoutingState();
 
-    private string _title = "Shelly";
+    private string _title = Resources.Shelly;
 
     public string Title
     {
@@ -727,13 +728,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         return questionType switch
         {
-            AlpmQuestionType.InstallIgnorePkg => "Install Ignore Package?",
-            AlpmQuestionType.ReplacePkg => "Replace Package?",
-            AlpmQuestionType.ConflictPkg => "Package Conflict",
-            AlpmQuestionType.CorruptedPkg => "Corrupted Package",
-            AlpmQuestionType.ImportKey => "Import GPG Key?",
-            AlpmQuestionType.SelectProvider => "Select Provider",
-            _ => "Package Manager Question"
+            AlpmQuestionType.InstallIgnorePkg => Resources.InstallIgnorePackageQuestion,
+            AlpmQuestionType.ReplacePkg => Resources.ReplacePackageQuestion,
+            AlpmQuestionType.ConflictPkg => Resources.PackageConflict,
+            AlpmQuestionType.CorruptedPkg => Resources.CorruptedPackage,
+            AlpmQuestionType.ImportKey => Resources.ImportGpgKey,
+            AlpmQuestionType.SelectProvider => Resources.SelectProvider,
+            _ => Resources.PackageManagerQuestion
         };
     }
 

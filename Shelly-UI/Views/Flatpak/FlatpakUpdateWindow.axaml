@@ -29,7 +29,7 @@
                             ShowTitleButton="True"
                             TitleCommand="{Binding UpgradeCommand}"
                             TitleIcon="Download"
-                            Title="Upgrade All Flatpak"
+                            Title="{x:Static lang:Resources.UpgradeAllFlatpak}"
                             SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                             SearchText="{Binding SearchText, Mode=TwoWay}"
                             SyncCommand="{Binding RefreshCommand}"

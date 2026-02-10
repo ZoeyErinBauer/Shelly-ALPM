@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
 using Shelly.Utilities.System;
+using Shelly_UI.Assets;
 using Shelly_UI.Views;
 
 namespace Shelly_UI.Services;
@@ -440,7 +441,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             {
                 Success = false,
                 Output = string.Empty,
-                Error = "Authentication cancelled by user.",
+                Error = Resources.AuthCancelledByUser,
                 ExitCode = -1
             };
         }
@@ -452,7 +453,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             {
                 Success = false,
                 Output = string.Empty,
-                Error = "No password available.",
+                Error = Resources.NoPasswordAvailable,
                 ExitCode = -1
             };
         }
@@ -566,7 +567,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                         desktop && desktop.MainWindow != null)
                                 {
                                     var title = string.IsNullOrWhiteSpace(providerQuestion)
-                                        ? "Select provider"
+                                        ? Resources.SelectProviderFallback
                                         : providerQuestion;
                                     var dialog = new Shelly_UI.Views.ProviderSelectionDialog(title, providerOptions);
                                     var result = await dialog.ShowDialog<int>(desktop.MainWindow);
