@@ -14,24 +14,19 @@ public struct AlpmQuestionSelectProvider
     /// The question type (should be AlpmQuestionType.SelectProvider = 32)
     /// </summary>
     public int Type;
-    
-    /// <summary>
-    /// Answer field - not used for SelectProvider, use UseIndex instead
-    /// </summary>
-    public int Answer;
-    
-    /// <summary>
-    /// Pointer to alpm_list_t* of alpm_pkg_t* - the list of provider packages
-    /// </summary>
-    public IntPtr Providers;
-    
-    /// <summary>
-    /// Pointer to alpm_depend_t* - the dependency being resolved
-    /// </summary>
-    public IntPtr Depend;
-    
+
     /// <summary>
     /// Output: the index of the selected provider (0-based)
     /// </summary>
     public int UseIndex;
+
+    /// <summary>
+    /// Pointer to alpm_list_t* of alpm_pkg_t* - the list of provider packages
+    /// </summary>
+    public IntPtr Providers;
+
+    /// <summary>
+    /// Pointer to alpm_depend_t* - the dependency being resolved
+    /// </summary>
+    public IntPtr Depend;
 }
