@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -72,38 +73,38 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<List<AlpmPackageDto>> SearchPackagesAsync(string query)
     {
-         var result = await ExecuteCommandAsync("list-available", $"--filter {query}",
-            "--no-confirm","--json");
-         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
-         {
-             return [];
-         }
+        var result = await ExecuteCommandAsync("list-available", $"--filter {query}",
+            "--no-confirm", "--json");
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
 
-         try
-         {
-             // The output may contain multiple lines, find the JSON line
-             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-             foreach (var line in lines)
-             {
-                 var trimmedLine = StripBom(line.Trim());
-                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                 {
-                     var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                         ShellyUIJsonContext.Default.ListAlpmPackageDto);
-                     return packages ?? [];
-                 }
-             }
+        try
+        {
+            // The output may contain multiple lines, find the JSON line
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var packages = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyUIJsonContext.Default.ListAlpmPackageDto);
+                    return packages ?? [];
+                }
+            }
 
-             // If no JSON array found, try parsing the whole output
-             var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                 ShellyUIJsonContext.Default.ListAlpmPackageDto);
-             return allPackages ?? [];
-         }
-         catch (Exception ex)
-         {
-             Console.WriteLine($"Failed to parse available packages JSON: {ex.Message}");
-             return [];
-         }
+            // If no JSON array found, try parsing the whole output
+            var allPackages = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.ListAlpmPackageDto);
+            return allPackages ?? [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse available packages JSON: {ex.Message}");
+            return [];
+        }
     }
 
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
@@ -151,7 +152,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         var packageArgs = string.Join(" ", packages);
         return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update",
-            packageArgs,"--no-confirm");
+            packageArgs, "--no-confirm");
     }
 
     public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
@@ -479,6 +480,33 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var errorBuilder = new StringBuilder();
         StreamWriter? stdinWriter = null;
 
+        // Semaphore + counter to prevent stdin from closing before async callbacks complete
+        var stdinLock = new SemaphoreSlim(1, 1);
+        bool stdinClosed = false;
+        int pendingCallbacks = 0;
+        var allCallbacksDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Helper to safely write to stdin
+        async Task SafeWriteAsync(string value)
+        {
+            await stdinLock.WaitAsync();
+            try
+            {
+                if (!stdinClosed && stdinWriter != null)
+                {
+                    await stdinWriter.WriteLineAsync(value);
+                    await stdinWriter.FlushAsync();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            finally
+            {
+                stdinLock.Release();
+            }
+        }
+
         // State for provider selection handling
         var providerOptions = new List<string>();
         string? providerQuestion = null;
@@ -500,97 +528,102 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
-                    // Handle provider selection protocol
-                    if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
+                    Interlocked.Increment(ref pendingCallbacks);
+                    try
                     {
-                        Console.Error.WriteLine($"[Shelly]Select provider for: {e.Data}");
-                        awaitingProviderSelection = true;
-                        providerOptions.Clear();
-                        providerQuestion = e.Data.Substring("[Shelly][ALPM_SELECT_PROVIDER]".Length);
-                        Console.Error.WriteLine($"[Shelly]Select provider for: {providerQuestion}");
-                    }
-                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION]"))
-                    {
-                        Console.Error.WriteLine($"[Shelly]Provider option received: {e.Data}");
-                        var payload = e.Data.Substring("[Shelly][ALPM_PROVIDER_OPTION]".Length);
-                        var parts = payload.Split(':', 2);
-                        if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
+                        // Handle provider selection protocol
+                        if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
                         {
-                            // Ensure list size
-                            while (providerOptions.Count <= idx) providerOptions.Add(string.Empty);
-                            providerOptions[idx] = parts[1];
+                            Console.Error.WriteLine($"[Shelly]Select provider for: {e.Data}");
+                            awaitingProviderSelection = true;
+                            providerOptions.Clear();
+                            providerQuestion = e.Data.Substring("[Shelly][ALPM_SELECT_PROVIDER]".Length);
+                            Console.Error.WriteLine($"[Shelly]Select provider for: {providerQuestion}");
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION]"))
+                        {
+                            Console.Error.WriteLine($"[Shelly]Provider option received: {e.Data}");
+                            var payload = e.Data.Substring("[Shelly][ALPM_PROVIDER_OPTION]".Length);
+                            var parts = payload.Split(':', 2);
+                            if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
+                            {
+                                // Ensure list size
+                                while (providerOptions.Count <= idx) providerOptions.Add(string.Empty);
+                                providerOptions[idx] = parts[1];
+                            }
+                            else
+                            {
+                                providerOptions.Add(payload);
+                            }
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
+                        {
+                            Console.Error.WriteLine($"[Shelly]Provider selection received: {providerOptions}");
+                            // Show selection dialog and send index
+                            var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
+                            {
+                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
+                                        desktop && desktop.MainWindow != null)
+                                {
+                                    var title = string.IsNullOrWhiteSpace(providerQuestion)
+                                        ? "Select provider"
+                                        : providerQuestion;
+                                    var dialog = new Shelly_UI.Views.ProviderSelectionDialog(title, providerOptions);
+                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
+                                    return result;
+                                }
+
+                                return 0; // Default to first option
+                            });
+
+                            await SafeWriteAsync(selectedIndex.ToString());
+
+                            // Reset state
+                            awaitingProviderSelection = true;
+                            providerQuestion = null;
+                            providerOptions.Clear();
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
+                        {
+                            // Reset state
+                            awaitingProviderSelection = false;
+                            providerQuestion = null;
+                            providerOptions.Clear();
+                        }
+                        // Check for generic ALPM question (yes/no)
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
+                        {
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+
+                            // Show dialog on UI thread and get response
+                            var response = await Dispatcher.UIThread.InvokeAsync(async () =>
+                            {
+                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
+                                        desktop
+                                    && desktop.MainWindow != null)
+                                {
+                                    var dialog = new QuestionDialog(questionText);
+                                    var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
+                                    return result;
+                                }
+
+                                return true; // Default to yes if no window available
+                            });
+
+                            // Send response to CLI via stdin
+                            await SafeWriteAsync(response ? "y" : "n");
                         }
                         else
                         {
-                            providerOptions.Add(payload);
+                            errorBuilder.AppendLine(e.Data);
+                            Console.Error.WriteLine(e.Data);
                         }
                     }
-                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
+                    finally
                     {
-                        Console.Error.WriteLine($"[Shelly]Provider selection received: {providerOptions}");
-                        // Show selection dialog and send index
-                        var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
-                        {
-                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
-                            {
-                                var title = string.IsNullOrWhiteSpace(providerQuestion) ? "Select provider" : providerQuestion;
-                                var dialog = new Shelly_UI.Views.ProviderSelectionDialog(title, providerOptions);
-                                var result = await dialog.ShowDialog<int>(desktop.MainWindow);
-                                return result;
-                            }
-                            return 0; // Default to first option
-                        });
-
-                        if (stdinWriter != null)
-                        {
-                            await stdinWriter.WriteLineAsync(selectedIndex.ToString());
-                            await stdinWriter.FlushAsync();
-                        }
-
-                        // Reset state
-                        awaitingProviderSelection = true;
-                        providerQuestion = null;
-                        providerOptions.Clear();
-                    }
-                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
-                    {
-                        // Reset state
-                        awaitingProviderSelection = false;
-                        providerQuestion = null;
-                        providerOptions.Clear();
-                    }
-                    // Check for generic ALPM question (yes/no)
-                    else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
-                    {
-                        var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
-                        Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
-
-                        // Show dialog on UI thread and get response
-                        var response = await Dispatcher.UIThread.InvokeAsync(async () =>
-                        {
-                            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                    desktop
-                                && desktop.MainWindow != null)
-                            {
-                                var dialog = new QuestionDialog(questionText);
-                                var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
-                                return result;
-                            }
-
-                            return true; // Default to yes if no window available
-                        });
-
-                        // Send response to CLI via stdin
-                        if (stdinWriter != null)
-                        {
-                            await stdinWriter.WriteLineAsync(response ? "y" : "n");
-                            await stdinWriter.FlushAsync();
-                        }
-                    }
-                    else
-                    {
-                        errorBuilder.AppendLine(e.Data);
-                        Console.Error.WriteLine(e.Data);
+                        if (Interlocked.Decrement(ref pendingCallbacks) == 0)
+                            allCallbacksDone.TrySetResult();
                     }
                 }
             }
@@ -608,8 +641,24 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
-            // Close stdin after process exits
-            stdinWriter.Close();
+
+            // Wait for any in-flight async callbacks to finish writing
+            if (Volatile.Read(ref pendingCallbacks) > 0)
+            {
+                await Task.WhenAny(allCallbacksDone.Task, Task.Delay(TimeSpan.FromMinutes(2)));
+            }
+
+
+            await stdinLock.WaitAsync();
+            try
+            {
+                stdinClosed = true;
+                stdinWriter?.Close();
+            }
+            finally
+            {
+                stdinLock.Release();
+            }
 
             var success = process.ExitCode == 0;
 
