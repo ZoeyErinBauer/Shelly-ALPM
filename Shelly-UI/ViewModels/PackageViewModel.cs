@@ -8,10 +8,8 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
@@ -21,7 +19,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     
-    private List<PackageModel> _availablePackages = new();
+    private List<PackageModel> _availablePackages = [];
 
     private readonly ConfigService _configService = new();
     
@@ -74,15 +72,8 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
-       
-            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
             
-            RxApp.MainThreadScheduler.Schedule(() =>
-            {
-                _availablePackages.Clear();
-                AvailablePackages.Clear();
-                LoadData();
-            });
+            RxApp.MainThreadScheduler.Schedule(LoadData);
         }
         catch (Exception e)
         {
@@ -94,26 +85,28 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         try
         {
-            var packages = await _privilegedOperationService.GetAvailablePackagesAsync();
-
-            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();   
-            var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
-
-            var models = packages.Select(u => new PackageModel
+            var packages = await Task.Run(async () =>
             {
-                Name = u.Name,
-                Version = u.Version,
-                DownloadSize = u.Size,
-                Description = u.Description,
-                Url = u.Url,
-                IsChecked = false,
-                IsInstalled = installedNames.Contains(u.Name),
-                Repository = u.Repository
-            }).ToList();
-            
+                var packages = await _privilegedOperationService.GetAvailablePackagesAsync();
+
+                var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
+                var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? []);
+
+                return packages.Select(u => new PackageModel
+                {
+                    Name = u.Name,
+                    Version = u.Version,
+                    DownloadSize = u.Size,
+                    Description = u.Description,
+                    Url = u.Url,
+                    IsChecked = false,
+                    IsInstalled = installedNames.Contains(u.Name),
+                    Repository = u.Repository
+                }).ToList();
+            });
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                _availablePackages = models;
+                _availablePackages = packages;
                 ApplyFilter();
             });
         }
@@ -140,9 +133,9 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
 
-        if (selectedPackages.Any())
+        if (selectedPackages.Count != 0)
         {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+            var mainWindow = HostScreen as MainWindowViewModel;
 
             try
             {
@@ -186,10 +179,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             finally
             {
                 //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                mainWindow?.IsGlobalBusy = false;
             }
         }
         else
@@ -198,7 +188,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         }
     }
 
-    private void TogglePackageCheck(PackageModel package)
+    private static void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
 
@@ -218,7 +208,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
 
-    public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
+    public string UrlPathSegment { get; } = Guid.NewGuid().ToString()[..5];
 
     protected override void Dispose(bool disposing)
     {
