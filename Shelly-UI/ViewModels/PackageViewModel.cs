@@ -51,16 +51,19 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
     private void ApplyFilter()
     {
-        var filtered = string.IsNullOrWhiteSpace(SearchText)
-            ? _availablePackages
-            : _availablePackages.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
-
-        AvailablePackages.Clear();
-    
-        foreach (var package in filtered)
+        RxApp.MainThreadScheduler.Schedule(() =>
         {
-            AvailablePackages.Add(package);
-        }
+            var filtered = string.IsNullOrWhiteSpace(SearchText)
+                ? _availablePackages
+                : _availablePackages.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+            AvailablePackages.Clear();
+
+            foreach (var package in filtered)
+            {
+                AvailablePackages.Add(package);
+            }
+        });
     }
 
     private async Task Sync()
@@ -74,6 +77,9 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             }
             
             RxApp.MainThreadScheduler.Schedule(LoadData);
+            
+            var mainWindow = HostScreen as MainWindowViewModel;
+            mainWindow?.ShowToast("Sync completed");
         }
         catch (Exception e)
         {
