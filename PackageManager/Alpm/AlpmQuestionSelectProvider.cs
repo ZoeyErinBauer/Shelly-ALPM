@@ -18,8 +18,8 @@ public struct AlpmQuestionSelectProvider
     /// <summary>
     /// Answer field - not used for SelectProvider, use UseIndex instead
     /// </summary>
-    public int Answer;
-    
+    public int UseIndex;
+
     /// <summary>
     /// Pointer to alpm_list_t* of alpm_pkg_t* - the list of provider packages
     /// </summary>
@@ -29,9 +29,4 @@ public struct AlpmQuestionSelectProvider
     /// Pointer to alpm_depend_t* - the dependency being resolved
     /// </summary>
     public IntPtr Depend;
-    
-    /// <summary>
-    /// Output: the index of the selected provider (0-based)
-    /// </summary>
-    public int UseIndex;
 }

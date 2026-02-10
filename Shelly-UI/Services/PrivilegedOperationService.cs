@@ -523,7 +523,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             providerOptions.Add(payload);
                         }
                     }
-                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]") && awaitingProviderSelection)
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
                     {
                         // Show selection dialog and send index
                         var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
@@ -544,6 +544,13 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             await stdinWriter.FlushAsync();
                         }
 
+                        // Reset state
+                        awaitingProviderSelection = true;
+                        providerQuestion = null;
+                        providerOptions.Clear();
+                    }
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
+                    {
                         // Reset state
                         awaitingProviderSelection = false;
                         providerQuestion = null;
@@ -598,7 +605,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
-
             // Close stdin after process exits
             stdinWriter.Close();
 
