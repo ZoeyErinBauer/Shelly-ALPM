@@ -45,12 +45,12 @@ public class InstallCommand : Command<InstallPackageSettings>
                 if (settings.NoConfirm)
                 {
                     // Machine-readable format for UI integration
-                    Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                    Console.Error.WriteLine($"[ALPM_SELECT_PROVIDER]{args.DependencyName}");
                     for (int i = 0; i < args.ProviderOptions.Count; i++)
                     {
-                        Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        Console.Error.WriteLine($"[ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
                     }
-                    Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_OPTION_END]");
+                    Console.Error.WriteLine("[ALPM_PROVIDER_OPTION_END]");
                     Console.Error.Flush();
                     var input = Console.ReadLine();
                     args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
