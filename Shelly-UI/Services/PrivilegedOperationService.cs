@@ -558,9 +558,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
                         {
-                            Console.Error.WriteLine($"[Shelly]Provider selection received: {providerOptions}");
+                            Console.Error.WriteLine($"[Shelly]Provider selection received");
                             // Show selection dialog and send index
-                            var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
+                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
                             {
                                 if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
                                         desktop && desktop.MainWindow != null)
@@ -568,18 +568,19 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                     var title = string.IsNullOrWhiteSpace(providerQuestion)
                                         ? "Select provider"
                                         : providerQuestion;
-                                    var dialog = new Shelly_UI.Views.ProviderSelectionDialog(title, providerOptions);
+                                    var dialog = new ProviderSelectionDialog("Select Provider for: {title}", providerOptions);
                                     var result = await dialog.ShowDialog<int>(desktop.MainWindow);
                                     return result;
                                 }
 
                                 return 0; // Default to first option
                             });
+                            var selectedIndex = await selectedIndexTask;
 
                             await SafeWriteAsync(selectedIndex.ToString());
-
-                            // Reset state
-                            awaitingProviderSelection = true;
+                            Console.Error.WriteLine($"[Shelly]Wrote selection {selectedIndex.ToString()}");
+                           
+                            awaitingProviderSelection = false;
                             providerQuestion = null;
                             providerOptions.Clear();
                         }
