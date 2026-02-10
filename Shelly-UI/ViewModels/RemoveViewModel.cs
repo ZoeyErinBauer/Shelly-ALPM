@@ -22,17 +22,18 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IAppCache _appCache;
     private string? _searchText;
     private readonly ICredentialManager _credentialManager;
-    
+
     private List<PackageModel> _avaliablePackages = new();
 
-    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
+    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService,
+        ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<PackageModel>();
         _credentialManager = credentialManager;
-        
+
         // When search text changes, update the observable collection
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -42,24 +43,27 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
-        
+
         LoadData();
     }
 
     private void ApplyFilter()
     {
-        var filtered = string.IsNullOrWhiteSpace(SearchText)
-            ? _avaliablePackages
-            : _avaliablePackages.Where(p =>
-                p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
-
-        AvailablePackages.Clear();
-        
-        foreach (var package in filtered)
+        RxApp.MainThreadScheduler.Schedule(() =>
         {
-            AvailablePackages.Add(package);
-        }
+            var filtered = string.IsNullOrWhiteSpace(SearchText)
+                ? _avaliablePackages
+                : _avaliablePackages.Where(p =>
+                    p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+            AvailablePackages.Clear();
+
+            foreach (var package in filtered)
+            {
+                AvailablePackages.Add(package);
+            }
+        });
     }
 
     private async Task Refresh()
@@ -71,12 +75,8 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
-            RxApp.MainThreadScheduler.Schedule(() =>
-            {
-                _avaliablePackages.Clear();
-                AvailablePackages.Clear();
-                LoadData();
-            });
+
+            RxApp.MainThreadScheduler.Schedule(LoadData);
         }
         catch (Exception e)
         {
@@ -88,18 +88,20 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         try
         {
-            var packages = await _privilegedOperationService.GetInstalledPackagesAsync();
-            var models = packages.Select(u => new PackageModel
+            var packages = await Task.Run(async () =>
             {
-                Name = u.Name,
-                Version = u.Version,
-                DownloadSize = u.Size,
-                IsChecked = false
-            }).ToList();
-            
+                var packages = await _privilegedOperationService.GetInstalledPackagesAsync();
+                return packages.Select(u => new PackageModel
+                {
+                    Name = u.Name,
+                    Version = u.Version,
+                    DownloadSize = u.Size,
+                    IsChecked = false
+                }).ToList();
+            });
             RxApp.MainThreadScheduler.Schedule(() =>
             {
-                _avaliablePackages = models;
+                _avaliablePackages = packages;
                 ApplyFilter();
             });
         }
@@ -127,7 +129,6 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            
             MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
 
             try
@@ -144,7 +145,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
                     if (!isValidated) return;
                 }
-                
+
                 // Set busy
                 if (mainWindow != null)
                 {
@@ -168,7 +169,8 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     var installedPackages = await _privilegedOperationService.GetInstalledPackagesAsync();
                     await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully removed {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(
+                        $"Successfully removed {packageCount} package{(packageCount > 1 ? "s" : "")}");
                 }
 
                 await Refresh();
@@ -202,14 +204,14 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     private void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-    
+
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     protected override void Dispose(bool disposing)
@@ -219,6 +221,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             AvailablePackages?.Clear();
             _avaliablePackages?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }
