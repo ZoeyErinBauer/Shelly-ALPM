@@ -503,6 +503,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                     // Handle provider selection protocol
                     if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
                     {
+                        Console.Error.WriteLine($"[Shelly]Select provider for: {e.Data}");
                         awaitingProviderSelection = true;
                         providerOptions.Clear();
                         providerQuestion = e.Data.Substring("[Shelly][ALPM_SELECT_PROVIDER]".Length);
@@ -510,6 +511,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                     }
                     else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION]"))
                     {
+                        Console.Error.WriteLine($"[Shelly]Provider option received: {e.Data}");
                         var payload = e.Data.Substring("[Shelly][ALPM_PROVIDER_OPTION]".Length);
                         var parts = payload.Split(':', 2);
                         if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
@@ -523,8 +525,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             providerOptions.Add(payload);
                         }
                     }
-                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]") && awaitingProviderSelection)
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
                     {
+                        Console.Error.WriteLine($"[Shelly]Provider selection received: {providerOptions}");
                         // Show selection dialog and send index
                         var selectedIndex = await Dispatcher.UIThread.InvokeAsync(async () =>
                         {
@@ -544,6 +547,13 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             await stdinWriter.FlushAsync();
                         }
 
+                        // Reset state
+                        awaitingProviderSelection = true;
+                        providerQuestion = null;
+                        providerOptions.Clear();
+                    }
+                    else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
+                    {
                         // Reset state
                         awaitingProviderSelection = false;
                         providerQuestion = null;
@@ -598,7 +608,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
-
             // Close stdin after process exits
             stdinWriter.Close();
 

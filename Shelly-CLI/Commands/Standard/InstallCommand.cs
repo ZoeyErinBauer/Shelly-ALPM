@@ -50,7 +50,7 @@ public class InstallCommand : Command<InstallPackageSettings>
                     {
                         Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
                     }
-
+                    Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_OPTION_END]");
                     Console.Error.Flush();
                     var input = Console.ReadLine();
                     args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
