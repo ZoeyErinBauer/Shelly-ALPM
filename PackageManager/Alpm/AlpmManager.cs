@@ -262,14 +262,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         // Build the question text
         var questionText = $"Select a provider for '{dependencyName ?? "dependency"}':";
-        
-       // Console.Error.WriteLine($"[ALPM_SELECT_PROVIDER]{dependencyName}");
+
         for (int i = 0; i < providerOptions.Count; i++)
         {
-            //Console.Error.WriteLine($"[ALPM_PROVIDER_OPTION]{i}:{providerOptions[i]}");
-            Console.Error.WriteLine($"{i}:{providerOptions[i]}");
+            Console.Error.WriteLine($"  [{i}] {providerOptions[i]}");
         }
-       // Console.Error.WriteLine("[ALPM_PROVIDER_OPTION_END]");
+
         var args = new AlpmQuestionEventArgs(
             AlpmQuestionType.SelectProvider,
             questionText,
@@ -280,7 +278,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         args.Response = 0;
 
         Question?.Invoke(this, args);
-        
+
         // Write the response back to the UseIndex field
         selectQuestion.UseIndex = args.Response;
         Marshal.StructureToPtr(selectQuestion, questionPtr, false);
