@@ -15,7 +15,7 @@ public class ProviderSelectionDialog : Window
     {
         Title = string.IsNullOrWhiteSpace(title) ? "Select provider" : title;
         Width = 480;
-        Height = 360;
+        Height = 410;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var root = new StackPanel { Orientation = Orientation.Vertical, Spacing = 12, Margin = new Thickness(16) };
@@ -27,10 +27,13 @@ public class ProviderSelectionDialog : Window
             Margin = new Thickness(0, 0, 0, 8)
         };
         root.Children.Add(textBlock);
-
+        
         _listBox = new ListBox { SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         _listBox.ItemsSource = options;
-        root.Children.Add(_listBox);
+        
+        var scrollViewer = new ScrollViewer { Content = _listBox, Height = 280};
+        
+        root.Children.Add(scrollViewer);
         root.Children.Add(new Separator());
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8 };

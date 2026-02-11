@@ -303,7 +303,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Build the question text
         var questionText = $"Select a provider for '{dependencyName ?? "dependency"}':";
 
-        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText}");
         for (int i = 0; i < providerOptions.Count; i++)
         {
             Console.Error.WriteLine($"  [{i}] {providerOptions[i]}");
@@ -319,8 +318,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         args.Response = 0;
 
         Question?.Invoke(this, args);
-
-        Console.Error.WriteLine($"[ALPM_QUESTION] Selected provider index: {args.Response}");
 
         // Write the response back to the UseIndex field
         selectQuestion.UseIndex = args.Response;
