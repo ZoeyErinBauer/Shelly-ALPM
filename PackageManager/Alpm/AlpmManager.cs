@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using PackageManager.Alpm.Questions;
 using PackageManager.Utilities;
 using static PackageManager.Alpm.AlpmReference;
 
@@ -200,15 +201,54 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             return;
         }
 
-        var questionText = questionType switch
+        string? packageName = null;
+        string? questionText = null;
+
+        switch (questionType)
         {
-            AlpmQuestionType.InstallIgnorePkg => "Install IgnorePkg?",
-            AlpmQuestionType.ReplacePkg => "Replace package?",
-            AlpmQuestionType.ConflictPkg => "Conflict found. Remove?",
-            AlpmQuestionType.CorruptedPkg => "Corrupted pkg. Delete?",
-            AlpmQuestionType.ImportKey => "Import GPG key?",
-            _ => $"Unknown question type: {question.Type}"
-        };
+            case AlpmQuestionType.InstallIgnorePkg:
+                var ignoreQuestion = Marshal.PtrToStructure<InstallIgnorePackage>(questionPtr);
+                if (ignoreQuestion.Pkg != IntPtr.Zero)
+                {
+                    packageName = Marshal.PtrToStringUTF8(GetPkgName(ignoreQuestion.Pkg));
+                }
+
+                questionText = $"Install ignored package: {packageName}?";
+                break;
+            case AlpmQuestionType.ReplacePkg:
+                var replaceQuestion = Marshal.PtrToStructure<ReplacePackage>(questionPtr);
+                if (replaceQuestion.OldPkg != IntPtr.Zero)
+                {
+                    packageName = Marshal.PtrToStringUTF8(GetPkgName(replaceQuestion.OldPkg));
+                }
+
+                questionText = $"Replace {packageName}?";
+                break;
+            case AlpmQuestionType.ConflictPkg:
+                var conflictQuestion = Marshal.PtrToStructure<ConflictPackage>(questionPtr);
+                var conflict = Marshal.PtrToStructure<Conflict>(conflictQuestion.Conflict);
+                var packageOne = Marshal.PtrToStringAnsi(conflict.PackageOne);
+                var packageTwo = Marshal.PtrToStringAnsi(conflict.PackageTwo);
+                packageName = $"{packageOne ?? ""} conflicts with {packageTwo ?? ""}";
+                questionText = $"{packageName} Remove conflict?";
+                break;
+            case AlpmQuestionType.CorruptedPkg:
+                var corruptQuestion = Marshal.PtrToStructure<CorruptedPackage>(questionPtr);
+                if (corruptQuestion.Filepath != IntPtr.Zero)
+                {
+                    packageName = Marshal.PtrToStringUTF8(corruptQuestion.Filepath);
+                }
+
+                questionText = $"Corrupted Package {packageName}. Delete?";
+                break;
+            case AlpmQuestionType.ImportKey:
+                questionText = "Import missing GPG Key?";
+
+                break;
+            default:
+                questionText = $"Unknown question type: {question.Type}";
+                break;
+        }
 
         var args = new AlpmQuestionEventArgs(questionType, questionText);
         Question?.Invoke(this, args);
