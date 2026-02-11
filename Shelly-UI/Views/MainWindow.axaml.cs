@@ -7,7 +7,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
-using Shelly_UI.Assets;
+using Res = Shelly_UI.Assets.Resources;
 using Shelly_UI.Services;
 using Shelly_UI.ViewModels;
 
@@ -58,7 +58,7 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
             // Brief delay before showing the update prompt dialog
             await Task.Delay(100);
 
-            var dialog = new QuestionDialog(Resources.NewVersionAvailable);
+            var dialog = new QuestionDialog(Res.NewVersionAvailable);
             var result = await dialog.ShowDialog<bool>(this);
             if (!result) return;
 

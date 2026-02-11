@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Shelly_UI.Assets;
+using Res = Shelly_UI.Assets.Resources;
 
 namespace Shelly_UI.Views;
 
@@ -29,7 +29,7 @@ public partial class UpdateProgressDialog : Window
         {
             Success = success;
             CloseButton.IsEnabled = true;
-            AppendOutput(success ? $"\n✓ {Resources.UpdateCompletedSuccessfully}" : $"\n✗ {Resources.UpdateFailedShort}");
+            AppendOutput(success ? $"\n✓ {Res.UpdateCompletedSuccessfully}" : $"\n✗ {Res.UpdateFailedShort}");
         });
     }
 
