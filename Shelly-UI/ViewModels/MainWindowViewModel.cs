@@ -34,10 +34,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private static readonly Regex AlpmProgressPattern =
         new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
 
-    private static readonly Regex LogPercentagePattern = new(@"([^:\s\[\]]+): \d+% -> (\d+)%", RegexOptions.Compiled);
-    
+    private static readonly Regex LogPercentagePattern =
+        new(@"(?:\[.*?\]\s*)*(.+?): (?:\d+% -> )?(\d+)%", RegexOptions.Compiled);
+
     private static readonly Regex FlatpakProgressPattern =
-        new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)", RegexOptions.Compiled);
+        new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)",
+            RegexOptions.Compiled);
+    
+    private static readonly Regex RunningHooksPattern = new(@"(?:\[.*?\]\s*)*Running hooks\.\.\.", RegexOptions.Compiled);
 
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
         IServiceProvider services,
@@ -326,7 +330,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 var matchAlpm = AlpmProgressPattern.Match(log);
                 var matchFormatted = LogPercentagePattern.Match(log);
                 var matchFlatpak = FlatpakProgressPattern.Match(log);
-
+                var matchHooks = RunningHooksPattern.Match(log);
+                
                 if (matchAlpm.Success)
                 {
                     var progressType = matchAlpm.Groups[1].Value;
@@ -339,6 +344,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                             "ReinstallStart" => "Reinstalling",
                             "AddStart" => "Installing",
                             "UpgradeStart" => "Updating",
+                            "ConflictStart" => "Checking conflicts",
                             "RemoveStart" => "Removing",
                             _ => progressType.Replace("Start", "ing")
                         };
@@ -360,13 +366,17 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 }
                 else if (matchFormatted.Success)
                 {
-                    var pkg = matchFormatted.Groups[1].Value.Trim();
-                    if (int.TryParse(matchFormatted.Groups[2].Value, out var percent))
-                    {
-                        GlobalProgressValue = percent;
-                        GlobalProgressText = $"{percent}%";
-                        GlobalBusyMessage = $"Processing {pkg}...";
-                    }
+                    var progressType = matchFormatted.Groups[1].Value.Trim();
+                    if (!int.TryParse(matchFormatted.Groups[2].Value, out var percent)) return;
+                    GlobalProgressValue = percent;
+                    GlobalProgressText = $"{percent}%";
+                    GlobalBusyMessage = $"{progressType}: {percent}%";
+                }
+                else if(matchHooks.Success)
+                {
+                    GlobalBusyMessage = "Running hooks...";
+                    GlobalProgressValue = 0;
+                    ProgressIndeterminate = true;
                 }
             });
 
@@ -535,7 +545,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _selectedProviderIndex;
         set => this.RaiseAndSetIfChanged(ref _selectedProviderIndex, value);
     }
-    
+
 
     public string SuccessColor
     {
@@ -642,6 +652,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         get => _metaSearchString;
         set => this.RaiseAndSetIfChanged(ref _metaSearchString, value);
     }
+
     private bool _isPackageOpen;
 
     public bool IsPackageOpen
@@ -783,6 +794,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     #region ActionToast
 
     private bool _showActionToast;
+
     public bool ShowActionToast
     {
         get => _showActionToast;
@@ -790,6 +802,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     }
 
     private string _actionToastMessage = string.Empty;
+
     public string ActionToastMessage
     {
         get => _actionToastMessage;
@@ -797,6 +810,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     }
 
     private bool _actionToastIsSuccess = true;
+
     public bool ActionToastIsSuccess
     {
         get => _actionToastIsSuccess;
@@ -808,7 +822,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     public void ShowToast(string message, bool isSuccess = true, int durationMs = 4000)
     {
         _toastDismissTimer?.Dispose();
-        
+
         ActionToastMessage = message;
         ActionToastIsSuccess = isSuccess;
         ShowActionToast = true;
