@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.XPath;
 using Avalonia.Controls;
 using PackageManager.Aur;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
@@ -106,7 +107,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.InstallPackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -122,7 +123,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.InstallingSelectedPackages;
                 }
 
                 //do work

@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
@@ -73,7 +74,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.UpdatePackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -89,7 +90,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Updating selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.UpdatingSelectedPackages;
                 }
 
                 //do work

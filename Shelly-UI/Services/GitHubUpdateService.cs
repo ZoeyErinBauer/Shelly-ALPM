@@ -12,6 +12,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Shelly_UI.Assets;
 using Shelly_UI.Models;
 using Shelly_UI.Views;
 
@@ -160,7 +161,7 @@ public class GitHubUpdateService : IUpdateService
 
         // Get credentials via PrivilegedOperationService's credential manager
         var credentialManager = App.Services.GetRequiredService<ICredentialManager>();
-        var hasCredentials = await credentialManager.RequestCredentialsAsync("Install Shelly update");
+        var hasCredentials = await credentialManager.RequestCredentialsAsync(Resources.InstallShellyUpdate);
         if (!hasCredentials)
         {
             Console.WriteLine("Update cancelled: Authentication cancelled by user.");

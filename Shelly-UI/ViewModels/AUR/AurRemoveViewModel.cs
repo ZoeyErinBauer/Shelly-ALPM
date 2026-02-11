@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
@@ -129,7 +130,7 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Remove AUR Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.RemoveAURPackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -144,7 +145,7 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.RemovingSelectedPackages;
                 }
 
                 //do work

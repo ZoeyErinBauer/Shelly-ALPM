@@ -37,7 +37,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Install Package(s)"
+                            Title="{x:Static lang:Resources.InstallPackages}"
                             TitleIcon="Download"
                             TitleCommand="{Binding ToggleConfirmAction}"
                             ShowTitleButton="True"

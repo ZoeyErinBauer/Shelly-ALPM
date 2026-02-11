@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -114,7 +115,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Updated selected package...";
+                mainWindow.GlobalBusyMessage = Resources.UpdatingSelectedPackage;
             }
 
             //do work
@@ -151,7 +152,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Updated selected package...";
+                mainWindow.GlobalBusyMessage = Resources.UpdatingSelectedPackage;
             }
 
             //do work

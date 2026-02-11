@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using Res = Shelly_UI.Assets.Resources;
 
 namespace Shelly_UI.Views;
 
@@ -13,7 +14,7 @@ public class ProviderSelectionDialog : Window
 
     public ProviderSelectionDialog(string title, IList<string> options)
     {
-        Title = string.IsNullOrWhiteSpace(title) ? "Select provider" : title;
+        Title = string.IsNullOrWhiteSpace(title) ? Res.SelectProviderFallback : title;
         Width = 480;
         Height = 410;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -38,14 +39,14 @@ public class ProviderSelectionDialog : Window
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8 };
 
-        var okButton = new Button { Content = "OK", IsDefault = true };
+        var okButton = new Button { Content = Res.OK, IsDefault = true };
         okButton.Click += (_, _) =>
         {
             var idx = _listBox.SelectedIndex;
             if (idx < 0) idx = 0;
             Close(idx);
         };
-        var cancelButton = new Button { Content = "Cancel", IsCancel = true };
+        var cancelButton = new Button { Content = Res.Cancel, IsCancel = true };
         cancelButton.Click += (_, _) => Close(0);
 
         buttons.Children.Add(okButton);

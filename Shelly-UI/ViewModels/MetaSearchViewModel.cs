@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -97,7 +98,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
 
             if (!_credentialManager.IsValidated)
             {
-                if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                if (!await _credentialManager.RequestCredentialsAsync(Resources.InstallPackages)) return;
 
                 if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -111,7 +112,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                mainWindow.GlobalBusyMessage = Resources.InstallingSelectedPackages;
             }
 
             var standardPackages = selected.Where(x => x.PackageType == PackageType.STANDARD).Select(x => x.Name).ToList();
@@ -124,11 +125,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install standard packages: {result.Error}");
-                    mainWindow?.ShowToast($"Standard installation failed: {result.Error}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.StandardInstallFailedFormat, result.Error), isSuccess: false);
                 }
                 else
                 {
-                    mainWindow?.ShowToast($"Successfully installed {standardPackages.Count} standard package{(standardPackages.Count > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.SuccessfullyInstalledStandardFormat, standardPackages.Count));
                 }
             }
 
@@ -138,11 +139,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install AUR packages: {result.Error}");
-                    mainWindow?.ShowToast($"AUR installation failed: {result.Error}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.AurInstallFailedFormat, result.Error), isSuccess: false);
                 }
                 else
                 {
-                    mainWindow?.ShowToast($"Successfully installed {aurPackages.Count} AUR package{(aurPackages.Count > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.SuccessfullyInstalledAurFormat, aurPackages.Count));
                 }
             }
 
@@ -154,11 +155,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                     if (!result.Success)
                     {
                         Console.WriteLine($"Failed to install Flatpak package {package}: {result.Error}");
-                        mainWindow?.ShowToast($"Flatpak installation failed: {result.Error}", isSuccess: false);
+                        mainWindow?.ShowToast(string.Format(Resources.FlatpakInstallFailedFormat, result.Error), isSuccess: false);
                     }
                     else
                     {
-                        mainWindow?.ShowToast($"Successfully installed Flatpak package {package}");
+                        mainWindow?.ShowToast(string.Format(Resources.SuccessfullyInstalledFlatpakFormat, package));
                     }
                 }
             }
@@ -168,7 +169,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         catch (Exception e)
         {
             Console.WriteLine($"Failed to install packages: {e.Message}");
-            mainWindow?.ShowToast($"Installation failed: {e.Message}", isSuccess: false);
+            mainWindow?.ShowToast(string.Format(Resources.InstallationFailedFormat, e.Message), isSuccess: false);
         }
         finally
         {

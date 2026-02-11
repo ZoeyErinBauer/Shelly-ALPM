@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Shelly_UI.Assets;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
@@ -107,8 +108,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 var dialog =
                     new QuestionDialog(
-                        "Some packages are not selected. A full system upgrade is always recommended when updating.",
-                        "Continue", "Cancel");
+                        Resources.PartialUpdateWarning,
+                        Resources.Continue, Resources.Cancel);
                 var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
 
                 if (!result) return; // User cancelled
@@ -123,7 +124,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 // Request credentials 
                 if (!_credentialManager.IsValidated)
                 {
-                    if (!await _credentialManager.RequestCredentialsAsync("Update Packages")) return;
+                    if (!await _credentialManager.RequestCredentialsAsync(Resources.UpdatePackages)) return;
 
                     if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -142,8 +143,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = isFullUpgrade
-                        ? "Performing full system upgrade..."
-                        : "Updating selected packages...";
+                        ? Resources.PerformingFullUpgrade
+                        : Resources.UpdatingSelectedPackages;
                 }
 
                 // Use full system upgrade when all packages are selected, otherwise update specific packages
@@ -156,13 +157,13 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to update packages: {result.Error}");
-                    mainWindow?.ShowToast($"Update failed: {result.Error}", false);
+                    mainWindow?.ShowToast(string.Format(Resources.UpdateFailedFormat, result.Error), false);
                 }
                 else
                 {
                     var packageCount = selectedPackages.Count;
                     mainWindow?.ShowToast(
-                        $"Successfully updated {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                        string.Format(Resources.SuccessfullyUpdatedFormat, packageCount));
                 }
 
                 await Sync();

@@ -29,7 +29,7 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}" RowDefinitions="Auto,*">
                     <menus:HeaderRow
-                        Title="Update AUR Package(s)"
+                        Title="{x:Static lang:Resources.UpdateAUR}"
                         ShowTitleButton="True"
                         TitleIcon="Download"
                         TitleCommand="{Binding AlpmUpdateCommand}"
