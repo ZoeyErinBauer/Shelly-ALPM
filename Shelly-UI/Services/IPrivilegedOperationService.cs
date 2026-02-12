@@ -23,6 +23,7 @@ public interface IPrivilegedOperationService
     Task<List<AurPackageDto>> GetAurInstalledPackagesAsync();
     Task<List<AurUpdateDto>> GetAurUpdatePackagesAsync();
     Task<List<AurPackageDto>> SearchAurPackagesAsync(string query);
+    Task<bool> IsPackageInstalledOnMachine(string packageName);
 }
 
 public class OperationResult
