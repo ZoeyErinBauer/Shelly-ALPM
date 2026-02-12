@@ -173,7 +173,8 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
-                    mainWindow?.ShowToast($"Installation failed: {result.Error}", isSuccess: false);
+                    var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                    mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
                 }
                 else
                 {

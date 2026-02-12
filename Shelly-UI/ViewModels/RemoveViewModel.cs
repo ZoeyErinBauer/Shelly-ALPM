@@ -160,7 +160,8 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
-                    mainWindow?.ShowToast($"Removal failed: {result.Error}", isSuccess: false);
+                    var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                    mainWindow?.ShowToast($"Removal failed: {err}", isSuccess: false);
                 }
                 else
                 {
