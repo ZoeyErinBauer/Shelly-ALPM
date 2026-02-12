@@ -21,6 +21,8 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package);
 
     Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package);
+    
+    Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream();
 }
 
 public class UnprivilegedOperationResult

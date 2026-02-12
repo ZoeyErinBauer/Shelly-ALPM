@@ -66,6 +66,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     {
         try
         {
+            await _unprivilegedOperationService.FlatpakSyncRemoteAppstream();
             var available = await _unprivilegedOperationService.ListAppstreamFlatpak();
 
             var models = available.Select(u => new FlatpakModel

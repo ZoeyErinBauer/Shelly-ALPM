@@ -185,6 +185,11 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     {
         return await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
     }
+    
+    public async Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream()
+    {
+        return await ExecuteUnprivilegedCommandAsync("Sync remote", "flatpak sync-remote-appstream");
+    }
 
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)

@@ -219,8 +219,8 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                     var flatPakInstalled = await _unprivilegedOperationService.ListFlatpakPackages().ContinueWith(x =>
                         x.Result.Select(y => new MetaPackageModel(y.Id, y.Name, y.Version, y.Description,
                             PackageType.FLATPAK, y.Summary, "Flathub", true)).ToList());
-                    var flatPakAvailable = _databaseService.GetCollection<FlatpakModel>("flatpaks")
-                        .Where(x => x.Name.Contains(SearchText ?? "")).Select(y =>
+                    var flatPakAvailable = _databaseService.SearchDatabase<FlatpakModel, string>("flatpaks",  x => string.IsNullOrWhiteSpace(SearchText) ||
+                            x.Name.Contains(SearchText)).Select(y =>
                             new MetaPackageModel(y.Id, y.Name, y.Version, y.Description, PackageType.FLATPAK, y.Summary,
                                 "Flathub", flatPakInstalled.Any(z => z.Name == y.Name))).ToList();
                     return flatPakAvailable;
@@ -272,6 +272,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
     {
         try
         {
+            await _unprivilegedOperationService.FlatpakSyncRemoteAppstream();
             await _databaseService.EnsureIndex<FlatpakModel>("flatpaks", x => x.Name, x => x.Categories);
             var available = await _unprivilegedOperationService.ListAppstreamFlatpak();
 

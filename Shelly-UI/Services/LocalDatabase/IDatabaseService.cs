@@ -44,6 +44,18 @@ public interface IDatabaseService
         int pageSize,
         Expression<Func<T, TKey>> orderBySelector,
         Expression<Func<T, bool>>? predicate = null);
+    
+    /// <summary>
+    /// Retrieves a paginated subset of items from the specified collection with optional filtering and ordering.
+    /// </summary>
+    /// <typeparam name="T">The type of items in the collection.</typeparam>
+    /// <typeparam name="TKey">The type of the property used for ordering.</typeparam>
+    /// <param name="collection">The name of the collection to query.</param>
+    /// <param name="predicate">An optional filter expression to apply to the query.</param>
+    /// <returns>A list of items for the specified page.</returns>
+    public List<T> SearchDatabase<T, TKey>(
+        string collection,
+        Expression<Func<T, bool>>? predicate = null);
 
     /// <summary>
     /// Ensures that the specified indexes exist on the collection for improved query performance.
