@@ -272,6 +272,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
     {
         try
         {
+            await _unprivilegedOperationService.FlatpakSyncRemoteAppstream();
             await _databaseService.EnsureIndex<FlatpakModel>("flatpaks", x => x.Name, x => x.Categories);
             var available = await _unprivilegedOperationService.ListAppstreamFlatpak();
 
