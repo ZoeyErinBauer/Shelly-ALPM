@@ -156,7 +156,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to update packages: {result.Error}");
-                    mainWindow?.ShowToast($"Update failed: {result.Error}", false);
+                    var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                    mainWindow?.ShowToast($"Update failed: {err}", false);
                 }
                 else
                 {

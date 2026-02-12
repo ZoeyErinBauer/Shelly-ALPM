@@ -124,7 +124,8 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install standard packages: {result.Error}");
-                    mainWindow?.ShowToast($"Standard installation failed: {result.Error}", isSuccess: false);
+                    var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                    mainWindow?.ShowToast($"Standard installation failed: {err}", isSuccess: false);
                 }
                 else
                 {
@@ -138,7 +139,8 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install AUR packages: {result.Error}");
-                    mainWindow?.ShowToast($"AUR installation failed: {result.Error}", isSuccess: false);
+                    var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                    mainWindow?.ShowToast($"AUR installation failed: {err}", isSuccess: false);
                 }
                 else
                 {
@@ -168,7 +170,8 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         catch (Exception e)
         {
             Console.WriteLine($"Failed to install packages: {e.Message}");
-            mainWindow?.ShowToast($"Installation failed: {e.Message}", isSuccess: false);
+            var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+            mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
         }
         finally
         {
