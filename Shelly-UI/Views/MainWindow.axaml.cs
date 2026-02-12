@@ -47,13 +47,20 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
     {
         try
         {
+            var privilegedService = App.Services.GetRequiredService<IPrivilegedOperationService>();
+            var isAurInstall = await privilegedService.IsPackageInstalledOnMachine("shelly"  );
+            if (isAurInstall)
+            {
+                Console.WriteLine("App installed from AUR, skipping GitHub update check.");
+                return;
+            }
             // Small delay to ensure window is fully positioned before showing dialog
             await Task.Delay(100);
             
             var updateService = new GitHubUpdateService();
             var hasUpdate = await updateService.CheckForUpdateAsync();
             if (!hasUpdate) return;
-
+            
             // Brief delay before showing the update prompt dialog
             await Task.Delay(100);
 

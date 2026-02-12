@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -369,6 +370,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         }
     }
 
+    public async Task<bool> IsPackageInstalledOnMachine(string packageName)
+    {
+        var aurPackages = await GetAurInstalledPackagesAsync();
+
+        //Enable below statement if moved to standard package.
+        //var standardPackages = await GetInstalledPackagesAsync();
+        return aurPackages.Any(x => x.Name.Contains(packageName));
+    }
+
     private async Task<OperationResult> ExecuteCommandAsync(params string[] args)
     {
         var arguments = string.Join(" ", args);
@@ -568,7 +578,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                     var title = string.IsNullOrWhiteSpace(providerQuestion)
                                         ? "Select provider"
                                         : providerQuestion;
-                                    var dialog = new ProviderSelectionDialog("Select Provider for: {title}", providerOptions);
+                                    var dialog = new ProviderSelectionDialog("Select Provider for: {title}",
+                                        providerOptions);
                                     var result = await dialog.ShowDialog<int>(desktop.MainWindow);
                                     return result;
                                 }
@@ -579,7 +590,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await SafeWriteAsync(selectedIndex.ToString());
                             Console.Error.WriteLine($"[Shelly]Wrote selection {selectedIndex.ToString()}");
-                           
+
                             awaitingProviderSelection = false;
                             providerQuestion = null;
                             providerOptions.Clear();
