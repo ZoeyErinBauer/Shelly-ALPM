@@ -73,6 +73,25 @@ public class DatabaseService : IDatabaseService
     }
 
     /// <inheritdoc/>
+    public List<T> SearchDatabase<T, TKey>(
+        string collection,
+        Expression<Func<T, bool>>? predicate = null)
+    {
+        using var db = new LiteDatabase(DbFolder);
+        var col = db.GetCollection<T>(collection);
+
+        var query = col.Query();
+
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
+
+        return query
+            .ToList();
+    }
+
+    /// <inheritdoc/>
     public Task EnsureIndex<T>(string collection, params Expression<Func<T, object>>[] indexes) where T : class
     {
         using (var db = new LiteDatabase(DbFolder))
