@@ -70,14 +70,21 @@ public class InstallLocalPackage : Command<InstallLocalPackageSettings>
             }
         };
 
-        AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
+        AnsiConsole.MarkupLine("[yellow]Initializing ALPM...[/]");
         manager.Initialize();
         manager.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation));
+        manager.Dispose();
         return 0;
     }
 
-    private bool IsArchPackage(string directoryPath)
+    private async Task<bool> IsArchPackage(string filePath)
     {
-        return File.Exists(Path.Combine(directoryPath, "PKGBUILD"));
+        var extenstion = Path.GetExtension(filePath);
+        switch (extenstion)
+        {
+            
+        }
+        await using var fileStream = File.OpenRead(filePath);
+        return File.Exists(Path.Combine(filePath, "PKGBUILD"));
     }
 }
