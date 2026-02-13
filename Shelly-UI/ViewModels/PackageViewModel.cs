@@ -99,17 +99,25 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             var installed = await _privilegedOperationService.GetInstalledPackagesAsync();   
             var installedNames = new HashSet<string>(installed?.Select(x => x.Name) ?? Enumerable.Empty<string>());
 
-            var models = packages.Select(u => new PackageModel
-            {
-                Name = u.Name,
-                Version = u.Version,
-                DownloadSize = u.Size,
-                Description = u.Description,
-                Url = u.Url,
-                IsChecked = false,
-                IsInstalled = installedNames.Contains(u.Name),
-                Repository = u.Repository
-            }).ToList();
+            var models = packages
+                .GroupBy(u => u.Name)
+                .Select(g =>
+                {
+                    var first = g.First();
+                    var sources = g.Select(p => p.Repository).Where(r => !string.IsNullOrEmpty(r)).Distinct().ToList()!;
+                    return new PackageModel
+                    {
+                        Name = first.Name,
+                        Version = first.Version,
+                        DownloadSize = first.Size,
+                        Description = first.Description,
+                        Url = first.Url,
+                        IsChecked = false,
+                        IsInstalled = installedNames.Contains(first.Name),
+                        Repository = sources.Count > 1 ? "Multiple Repos" : sources.First()
+                    };
+                })
+                .ToList();
             
             RxApp.MainThreadScheduler.Schedule(() =>
             {
