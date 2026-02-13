@@ -67,6 +67,9 @@
                                                     <TextBlock
                                                         Text="{Binding Summary}"
                                                         Margin="0,4,0,0" />
+                                                    <TextBlock
+                                                        Text="{Binding Version}"
+                                                        Margin="0,4,0,0" />
                                                 </StackPanel>
                                                 <Button
                                                     Grid.Column="2"

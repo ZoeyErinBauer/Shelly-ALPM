@@ -72,8 +72,9 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
             var models = available.Select(u => new FlatpakModel
             {
                 Name = u.Name,
-                Version = u.Version,
+                Version = u.Releases[0].Version.ToString(),
                 Summary = u.Summary,
+                Description = u.Description,
                 IconPath = $"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{u.Id}.png",
                 Id = u.Id,
                 Categories = u.Categories,
