@@ -35,7 +35,6 @@ public class GitHubUpdateService : IUpdateService
     {
         try
         {
-            
             await Console.Error.WriteLineAsync("[DEBUG] Checking for updates...");
             await Console.Error.WriteLineAsync($"[DEBUG] URL: {Url}");
             _latestRelease = await _httpClient.GetFromJsonAsync(Url, ShellyUIJsonContext.Default.GitHubRelease);
@@ -58,8 +57,10 @@ public class GitHubUpdateService : IUpdateService
                 Console.Error.WriteLine($"[DEBUG] Current version: {currentVersion}, Latest version: {latestVersion}");
                 // Normalize both versions to 3 components (Major.Minor.Build) for comparison
                 // This avoids issues where 1.4.0 (Revision=-1) is incorrectly considered less than 1.4.0.0 (Revision=0)
-                var normalizedLatest = new Version(latestVersion.Major, latestVersion.Minor, Math.Max(0, latestVersion.Build));
-                var normalizedCurrent = new Version(currentVersion.Major, currentVersion.Minor, Math.Max(0, currentVersion.Build));
+                var normalizedLatest = new Version(latestVersion.Major, latestVersion.Minor,
+                    Math.Max(0, latestVersion.Build));
+                var normalizedCurrent = new Version(currentVersion.Major, currentVersion.Minor,
+                    Math.Max(0, currentVersion.Build));
                 return normalizedLatest > normalizedCurrent;
             }
         }
@@ -69,6 +70,25 @@ public class GitHubUpdateService : IUpdateService
         }
 
         return false;
+    }
+
+    public async Task<string> PullReleaseNotesAsync()
+    {
+        try
+        {
+            await Console.Error.WriteLineAsync("[DEBUG] Checking for updates...");
+            await Console.Error.WriteLineAsync($"[DEBUG] URL: {Url}");
+            _latestRelease = await _httpClient.GetFromJsonAsync(Url, ShellyUIJsonContext.Default.GitHubRelease);
+            await Console.Error.WriteLineAsync($"[DEBUG] Latest release: {_latestRelease?.TagName}");
+
+            return _latestRelease?.Body ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking for updates: {ex.Message}");
+        }
+
+        return string.Empty;
     }
 
     public async Task DownloadAndInstallUpdateAsync()
@@ -112,7 +132,6 @@ public class GitHubUpdateService : IUpdateService
 
             Console.WriteLine("Installing update...");
             await RunInstallScript(extractPath);
-
         }
         catch (Exception ex)
         {
@@ -176,12 +195,13 @@ public class GitHubUpdateService : IUpdateService
 
         // Delay so it doesn't open in the wrong location
         await Task.Delay(100);
-        
-    
+
+
         var dialog = await Dispatcher.UIThread.InvokeAsync(() =>
         {
             var d = new UpdateProgressDialog();
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow != null)
             {
                 d.Show(desktop.MainWindow);
             }
@@ -189,6 +209,7 @@ public class GitHubUpdateService : IUpdateService
             {
                 d.Show();
             }
+
             return d;
         });
 
@@ -224,17 +245,17 @@ public class GitHubUpdateService : IUpdateService
         };
 
         process.Start();
-        
+
         await process.StandardInput.WriteLineAsync(password);
         await process.StandardInput.FlushAsync();
-        
+
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         await process.WaitForExitAsync();
 
         var success = process.ExitCode == 0;
         dialog.SetComplete(success);
-        
+
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             while (dialog.IsVisible)
