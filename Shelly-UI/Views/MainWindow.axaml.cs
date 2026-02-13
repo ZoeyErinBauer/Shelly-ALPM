@@ -61,10 +61,11 @@ public partial class MainWindow :  ReactiveWindow<MainWindowViewModel>
             var hasUpdate = await updateService.CheckForUpdateAsync();
             if (!hasUpdate) return;
             
+            var releaseNotes = await updateService.PullReleaseNotesAsync();
             // Brief delay before showing the update prompt dialog
             await Task.Delay(100);
 
-            var dialog = new QuestionDialog("A new version of Shelly is available. Would you like to update now?");
+            var dialog = new CustomControls.Dialogs.UpdateDialog($"A new version of Shelly is available. Would you like to update now?" , $"{releaseNotes}");
             var result = await dialog.ShowDialog<bool>(this);
             if (!result) return;
 
