@@ -42,21 +42,16 @@
                                 TitleIcon="Download"
                                 TitleCommand="{Binding ToggleConfirmAction}"
                                 ShowTitleButton="True"
+                                ShowSecondaryButton="True"
+                                SecondaryButtonCommand="{Binding InstallLocalPackageCommand}"
+                                SecondaryButtonText="Install Local Package"
+                                SecondaryButtonTooltip="Install a local package file (.xz, .gz, .zst)"
+                                SecondaryButtonIcon="FolderOpen"
                                 SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                                 SearchText="{Binding SearchText, Mode=TwoWay}"
                                 SyncCommand="{Binding SyncCommand}"
                                 SyncTooltip="{x:Static lang:Resources.Sync}"
                                 SyncIcon="Sync"/>
-                            <Button Command="{Binding InstallLocalPackageCommand}"
-                                    HorizontalAlignment="Right"
-                                    Margin="0,4,12,4"
-                                    Padding="12,6"
-                                    ToolTip.Tip="Install a local package file (.xz, .gz, .zst)">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <avalonia:MaterialIcon Kind="FolderOpen" Width="18" Height="18" />
-                                    <TextBlock Text="Install Local Package" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
                         </StackPanel>
                         <DataGrid
                             Name="PackageDataGrid"
