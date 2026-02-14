@@ -13,14 +13,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
         Dictionary<string, int> packageProgress = new();
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
-        if (!settings.NoConfirm)
-        {
-            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
-            {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
-            }
-        }
+     
 
         using var manager = new AlpmManager();
 
@@ -117,6 +110,14 @@ public class UpgradeCommand : Command<UpgradeSettings>
             table.AddRow(pkg.Name, pkg.CurrentVersion, pkg.NewVersion, pkg.DownloadSize.ToString());
         }
         AnsiConsole.Write(table);
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
         AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
         manager.SyncSystemUpdate();
 
