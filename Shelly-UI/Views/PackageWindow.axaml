@@ -36,16 +36,28 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <menus:HeaderRow
-                            Title="Install Package(s)"
-                            TitleIcon="Download"
-                            TitleCommand="{Binding ToggleConfirmAction}"
-                            ShowTitleButton="True"
-                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
-                            SearchText="{Binding SearchText, Mode=TwoWay}"
-                            SyncCommand="{Binding SyncCommand}"
-                            SyncTooltip="{x:Static lang:Resources.Sync}"
-                            SyncIcon="Sync"/>
+                        <StackPanel Grid.Row="0">
+                            <menus:HeaderRow
+                                Title="Install Package(s)"
+                                TitleIcon="Download"
+                                TitleCommand="{Binding ToggleConfirmAction}"
+                                ShowTitleButton="True"
+                                SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                                SearchText="{Binding SearchText, Mode=TwoWay}"
+                                SyncCommand="{Binding SyncCommand}"
+                                SyncTooltip="{x:Static lang:Resources.Sync}"
+                                SyncIcon="Sync"/>
+                            <Button Command="{Binding InstallLocalPackageCommand}"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,4,12,4"
+                                    Padding="12,6"
+                                    ToolTip.Tip="Install a local package file (.xz, .gz, .zst)">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <avalonia:MaterialIcon Kind="FolderOpen" Width="18" Height="18" />
+                                    <TextBlock Text="Install Local Package" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                         <DataGrid
                             Name="PackageDataGrid"
                             Grid.Row="1"

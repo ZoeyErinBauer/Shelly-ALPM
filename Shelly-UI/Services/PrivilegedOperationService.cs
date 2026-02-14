@@ -114,6 +114,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Install packages", "install", packageArgs, "--no-confirm");
     }
 
+    public async Task<OperationResult> InstallLocalPackageAsync(string filePath)
+    {
+        return await ExecutePrivilegedCommandAsync("Install local package", "install-local", "--location", filePath, "--no-confirm");
+    }
+
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);

@@ -6,6 +6,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
@@ -44,6 +48,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             .Subscribe(_ => ApplyFilter());
 
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
+        InstallLocalPackageCommand = ReactiveCommand.CreateFromTask(InstallLocalPackage);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
 
@@ -207,6 +212,74 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         }
     }
 
+    private async Task InstallLocalPackage()
+    {
+        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+        try
+        {
+            var topLevel = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            if (topLevel == null) return;
+
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select a local package file",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Package files (*.xz, *.gz, *.zst)")
+                    {
+                        Patterns = ["*.xz", "*.gz", "*.zst"]
+                    }
+                ]
+            });
+
+            if (files.Count == 0) return;
+
+            var filePath = files[0].Path.LocalPath;
+
+            if (!_credentialManager.IsValidated)
+            {
+                if (!await _credentialManager.RequestCredentialsAsync("Install Local Package")) return;
+
+                if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
+
+                var isValidated = await _credentialManager.ValidateInputCredentials();
+
+                if (!isValidated) return;
+            }
+
+            if (mainWindow != null)
+            {
+                mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalProgressText = "0%";
+                mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBusyMessage = "Installing local package...";
+            }
+
+            var result = await _privilegedOperationService.InstallLocalPackageAsync(filePath);
+            if (!result.Success)
+            {
+                Console.WriteLine($"Failed to install local package: {result.Error}");
+                var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
+                mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
+            }
+            else
+            {
+                mainWindow?.ShowToast($"Successfully installed local package");
+            }
+
+            await Sync();
+        }
+        finally
+        {
+            if (mainWindow != null)
+            {
+                mainWindow.IsGlobalBusy = false;
+            }
+        }
+    }
+
     private void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
@@ -217,6 +290,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     public ReactiveCommand<Unit, Unit> AlpmInstallCommand { get; }
+    public ReactiveCommand<Unit, Unit> InstallLocalPackageCommand { get; }
     public ReactiveCommand<Unit, Unit> SyncCommand { get; }
 
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
