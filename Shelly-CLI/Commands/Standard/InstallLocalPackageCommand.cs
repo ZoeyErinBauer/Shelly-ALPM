@@ -148,52 +148,88 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
 
     private static void InitializeAndInstallLocalAlpmPackage(InstallLocalPackageSettings settings)
     {
+        object renderLock = new();
+        var isPaused = false;
         var manager = new AlpmManager();
-        manager.Progress += (sender, args) =>
-        {
-            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
-        };
-
-        manager.Question += (sender, args) =>
-        {
-            // Handle SelectProvider differently - it needs a selection, not yes/no
-            if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+        var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
+        AnsiConsole.Live(progressTable).AutoClear(false)
+            .Start(ctx =>
             {
-                if (settings.NoConfirm)
+                var rowIndex = new Dictionary<string, int>();
+                manager.Progress += (sender, args) =>
                 {
-                    // Machine-readable format for UI integration
-                    Console.Error.WriteLine($"[ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                    for (var i = 0; i < args.ProviderOptions.Count; i++)
+                    lock (renderLock)
                     {
-                        Console.Error.WriteLine($"[ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        var name = args.PackageName ?? "unknown";
+                        var pct = args.Percent ?? 0;
+                        var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
+                        var actionType = args.ProgressType;
+
+                        if (!rowIndex.TryGetValue(name, out var idx))
+                        {
+                            progressTable.AddRow(
+                                $"[blue]{Markup.Escape(name)}[/]",
+                                $"[green]{bar}[/]",
+                                $"{pct}%",
+                                $"{actionType}"
+                            );
+                            rowIndex[name] = rowIndex.Count;
+                        }
+                        else
+                        {
+                            progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
+                            progressTable.UpdateCell(idx, 2, $"{pct}%");
+                        }
                     }
 
-                    Console.Error.WriteLine("[ALPM_PROVIDER_OPTION_END]");
+                    ctx.Refresh();
+                };
+            });
+        manager.Question += (sender, args) =>
+        {
+            lock (renderLock)
+            {
+                // Handle SelectProvider differently - it needs a selection, not yes/no
+                if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+                {
+                    if (settings.NoConfirm)
+                    {
+                        // Machine-readable format for UI integration
+                        Console.Error.WriteLine($"[ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                        for (var i = 0; i < args.ProviderOptions.Count; i++)
+                        {
+                            Console.Error.WriteLine($"[ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                        }
+
+                        Console.Error.WriteLine("[ALPM_PROVIDER_OPTION_END]");
+                        Console.Error.Flush();
+                        var input = Console.ReadLine();
+                        args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                    }
+                    else
+                    {
+                        var selection = AnsiConsole.Prompt(
+                            new SelectionPrompt<string>()
+                                .Title($"[yellow]{args.QuestionText}[/]")
+                                .AddChoices(args.ProviderOptions));
+                        args.Response = args.ProviderOptions.IndexOf(selection);
+                    }
+                }
+                else if (settings.NoConfirm)
+                {
+                    // Machine-readable format for UI integration
+                    Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                     Console.Error.Flush();
                     var input = Console.ReadLine();
-                    args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                    args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true
+                        ? 1
+                        : 0;
                 }
                 else
                 {
-                    var selection = AnsiConsole.Prompt(
-                        new SelectionPrompt<string>()
-                            .Title($"[yellow]{args.QuestionText}[/]")
-                            .AddChoices(args.ProviderOptions));
-                    args.Response = args.ProviderOptions.IndexOf(selection);
+                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                    args.Response = response ? 1 : 0;
                 }
-            }
-            else if (settings.NoConfirm)
-            {
-                // Machine-readable format for UI integration
-                Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                Console.Error.Flush();
-                var input = Console.ReadLine();
-                args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
-            }
-            else
-            {
-                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                args.Response = response ? 1 : 0;
             }
         };
 
