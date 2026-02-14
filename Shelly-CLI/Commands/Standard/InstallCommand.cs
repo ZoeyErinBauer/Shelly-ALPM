@@ -144,6 +144,7 @@ public class InstallCommand : Command<InstallPackageSettings>
                         {
                             progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
                             progressTable.UpdateCell(idx, 2, $"{pct}%");
+                            progressTable.UpdateCell(idx, 3, $"{actionType}");
                         }
 
                         ctx.Refresh();
