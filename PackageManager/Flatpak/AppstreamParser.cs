@@ -85,8 +85,10 @@ public class AppstreamParser
         {
             Type = type,
             Id = component.Element("id")?.Value ?? string.Empty,
-            Name = component.Element("name")?.Value ?? string.Empty,
-            Summary = component.Element("summary")?.Value ?? string.Empty,
+            Name = component.Elements("name")
+                .FirstOrDefault(e => e.Attribute(XNamespace.Xml + "lang") == null)?.Value ?? string.Empty,
+            Summary = component.Elements("summary")
+                .FirstOrDefault(e => e.Attribute(XNamespace.Xml + "lang") == null)?.Value ?? string.Empty,
             ProjectLicense = component.Element("project_license")?.Value ?? string.Empty,
             DeveloperName = component.Element("developer_name")?.Value
                 ?? component.Element("developer")?.Element("name")?.Value
@@ -94,7 +96,9 @@ public class AppstreamParser
         };
 
         // Parse description
-        var descriptionElement = component.Element("description");
+        var descriptionElement = component.Elements("description")
+            .FirstOrDefault(e => e.Attribute(XNamespace.Xml + "lang") == null);
+
         if (descriptionElement != null)
         {
             app.Description = ParseDescription(descriptionElement);
