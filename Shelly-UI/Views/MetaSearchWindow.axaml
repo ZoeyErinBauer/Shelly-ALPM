@@ -46,16 +46,17 @@
                             IsReadOnly="True"
                             GridLinesVisibility="None">
                             <DataGrid.Styles>
-                                <Style Selector="DataGridRow" x:DataType="models:PackageModel">
+                                <Style Selector="DataGridRow" x:DataType="models:MetaPackageModel">
                                     <Setter Property="ContextMenu">
                                         <Setter.Value>
-                                            <ContextMenu x:DataType="models:PackageModel">
+                                            <ContextMenu x:DataType="models:MetaPackageModel">
                                                 <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
                                                 <Separator />
                                                 <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
                                                           IsEnabled="False" />
-                                                <MenuItem Header="{Binding SizeString, StringFormat='Size: {0}'}"
-                                                          IsEnabled="False" />
+                                                <MenuItem
+                                                    Header="{Binding PackageType, StringFormat='PackageType: {0}'}"
+                                                    IsEnabled="False" />
                                                 <MenuItem IsEnabled="False">
                                                     <MenuItem.Header>
                                                         <TextBlock
@@ -102,10 +103,19 @@
                                     Header="{x:Static lang:Resources.Version}"
                                     Binding="{Binding Version}"
                                     Width="*" />
-                                <DataGridTextColumn
+                                <DataGridTemplateColumn
                                     Header="Description"
-                                    Binding="{Binding Description}"
-                                    Width="*" />
+                                    Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock
+                                                Text="{Binding Description}"
+                                                TextWrapping="NoWrap"
+                                                TextTrimming="CharacterEllipsis"
+                                                VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn
                                     Header="{x:Static lang:Resources.PackageRepository}"
                                     Binding="{Binding Repository}"

@@ -9,6 +9,8 @@ public class GitHubRelease
     [JsonPropertyName("assets")] public GitHubAsset[] Assets { get; set; } = [];
 
     [JsonPropertyName("tarball_url")] public string TarballUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("body")] public string Body { get; set; } = string.Empty;
 }
 
 public class GitHubAsset
