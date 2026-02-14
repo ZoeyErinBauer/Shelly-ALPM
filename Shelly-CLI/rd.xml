@@ -17,6 +17,8 @@
             <Type Name="Shelly_CLI.Commands.Standard.PackageSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.InstallPackageSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.InstallCommand" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.InstallLocalPackageCommand" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.InstallLocalPackageSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.RemoveCommand" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.UpdateCommand" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.UpgradeSettings" Dynamic="Required All"/>

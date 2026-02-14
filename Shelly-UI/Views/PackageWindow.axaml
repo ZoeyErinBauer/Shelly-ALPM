@@ -36,16 +36,23 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
-                        <menus:HeaderRow
-                            Title="Install Package(s)"
-                            TitleIcon="Download"
-                            TitleCommand="{Binding ToggleConfirmAction}"
-                            ShowTitleButton="True"
-                            SearchWatermark="{x:Static lang:Resources.SearchPackages}"
-                            SearchText="{Binding SearchText, Mode=TwoWay}"
-                            SyncCommand="{Binding SyncCommand}"
-                            SyncTooltip="{x:Static lang:Resources.Sync}"
-                            SyncIcon="Sync"/>
+                        <StackPanel Grid.Row="0">
+                            <menus:HeaderRow
+                                Title="Install Package(s)"
+                                TitleIcon="Download"
+                                TitleCommand="{Binding ToggleConfirmAction}"
+                                ShowTitleButton="True"
+                                ShowSecondaryButton="True"
+                                SecondaryButtonCommand="{Binding InstallLocalPackageCommand}"
+                                SecondaryButtonText="Install Local Package"
+                                SecondaryButtonTooltip="Install a local package file (.xz, .gz, .zst)"
+                                SecondaryButtonIcon="FolderOpen"
+                                SearchWatermark="{x:Static lang:Resources.SearchPackages}"
+                                SearchText="{Binding SearchText, Mode=TwoWay}"
+                                SyncCommand="{Binding SyncCommand}"
+                                SyncTooltip="{x:Static lang:Resources.Sync}"
+                                SyncIcon="Sync"/>
+                        </StackPanel>
                         <DataGrid
                             Name="PackageDataGrid"
                             Grid.Row="1"
