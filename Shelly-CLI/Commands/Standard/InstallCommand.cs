@@ -32,18 +32,11 @@ public class InstallCommand : Command<InstallPackageSettings>
 
         var manager = new AlpmManager();
         object renderLock = new();
-        bool isPaused = false;
-
-        // manager.Progress += (sender, args) =>
-        // {
-        //     AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {args.Percent}%");
-        // };
 
         manager.Question += (sender, args) =>
         {
             lock (renderLock)
             {
-                isPaused = true;
                 AnsiConsole.WriteLine();
                 // Handle SelectProvider differently - it needs a selection, not yes/no
                 if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
@@ -84,8 +77,7 @@ public class InstallCommand : Command<InstallPackageSettings>
                     var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
                     args.Response = response ? 1 : 0;
                 }
-
-                isPaused = false;
+                
             }
         };
 
