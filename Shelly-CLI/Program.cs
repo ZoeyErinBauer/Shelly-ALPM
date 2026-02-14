@@ -99,7 +99,17 @@ public class Program
             config.AddCommand<InstallLocalPackageCommand>("install-local")
                 .WithDescription("Install a local package file (.xz, .gz, .zst)")
                 .WithExample("install-local", "--location", "/path/to/package.pkg.tar.zst")
-                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.xz", "--no-confirm");
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.zst")
+                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.xz")
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.xz")
+                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.gz")
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.gz")
+                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.zst", "--no-confirm")
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.zst", "-n")
+                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.xz", "--no-confirm")
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.xz", "-n")
+                .WithExample("install-local", "--location", "/path/to/package.pkg.tar.gz", "--no-confirm")
+                .WithExample("install-local", "-l", "/path/to/package.pkg.tar.gz", "-n");
 
             config.AddCommand<RemoveCommand>("remove")
                 .WithDescription("Remove one or more packages")
