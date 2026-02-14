@@ -223,16 +223,18 @@
                     </StackPanel>
                 </ToggleButton>
             </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Center" Margin="0,5,0,10">
+                <Button Grid.Column="0" Command="{Binding SearchButtonCommand}"  Margin="0,0,0,0" Background="Transparent" BorderThickness="0">
+                    <StackPanel Orientation="Horizontal" >
+                        <icons:MaterialIcon Kind="Search" Width="22" Height="22"
+                                            Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                </Button>
+                <TextBox Grid.Column="1" x:Name="SearchBox" Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+                         Width="135" Text="{Binding MetaSearchString, Mode=TwoWay}" IsVisible="{Binding IsPaneOpen}"
+                         KeyDown="SearchBox_KeyDown" />
+            </Grid>
         </StackPanel>
-        <TextBox x:Name="SearchBox" Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"
-                 MinWidth="250" MaxWidth="500" Text="{Binding MetaSearchString, Mode=TwoWay}"
-                 KeyDown="SearchBox_KeyDown" />
-        <Button Command="{Binding GoMetaSearch}" Background="Transparent" BorderThickness="0" Padding="12 8">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <icons:MaterialIcon Kind="Search" Width="20" Height="20"
-                                    Foreground="{DynamicResource SystemBaseHighColor}" />
-            </StackPanel>
-        </Button>
         <Button Command="{Binding GoSetting}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Bottom"
