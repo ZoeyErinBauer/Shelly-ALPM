@@ -8,7 +8,7 @@ using ZstdSharp;
 
 namespace Shelly_CLI.Commands.Standard;
 
-public class InstallLocalPackage : AsyncCommand<InstallLocalPackageSettings>
+public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, InstallLocalPackageSettings settings)
     {

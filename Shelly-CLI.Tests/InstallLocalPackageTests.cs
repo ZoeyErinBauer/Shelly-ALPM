@@ -9,14 +9,14 @@ namespace Shelly_CLI.Tests;
 public class InstallLocalPackageTests
 {
     private string _tempDir = null!;
-    private InstallLocalPackage _command = null!;
+    private InstallLocalPackageCommand _command = null!;
 
     [SetUp]
     public void SetUp()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "shelly-cli-tests-" + Guid.NewGuid());
         Directory.CreateDirectory(_tempDir);
-        _command = new InstallLocalPackage();
+        _command = new InstallLocalPackageCommand();
     }
 
     [TearDown]
@@ -95,7 +95,7 @@ public class InstallLocalPackageTests
     public async Task HasBinaries_TarGzWithElfBinary_ReturnsTrue()
     {
         var filePath = CreateTarGzWithBinaryEntry(_tempDir, "test.tar.gz", "mybin", [0x7F, 0x45, 0x4C, 0x46, 0x00]);
-        var result = await InstallLocalPackage.HasBinaries(filePath);
+        var result = await InstallLocalPackageCommand.HasBinaries(filePath);
         Assert.That(result, Is.True);
     }
 
@@ -103,7 +103,7 @@ public class InstallLocalPackageTests
     public async Task HasBinaries_TarGzWithoutElfBinary_ReturnsFalse()
     {
         var filePath = CreateTarGzWithBinaryEntry(_tempDir, "test.tar.gz", "readme.txt", "hello world"u8.ToArray());
-        var result = await InstallLocalPackage.HasBinaries(filePath);
+        var result = await InstallLocalPackageCommand.HasBinaries(filePath);
         Assert.That(result, Is.False);
     }
 
@@ -113,14 +113,14 @@ public class InstallLocalPackageTests
         var filePath = Path.Combine(_tempDir, "test.tar.bz2");
         File.WriteAllBytes(filePath, [0x00]);
         Assert.ThrowsAsync<NotSupportedException>(async () =>
-            await InstallLocalPackage.HasBinaries(filePath));
+            await InstallLocalPackageCommand.HasBinaries(filePath));
     }
 
     [Test]
     public async Task HasBinaries_TarGzWithSmallFile_ReturnsFalse()
     {
         var filePath = CreateTarGzWithBinaryEntry(_tempDir, "test.tar.gz", "tiny", [0x7F, 0x45]);
-        var result = await InstallLocalPackage.HasBinaries(filePath);
+        var result = await InstallLocalPackageCommand.HasBinaries(filePath);
         Assert.That(result, Is.False);
     }
 
@@ -128,7 +128,7 @@ public class InstallLocalPackageTests
     public async Task HasBinaries_TarGzWithDirectoryOnly_ReturnsFalse()
     {
         var filePath = CreateTarGzWithDirectoryOnly(_tempDir, "test.tar.gz", "somedir/");
-        var result = await InstallLocalPackage.HasBinaries(filePath);
+        var result = await InstallLocalPackageCommand.HasBinaries(filePath);
         Assert.That(result, Is.False);
     }
 
