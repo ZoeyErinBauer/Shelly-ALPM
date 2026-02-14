@@ -223,6 +223,17 @@
                     </StackPanel>
                 </ToggleButton>
             </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Center" Margin="0,5,0,10">
+                <Button Grid.Column="0" Command="{Binding SearchButtonCommand}"  Margin="0,0,0,0" Background="Transparent" BorderThickness="0">
+                    <StackPanel Orientation="Horizontal" >
+                        <icons:MaterialIcon Kind="Search" Width="22" Height="22"
+                                            Foreground="{DynamicResource SystemBaseHighColor}" />
+                    </StackPanel>
+                </Button>
+                <TextBox Grid.Column="1" x:Name="SearchBox" Background="Transparent" Watermark="Shelly Search" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+                         Width="135" Text="{Binding MetaSearchString, Mode=TwoWay}" IsVisible="{Binding IsPaneOpen}"
+                         KeyDown="SearchBox_KeyDown" />
+            </Grid>
         </StackPanel>
         <Button Command="{Binding GoSetting}"
                 HorizontalAlignment="Stretch"

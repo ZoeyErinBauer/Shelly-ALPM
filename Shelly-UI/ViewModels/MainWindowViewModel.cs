@@ -280,6 +280,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             return Router.NavigateAndReset.Execute(vm);
         });
 
+        SearchButtonCommand = ReactiveCommand.Create(() =>
+        {
+            if (!IsPaneOpen)
+            {
+                IsPaneOpen = true;
+            }
+            else
+            {
+                GoMetaSearch.Execute().Subscribe();
+            }
+        });
+
 
         _navigationMap = new()
         {
@@ -638,6 +650,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     public static ReactiveCommand<Unit, IRoutableViewModel> GoFlatpak { get; set; } = null!;
 
     public ReactiveCommand<Unit, IRoutableViewModel> GoMetaSearch { get; set; } = null!;
+
+    public ReactiveCommand<Unit, Unit> SearchButtonCommand { get; set; } = null!;
 
     public ReactiveCommand<Unit, bool> CloseSettingsCommand { get; set; } = null!;
 

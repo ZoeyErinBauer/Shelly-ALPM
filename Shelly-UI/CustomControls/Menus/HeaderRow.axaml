@@ -9,7 +9,7 @@
              x:Name="Root"
              x:CompileBindings="True">
     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
             <Button
                 HorizontalAlignment="Left"
                 IsVisible="{Binding #Root.ShowTitleButton}"
@@ -27,8 +27,25 @@
                         VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
-            <ComboBox
+            <Button
                 Grid.Column="1"
+                Margin="8,0,0,0"
+                IsVisible="{Binding #Root.ShowSecondaryButton}"
+                Command="{Binding #Root.SecondaryButtonCommand}"
+                ToolTip.Tip="{Binding #Root.SecondaryButtonTooltip}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <icons:MaterialIcon
+                        Kind="{Binding #Root.SecondaryButtonIcon}"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        Width="18" Height="18" />
+                    <TextBlock
+                        Text="{Binding #Root.SecondaryButtonText}"
+                        Foreground="{DynamicResource SystemBaseHighColor}"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            <ComboBox
+                Grid.Column="3"
                 HorizontalAlignment="Right"
                 SelectedIndex="{Binding #Root.ComboBoxSelectedIndex, Mode=TwoWay}"
                 Width="150"
@@ -38,7 +55,7 @@
                 SelectedItem="{Binding #Root.ComboBoxSelectedItem, Mode=TwoWay}"
                 IsVisible="{Binding #Root.ShowComboBox}" />
             <TextBox
-                Grid.Column="2"
+                Grid.Column="4"
                 Width="220"
                 Margin="12,0"
                 IsVisible="{Binding #Root.ShowSearchBox}"
@@ -58,7 +75,7 @@
                     </TextBox.KeyBindings>
             </TextBox>
             <Button
-                Grid.Column="3"
+                Grid.Column="5"
                 Margin="12,0,0,0"
                 Padding="8"
                 Background="Transparent"

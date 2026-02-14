@@ -53,6 +53,21 @@ public partial class HeaderRow : UserControl
     public static readonly StyledProperty<int> ComboBoxSelectedIndexProperty =
         AvaloniaProperty.Register<HeaderRow, int>(nameof(ComboBoxSelectedIndex));
 
+    public static readonly StyledProperty<ICommand> SecondaryButtonCommandProperty =
+        AvaloniaProperty.Register<HeaderRow, ICommand>(nameof(SecondaryButtonCommand));
+
+    public static readonly StyledProperty<string> SecondaryButtonTextProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(SecondaryButtonText));
+
+    public static readonly StyledProperty<string> SecondaryButtonTooltipProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(SecondaryButtonTooltip));
+
+    public static readonly StyledProperty<MaterialIconKind> SecondaryButtonIconProperty =
+        AvaloniaProperty.Register<HeaderRow, MaterialIconKind>(nameof(SecondaryButtonIcon));
+
+    public static readonly StyledProperty<bool> ShowSecondaryButtonProperty =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowSecondaryButton), false);
+
     public string Title
     {
         get => GetValue(TitleProperty);
@@ -141,6 +156,36 @@ public partial class HeaderRow : UserControl
     {
         get => GetValue(ComboBoxSelectedIndexProperty);
         set => SetValue(ComboBoxSelectedIndexProperty, value);
+    }
+
+    public ICommand SecondaryButtonCommand
+    {
+        get => GetValue(SecondaryButtonCommandProperty);
+        set => SetValue(SecondaryButtonCommandProperty, value);
+    }
+
+    public string SecondaryButtonText
+    {
+        get => GetValue(SecondaryButtonTextProperty);
+        set => SetValue(SecondaryButtonTextProperty, value);
+    }
+
+    public string SecondaryButtonTooltip
+    {
+        get => GetValue(SecondaryButtonTooltipProperty);
+        set => SetValue(SecondaryButtonTooltipProperty, value);
+    }
+
+    public MaterialIconKind SecondaryButtonIcon
+    {
+        get => GetValue(SecondaryButtonIconProperty);
+        set => SetValue(SecondaryButtonIconProperty, value);
+    }
+
+    public bool ShowSecondaryButton
+    {
+        get => GetValue(ShowSecondaryButtonProperty);
+        set => SetValue(ShowSecondaryButtonProperty, value);
     }
 
     public HeaderRow()
