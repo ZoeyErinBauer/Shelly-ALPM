@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
 using Spectre.Console;
@@ -10,90 +11,80 @@ public class UpgradeCommand : Command<UpgradeSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
     {
-        Dictionary<string, int> packageProgress = new();
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
-        if (!settings.NoConfirm)
-        {
-            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
-            {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
-            }
-        }
-
-        using var manager = new AlpmManager();
-
-        manager.Progress += (sender, args) =>
-        {
-            if (packageProgress.TryGetValue(args.PackageName!, out int value) && value >= args.Percent) return;
-            packageProgress[args.PackageName!] = args.Percent ?? 0;
-            AnsiConsole.MarkupLine($"[blue]{args.PackageName}[/]: {packageProgress[args.PackageName!]}%");
-        };
+        var manager = new AlpmManager();
+        object renderLock = new();
 
         manager.Replaces += (sender, args) =>
         {
             foreach (var replace in args.Replaces)
             {
-                AnsiConsole.MarkupLine($"[magenta]Replacement:[/] [cyan]{args.Repository}/{args.PackageName}[/] replaces [red]{replace}[/]");
+                AnsiConsole.MarkupLine(
+                    $"[magenta]Replacement:[/] [cyan]{args.Repository}/{args.PackageName}[/] replaces [red]{replace}[/]");
             }
         };
 
         manager.Question += (sender, args) =>
         {
-            // Handle SelectProvider differently - it needs a selection, not yes/no
-            if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+            lock (renderLock)
             {
-                if (settings.NoConfirm)
+                AnsiConsole.WriteLine();
+                // Handle SelectProvider differently - it needs a selection, not yes/no
+                if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+                {
+                    if (settings.NoConfirm)
+                    {
+                        if (Program.IsUiMode)
+                        {
+                            // Machine-readable format for UI integration
+                            Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                            for (int i = 0; i < args.ProviderOptions.Count; i++)
+                            {
+                                Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                            }
+
+                            Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+                            Console.Error.Flush();
+                            var input = Console.ReadLine();
+                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                        }
+                        else
+                        {
+                            // Non-interactive CLI mode: default to the first provider
+                            args.Response = 0;
+                        }
+                    }
+                    else
+                    {
+                        var selection = AnsiConsole.Prompt(
+                            new SelectionPrompt<string>()
+                                .Title($"[yellow]{args.QuestionText}[/]")
+                                .AddChoices(args.ProviderOptions));
+                        args.Response = args.ProviderOptions.IndexOf(selection);
+                    }
+                }
+                else if (settings.NoConfirm)
                 {
                     if (Program.IsUiMode)
                     {
                         // Machine-readable format for UI integration
-                        Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                        for (int i = 0; i < args.ProviderOptions.Count; i++)
-                        {
-                            Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                        }
-                        Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+                        Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                         Console.Error.Flush();
                         var input = Console.ReadLine();
-                        args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
                     }
                     else
                     {
-                        // Non-interactive CLI mode: default to the first provider
-                        args.Response = 0;
+                        // Non-interactive CLI mode: automatically confirm
+                        args.Response = 1;
                     }
                 }
                 else
                 {
-                    var selection = AnsiConsole.Prompt(
-                        new SelectionPrompt<string>()
-                            .Title($"[yellow]{args.QuestionText}[/]")
-                            .AddChoices(args.ProviderOptions));
-                    args.Response = args.ProviderOptions.IndexOf(selection);
+                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
+                    args.Response = response ? 1 : 0;
                 }
-            }
-            else if (settings.NoConfirm)
-            {
-                if (Program.IsUiMode)
-                {
-                    // Machine-readable format for UI integration
-                    Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                    Console.Error.Flush();
-                    var input = Console.ReadLine();
-                    args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
-                }
-                else
-                {
-                    // Non-interactive CLI mode: automatically confirm
-                    args.Response = 1;
-                }
-            }
-            else
-            {
-                var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                args.Response = response ? 1 : 0;
             }
         };
 
@@ -116,11 +107,58 @@ public class UpgradeCommand : Command<UpgradeSettings>
         {
             table.AddRow(pkg.Name, pkg.CurrentVersion, pkg.NewVersion, pkg.DownloadSize.ToString());
         }
+
         AnsiConsole.Write(table);
+        if (!settings.NoConfirm)
+        {
+            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
+        }
+
         AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
-        manager.SyncSystemUpdate();
+        var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
+        AnsiConsole.Live(progressTable).AutoClear(false)
+            .Start(ctx =>
+            {
+                var rowIndex = new Dictionary<string, int>();
+
+                manager.Progress += (sender, args) =>
+                {
+                    lock (renderLock)
+                    {
+                        var name = args.PackageName ?? "unknown";
+                        var pct = args.Percent ?? 0;
+                        var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
+                        var actionType = args.ProgressType;
+
+                        if (!rowIndex.TryGetValue(name, out var idx))
+                        {
+                            progressTable.AddRow(
+                                $"[blue]{Markup.Escape(name)}[/]",
+                                $"[green]{bar}[/]",
+                                $"{pct}%",
+                                $"{actionType}"
+                            );
+                            rowIndex[name] = rowIndex.Count;
+                        }
+                        else
+                        {
+                            progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
+                            progressTable.UpdateCell(idx, 2, $"{pct}%");
+                            progressTable.UpdateCell(idx, 3, $"{actionType}");
+                        }
+
+                        ctx.Refresh();
+                    }
+                };
+                manager.SyncSystemUpdate();
+            });
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
+        manager.Dispose();
         return 0;
     }
 }
