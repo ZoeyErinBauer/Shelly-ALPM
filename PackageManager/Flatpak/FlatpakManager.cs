@@ -19,6 +19,11 @@ public class FlatpakManager
     {
         var packages = new List<FlatpakPackageDto>();
 
+        if (!NativeResolver.IsLibraryAvailable(FlatpakReference.LibName))
+        {
+            return packages;
+        }
+
         var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
 
         if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)

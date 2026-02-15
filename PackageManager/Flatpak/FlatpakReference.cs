@@ -188,37 +188,7 @@ internal static partial class FlatpakReference
     // This static constructor sets up the resolver
     static FlatpakReference()
     {
-        NativeLibrary.SetDllImportResolver(typeof(FlatpakReference).Assembly, ResolveFlatpak);
-    }
-
-    internal static IntPtr ResolveFlatpak(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-    {
-        if (libraryName == LibName)
-        {
-            string[] versions = { "libflatpak.so.0", "libflatpak.so" };
-            foreach (var version in versions)
-            {
-                if (NativeLibrary.TryLoad(version, assembly, searchPath, out IntPtr handle)) return handle;
-            }
-        }
-        else if (libraryName == GLibName)
-        {
-            string[] versions = { "libglib-2.0.so.0", "libglib-2.0.so" };
-            foreach (var version in versions)
-            {
-                if (NativeLibrary.TryLoad(version, assembly, searchPath, out IntPtr handle)) return handle;
-            }
-        }
-        else if (libraryName == GObjectName)
-        {
-            string[] versions = { "libgobject-2.0.so.0", "libgobject-2.0.so" };
-            foreach (var version in versions)
-            {
-                if (NativeLibrary.TryLoad(version, assembly, searchPath, out IntPtr handle)) return handle;
-            }
-        }
-
-        return IntPtr.Zero;
+        NativeResolver.Initialize();
     }
 
     public static string GetErrorMessage(IntPtr errorPtr)

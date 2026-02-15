@@ -3,7 +3,7 @@ using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Keyring;
 using Shelly_CLI.Commands.Standard;
-using Shelly;
+using Shelly_CLI.Commands.Utility;
 using Shelly.Writers;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -270,6 +270,14 @@ public class Program
                 flatpak.AddCommand<FlatpakUpgrade>("upgrade")
                     .WithDescription("Upgrade all flatpak apps")
                     .WithExample("flatpak", "upgrade");
+            });
+
+            config.AddBranch("utility", utility =>
+            {
+                utility.SetDescription("shelly utils");
+
+                utility.AddCommand<Export>("export").WithDescription("export sync file").WithExample("utility export")
+                    .WithExample("utility export -o ~/Downloads/");
             });
         });
 
