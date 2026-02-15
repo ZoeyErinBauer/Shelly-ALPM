@@ -278,6 +278,14 @@ public class Program
 
                 utility.AddCommand<Export>("export").WithDescription("export sync file").WithExample("utility export")
                     .WithExample("utility export -o ~/Downloads/");
+
+                utility.AddCommand<CheckPackageUpdatesNonRootCommand>("updates")
+                    .WithDescription("checks for updates as non-root user")
+                    .WithExample("utility", "updates")
+                    .WithExample("utility", "updates", "-a")
+                    .WithExample("utility", "updates", "--aur")
+                    .WithExample("utility", "updates", "-l")
+                    .WithExample("utility", "updates", "--flatpak");
             });
         });
 

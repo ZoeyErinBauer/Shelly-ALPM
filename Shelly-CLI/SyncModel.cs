@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Shelly_CLI;
 
 public class SyncModel
@@ -10,20 +12,32 @@ public class SyncModel
 public class SyncPackageModel
 {
     public string Name { get; set; } = string.Empty;
-    
+
     public string Version { get; set; } = string.Empty;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OldVersion { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DownloadSize { get; set; }
 }
 
 public class SyncAurModel
 {
     public string Name { get; set; } = string.Empty;
-    
+
     public string Version { get; set; } = string.Empty;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OldVersion { get; set; }
 }
 
 public class SyncFlatpakModel
 {
     public string Id { get; set; } = string.Empty;
-    
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
+
     public string Version { get; set; } = string.Empty;
 }
