@@ -1,12 +1,14 @@
 namespace PackageManager.Tests.AlpmReferenceTests;
 
+using PackageManager;
+
 public class LibraryIdentificationTests
 {
     [Test]
     public void SuccessfullyResolvesAlpmLibrary()
     {
-        IntPtr handle = Alpm.AlpmReference.ResolveAlpm(Alpm.AlpmReference.LibName, typeof(Alpm.AlpmReference).Assembly, null);
-        Assert.That(handle, Is.Not.EqualTo(IntPtr.Zero));
+        var isAvailable = NativeResolver.IsLibraryAvailable(Alpm.AlpmReference.LibName);
+        Assert.That(isAvailable, Is.True);
     }
     
 }

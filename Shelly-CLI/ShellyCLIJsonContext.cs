@@ -12,6 +12,10 @@ namespace Shelly_CLI;
 [JsonSerializable(typeof(AurPackageDto))]
 [JsonSerializable(typeof(List<AurUpdateDto>))]
 [JsonSerializable(typeof(AurUpdateDto))]
+[JsonSerializable(typeof(SyncModel))]
+[JsonSerializable(typeof(SyncPackageModel))]
+[JsonSerializable(typeof(SyncAurModel))]
+[JsonSerializable(typeof(SyncFlatpakModel))]
 internal partial class ShellyCLIJsonContext : JsonSerializerContext
 {
 }

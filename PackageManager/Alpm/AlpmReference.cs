@@ -1138,27 +1138,7 @@ namespace PackageManager.Alpm
         // This static constructor sets up the resolver
         static AlpmReference()
         {
-            NativeLibrary.SetDllImportResolver(typeof(AlpmReference).Assembly, ResolveAlpm);
-        }
-
-        internal static IntPtr ResolveAlpm(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            if (libraryName != LibName) return IntPtr.Zero;
-            // Try common versioned filenames in order of preference
-            string[] versions =
-            {
-                "libalpm.so.16.0.1", "libalpm.so.16", "libalpm.so.15", "libalpm.so.14", "libalpm.so.13", "libalpm.so"
-            };
-
-            foreach (var version in versions)
-            {
-                if (NativeLibrary.TryLoad(version, assembly, searchPath, out IntPtr handle))
-                {
-                    return handle;
-                }
-            }
-
-            return IntPtr.Zero;
+            NativeResolver.Initialize();
         }
     }
 }
