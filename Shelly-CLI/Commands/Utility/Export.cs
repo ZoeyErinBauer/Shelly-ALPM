@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using PackageManager;
 using PackageManager.Alpm;
@@ -21,10 +22,12 @@ public class Export : AsyncCommand<ExportSettings>
                 "Cannot determine non-root user for cache directory."
             );
         }
-
+        
+        var time = DateTimeOffset.Now;
+        
         var path = string.IsNullOrEmpty(settings.Output)
-            ? Path.Combine("/home", username, ".cache", "Shelly", $"{DateTime.Now:yyyyMMddHHmmss}_shelly.sync")
-            : Path.Combine(settings.Output, $"{DateTime.Now:yyyyMMddHHmmss}_shelly.sync");
+            ? Path.Combine("/home", username, ".cache", "Shelly", $"{time:yyyyMMddHHmmss}_shelly.sync")
+            : Path.Combine(settings.Output, $"{time:yyyyMMddHHmmss}_shelly.sync");
 
         //Alpm 
         using var manager = new AlpmManager();
@@ -43,6 +46,11 @@ public class Export : AsyncCommand<ExportSettings>
 
         var syncModel = new SyncModel
         {
+            MetaData = new SyncMetaData
+            {
+                Date = time.ToString("yyyy-MM-dd"),
+                Time = time.ToUnixTimeSeconds()
+            },
             Packages = packages.Select(x => new SyncPackageModel { Name = x.Name, Version = x.Version }).ToList(),
             Aur = aurPackages.Select(x => new SyncAurModel { Name = x.Name, Version = x.Version }).ToList(),
             Flatpaks = flatpaks.Select(x => new SyncFlatpakModel { Id = x.Id, Version = x.Version }).ToList()
