@@ -579,7 +579,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                 providerOptions.Add(payload);
                             }
                         }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
+                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Provider selection received");
                             var args = new QuestionEventArgs(
@@ -595,13 +595,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             await SafeWriteAsync(args.Response.ToString());
                             Console.Error.WriteLine($"[Shelly]Wrote selection {args.Response}");
 
-                            awaitingProviderSelection = false;
-                            providerQuestion = null;
-                            providerOptions.Clear();
-                        }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
-                        {
-                            // Reset state
                             awaitingProviderSelection = false;
                             providerQuestion = null;
                             providerOptions.Clear();

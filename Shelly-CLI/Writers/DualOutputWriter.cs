@@ -31,5 +31,11 @@ public class DualOutputWriter : TextWriter
         _primary.Write(value);
     }
 
+    public override void Flush()
+    {
+        _primary.Flush();
+        _stderr.Flush();
+    }
+
     public override Encoding Encoding => _primary.Encoding;
 }

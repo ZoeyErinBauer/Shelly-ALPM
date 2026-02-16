@@ -28,5 +28,10 @@ public class StderrPrefixWriter : TextWriter
         _stderr.Write(value);
     }
 
+    public override void Flush()
+    {
+        _stderr.Flush();
+    }
+
     public override Encoding Encoding => _stderr.Encoding;
 }

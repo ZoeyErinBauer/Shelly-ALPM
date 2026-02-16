@@ -96,7 +96,7 @@
                 </StackPanel>
             </Border>
         </Panel>
-        <Panel IsVisible="{Binding ShowQuestion}" Background="#80000000" Grid.RowSpan="2">
+        <Panel IsVisible="{Binding ShowQuestion}" Background="#80000000" Grid.RowSpan="2" ZIndex="10">
             <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                     CornerRadius="12"
                     Padding="30"
@@ -146,7 +146,7 @@
                         </ListBox>
                         <Button Content="Select"
                                 Command="{Binding RespondToQuestion}"
-                                CommandParameter="{Binding SelectedProviderIndex}"
+                                CommandParameter="{Binding SelectedProviderIndex, StringFormat={}{0}}"
                                 HorizontalAlignment="Center"
                                 Width="120"
                                 HorizontalContentAlignment="Center" />
