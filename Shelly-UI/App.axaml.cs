@@ -65,6 +65,7 @@ public partial class App : Application
         collection.AddSingleton<IAppCache, AppCache>();
         collection.AddSingleton<IUpdateService, GitHubUpdateService>();
         collection.AddSingleton<ICredentialManager, CredentialManager>();
+        collection.AddSingleton<IAlpmEventService, AlpmEventService>();
         collection.AddSingleton<IPrivilegedOperationService, PrivilegedOperationService>();
         collection.AddSingleton<IUnprivilegedOperationService, UnprivilegedOperationService>();
         collection.AddSingleton<IDatabaseService, DatabaseService>();
@@ -98,7 +99,7 @@ public partial class App : Application
 
             _mainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance, _services),
+                DataContext = new MainWindowViewModel(configService, cacheService, _services.GetRequiredService<IAlpmEventService>(), _services),
             };
             if (config.TrayEnabled)
             {

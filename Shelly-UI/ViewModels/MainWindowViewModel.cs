@@ -43,7 +43,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     
     private static readonly Regex RunningHooksPattern = new(@"(?:\[.*?\]\s*)*Running hooks\.\.\.", RegexOptions.Compiled);
 
-    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmManager alpmManager,
+    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmEventService alpmEventService,
         IServiceProvider services,
         IScheduler? scheduler = null)
     {
@@ -105,8 +105,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
 
         var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
-            h => alpmManager.PackageOperation += h,
-            h => alpmManager.PackageOperation -= h);
+            h => alpmEventService.PackageOperation += h,
+            h => alpmEventService.PackageOperation -= h);
 
 
         packageOperationEvents
@@ -179,8 +179,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
 
         Observable.FromEventPattern<AlpmQuestionEventArgs>(
-                h => alpmManager.Question += h,
-                h => alpmManager.Question -= h)
+                h => alpmEventService.Question += h,
+                h => alpmEventService.Question -= h)
             .ObserveOn(scheduler)
             .SelectMany(async pattern =>
             {

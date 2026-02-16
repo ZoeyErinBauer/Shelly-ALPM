@@ -20,10 +20,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 {
     private readonly string _cliPath;
     private readonly ICredentialManager _credentialManager;
+    private readonly IAlpmEventService _alpmEventService;
 
-    public PrivilegedOperationService(ICredentialManager credentialManager)
+    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService)
     {
         _credentialManager = credentialManager;
+        _alpmEventService = alpmEventService;
         _cliPath = FindCliPath();
     }
 
@@ -579,27 +581,18 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Provider selection received");
-                            // Show selection dialog and send index
-                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop && desktop.MainWindow != null)
-                                {
-                                    var title = string.IsNullOrWhiteSpace(providerQuestion)
-                                        ? "Select provider"
-                                        : providerQuestion;
-                                    var dialog = new ProviderSelectionDialog("Select Provider for: {title}",
-                                        providerOptions);
-                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
-                                    return result;
-                                }
+                            var args = new AlpmQuestionEventArgs(
+                                AlpmQuestionType.SelectProvider,
+                                providerQuestion ?? "Select provider",
+                                new List<string>(providerOptions),
+                                providerQuestion);
 
-                                return 0; // Default to first option
-                            });
-                            var selectedIndex = await selectedIndexTask;
+                            _alpmEventService.RaiseQuestion(args);
 
-                            await SafeWriteAsync(selectedIndex.ToString());
-                            Console.Error.WriteLine($"[Shelly]Wrote selection {selectedIndex.ToString()}");
+                            await Task.Run(() => args.WaitForResponse());
+
+                            await SafeWriteAsync(args.Response.ToString());
+                            Console.Error.WriteLine($"[Shelly]Wrote selection {args.Response}");
 
                             awaitingProviderSelection = false;
                             providerQuestion = null;
@@ -638,26 +631,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Conflict selection received");
-                            // Show selection dialog and send index
-                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop && desktop.MainWindow != null)
-                                {
-                                    var title = string.IsNullOrWhiteSpace(conflictQuestion)
-                                        ? "Package Conflict"
-                                        : conflictQuestion;
-                                    var dialog = new ProviderSelectionDialog(title, conflictOptions);
-                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
-                                    return result;
-                                }
+                            var args = new AlpmQuestionEventArgs(
+                                AlpmQuestionType.ConflictPkg,
+                                conflictQuestion ?? "Package Conflict",
+                                new List<string>(conflictOptions));
 
-                                return 0; // Default to first option
-                            });
-                            var selectedIndex = await selectedIndexTask;
+                            _alpmEventService.RaiseQuestion(args);
 
-                            await SafeWriteAsync(selectedIndex.ToString());
-                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {selectedIndex.ToString()}");
+                            await Task.Run(() => args.WaitForResponse());
+
+                            await SafeWriteAsync(args.Response.ToString());
+                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {args.Response}");
 
                             awaitingConflictSelection = false;
                             conflictQuestion = null;
@@ -669,23 +653,16 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
-                            // Show dialog on UI thread and get response
-                            var response = await Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop
-                                    && desktop.MainWindow != null)
-                                {
-                                    var dialog = new QuestionDialog(questionText);
-                                    var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
-                                    return result;
-                                }
+                            var args = new AlpmQuestionEventArgs(
+                                AlpmQuestionType.InstallIgnorePkg,
+                                questionText);
 
-                                return true; // Default to yes if no window available
-                            });
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
 
                             // Send response to CLI via stdin
-                            await SafeWriteAsync(response ? "y" : "n");
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                         }
                         else
                         {
