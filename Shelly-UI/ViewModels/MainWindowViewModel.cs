@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
 using Microsoft.Extensions.DependencyInjection;
-using PackageManager.Alpm;
 using Shelly_UI.Enums;
+using Shelly_UI.Models;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
@@ -104,7 +104,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             await _credentialManager.CompleteCredentialRequestAsync(false);
         });
 
-        var packageOperationEvents = Observable.FromEventPattern<AlpmPackageOperationEventArgs>(
+        var packageOperationEvents = Observable.FromEventPattern<PackageOperationEventArgs>(
             h => alpmEventService.PackageOperation += h,
             h => alpmEventService.PackageOperation -= h);
 
@@ -114,17 +114,17 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             .Subscribe(pattern =>
             {
                 var args = pattern.EventArgs;
-                switch (args.EventType)
+                switch (args.OperationType)
                 {
-                    case AlpmEventType.PackageOperationStart:
-                    case AlpmEventType.TransactionStart:
+                    case OperationType.PackageOperationStart:
+                    case OperationType.TransactionStart:
                     {
                         IsProcessing = true;
                         if (!string.IsNullOrEmpty(args.PackageName))
                         {
                             ProcessingMessage = $"Completing requested actions: {args.PackageName}";
                         }
-                        else if (args.EventType == AlpmEventType.TransactionStart)
+                        else if (args.OperationType == OperationType.TransactionStart)
                         {
                             ProcessingMessage = "Starting transaction...";
                         }
@@ -137,10 +137,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         ProgressIndeterminate = true;
                         break;
                     }
-                    case AlpmEventType.PackageOperationDone:
-                    case AlpmEventType.TransactionDone:
+                    case OperationType.PackageOperationDone:
+                    case OperationType.TransactionDone:
                     {
-                        if (args.EventType == AlpmEventType.TransactionDone)
+                        if (args.OperationType == OperationType.TransactionDone)
                         {
                             IsProcessing = false;
                             ProcessingMessage = string.Empty;
@@ -154,7 +154,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
         packageOperationEvents
             .ObserveOn(scheduler)
-            .Where(e => e.EventArgs.EventType != AlpmEventType.TransactionDone)
+            .Where(e => e.EventArgs.OperationType != OperationType.TransactionDone)
             .Throttle(TimeSpan.FromSeconds(30), scheduler)
             .Subscribe(_ =>
             {
@@ -178,7 +178,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             ShowQuestion = false;
         });
 
-        Observable.FromEventPattern<AlpmQuestionEventArgs>(
+        Observable.FromEventPattern<QuestionEventArgs>(
                 h => alpmEventService.Question += h,
                 h => alpmEventService.Question -= h)
             .ObserveOn(scheduler)
@@ -189,8 +189,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 QuestionText = args.QuestionText;
                 
                 // Handle SelectProvider and ConflictPkg questions with a selection list
-                if ((args.QuestionType == AlpmQuestionType.SelectProvider || 
-                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
+                if ((args.QuestionType == QuestionType.SelectProvider || 
+                     args.QuestionType == QuestionType.ConflictPkg)
                     && args.ProviderOptions?.Count > 0)
                 {
                     IsSelectProviderQuestion = true;
@@ -750,16 +750,16 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         }
     }
 
-    private string GetQuestionTitle(AlpmQuestionType questionType)
+    private string GetQuestionTitle(QuestionType questionType)
     {
         return questionType switch
         {
-            AlpmQuestionType.InstallIgnorePkg => "Install Ignore Package?",
-            AlpmQuestionType.ReplacePkg => "Replace Package?",
-            AlpmQuestionType.ConflictPkg => "Package Conflict",
-            AlpmQuestionType.CorruptedPkg => "Corrupted Package",
-            AlpmQuestionType.ImportKey => "Import GPG Key?",
-            AlpmQuestionType.SelectProvider => "Select Provider",
+            QuestionType.InstallIgnorePkg => "Install Ignore Package?",
+            QuestionType.ReplacePkg => "Replace Package?",
+            QuestionType.ConflictPkg => "Package Conflict",
+            QuestionType.CorruptedPkg => "Corrupted Package",
+            QuestionType.ImportKey => "Import GPG Key?",
+            QuestionType.SelectProvider => "Select Provider",
             _ => "Package Manager Question"
         };
     }

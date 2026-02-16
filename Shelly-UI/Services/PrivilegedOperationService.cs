@@ -10,6 +10,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using PackageManager.Alpm;
+using Shelly_UI.Models;
 using PackageManager.Aur.Models;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
@@ -581,8 +582,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Provider selection received");
-                            var args = new AlpmQuestionEventArgs(
-                                AlpmQuestionType.SelectProvider,
+                            var args = new QuestionEventArgs(
+                                QuestionType.SelectProvider,
                                 providerQuestion ?? "Select provider",
                                 new List<string>(providerOptions),
                                 providerQuestion);
@@ -631,8 +632,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Conflict selection received");
-                            var args = new AlpmQuestionEventArgs(
-                                AlpmQuestionType.ConflictPkg,
+                            var args = new QuestionEventArgs(
+                                QuestionType.ConflictPkg,
                                 conflictQuestion ?? "Package Conflict",
                                 new List<string>(conflictOptions));
 
@@ -653,8 +654,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
-                            var args = new AlpmQuestionEventArgs(
-                                AlpmQuestionType.InstallIgnorePkg,
+                            var args = new QuestionEventArgs(
+                                QuestionType.InstallIgnorePkg,
                                 questionText);
 
                             _alpmEventService.RaiseQuestion(args);

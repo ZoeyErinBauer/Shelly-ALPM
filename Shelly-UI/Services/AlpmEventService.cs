@@ -1,19 +1,19 @@
 using System;
-using PackageManager.Alpm;
+using Shelly_UI.Models;
 
 namespace Shelly_UI.Services;
 
 public class AlpmEventService : IAlpmEventService
 {
-    public event EventHandler<AlpmQuestionEventArgs>? Question;
-    public event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
+    public event EventHandler<QuestionEventArgs>? Question;
+    public event EventHandler<PackageOperationEventArgs>? PackageOperation;
 
-    public void RaiseQuestion(AlpmQuestionEventArgs args)
+    public void RaiseQuestion(QuestionEventArgs args)
     {
         Question?.Invoke(this, args);
     }
 
-    public void RaisePackageOperation(AlpmPackageOperationEventArgs args)
+    public void RaisePackageOperation(PackageOperationEventArgs args)
     {
         PackageOperation?.Invoke(this, args);
     }
