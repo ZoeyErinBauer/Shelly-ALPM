@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Text;
+using System.Text.RegularExpressions;
 using PackageManager.Alpm;
 using SharpCompress.Compressors.Xz;
 using Spectre.Console;
@@ -53,6 +56,9 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         var installDir = Path.Combine("/opt", packageName);
         Directory.CreateDirectory(installDir);
 
+        var installedBinaries = new List<string>();
+        var foundIcons = new Dictionary<string, string>();
+
         await using var fileStream = File.OpenRead(filePath);
         Stream decompressedStream = extension switch
         {
@@ -79,6 +85,14 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                         Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
                         await entry.ExtractToFileAsync(destPath, overwrite: true);
 
+                        var ext = Path.GetExtension(destPath).ToLower();
+
+                        if (ext is ".png" or ".svg")
+                        {
+                            var iconFileName = Path.GetFileNameWithoutExtension(destPath).ToLower();
+                            foundIcons[iconFileName] = destPath;
+                        }
+
                         // Check if it's an ELF binary and create symlink in /usr/bin
                         if (entry.DataStream is not null)
                         {
@@ -89,9 +103,12 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                                 magic[0] == 0x7F && magic[1] == 0x45 &&
                                 magic[2] == 0x4C && magic[3] == 0x46)
                             {
-                                var linkPath = Path.Combine("/usr/bin", Path.GetFileName(destPath));
+                                var binaryName = Path.GetFileName(destPath);
+                                var linkPath = Path.Combine("/usr/bin", binaryName);
                                 if (File.Exists(linkPath)) File.Delete(linkPath);
                                 File.CreateSymbolicLink(linkPath, destPath);
+
+                                installedBinaries.Add(binaryName);
                             }
                         }
 
@@ -107,6 +124,40 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         }
 
         AnsiConsole.MarkupLine($"[green]Extracted to {installDir}[/]");
+
+        foreach (var binaryName in installedBinaries)
+        {
+            var iconName = "application-x-executable";
+            
+            if (packageName.Contains(binaryName))
+            {
+                if (foundIcons.Count > 0)
+                {
+                    AnsiConsole.MarkupLine($"[cyan]Found icon for {binaryName}: {foundIcons.FirstOrDefault().Key}[/]");
+                    var installedIconName = InstallIcon(foundIcons.FirstOrDefault().Value, binaryName);
+                    if (installedIconName != null)
+                    {
+                        iconName = installedIconName;
+                    }
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[yellow]No icon found for {binaryName}, using default[/]");
+                }
+                Console.WriteLine("Creating desktop entry...");
+                CreateDesktopEntry(
+                    appName: binaryName,
+                    executablePath: binaryName,
+                    comment: $"{binaryName} - Installed from {packageName}",
+                    icon: iconName,
+                    terminal: false,
+                    categories: "Utility;"
+                );
+            }
+        }
+
+        AnsiConsole.MarkupLine($"[green]Desktop Entries Created[/]");
+
         return 0;
     }
 
@@ -298,5 +349,146 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
 
 
         return isArch;
+    }
+
+    private static void CreateDesktopEntry(
+        string appName,
+        string executablePath,
+        string? comment = null,
+        string icon = "application-x-executable",
+        bool terminal = false,
+        string categories = "Utility;")
+    {
+        const string desktopDir = "/usr/share/applications";
+        var cleanName = CleanInvalidNames(appName);
+        var desktopFilePath = Path.Combine(desktopDir, $"{cleanName}.desktop");
+
+        var content = new StringBuilder();
+        content.AppendLine("[Desktop Entry]");
+        content.AppendLine("Version=1.0");
+        content.AppendLine("Type=Application");
+        content.AppendLine($"Name={appName}");
+        content.AppendLine($"Comment={comment ?? $"{appName} application"}");
+        content.AppendLine($"Exec={executablePath}");
+        content.AppendLine($"Icon={icon}");
+        content.AppendLine($"Terminal={terminal.ToString().ToLower()}");
+        content.AppendLine($"Categories={categories}");
+        content.AppendLine("StartupNotify=true");
+
+        try
+        {
+            Directory.CreateDirectory(desktopDir);
+            File.WriteAllText(desktopFilePath, content.ToString());
+            SetFilePermissions(desktopFilePath, "644");
+            UpdateDesktopDatabase(desktopDir);
+
+            AnsiConsole.MarkupLine($"[green]Desktop entry created: {desktopFilePath}[/]");
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not create desktop entry: {ex.Message}[/]");
+        }
+    }
+
+    private static string CleanInvalidNames(string name)
+    {
+        return name.ToLower()
+            .Replace(" ", "-")
+            .Replace("/", "-")
+            .Replace("\\", "-");
+    }
+
+    private static void SetFilePermissions(string filePath, string permissions)
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "chmod",
+                Arguments = $"{permissions} \"{filePath}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            process?.WaitForExit();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not set file permissions: {ex.Message}[/]");
+        }
+    }
+
+    private static void UpdateDesktopDatabase(string desktopDir)
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "update-desktop-database",
+                Arguments = $"\"{desktopDir}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            process?.WaitForExit();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not set desktop database: {ex.Message}[/]");
+        }
+    }
+
+    private static string? InstallIcon(string iconPath, string appName)
+    {
+        try
+        {
+            var extension = Path.GetExtension(iconPath);
+            var iconName = $"{appName.ToLower()}{extension}";
+            string destDir;
+            if (extension == ".svg")
+            {
+                destDir = "/usr/share/icons/hicolor/scalable/apps";
+            }
+            else
+            {
+                var sizeMatch = Regex.Match(Path.GetFileName(iconPath), @"(\d+)x?\d*");
+                var size = sizeMatch.Success && int.TryParse(sizeMatch.Groups[1].Value, out var s)
+                    ? s
+                    : 256;
+                destDir = $"/usr/share/icons/hicolor/{size}x{size}/apps";
+            }
+
+            Directory.CreateDirectory(destDir);
+            var destPath = Path.Combine(destDir, iconName);
+
+            File.Copy(iconPath, destPath, overwrite: true);
+
+            try
+            {
+                var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "gtk-update-icon-cache",
+                    Arguments = "-f -t /usr/share/icons/hicolor",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                process?.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warning: Failed to update icon cache: {ex.Message}[/]");
+            }
+
+            return appName.ToLower();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not install icon: {ex.Message}[/]");
+            return null;
+        }
     }
 }
