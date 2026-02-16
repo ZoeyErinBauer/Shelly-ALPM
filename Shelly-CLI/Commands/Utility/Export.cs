@@ -26,8 +26,8 @@ public class Export : AsyncCommand<ExportSettings>
         var time = DateTimeOffset.Now;
         
         var path = string.IsNullOrEmpty(settings.Output)
-            ? Path.Combine("/home", username, ".cache", "Shelly", $"{time:yyyyMMddHHmmss}_shelly.sync")
-            : Path.Combine(settings.Output, $"{time:yyyyMMddHHmmss}_shelly.sync");
+            ? Path.Combine("/home", username, ".cache", "Shelly", string.IsNullOrEmpty(settings.Name) ? $"{time:yyyyMMddHHmmss}_shelly.sync" : settings.Name + ".sync")
+            : Path.Combine(settings.Output,  string.IsNullOrEmpty(settings.Name) ? $"{time:yyyyMMddHHmmss}_shelly.sync" : settings.Name + ".sync");
 
         //Alpm 
         using var manager = new AlpmManager();

@@ -25,6 +25,8 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream();
 
     Task<SyncModel> CheckForApplicationUpdates();
+    
+    Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name);
 }
 
 public class UnprivilegedOperationResult
