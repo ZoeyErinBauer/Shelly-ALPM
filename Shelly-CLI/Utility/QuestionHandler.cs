@@ -5,7 +5,8 @@ namespace Shelly_CLI.Utility;
 
 public class QuestionHandler
 {
-    public static void HandleConflict(AlpmQuestionEventArgs question, bool uiMode = false, bool noConfirm = false)
+    public static void HandleConflictSelection(AlpmQuestionEventArgs question, bool uiMode = false,
+        bool noConfirm = false)
     {
         if (question.ProviderOptions is null)
             throw new ArgumentNullException(nameof(question.ProviderOptions),
@@ -28,7 +29,7 @@ public class QuestionHandler
             Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
             Console.Error.Flush();
             var input = Console.ReadLine();
-            question.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+            question.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
             return;
         }
 
@@ -36,6 +37,37 @@ public class QuestionHandler
             new SelectionPrompt<string>()
                 .Title($"[yellow]{question.QuestionText}[/]")
                 .AddChoices(question.ProviderOptions!));
-        question.Response = question.ProviderOptions!.IndexOf(selection);
+        question.SetResponse(question.ProviderOptions!.IndexOf(selection));
+    }
+
+    public static void HandleProviderSelection(AlpmQuestionEventArgs question, bool uiMode = false,
+        bool noConfirm = false)
+    {
+        if (question.ProviderOptions is null)
+            throw new ArgumentNullException(nameof(question.ProviderOptions),
+                "Cannot have a selection while provider options is null!");
+        if (uiMode)
+        {
+            if (noConfirm)
+            {
+                question.Response = 1;
+                return;
+            }
+            Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{question.DependencyName}");
+            for (int i = 0; i < question.ProviderOptions.Count; i++)
+            {
+                Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{question.ProviderOptions[i]}");
+            }
+            Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+            Console.Error.Flush();
+            var input = Console.ReadLine();
+            question.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
+            return;
+        }
+        var selection = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title($"[yellow]{question.QuestionText}[/]")
+                .AddChoices(question.ProviderOptions!));
+        question.SetResponse(question.ProviderOptions!.IndexOf(selection));
     }
 }
