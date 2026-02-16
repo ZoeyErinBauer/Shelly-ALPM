@@ -73,7 +73,7 @@ public partial class App : Application
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         _services = collection.BuildServiceProvider();
-        
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -85,7 +85,6 @@ public partial class App : Application
             var sessionDesktop = Environment.GetEnvironmentVariable("XDG_SESSION_DESKTOP");
             if (config.UseKdeTheme && sessionDesktop == "KDE")
             {
-                
                 themeService.ApplyKdeTheme();
             }
             else
@@ -93,9 +92,10 @@ public partial class App : Application
                 if (config.AccentColor != null) themeService.ApplyCustomAccent(Color.Parse(config.AccentColor));
                 ThemeService.SetTheme(config.DarkMode);
             }
-            
-            Assets.Resources.Culture = config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
-        
+
+            Assets.Resources.Culture =
+                config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
+
             _mainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance, _services),
@@ -104,8 +104,18 @@ public partial class App : Application
             {
                 _mainWindow.Closing += (_, e) =>
                 {
-                    e.Cancel = true;
-                    _mainWindow.Hide();
+                    if (e.CloseReason == WindowCloseReason.WindowClosing)
+                    {
+                        // User clicked X — hide to tray instead
+                        e.Cancel = true;
+                        _mainWindow.Hide();
+                    }
+                };
+
+                desktop.ShutdownRequested += (_, _) =>
+                {
+                    var trayService = _services.GetRequiredService<ITrayService>();
+                    trayService.Stop();
                 };
                 
                 var trayService = _services.GetRequiredService<ITrayService>();
@@ -115,6 +125,7 @@ public partial class App : Application
             {
                 desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
             }
+
             desktop.MainWindow = _mainWindow;
         }
 
