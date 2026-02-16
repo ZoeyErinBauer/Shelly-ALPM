@@ -49,6 +49,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _enableFlatpak = config.FlatPackEnabled;
         _useKdeColor = config.UseKdeTheme;
         _useHorizontalMenu = config.UseHorizontalMenu;
+        _enableTray = config.TrayEnabled;
 
         _ = SetUpdateText();
         _ = CheckAndEnableFlatpakAsync();
@@ -72,6 +73,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private bool _enableFlatpak;
 
     private bool _useHorizontalMenu;
+
+    private bool _enableTray;
 
     public Color AccentHex
     {
@@ -231,13 +234,24 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
+    public bool EnableTray
+    {
+        get => _enableTray;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _enableTray, value);
+            var config = _configService.LoadConfig();
+            config.TrayEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
     public bool UseHorizontalMenu
     {
         get => _useHorizontalMenu;
         set
         {
             this.RaiseAndSetIfChanged(ref _useHorizontalMenu, value);
-
             var config = _configService.LoadConfig();
             config.UseHorizontalMenu = value;
             _configService.SaveConfig(config);
