@@ -222,12 +222,12 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                             }
                             Console.Error.Flush();
                             var input = Console.ReadLine();
-                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
+                            args.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
                         }
                         else
                         {
                             // Non-interactive CLI mode: default to the first provider
-                            args.Response = 0;
+                            args.SetResponse(0);
                         }
                     }
                     else
@@ -236,7 +236,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                             new SelectionPrompt<string>()
                                 .Title($"[yellow]{args.QuestionText}[/]")
                                 .AddChoices(args.ProviderOptions));
-                        args.Response = args.ProviderOptions.IndexOf(selection);
+                        args.SetResponse(args.ProviderOptions.IndexOf(selection));
                     }
                 }
                 else if (settings.NoConfirm)
@@ -247,20 +247,20 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                         Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
                         Console.Error.Flush();
                         var input = Console.ReadLine();
-                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true
+                        args.SetResponse(input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true
                             ? 1
-                            : 0;
+                            : 0);
                     }
                     else
                     {
                         // Non-interactive CLI mode: automatically confirm
-                        args.Response = 1;
+                        args.SetResponse(1);
                     }
                 }
                 else
                 {
                     var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                    args.Response = response ? 1 : 0;
+                    args.SetResponse(response ? 1 : 0);
                 }
             }
         };
