@@ -45,6 +45,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
                 List<SyncAurModel> aurPackageModels = [];
                 aurPackageModels.AddRange(aurPackages.Select(pkg => new SyncAurModel()
                     { Name = pkg.Name, OldVersion = pkg.Version, Version = pkg.NewVersion }));
+                syncModel.Aur = aurPackageModels;
             }
 
             if (settings.CheckFlatpak)
@@ -53,6 +54,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
                 List<SyncFlatpakModel> flatpakPackageModels = [];
                 flatpakPackageModels.AddRange(flatpakPackages.Select(pkg => new SyncFlatpakModel()
                     { Id = pkg.Id, Name = pkg.Name, Version = pkg.Version }));
+                syncModel.Flatpaks = flatpakPackageModels;
             }
 
             var json = JsonSerializer.Serialize(syncModel, ShellyCLIJsonContext.Default.SyncModel);

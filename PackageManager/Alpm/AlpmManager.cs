@@ -56,7 +56,28 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         //non-root mode for update checking.
         if (useTempPath)
         {
+            // Symlink the real local database into the temp path so ALPM
+            // can see installed packages when checking for updates.
+            var realLocalDb = Path.Combine(_config.DbPath, "local");
             _config.DbPath = tempPath;
+            var tempLocalDb = Path.Combine(tempPath, "local");
+            if (Directory.Exists(realLocalDb))
+            {
+                // Remove existing local dir/symlink in temp path so we can create a fresh symlink
+                if (Directory.Exists(tempLocalDb) || File.Exists(tempLocalDb))
+                {
+                    var info = new DirectoryInfo(tempLocalDb);
+                    if (info.LinkTarget != null)
+                    {
+                        info.Delete();
+                    }
+                    else
+                    {
+                        Directory.Delete(tempLocalDb, true);
+                    }
+                }
+                Directory.CreateSymbolicLink(tempLocalDb, realLocalDb);
+            }
         }
 
         var lockFilePath = Path.Combine(_config.DbPath, "db.lck");

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.LocalDatabase;
+using Shelly_UI.Services.TrayService;
 using Shelly_UI.ViewModels;
 using Shelly_UI.Views;
 
@@ -68,6 +69,7 @@ public partial class App : Application
         collection.AddSingleton<IUnprivilegedOperationService, UnprivilegedOperationService>();
         collection.AddSingleton<IDatabaseService, DatabaseService>();
         collection.AddSingleton<ThemeService>();
+        collection.AddSingleton<ITrayService, TrayService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         _services = collection.BuildServiceProvider();
@@ -105,6 +107,9 @@ public partial class App : Application
                     e.Cancel = true;
                     _mainWindow.Hide();
                 };
+                
+                var trayService = _services.GetRequiredService<ITrayService>();
+                trayService.Start();
             }
             else
             {

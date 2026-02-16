@@ -207,7 +207,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
             foreach (var line in lines)
             {
                 var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
                 {
                     var updates =
                         System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.SyncModel);
