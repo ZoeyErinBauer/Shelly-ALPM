@@ -527,6 +527,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         string? providerQuestion = null;
         var awaitingProviderSelection = false;
 
+        // State for conflict selection handling
+        var conflictOptions = new List<string>();
+        string? conflictQuestion = null;
+        var awaitingConflictSelection = false;
+
         process.OutputDataReceived += (sender, e) =>
         {
             if (e.Data != null)
@@ -606,6 +611,57 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             awaitingProviderSelection = false;
                             providerQuestion = null;
                             providerOptions.Clear();
+                        }
+                        // Handle conflict selection protocol
+                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT]"))
+                        {
+                            Console.Error.WriteLine($"[Shelly]Conflict question: {e.Data}");
+                            awaitingConflictSelection = true;
+                            conflictOptions.Clear();
+                            conflictQuestion = e.Data.Substring("[Shelly][ALPM_CONFLICT]".Length);
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_OPTION]"))
+                        {
+                            Console.Error.WriteLine($"[Shelly]Conflict option received: {e.Data}");
+                            var payload = e.Data.Substring("[Shelly][ALPM_CONFLICT_OPTION]".Length);
+                            var parts = payload.Split(':', 2);
+                            if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
+                            {
+                                while (conflictOptions.Count <= idx) conflictOptions.Add(string.Empty);
+                                conflictOptions[idx] = parts[1];
+                            }
+                            else
+                            {
+                                conflictOptions.Add(payload);
+                            }
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_END]"))
+                        {
+                            Console.Error.WriteLine($"[Shelly]Conflict selection received");
+                            // Show selection dialog and send index
+                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
+                            {
+                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
+                                        desktop && desktop.MainWindow != null)
+                                {
+                                    var title = string.IsNullOrWhiteSpace(conflictQuestion)
+                                        ? "Package Conflict"
+                                        : conflictQuestion;
+                                    var dialog = new ProviderSelectionDialog(title, conflictOptions);
+                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
+                                    return result;
+                                }
+
+                                return 0; // Default to first option
+                            });
+                            var selectedIndex = await selectedIndexTask;
+
+                            await SafeWriteAsync(selectedIndex.ToString());
+                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {selectedIndex.ToString()}");
+
+                            awaitingConflictSelection = false;
+                            conflictQuestion = null;
+                            conflictOptions.Clear();
                         }
                         // Check for generic ALPM question (yes/no)
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))

@@ -19,8 +19,8 @@
     </PropertyGroup>
     
     <PropertyGroup>
-        <Version>1.4.15</Version>
-        <AssemblyVersion>1.4.15</AssemblyVersion>
+        <Version>1.4.16</Version>
+        <AssemblyVersion>1.4.16</AssemblyVersion>
         <AssemblyTitle>Shelly VALPM</AssemblyTitle>
         <Description>Shelly is a visual arch linux package manager</Description>
         <Company>ZC Development</Company>
