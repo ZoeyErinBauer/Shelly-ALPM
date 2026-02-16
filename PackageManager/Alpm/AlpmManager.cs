@@ -43,7 +43,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         Sync();
     }
 
-    public void Initialize(bool root = false)
+    public void Initialize(bool root = false, bool useTempPath = false, string tempPath = "")
     {
         if (_handle != IntPtr.Zero)
         {
@@ -52,6 +52,13 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
 
         _config = PacmanConfParser.Parse(_configPath);
+        //Checks to see if the temp path is being used to run in
+        //non-root mode for update checking.
+        if (useTempPath)
+        {
+            _config.DbPath = tempPath;
+        }
+
         var lockFilePath = Path.Combine(_config.DbPath, "db.lck");
         if (File.Exists(lockFilePath))
         {
@@ -814,7 +821,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // 2. Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -823,7 +831,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // 3. Add package to transaction
             if (AddPkg(_handle, pkgPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -831,14 +840,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // 4. Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 5. Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
@@ -896,7 +907,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -908,7 +920,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     // Note: In libalpm, if one fails, we might want to know which one, 
                     // but here we just throw an exception for the first failure.
-                    Console.Error.WriteLine($"[ALPM_ERROR]Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                    Console.Error.WriteLine(
+                        $"[ALPM_ERROR]Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                     throw new Exception(
                         $"Failed to add a package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 }
@@ -917,14 +930,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
@@ -970,7 +985,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -982,7 +998,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     // Note: In libalpm, if one fails, we might want to know which one, 
                     // but here we just throw an exception for the first failure.
-                    Console.Error.WriteLine($"[ALPM_ERROR]Failed to remove package from transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                    Console.Error.WriteLine(
+                        $"[ALPM_ERROR]Failed to remove package from transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                     throw new Exception(
                         $"Failed to add a package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 }
@@ -991,14 +1008,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
@@ -1028,7 +1047,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Using 0 for flags for now, similar to InstallPackage
         if (TransInit(_handle, flags) != 0)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -1037,7 +1057,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // 3. Add package to removal list
             if (RemovePkg(_handle, pkgPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to add package '{packageName}' to removal list: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to add package '{packageName}' to removal list: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to add package '{packageName}' to removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -1045,14 +1066,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // 4. Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 5. Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit removal transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
@@ -1072,14 +1095,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             if (TransInit(_handle, flags) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             if (SyncSysupgrade(_handle, false) != 0) throw new Exception(GetErrorMessage(ErrorNumber(_handle)));
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -1088,7 +1113,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -1129,7 +1155,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             out IntPtr pkgPtr);
         if (result != 0 || pkgPtr == IntPtr.Zero)
         {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to load package from '{path}': {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to load package from '{path}': {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to load package from '{path}': {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -1137,7 +1164,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         if (TransInit(_handle, flags) != 0)
         {
             _ = PkgFree(pkgPtr);
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+            Console.Error.WriteLine(
+                $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
         }
 
@@ -1147,21 +1175,24 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             if (AddPkg(_handle, pkgPtr) != 0)
             {
                 _ = PkgFree(pkgPtr);
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to add package to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 4. Prepare transaction
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to prepare transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             // 5. Commit transaction
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to commit transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
         }
@@ -1314,7 +1345,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (TransInit(_handle, flags) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
@@ -1328,14 +1360,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -1356,14 +1390,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             if (TransInit(_handle, flags) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             var pkgPtr = DbGetPkg(GetLocalDb(_handle), packageName);
             if (AddPkg(_handle, pkgPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to add package '{packageName}' to transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to mark system upgrade: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
@@ -1375,14 +1411,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
@@ -1404,7 +1442,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             if (TransInit(_handle, flags) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception($"Failed to initialize transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
@@ -1422,14 +1461,16 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (TransPrepare(_handle, out var dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to prepare system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }
 
             if (TransCommit(_handle, out dataPtr) != 0)
             {
-                Console.Error.WriteLine($"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
+                Console.Error.WriteLine(
+                    $"[ALPM_ERROR]Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
                 throw new Exception(
                     $"Failed to commit system upgrade transaction: {GetErrorMessage(ErrorNumber(_handle))}");
             }

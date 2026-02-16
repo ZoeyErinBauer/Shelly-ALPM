@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
@@ -18,7 +20,34 @@ public partial class App : Application
     private ServiceProvider _services = null!;
 
     public static ServiceProvider Services => ((App)Current!)._services;
-    
+
+    private Window? _mainWindow;
+
+    public ICommand ShowWindowCommand { get; }
+    public ICommand ExitCommand { get; }
+
+    public App()
+    {
+        ShowWindowCommand = new SimpleCommand(() =>
+        {
+            if (_mainWindow is not null)
+            {
+                _mainWindow.Show();
+                _mainWindow.Activate();
+            }
+        });
+
+        ExitCommand = new SimpleCommand(() =>
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.Shutdown();
+            }
+        });
+
+        DataContext = this;
+    }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -45,6 +74,8 @@ public partial class App : Application
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             var configService = _services.GetRequiredService<IConfigService>();
             var themeService = _services.GetRequiredService<ThemeService>();
             var cacheService = _services.GetRequiredService<IAppCache>();
@@ -63,14 +94,32 @@ public partial class App : Application
             
             Assets.Resources.Culture = config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
         
-            desktop.MainWindow = new MainWindow
+            _mainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(configService, cacheService, AlpmService.Instance, _services),
             };
+            if (config.TrayEnabled)
+            {
+                _mainWindow.Closing += (_, e) =>
+                {
+                    e.Cancel = true;
+                    _mainWindow.Hide();
+                };
+            }
+            else
+            {
+                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+            }
+            desktop.MainWindow = _mainWindow;
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 }
 
-
+internal class SimpleCommand(Action execute) : ICommand
+{
+    public event EventHandler? CanExecuteChanged;
+    public bool CanExecute(object? parameter) => true;
+    public void Execute(object? parameter) => execute();
+}

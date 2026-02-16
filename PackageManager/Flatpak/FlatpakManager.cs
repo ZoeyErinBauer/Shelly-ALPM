@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PackageManager.Flatpak;
 
-public class FlatpakManager
+public class FlatpakManager : IDisposable
 {
     /// <summary>
     /// Searches installed flatpak apps
@@ -919,5 +919,10 @@ public class FlatpakManager
         {
             Console.Error.Write($"[Shelly][DEBUG_LOG]Progress: {percentage}% - {status}\n");
         }
+    }
+
+    public void Dispose()
+    {
+       //Currently just here to have it when needed.
     }
 }

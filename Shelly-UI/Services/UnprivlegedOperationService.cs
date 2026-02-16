@@ -66,7 +66,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     public async Task<List<FlatpakPackageDto>> ListFlatpakPackages()
     {
         var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -80,12 +80,14 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
-            
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -98,7 +100,7 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     public async Task<List<FlatpakPackageDto>> ListFlatpakUpdates()
     {
         var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
-        
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -112,12 +114,14 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
-            
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -135,8 +139,9 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 
     public async Task<List<FlatpakPackageDto>> ListAppstreamFlatpak()
     {
-        var result = await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream", "--json");
-        
+        var result =
+            await ExecuteUnprivilegedCommandAsync("Get local appstream", "flatpak get-remote-appstream", "--json");
+
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -150,12 +155,14 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine, FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
-            
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()), FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -164,18 +171,18 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
             return [];
         }
     }
-    
+
 
     public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
     {
         return await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
     }
-    
+
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package)
     {
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
     }
-    
+
     public async Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package)
     {
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak install", package);
@@ -185,10 +192,38 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     {
         return await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
     }
-    
+
     public async Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream()
     {
         return await ExecuteUnprivilegedCommandAsync("Sync remote", "flatpak sync-remote-appstream");
+    }
+
+    public async Task<SyncModel> CheckForApplicationUpdates()
+    {
+        var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", "utility updates -a -l --json");
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates =
+                        System.Text.Json.JsonSerializer.Deserialize(trimmedLine, ShellyUIJsonContext.Default.SyncModel);
+                    return updates ?? new SyncModel();
+                }
+            }
+
+            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                ShellyUIJsonContext.Default.SyncModel);
+            return allUpdates ?? new SyncModel();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
+            return new SyncModel();
+        }
     }
 
     private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
@@ -300,12 +335,12 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
             };
         }
     }
-    
+
     private static string StripBom(string input)
     {
         if (string.IsNullOrEmpty(input))
             return input;
-        
+
         // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
         return input.TrimStart('\uFEFF');
     }

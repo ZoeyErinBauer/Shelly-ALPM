@@ -59,8 +59,11 @@
             <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakUpgrade" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Flatpak.FlatpakSyncRemoteAppStream" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Flatpak.FlathubGetRemote" Dynamic="Required All"/>
-            <!-- Utility commands -->
+            <!-- Utility Commands -->
+            <Type Name="Shelly_CLI.Commands.Utility.CheckPackageUpdatesNonRootCommand" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Utility.CheckPackageUpdatesNonRootSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Utility.Export" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Utility.ExportSettings" Dynamic="Required All"/>
         </Assembly>
     </Application>
 </Directives>

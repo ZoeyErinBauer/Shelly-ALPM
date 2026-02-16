@@ -32,6 +32,10 @@
                                   IsChecked="{Binding UseHorizontalMenu, Mode=TwoWay}"
                                   Foreground="{DynamicResource SystemBaseHighColor}">
                     </ToggleSwitch>
+                    <ToggleSwitch Content="Enable Tray Icon (Restart Required)"
+                                  IsChecked="{Binding EnableTray, Mode=TwoWay}"
+                                  Foreground="{DynamicResource SystemBaseHighColor}">
+                    </ToggleSwitch>
                     <Button Content="{x:Static lang:Resources.ForceSync}"
                             Command="{Binding ForceSyncUpdateCommand}"
                             HorizontalAlignment="Left"

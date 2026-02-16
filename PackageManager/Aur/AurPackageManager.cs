@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
 using PackageManager.Utilities;
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace PackageManager.Aur;
@@ -54,14 +55,14 @@ public class AurPackageManager(string? configPath = null)
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmProgressEventArgs>? Progress;
 
-    public async Task Initialize(bool root = false)
+    public async Task Initialize(bool root = false, bool useTempPath = false, string tempPath = "")
     {
         _alpm = configPath is null ? new AlpmManager() : new AlpmManager(configPath);
-        _alpm.Initialize(root);
+        _alpm.Initialize(root, useTempPath, tempPath);
         _alpm.Question += (sender, args) => Question?.Invoke(this, args);
         _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
-        
+
         // Import caches from other AUR helpers (paru, yay) for installed foreign packages
         await ImportOtherAurHelperCaches();
     }
@@ -209,10 +210,10 @@ public class AurPackageManager(string? configPath = null)
         var home = $"/home/{user}";
         var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
         var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
-        
+
         var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
         var depsToConsider = depends.ToList();
-        
+
         if (includeMakeDeps)
         {
             var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
@@ -833,20 +834,20 @@ public class AurPackageManager(string? configPath = null)
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
             var home = $"/home/{user}";
             var shellyCachePath = System.IO.Path.Combine(home, ".cache", "Shelly");
-            
+
             // Get list of installed foreign (AUR) packages
             var foreignPackages = _alpm.GetForeignPackages().Select(p => p.Name).ToHashSet();
-            
+
             // Define cache locations for other AUR helpers
             var paruCachePath = System.IO.Path.Combine(home, ".cache", "paru", "clone");
             var yayCachePath = System.IO.Path.Combine(home, ".cache", "yay");
-            
+
             // Import from paru cache
             if (System.IO.Directory.Exists(paruCachePath))
             {
                 await ImportFromAurHelperCache(paruCachePath, shellyCachePath, foreignPackages, user);
             }
-            
+
             // Import from yay cache
             if (System.IO.Directory.Exists(yayCachePath))
             {
@@ -863,31 +864,32 @@ public class AurPackageManager(string? configPath = null)
     /// <summary>
     /// Imports package caches from a specific AUR helper's cache directory.
     /// </summary>
-    private async Task ImportFromAurHelperCache(string sourceCachePath, string shellyCachePath, HashSet<string> foreignPackages, string user)
+    private async Task ImportFromAurHelperCache(string sourceCachePath, string shellyCachePath,
+        HashSet<string> foreignPackages, string user)
     {
         try
         {
             var packageDirs = System.IO.Directory.GetDirectories(sourceCachePath);
-            
+
             foreach (var packageDir in packageDirs)
             {
                 var packageName = System.IO.Path.GetFileName(packageDir);
-                
+
                 // Only import if the package is currently installed as a foreign package
                 if (!foreignPackages.Contains(packageName))
                     continue;
-                
+
                 var shellyPackagePath = System.IO.Path.Combine(shellyCachePath, packageName);
-                
+
                 // Skip if Shelly already has a cache for this package
                 if (System.IO.Directory.Exists(shellyPackagePath))
                     continue;
-                
+
                 // Check if source has a PKGBUILD
                 var sourcePkgbuild = System.IO.Path.Combine(packageDir, "PKGBUILD");
                 if (!System.IO.File.Exists(sourcePkgbuild))
                     continue;
-                
+
                 // Create Shelly cache directory for this package
                 var mkdirProcess = new System.Diagnostics.Process
                 {
@@ -903,7 +905,7 @@ public class AurPackageManager(string? configPath = null)
                 };
                 mkdirProcess.Start();
                 await mkdirProcess.WaitForExitAsync();
-                
+
                 // Copy the PKGBUILD and other relevant files
                 var copyProcess = new System.Diagnostics.Process
                 {
@@ -919,7 +921,7 @@ public class AurPackageManager(string? configPath = null)
                 };
                 copyProcess.Start();
                 await copyProcess.WaitForExitAsync();
-                
+
                 // Remove any .git directory to save space (we don't need git history)
                 var gitDir = System.IO.Path.Combine(shellyPackagePath, ".git");
                 if (System.IO.Directory.Exists(gitDir))

@@ -11,7 +11,7 @@ public interface IAlpmManager
     event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
     void IntializeWithSync();
-    void Initialize(bool root = false);
+    void Initialize(bool root = false, bool useTempPath = false, string tempPath = "");
     void Sync(bool force = false);
     List<AlpmPackageDto> GetInstalledPackages();
     List<AlpmPackageDto> GetAvailablePackages();
