@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PackageManager.Alpm;
 
@@ -43,4 +44,28 @@ public class AlpmQuestionEventArgs : EventArgs
     /// For SelectProvider: the index of the selected provider (0-based)
     /// </summary>
     public int Response { get; set; } = 0; // Default to No (0)
+
+    private volatile bool _responded;
+
+    /// <summary>
+    /// Sets the response value and signals the waiting callback thread.
+    /// Call this from the GUI after the user has answered.
+    /// </summary>
+    public void SetResponse(int response)
+    {
+        Response = response;
+        _responded = true;
+    }
+
+    /// <summary>
+    /// Blocks the calling thread until <see cref="SetResponse"/> is called.
+    /// Safe to call from the libalpm callback thread.
+    /// </summary>
+    public void WaitForResponse()
+    {
+        while (!_responded)
+        {
+            Thread.Sleep(50);
+        }
+    }
 }

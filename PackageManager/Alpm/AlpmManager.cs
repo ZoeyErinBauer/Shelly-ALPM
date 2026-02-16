@@ -281,6 +281,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         var args = new AlpmQuestionEventArgs(questionType, questionText);
         Question?.Invoke(this, args);
 
+        // Block until the GUI user responds
+        args.WaitForResponse();
+
         Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering {args.Response})");
 
         // Write the response back to the answer field.
@@ -346,6 +349,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         args.Response = 0;
 
         Question?.Invoke(this, args);
+
+        // Block until the GUI user responds
+        args.WaitForResponse();
 
         // Write the response back to the UseIndex field
         selectQuestion.UseIndex = args.Response;

@@ -205,7 +205,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
                 // Wait for user response
                 var response = await questionResponseSubject.FirstAsync();
-                args.Response = response;
+                args.SetResponse(response);
                 return Unit.Default;
             })
             .Subscribe();
