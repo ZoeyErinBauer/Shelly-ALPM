@@ -9,4 +9,8 @@ public class ExportSettings : CommandSettings
     [CommandArgument(0, "<package>")]
     [Description("Output location for the exported sync (defaut: .cache/Shelly/sync.json)")]
     public string Output { get; set; } = string.Empty;
+    
+    [CommandOption("-n|--name")]
+    [Description("Set name of the exported sync")]
+    public string Name { get; set; } = string.Empty;
 }

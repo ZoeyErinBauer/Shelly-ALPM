@@ -197,6 +197,15 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
     {
         return await ExecuteUnprivilegedCommandAsync("Sync remote", "flatpak sync-remote-appstream");
     }
+    
+    public async Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return await ExecuteUnprivilegedCommandAsync("Export Sync", "utility export -o", filePath);
+        }
+        return await ExecuteUnprivilegedCommandAsync("Export Sync", "utility export -o", filePath, "-n", name);
+    }
 
     public async Task<SyncModel> CheckForApplicationUpdates()
     {

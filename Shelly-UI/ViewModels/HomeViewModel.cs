@@ -3,18 +3,19 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
-using System.Reactive.Disposables.Fluent;
-using System.Reactive.Linq;
+using System.Reactive;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using PackageManager.Alpm;
 using ReactiveUI;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
@@ -22,10 +23,16 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
 {
     private readonly IPrivilegedOperationService _privilegedOperationService;
 
+    private readonly IUnprivilegedOperationService _unprivilegedOperationService;
+
     public HomeViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
+        _unprivilegedOperationService = App.Services.GetService<IUnprivilegedOperationService>()!;
+
+        SyncExport = ReactiveCommand.CreateFromTask(ExportSync);
+
         LoadData();
         LoadFeed();
     }
@@ -40,6 +47,19 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
                 InstalledPackages = new ObservableCollection<AlpmPackageDto>(packages);
                 this.RaisePropertyChanged(nameof(InstalledPackages));
             });
+            var aur = await _privilegedOperationService.GetAurInstalledPackagesAsync();
+            var flatpak = await _unprivilegedOperationService.ListFlatpakPackages();
+
+            TotalPackages = packages.Count + aur.Count + flatpak.Count;
+
+            var updates = await _unprivilegedOperationService.CheckForApplicationUpdates();
+
+            var packagePercent =
+                TotalPackages - (updates.Packages.Count + updates.Aur.Count + updates.Flatpaks.Count);
+
+            var ratio = (double)packagePercent / TotalPackages * 100;
+            
+            GaugeLabel = $"{ratio:F2} %";
         }
         catch (Exception e)
         {
@@ -155,6 +175,80 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
     }
 
     #endregion
+
+    private int _totalPackages = 0;
+
+    public int TotalPackages
+    {
+        get => _totalPackages;
+        set => this.RaiseAndSetIfChanged(ref _totalPackages, value);
+    }
+
+    private int _packagesForUpdates = 0;
+
+    private string _gaugeLabel = "";
+
+    public string GaugeLabel
+    {
+        get => _gaugeLabel;
+        set => this.RaiseAndSetIfChanged(ref _gaugeLabel, value);
+    }
+
+    private async Task ExportSync()
+    {
+        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+
+        try
+        {
+            var topLevel = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
+                ?.MainWindow;
+            if (topLevel == null) return;
+
+            var suggestName = $"{DateTime.Now:yyyyMMddHHmmss}_shelly.sync";
+            
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Select a save location",
+                SuggestedFileName = $"{suggestName}", 
+                DefaultExtension = "sync", 
+                FileTypeChoices =
+                [
+                    new FilePickerFileType("Sync Files")
+                    {
+                        Patterns = ["*.sync"]
+                    },
+                    new FilePickerFileType("All Files")
+                    {
+                        Patterns = ["*.*"]
+                    }
+                ]
+            });
+
+
+            if (file != null)
+            {
+                var path = file.Path.LocalPath;
+                path = path.Replace(file.Name, "");
+
+                var result = await _unprivilegedOperationService.ExportSyncFile(path, file.Name.Equals(suggestName, StringComparison.InvariantCultureIgnoreCase) ? "" : file.Name.Replace(".sync", ""));
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to export sync file: {result.Error}");
+                    mainWindow?.ShowToast($"Sync export failed", isSuccess: false);
+                }
+                else
+                {
+                    mainWindow?.ShowToast($"Successfully exported sync file");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($@"Unhandled exception in homepage sync export: {ex.Message}");
+        }
+    }
+
+    public ReactiveCommand<Unit, Unit> SyncExport { get; }
 
     public void Dispose()
     {
