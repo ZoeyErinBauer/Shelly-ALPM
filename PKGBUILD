@@ -1,7 +1,7 @@
 # Maintainer: Zoey Bauer <zoey.erin.bauer@gmail.com>
 # Maintainer: Caroline Snyder
 pkgname=shelly
-pkgver=1.4.12
+pkgver=1.4.13
 pkgrel=1
 pkgdesc="Shelly: A Modern Arch Package Manager"
 arch=('x86_64')
@@ -61,9 +61,8 @@ sha256sums=('b8a284a2faa90155c934162b87211eb834aa7877023844ea94668c3575c2b7d4')
 build() {
   cd "$srcdir/Shelly-ALPM-${pkgver}"
 
-  #suppressing warnings that have no bearing on the actual project and server nothing but to add confusion to the package build.
-  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out --nologo -v q /p:WarningLevel=0 /p:NoWarn=IL3000%3BIL3001%3BIL3002%3BIL3003%3BIL3050%3BIL3051%3BIL3053 /p:SuppressTrimAnalysisWarnings=true /p:EnableTrimAnalyzer=false /p:EnableSingleFileAnalyzer=false /p:EnableAotAnalyzer=false
-  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo -v q /p:WarningLevel=0 /p:NoWarn=IL3000%3BIL3001%3BIL3002%3BIL3003%3BIL3050%3BIL3051%3BIL3053 /p:SuppressTrimAnalysisWarnings=true /p:EnableTrimAnalyzer=false /p:EnableSingleFileAnalyzer=false /p:EnableAotAnalyzer=false
+  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out --nologo
+  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo
 }
 
 package() {
