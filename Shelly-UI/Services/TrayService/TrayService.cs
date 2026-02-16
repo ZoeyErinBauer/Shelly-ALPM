@@ -10,7 +10,7 @@ public class TrayService : ITrayService
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
     private CancellationTokenSource? _cts;
     private Task? _backgroundTask;
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(120);
+    private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(12);
 
     public TrayService(IUnprivilegedOperationService unprivilegedOperationService)
     {
