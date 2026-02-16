@@ -4,7 +4,7 @@
              xmlns:local="using:Shelly_UI"
              xmlns:icons="using:Material.Icons.Avalonia"
              RequestedThemeVariant="Dark"
-             x:CompileBindings="False">
+             x:CompileBindings="true">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
     <Application.Styles>
         <FluentTheme>
@@ -30,7 +30,7 @@
     </Application.Resources>
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="/Assets/shellylogo.png" ToolTipText="Shelly" Command="{Binding ShowWindowCommand}">
+            <TrayIcon Icon="/Assets/shellylogo.png" ToolTipText="Shelly" x:DataType="local:App" Command="{Binding ShowWindowCommand}">
                 <TrayIcon.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="Show" Command="{Binding ShowWindowCommand}" />
