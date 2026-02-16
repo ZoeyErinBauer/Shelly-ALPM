@@ -72,7 +72,7 @@ public class AlpmManagerTests
         {
             questionTriggered = true;
             capturedType = args.QuestionType;
-            args.Response = 0; // Answer No
+            args.SetResponse(0); // Answer No
         };
 
         // Create a fake question struct
