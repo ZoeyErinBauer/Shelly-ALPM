@@ -188,8 +188,10 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 QuestionTitle = GetQuestionTitle(args.QuestionType);
                 QuestionText = args.QuestionText;
                 
-                // Handle SelectProvider questions with a selection list
-                if (args.QuestionType == AlpmQuestionType.SelectProvider && args.ProviderOptions?.Count > 0)
+                // Handle SelectProvider and ConflictPkg questions with a selection list
+                if ((args.QuestionType == AlpmQuestionType.SelectProvider || 
+                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
+                    && args.ProviderOptions?.Count > 0)
                 {
                     IsSelectProviderQuestion = true;
                     ProviderOptions = args.ProviderOptions;

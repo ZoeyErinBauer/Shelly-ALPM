@@ -231,6 +231,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         string? packageName = null;
         string? questionText = null;
+        List<string>? conflictOptions = null;
 
         switch (questionType)
         {
@@ -258,7 +259,10 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 var packageOne = Marshal.PtrToStringAnsi(conflict.PackageOne);
                 var packageTwo = Marshal.PtrToStringAnsi(conflict.PackageTwo);
                 packageName = $"{packageOne ?? ""} conflicts with {packageTwo ?? ""}";
-                questionText = $"{packageName} Remove conflict?";
+                questionText = $"{packageName}. Which package would you like to remove?";
+                conflictOptions = new List<string>();
+                if (!string.IsNullOrEmpty(packageOne)) conflictOptions.Add(packageOne);
+                if (!string.IsNullOrEmpty(packageTwo)) conflictOptions.Add(packageTwo);
                 break;
             case AlpmQuestionType.CorruptedPkg:
                 var corruptQuestion = Marshal.PtrToStructure<CorruptedPackage>(questionPtr);
@@ -278,7 +282,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 break;
         }
 
-        var args = new AlpmQuestionEventArgs(questionType, questionText);
+        var args = new AlpmQuestionEventArgs(questionType, questionText, conflictOptions);
         Question?.Invoke(this, args);
 
         // Block until the GUI user responds

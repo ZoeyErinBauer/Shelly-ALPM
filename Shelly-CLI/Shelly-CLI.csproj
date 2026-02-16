@@ -12,9 +12,9 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>1.4.15</Version>
+        <Version>1.4.16</Version>
         <AssemblyName>shelly</AssemblyName>
-        <AssemblyVersion>1.4.15</AssemblyVersion>
+        <AssemblyVersion>1.4.16</AssemblyVersion>
         <AssemblyTitle>Shelly CLI</AssemblyTitle>
         <Description>Shelly CLI is a arch linux package manager</Description>
         <Company>ZC Development</Company>
