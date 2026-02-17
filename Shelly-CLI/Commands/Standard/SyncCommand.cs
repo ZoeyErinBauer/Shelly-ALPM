@@ -10,6 +10,11 @@ public class SyncCommand : Command<SyncSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] SyncSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiMode(settings);
+        }
+
         using var manager = new AlpmManager();
         object renderLock = new();
 
@@ -57,6 +62,16 @@ public class SyncCommand : Command<SyncSettings>
             });
 
         AnsiConsole.MarkupLine("[green]Package databases synchronized successfully![/]");
+        return 0;
+    }
+
+    private static int HandleUiMode(SyncSettings settings)
+    {
+        using var manager = new AlpmManager();
+        Console.WriteLine("Synchronizing package databases...");
+        manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+        manager.Sync(settings.Force);
+        Console.WriteLine("Package databases synchronized successfully");
         return 0;
     }
 }

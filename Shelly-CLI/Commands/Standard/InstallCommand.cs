@@ -127,13 +127,13 @@ public class InstallCommand : Command<InstallPackageSettings>
     {
         if (settings.Packages.Length == 0)
         {
-            Console.WriteLine("Error: No packages specified");
+            Console.Error.WriteLine("Error: No packages specified");
             return 1;
         }
 
         var manager = new AlpmManager();
         manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
-        Console.WriteLine("Initializing and syncing ALPM...");
+        Console.Error.WriteLine("Initializing and syncing ALPM...");
         manager.IntializeWithSync();
         if (settings.BuildDepsOn)
         {
@@ -145,31 +145,41 @@ public class InstallCommand : Command<InstallPackageSettings>
 
             if (settings.MakeDepsOn)
             {
-                AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+                Console.Error.WriteLine("Installing packages...");
                 manager.InstallDependenciesOnly(settings.Packages.ToList().First(), true, AlpmTransFlag.None);
                 return 0;
             }
 
-            Console.WriteLine("Installing packages...");
+            Console.Error.WriteLine("Installing packages...");
             manager.InstallDependenciesOnly(settings.Packages.ToList().First(), false, AlpmTransFlag.None);
-            Console.WriteLine("Packages installed successfully!");
+            Console.Error.WriteLine("Packages installed successfully!");
             return 0;
         }
 
         if (settings.NoDeps)
         {
-            Console.WriteLine("Skipping dependency installation.");
-            Console.WriteLine("Installing packages...");
+            Console.Error.WriteLine("Skipping dependency installation.");
+            Console.Error.WriteLine("Installing packages...");
             manager.InstallPackages(settings.Packages.ToList(), AlpmTransFlag.NoDeps);
-            Console.WriteLine("Packages installed successfully!");
+            Console.Error.WriteLine("Packages installed successfully!");
             return 0;
         }
 
         Console.WriteLine("Installing packages...");
         var rowIndex = new Dictionary<string, int>();
         manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
-        manager.InstallPackages(settings.Packages.ToList());
-        Console.WriteLine("Finished installing packages.");
+        try
+        {
+            manager.InstallPackages(settings.Packages.ToList());
+            Console.Error.WriteLine("Finished installing packages.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ALPM_ERROR]Failed to install packages: {ex.Message}");
+            manager.Dispose();
+            return 1;
+        }
+
         manager.Dispose();
         return 0;
     }
