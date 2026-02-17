@@ -74,14 +74,7 @@ public static class QuestionHandler
             Console.Error.Flush();
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");
-            if (input is "y" or "Y")
-            {
-                question.SetResponse(1);
-            }
-            else
-            {
-                question.SetResponse(0);
-            }
+            question.SetResponse(input is "y" or "Y" ? 1 : 0);
 
             return;
         }
