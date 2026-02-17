@@ -36,6 +36,10 @@
                                   IsChecked="{Binding EnableTray, Mode=TwoWay}"
                                   Foreground="{DynamicResource SystemBaseHighColor}">
                     </ToggleSwitch>
+                    <ToggleSwitch Content="No Confirm"
+                                  IsChecked="{Binding NoConfirm, Mode=TwoWay}"
+                                  Foreground="{DynamicResource SystemBaseHighColor}">
+                    </ToggleSwitch>
                     <Button Content="{x:Static lang:Resources.ForceSync}"
                             Command="{Binding ForceSyncUpdateCommand}"
                             HorizontalAlignment="Left"

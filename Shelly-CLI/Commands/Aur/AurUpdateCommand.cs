@@ -8,6 +8,7 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
 {
+    //Todo: immplement isUiMode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
         [NotNull] AurPackageSettings settings)
     {

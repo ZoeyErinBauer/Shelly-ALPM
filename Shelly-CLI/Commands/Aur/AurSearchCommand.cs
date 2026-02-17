@@ -8,6 +8,7 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurSearchCommand : AsyncCommand<AurSearchSettings>
 {
+    //TODO: Implement isUiMode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurSearchSettings settings)
     {
         if (string.IsNullOrWhiteSpace(settings.Query))

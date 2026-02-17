@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -11,6 +12,7 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
 {
+    //TODO:  implement isuimode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
     {
         AurPackageManager? manager = null;
@@ -22,6 +24,7 @@ public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
 
         try
         {
+            
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
             object renderLock = new();
@@ -52,76 +55,7 @@ public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
                 {
                     AnsiConsole.WriteLine();
                     // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                    if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                         args.QuestionType == AlpmQuestionType.ConflictPkg) 
-                        && args.ProviderOptions?.Count > 0)
-                    {
-                        if (settings.NoConfirm)
-                        {
-                            if (Program.IsUiMode)
-                            {
-                                if (args.QuestionType == AlpmQuestionType.ConflictPkg)
-                                {
-                                    // Dedicated conflict protocol for UI integration
-                                    Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
-                                    for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                    {
-                                        Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
-                                    }
-
-                                    Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
-                                }
-                                else
-                                {
-                                    // Machine-readable format for UI integration
-                                    Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                                    for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                    {
-                                        Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                                    }
-
-                                    Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
-                                }
-                                Console.Error.Flush();
-                                var input = Console.ReadLine();
-                                args.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
-                            }
-                            else
-                            {
-                                // Non-interactive CLI mode: default to the first provider
-                                args.SetResponse(0);
-                            }
-                        }
-                        else
-                        {
-                            var selection = AnsiConsole.Prompt(
-                                new SelectionPrompt<string>()
-                                    .Title($"[yellow]{args.QuestionText}[/]")
-                                    .AddChoices(args.ProviderOptions));
-                            args.SetResponse(args.ProviderOptions.IndexOf(selection));
-                        }
-                    }
-                    else if (settings.NoConfirm)
-                    {
-                        if (Program.IsUiMode)
-                        {
-                            // Machine-readable format for UI integration
-                            Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                            Console.Error.Flush();
-                            var input = Console.ReadLine();
-                            args.SetResponse(input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0);
-                        }
-                        else
-                        {
-                            // Non-interactive CLI mode: automatically confirm
-                            args.SetResponse(1);
-                        }
-                    }
-                    else
-                    {
-                        var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                        args.SetResponse(response ? 1 : 0);
-                    }
+                    QuestionHandler.HandleQuestion(args,Program.IsUiMode,settings.NoConfirm);
                 }
             };
 

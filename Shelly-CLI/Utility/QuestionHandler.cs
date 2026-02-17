@@ -16,17 +16,13 @@ public static class QuestionHandler
                 HandleProviderSelection(question, uiMode, noConfirm);
                 break;
             case AlpmQuestionType.ReplacePkg:
-                break;
             case AlpmQuestionType.InstallIgnorePkg:
             case AlpmQuestionType.CorruptedPkg:
             case AlpmQuestionType.ImportKey:
             default:
+                HandleQuestion(question, uiMode, noConfirm);
                 break;
         }
-    }
-
-    private static void HandleReplacement(AlpmQuestionEventArgs question, bool uiMode = false, bool noConfirm = false)
-    {
     }
 
     private static void HandleConflictSelection(AlpmQuestionEventArgs question, bool uiMode = false,
