@@ -246,6 +246,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     packageName = "unknown";
                 }
+
                 questionText = $"Install ignored package: {packageName}?";
                 break;
             case AlpmQuestionType.ReplacePkg:
@@ -278,7 +279,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
 
                 var conflict = Marshal.PtrToStructure<Conflict>(conflictQuestion.Conflict);
-             
+
                 AlpmPackage? packageOne = null;
                 AlpmPackage? packageTwo = null;
 
@@ -292,7 +293,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     packageTwo = new AlpmPackage(conflict.PackageTwo);
                 }
-                
+
                 packageName =
                     $"{packageOne?.Name ?? "unknown"} - {packageOne?.Version ?? "unknown"} conflicts with {packageTwo?.Name ?? "unknown"} - {packageTwo?.Version ?? "unknown"}";
                 questionText = $"{packageName}. Remove {packageOne?.Name ?? "unknown"}";
@@ -324,7 +325,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Block until the GUI user responds
         args.WaitForResponse();
 
-        Console.Error.WriteLine($"[ALPM_RESPONSE] {questionText} (Answering {args.Response})");
+        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering {args.Response})");
+        Console.Error.WriteLine($"Recevied response {args.Response}");
 
         // Write the response back to the answer field.
         question.Answer = args.Response;

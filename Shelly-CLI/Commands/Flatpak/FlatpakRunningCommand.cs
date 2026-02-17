@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Flatpak;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -9,6 +10,11 @@ public class FlatpakRunningCommand : Command
 {
     public override int Execute([NotNull] CommandContext context)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeRunning();
+        }
+
         AnsiConsole.MarkupLine("[yellow]Currently running flatpack instances on machine...[/]");
         var result = new FlatpakManager().GetRunningInstances();
 
@@ -31,6 +37,24 @@ public class FlatpakRunningCommand : Command
         }
 
         AnsiConsole.MarkupLine("[green]No instances running[/]");
+        return 0;
+    }
+
+    private static int HandleUiModeRunning()
+    {
+        Console.Error.WriteLine("Currently running flatpack instances on machine...");
+        var result = new FlatpakManager().GetRunningInstances();
+
+        if (result.Count > 0)
+        {
+            foreach (var pkg in result.OrderBy(pkg => pkg.Pid))
+            {
+                Console.WriteLine($"{pkg.AppId} {pkg.Pid}");
+            }
+            return 0;
+        }
+
+        Console.Error.WriteLine("No instances running");
         return 0;
     }
 }

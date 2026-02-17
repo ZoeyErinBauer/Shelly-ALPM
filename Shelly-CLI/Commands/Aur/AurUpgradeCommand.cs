@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Aur;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -7,10 +8,13 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
 {
-    //Todo: implment isUiMode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
         [NotNull] AurUpgradeSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeUpgrade(settings);
+        }
         AurPackageManager? manager = null;
         try
         {
@@ -89,6 +93,67 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]Upgrade failed:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
+
+    private static async Task<int> HandleUiModeUpgrade(AurUpgradeSettings settings)
+    {
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
+
+            var updates = await manager.GetPackagesNeedingUpdate();
+
+            if (updates.Count == 0)
+            {
+                Console.Error.WriteLine("All AUR packages are up to date.");
+                return 0;
+            }
+
+            Console.Error.WriteLine($"{updates.Count} AUR packages need updates:");
+            foreach (var pkg in updates)
+            {
+                Console.Error.WriteLine($"  {pkg.Name}: {pkg.Version} -> {pkg.NewVersion}");
+            }
+
+            manager.PackageProgress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
+                    (args.Message != null ? $" - {args.Message}" : ""));
+            };
+
+            manager.PkgbuildDiffRequest += (sender, args) =>
+            {
+                if (settings.NoConfirm)
+                {
+                    args.ProceedWithUpdate = true;
+                    return;
+                }
+
+                Console.Error.WriteLine($"PKGBUILD changed for {args.PackageName}.");
+                Console.Error.WriteLine("--- Old PKGBUILD ---");
+                Console.Error.WriteLine(args.OldPkgbuild);
+                Console.Error.WriteLine("--- New PKGBUILD ---");
+                Console.Error.WriteLine(args.NewPkgbuild);
+                args.ProceedWithUpdate = true;
+            };
+
+            var packageNames = updates.Select(u => u.Name).ToList();
+            await manager.UpdatePackages(packageNames);
+            Console.Error.WriteLine("Upgrade complete.");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Upgrade failed: {ex.Message}");
             return 1;
         }
         finally
