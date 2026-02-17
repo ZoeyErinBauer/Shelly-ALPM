@@ -34,7 +34,7 @@ public static class QuestionHandler
         {
             if (noConfirm)
             {
-                question.SetResponse(1);
+                question.SetResponse(0);
                 return;
             }
 

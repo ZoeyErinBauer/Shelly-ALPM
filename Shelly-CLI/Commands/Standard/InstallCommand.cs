@@ -12,6 +12,11 @@ public class InstallCommand : Command<InstallPackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] InstallPackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeInstall(settings);
+        }
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -22,14 +27,12 @@ public class InstallCommand : Command<InstallPackageSettings>
 
         AnsiConsole.MarkupLine($"[yellow]Packages to install:[/] {string.Join(", ", packageList)}");
 
-        if (!Program.IsUiMode)
+        if (!AnsiConsole.Confirm("Do you want to proceed?"))
         {
-            if (!AnsiConsole.Confirm("Do you want to proceed?"))
-            {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
-            }
+            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+            return 0;
         }
+
 
         var manager = new AlpmManager();
         object renderLock = new();
@@ -117,6 +120,57 @@ public class InstallCommand : Command<InstallPackageSettings>
 
         manager.Dispose();
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
+        return 0;
+    }
+
+    private int HandleUiModeInstall(InstallPackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        var manager = new AlpmManager();
+        manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+        Console.WriteLine("Initializing and syncing ALPM...");
+        manager.IntializeWithSync();
+        if (settings.BuildDepsOn)
+        {
+            if (settings.Packages.Length > 1)
+            {
+                Console.WriteLine("Cannot build dependencies for multiple packages at once.");
+                return -1;
+            }
+
+            if (settings.MakeDepsOn)
+            {
+                AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
+                manager.InstallDependenciesOnly(settings.Packages.ToList().First(), true, AlpmTransFlag.None);
+                return 0;
+            }
+
+            Console.WriteLine("Installing packages...");
+            manager.InstallDependenciesOnly(settings.Packages.ToList().First(), false, AlpmTransFlag.None);
+            Console.WriteLine("Packages installed successfully!");
+            return 0;
+        }
+
+        if (settings.NoDeps)
+        {
+            Console.WriteLine("Skipping dependency installation.");
+            Console.WriteLine("Installing packages...");
+            manager.InstallPackages(settings.Packages.ToList(), AlpmTransFlag.NoDeps);
+            Console.WriteLine("Packages installed successfully!");
+            return 0;
+        }
+
+        Console.WriteLine("Installing packages...");
+        var rowIndex = new Dictionary<string, int>();
+        manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+        manager.InstallPackages(settings.Packages.ToList());
+        Console.WriteLine("Finished installing packages.");
+        manager.Dispose();
         return 0;
     }
 }
