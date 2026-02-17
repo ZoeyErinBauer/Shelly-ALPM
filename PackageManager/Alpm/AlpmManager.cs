@@ -252,8 +252,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     packageName = Marshal.PtrToStringUTF8(GetPkgName(replaceQuestion.OldPkg));
                 }
 
-                var oldPkg = Marshal.PtrToStructure<AlpmPackage>(replaceQuestion.OldPkg);
-                var newPkg = Marshal.PtrToStructure<AlpmPackage>(replaceQuestion.NewPkg);
+                var oldPkg = new AlpmPackage(replaceQuestion.OldPkg);
+                var newPkg = new AlpmPackage(replaceQuestion.NewPkg);
                 questionText =
                     $"Replace {oldPkg?.Name ?? ""} - {oldPkg?.Version ?? ""} with {newPkg?.Name ?? ""} - {newPkg?.Version ?? ""}?";
                 break;
@@ -264,8 +264,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 AlpmPackage? packageTwo = null;
 
 
-                packageOne = Marshal.PtrToStructure<AlpmPackage>(conflict.PackageOne);
-                packageTwo = Marshal.PtrToStructure<AlpmPackage>(conflict.PackageTwo);
+                packageOne = new AlpmPackage(conflict.PackageOne);
+                packageTwo = new  AlpmPackage(conflict.PackageTwo);
                 string? reason = null;
                 if (conflict.Reason != IntPtr.Zero)
                 {
