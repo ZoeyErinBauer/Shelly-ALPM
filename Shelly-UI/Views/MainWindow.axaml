@@ -97,7 +97,7 @@
             </Border>
         </Panel>
         <Panel IsVisible="{Binding ShowQuestion}" Background="#80000000" Grid.RowSpan="2" ZIndex="10">
-            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            <Border Background="{DynamicResource SystemChromeLowColor}"
                     CornerRadius="12"
                     Padding="30"
                     HorizontalAlignment="Center"
