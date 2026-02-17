@@ -129,7 +129,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         {
             var iconName = "application-x-executable";
             
-            if (packageName.Contains(binaryName))
+            if (packageName.Contains(binaryName, StringComparison.OrdinalIgnoreCase))
             {
                 if (foundIcons.Count > 0)
                 {
@@ -144,6 +144,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                 {
                     AnsiConsole.MarkupLine($"[yellow]No icon found for {binaryName}, using default[/]");
                 }
+
                 Console.WriteLine("Creating desktop entry...");
                 CreateDesktopEntry(
                     appName: binaryName,
@@ -153,10 +154,9 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                     terminal: false,
                     categories: "Utility;"
                 );
+                AnsiConsole.MarkupLine($"[green]Desktop Entries Created[/]");
             }
         }
-
-        AnsiConsole.MarkupLine($"[green]Desktop Entries Created[/]");
 
         return 0;
     }
@@ -242,7 +242,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
             {
                 // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
                 if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
+                     args.QuestionType == AlpmQuestionType.ConflictPkg)
                     && args.ProviderOptions?.Count > 0)
                 {
                     if (settings.NoConfirm)
@@ -255,7 +255,8 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                                 Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
                                 for (var i = 0; i < args.ProviderOptions.Count; i++)
                                 {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
+                                    Console.Error.WriteLine(
+                                        $"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
                                 }
 
                                 Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
@@ -266,11 +267,13 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
                                 Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
                                 for (var i = 0; i < args.ProviderOptions.Count; i++)
                                 {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                                    Console.Error.WriteLine(
+                                        $"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
                                 }
 
                                 Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
                             }
+
                             Console.Error.Flush();
                             var input = Console.ReadLine();
                             args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
