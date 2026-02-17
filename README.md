@@ -59,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/un
 - **Package Management**: Supports searching for, installing, updating, and removing packages.
 - **Repository Management**: Synchronizes with official repositories to keep package lists up to date.
 - **AUR Support**: Integration with the Arch User Repository for a wider range of software.
-- **Flatpak Support**: Manage Flatpak applications alongside native packages. (Currently only in cli)
+- **Flatpak Support**: Manage Flatpak applications alongside native packages.
 
 ## Roadmap
 
@@ -67,7 +67,6 @@ Upcoming features and development targets:
 
 - **Repository Modification**: Allow modification of supported repositories (First future release).
 - **Package Grouping**: Group related packages for easier management.
-- **Flatpak Support**: Manage Flatpak applications alongside native packages.
 - **Desktop Integration**: Enhance integration with the desktop environment for seamless experience. Targeting KDE
   Plasma and Gnome initially.
 - **Shelly Sync**: Multi-system sync lists that keep packages together across computers
@@ -78,6 +77,7 @@ Upcoming features and development targets:
 - **.NET 10.0 Runtime** (for running only if installed from non *-bin aur package)
 - **.NET 10.0 SDK** (for building)
 - **libalpm** (provided by `pacman`)
+- **xwayland**
 
 ## Installation
 
@@ -136,6 +136,7 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 | `list-available`     | List all available packages   |
 | `list-updates`       | List packages that need updates |
 | `install <packages>` | Install one or more packages  |
+| `install-local`      | Install a local package file  |
 | `remove <packages>`  | Remove one or more packages   |
 | `update <packages>`  | Update one or more packages   |
 | `upgrade`            | Perform a full system upgrade |
@@ -165,17 +166,28 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 #### Flatpak Management (`flatpak`)
 
+| Command                         | Description                    |
+|---------------------------------|--------------------------------|
+| `flatpak search <query>`        | Search flatpak                 |
+| `flatpak list`                  | List installed flatpak apps    |
+| `flatpak list-updates`          | List flatpak apps with updates |
+| `flatpak install <apps>`        | Install flatpak app            |
+| `flatpak update <apps>`         | Update flatpak app             |
+| `flatpak uninstall <apps>`      | Remove flatpak app             |
+| `flatpak run <app>`             | Run flatpak app                |
+| `flatpak running`               | List running flatpak apps      |
+| `flatpak search <app>`          | search flathub                 |
+| `flatpak sync-remote-appstream` | Sync remote appstream          |
+| `flatpak get-remote-appstream`  | Returns remote appstream json  |
+| `flatpak upgrade`               | Upgrade all flatpak apps       |
+
+#### Shelly Utility (`utility`)
+
 | Command                    | Description                    |
 |----------------------------|--------------------------------|
-| `flatpak search <query>`   | Search flatpak                 |
-| `flatpak list`             | List installed flatpak apps    |
-| `flatpak list-updates`     | List flatpak apps with updates |
-| `flatpak install <apps>`   | Install flatpak app            |
-| `flatpak update <apps>`    | Update flatpak app             |
-| `flatpak uninstall <apps>` | Remove flatpak app             |
-| `flatpak run <app>`        | Run flatpak app                |
-| `flatpak running`          | List running flatpak apps      |
-| `flatpak kill <app>`       | Kill running flatpak app       |
+| `utility export`           | Export sync file               |
+| `utility updates`          | check for updates as non-root  |
+
 
 ### CLI Options
 
