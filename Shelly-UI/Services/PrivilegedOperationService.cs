@@ -592,9 +592,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 {
                     return;
                 }
-
-                Interlocked.Increment(ref pendingCallbacks);
-
+                
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
