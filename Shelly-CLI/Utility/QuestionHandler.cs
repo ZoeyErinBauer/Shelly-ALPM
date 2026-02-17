@@ -73,7 +73,8 @@ public static class QuestionHandler
             Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
             Console.Error.Flush();
             var input = Console.ReadLine();
-            question.SetResponse(input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0);
+            question.SetResponse(int.TryParse(input, out var result) ? result : 0);
+
             return;
         }
 
