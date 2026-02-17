@@ -74,7 +74,14 @@ public static class QuestionHandler
             Console.Error.Flush();
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");
-            question.SetResponse(int.TryParse(input, out var result) ? result : 0);
+            if (input is "y" or "Y")
+            {
+                question.SetResponse(1);
+            }
+            else
+            {
+                question.SetResponse(0);
+            }
 
             return;
         }
