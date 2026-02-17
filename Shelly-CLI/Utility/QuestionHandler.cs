@@ -75,7 +75,6 @@ public static class QuestionHandler
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");
             question.SetResponse(input is "y" or "Y" ? 1 : 0);
-
             return;
         }
 
