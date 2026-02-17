@@ -260,13 +260,28 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             case AlpmQuestionType.ConflictPkg:
                 var conflictQuestion = Marshal.PtrToStructure<ConflictPackage>(questionPtr);
                 var conflict = Marshal.PtrToStructure<Conflict>(conflictQuestion.Conflict);
-                var packageOne = Marshal.PtrToStringAnsi(conflict.PackageOne);
-                var packageTwo = Marshal.PtrToStringAnsi(conflict.PackageTwo);
-                packageName = $"{packageOne ?? ""} conflicts with {packageTwo ?? ""}";
+                AlpmPackage? packageOne = null;
+                AlpmPackage? packageTwo = null;
+
+
+                packageOne = Marshal.PtrToStructure<AlpmPackage>(conflict.PackageOne);
+                packageTwo = Marshal.PtrToStructure<AlpmPackage>(conflict.PackageTwo);
+                string? reason = null;
+                if (conflict.Reason != IntPtr.Zero)
+                {
+                    var reasonPtr = DepComputeString(conflict.Reason);
+                    if (reasonPtr != IntPtr.Zero)
+                    {
+                        reason = Marshal.PtrToStringUTF8(reasonPtr);
+                    }
+                }
+
+                packageName =
+                    $"{packageOne.Name ?? ""} - {packageOne.Version} conflicts with {packageTwo.Name ?? ""} - {packageTwo.Version} because of {reason ?? ""}";
                 questionText = $"{packageName}. Which package would you like to remove?";
                 conflictOptions = new List<string>();
-                if (!string.IsNullOrEmpty(packageOne)) conflictOptions.Add(packageOne);
-                if (!string.IsNullOrEmpty(packageTwo)) conflictOptions.Add(packageTwo);
+                if (!string.IsNullOrEmpty(packageOne.Name)) conflictOptions.Add(packageOne.Name);
+                if (!string.IsNullOrEmpty(packageTwo.Name)) conflictOptions.Add(packageTwo.Name);
                 break;
             case AlpmQuestionType.CorruptedPkg:
                 var corruptQuestion = Marshal.PtrToStructure<CorruptedPackage>(questionPtr);
