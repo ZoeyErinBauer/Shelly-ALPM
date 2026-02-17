@@ -22,7 +22,7 @@ public class InstallCommand : Command<InstallPackageSettings>
 
         AnsiConsole.MarkupLine($"[yellow]Packages to install:[/] {string.Join(", ", packageList)}");
 
-        if (!settings.NoConfirm)
+        if (!Program.IsUiMode)
         {
             if (!AnsiConsole.Confirm("Do you want to proceed?"))
             {

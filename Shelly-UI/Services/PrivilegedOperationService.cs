@@ -22,12 +22,30 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly string _cliPath;
     private readonly ICredentialManager _credentialManager;
     private readonly IAlpmEventService _alpmEventService;
+    private readonly IConfigService _configService;
 
-    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService)
+    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService, IConfigService configService)
     {
         _credentialManager = credentialManager;
         _alpmEventService = alpmEventService;
+        _configService = configService;
         _cliPath = FindCliPath();
+    }
+
+    private string[] AppendNoConfirmIfNeeded(params string[] args)
+    {
+        var config = _configService.LoadConfig();
+        if (config.NoConfirm)
+        {
+            return [..args, "--no-confirm"];
+        }
+        return args;
+    }
+
+    private Task<OperationResult> ExecutePrivilegedWithNoConfirmCheck(string operationDescription, params string[] args)
+    {
+        var finalArgs = AppendNoConfirmIfNeeded(args);
+        return ExecutePrivilegedCommandAsync(operationDescription, finalArgs);
     }
 
     private static string FindCliPath()
@@ -114,29 +132,29 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install packages", "install", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install packages", "install", packageArgs);
     }
 
     public async Task<OperationResult> InstallLocalPackageAsync(string filePath)
     {
-        return await ExecutePrivilegedCommandAsync("Install local package", "install-local", "--location", filePath, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location", filePath);
     }
 
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove packages", "remove", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
     }
 
     public async Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update packages", "update", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Update packages", "update", packageArgs);
     }
 
     public async Task<OperationResult> UpgradeSystemAsync()
     {
-        return await ExecutePrivilegedCommandAsync("Upgrade system", "upgrade", "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Upgrade system", "upgrade");
     }
 
     public async Task<OperationResult> ForceSyncDatabaseAsync()
@@ -147,21 +165,19 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install AUR packages", "aur", "install", packageArgs,
-            "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install AUR packages", "aur", "install", packageArgs);
     }
 
     public async Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove AUR packages", "aur", "remove", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Remove AUR packages", "aur", "remove", packageArgs);
     }
 
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update",
-            packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
     }
 
     public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()

@@ -33,4 +33,6 @@ public class ShellyConfig
 
     public bool TrayEnabled { get; set; } = true;
 
+    public bool NoConfirm { get; set; } = false;
+
 }
