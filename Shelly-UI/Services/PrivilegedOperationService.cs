@@ -24,7 +24,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly IAlpmEventService _alpmEventService;
     private readonly IConfigService _configService;
 
-    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService, IConfigService configService)
+    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
+        IConfigService configService)
     {
         _credentialManager = credentialManager;
         _alpmEventService = alpmEventService;
@@ -39,6 +40,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         {
             return [..args, "--no-confirm"];
         }
+
         return args;
     }
 
@@ -137,7 +139,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<OperationResult> InstallLocalPackageAsync(string filePath)
     {
-        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location", filePath);
+        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location",
+            filePath);
     }
 
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
@@ -560,10 +563,37 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             }
         };
 
+        var passwordSent = false;
+        var passwordSentLock = new object();
+        
         process.ErrorDataReceived += async (sender, e) =>
         {
             if (e.Data != null)
             {
+                // Detect sudo password prompt and respond to it
+                if ((e.Data.Contains("[sudo]") || e.Data.Contains("password for")) && !passwordSent)
+                {
+                    lock (passwordSentLock)
+                    {
+                        if (!passwordSent)
+                        {
+                            passwordSent = true;
+                            SafeWriteAsync(password).Wait();
+                            Console.Error.WriteLine("[Shelly] Password sent to sudo");
+                        }
+                    }
+
+                    return;
+                }
+
+                // Filter out password prompts from being logged
+                if (e.Data.Contains("[sudo]") || e.Data.Contains("password for"))
+                {
+                    return;
+                }
+
+                Interlocked.Increment(ref pendingCallbacks);
+
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
@@ -696,8 +726,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            // Write password to stdin followed by newline
-            await stdinWriter.WriteLineAsync(password);
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();
