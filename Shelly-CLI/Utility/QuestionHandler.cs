@@ -19,7 +19,7 @@ public static class QuestionHandler
             case AlpmQuestionType.CorruptedPkg:
             case AlpmQuestionType.ImportKey:
             default:
-                HandleQuestion(question, uiMode, noConfirm);
+                HandleYesNoQuestion(question, uiMode, noConfirm);
                 break;
         }
     }
