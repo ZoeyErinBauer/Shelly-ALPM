@@ -578,7 +578,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         if (!passwordSent)
                         {
                             passwordSent = true;
-                            SafeWriteAsync(password).Wait();
+                            stdinWriter.WriteLine(password);
+                            stdinWriter.Flush();
                             Console.Error.WriteLine("[Shelly] Password sent to sudo");
                         }
                     }

@@ -296,7 +296,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 packageName =
                     $"{packageOne?.Name ?? "unknown"} - {packageOne?.Version ?? "unknown"} conflicts with {packageTwo?.Name ?? "unknown"} - {packageTwo?.Version ?? "unknown"}";
-                questionText = $"{packageName}. Remove {packageOne?.Name ?? "unknown"}";
+                questionText = $"{packageName}. Remove {packageOne?.Name ?? "unknown"}?";
                 conflictOptions = new List<string>();
                 if (!string.IsNullOrEmpty(packageOne?.Name)) conflictOptions.Add(packageOne.Name);
                 if (!string.IsNullOrEmpty(packageTwo?.Name)) conflictOptions.Add(packageTwo.Name);
