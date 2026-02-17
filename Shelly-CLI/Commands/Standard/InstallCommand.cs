@@ -123,7 +123,7 @@ public class InstallCommand : Command<InstallPackageSettings>
         return 0;
     }
 
-    private int HandleUiModeInstall(InstallPackageSettings settings)
+    private static int HandleUiModeInstall(InstallPackageSettings settings)
     {
         if (settings.Packages.Length == 0)
         {
