@@ -7,6 +7,7 @@ pkgdesc="Shelly: A Modern Arch Package Manager"
 arch=('x86_64')
 url="https://github.com/ZoeyErinBauer/Shelly-ALPM"
 license=('GPL-3.0-only')
+provides=('shelly')
 depends=(
     'brotli'
     'bzip2'

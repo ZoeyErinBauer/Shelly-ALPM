@@ -3,9 +3,33 @@ using Spectre.Console;
 
 namespace Shelly_CLI.Utility;
 
-public class QuestionHandler
+public static class QuestionHandler
 {
-    public static void HandleConflictSelection(AlpmQuestionEventArgs question, bool uiMode = false,
+    public static void HandleQuestion(AlpmQuestionEventArgs question, bool uiMode = false, bool noConfirm = false)
+    {
+        switch (question.QuestionType)
+        {
+            case AlpmQuestionType.ConflictPkg:
+                HandleConflictSelection(question, uiMode, noConfirm);
+                break;
+            case AlpmQuestionType.SelectProvider:
+                HandleProviderSelection(question, uiMode, noConfirm);
+                break;
+            case AlpmQuestionType.ReplacePkg:
+                break;
+            case AlpmQuestionType.InstallIgnorePkg:
+            case AlpmQuestionType.CorruptedPkg:
+            case AlpmQuestionType.ImportKey:
+            default:
+                break;
+        }
+    }
+
+    private static void HandleReplacement(AlpmQuestionEventArgs question, bool uiMode = false, bool noConfirm = false)
+    {
+    }
+
+    private static void HandleConflictSelection(AlpmQuestionEventArgs question, bool uiMode = false,
         bool noConfirm = false)
     {
         if (question.ProviderOptions is null)
@@ -16,17 +40,17 @@ public class QuestionHandler
             if (noConfirm)
             {
                 // Returns default response
-                question.Response = 1;
+                question.SetResponse(1);
                 return;
             }
 
-            Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{question.QuestionText}");
+            Console.Error.WriteLine($"[ALPM_CONFLICT]{question.QuestionText}");
             for (var i = 0; i < question.ProviderOptions.Count; i++)
             {
-                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{question.ProviderOptions[i]}");
+                Console.Error.WriteLine($"[ALPM_CONFLICT_OPTION]{i}:{question.ProviderOptions[i]}");
             }
 
-            Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
+            Console.Error.WriteLine("[ALPM_CONFLICT_END]");
             Console.Error.Flush();
             var input = Console.ReadLine();
             question.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
@@ -40,7 +64,7 @@ public class QuestionHandler
         question.SetResponse(question.ProviderOptions!.IndexOf(selection));
     }
 
-    public static void HandleProviderSelection(AlpmQuestionEventArgs question, bool uiMode = false,
+    private static void HandleProviderSelection(AlpmQuestionEventArgs question, bool uiMode = false,
         bool noConfirm = false)
     {
         if (question.ProviderOptions is null)
@@ -50,24 +74,56 @@ public class QuestionHandler
         {
             if (noConfirm)
             {
-                question.Response = 1;
+                question.SetResponse(1);
                 return;
             }
-            Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{question.DependencyName}");
+
+            Console.Error.WriteLine($"[ALPM_SELECT_PROVIDER]{question.DependencyName}");
             for (int i = 0; i < question.ProviderOptions.Count; i++)
             {
-                Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{question.ProviderOptions[i]}");
+                Console.Error.WriteLine($"[ALPM_PROVIDER_OPTION]{i}:{question.ProviderOptions[i]}");
             }
-            Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+
+            Console.Error.WriteLine("[ALPM_PROVIDER_END]");
             Console.Error.Flush();
             var input = Console.ReadLine();
             question.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
             return;
         }
+
         var selection = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title($"[yellow]{question.QuestionText}[/]")
                 .AddChoices(question.ProviderOptions!));
         question.SetResponse(question.ProviderOptions!.IndexOf(selection));
+    }
+
+
+    private static void HandleYesNoQuestion(AlpmQuestionEventArgs question, bool uiMode = false,
+        bool noConfirm = false)
+    {
+        if (uiMode)
+        {
+            if (noConfirm)
+            {
+                question.SetResponse(1);
+                return;
+            }
+
+            Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
+            Console.Error.Flush();
+            var input = Console.ReadLine();
+            question.SetResponse(input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0);
+            return;
+        }
+
+        if (noConfirm)
+        {
+            question.SetResponse(1);
+            return;
+        }
+
+        var response = AnsiConsole.Confirm($"[yellow]{question.QuestionText}[/]", defaultValue: true);
+        question.SetResponse(response ? 1 : 0);
     }
 }
