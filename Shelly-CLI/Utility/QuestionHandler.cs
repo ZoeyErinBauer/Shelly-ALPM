@@ -13,7 +13,7 @@ public static class QuestionHandler
                 HandleProviderSelection(question, uiMode, noConfirm);
                 break;
             case AlpmQuestionType.ReplacePkg:
-                
+
             case AlpmQuestionType.ConflictPkg:
             case AlpmQuestionType.InstallIgnorePkg:
             case AlpmQuestionType.CorruptedPkg:
@@ -23,7 +23,7 @@ public static class QuestionHandler
                 break;
         }
     }
-    
+
     private static void HandleProviderSelection(AlpmQuestionEventArgs question, bool uiMode = false,
         bool noConfirm = false)
     {
@@ -73,6 +73,7 @@ public static class QuestionHandler
             Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
             Console.Error.Flush();
             var input = Console.ReadLine();
+            Console.WriteLine($"Received: {input}");
             question.SetResponse(int.TryParse(input, out var result) ? result : 0);
 
             return;

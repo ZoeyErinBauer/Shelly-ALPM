@@ -325,8 +325,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Block until the GUI user responds
         args.WaitForResponse();
 
-        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering {args.Response})");
-        Console.Error.WriteLine($"Recevied response {args.Response}");
+        Console.Error.WriteLine($"[ALPM_RESPONSE] {questionText} (Answering {args.Response})");
 
         // Write the response back to the answer field.
         question.Answer = args.Response;
