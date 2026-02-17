@@ -76,6 +76,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         Directory.Delete(tempLocalDb, true);
                     }
                 }
+
                 Directory.CreateSymbolicLink(tempLocalDb, realLocalDb);
             }
         }
@@ -251,7 +252,10 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     packageName = Marshal.PtrToStringUTF8(GetPkgName(replaceQuestion.OldPkg));
                 }
 
-                questionText = $"Replace {packageName}?";
+                var oldPkg = Marshal.PtrToStructure<AlpmPackage>(replaceQuestion.OldPkg);
+                var newPkg = Marshal.PtrToStructure<AlpmPackage>(replaceQuestion.NewPkg);
+                questionText =
+                    $"Replace {oldPkg?.Name ?? ""} - {oldPkg?.Version ?? ""} with {newPkg?.Name ?? ""} - {newPkg?.Version ?? ""}?";
                 break;
             case AlpmQuestionType.ConflictPkg:
                 var conflictQuestion = Marshal.PtrToStructure<ConflictPackage>(questionPtr);
