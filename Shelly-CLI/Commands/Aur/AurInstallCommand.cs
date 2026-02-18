@@ -14,6 +14,11 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurInstallSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeInstall(settings);
+        }
+        
         AurPackageManager? manager = null;
         if (settings.Packages.Length == 0)
         {

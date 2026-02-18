@@ -80,44 +80,49 @@ public class InstallCommand : Command<InstallPackageSettings>
         }
 
         AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-        var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
-        AnsiConsole.Live(progressTable).AutoClear(false)
-            .Start(ctx =>
+
+        int currentPkgIndex = 0;
+        int totalPkgs = packageList.Count;
+        string? lastPackageName = null;
+        int lastPercent = 0;
+
+        manager.Progress += (sender, args) =>
+        {
+            lock (renderLock)
             {
-                var rowIndex = new Dictionary<string, int>();
+                var name = args.PackageName ?? "unknown";
+                var pct = args.Percent ?? 0;
+                var bar = string.Join("", Enumerable.Repeat("🐚 ", pct * 2 / 5)) + new string('░', 20 - pct / 5);
+                var actionType = args.ProgressType;
 
-                manager.Progress += (sender, args) =>
+                // Detect package change
+                if (name != lastPackageName)
                 {
-                    lock (renderLock)
+                    // If this isn't the first package, complete the previous line
+                    if (lastPackageName != null)
                     {
-                        var name = args.PackageName ?? "unknown";
-                        var pct = args.Percent ?? 0;
-                        var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
-                        var actionType = args.ProgressType;
-
-                        if (!rowIndex.TryGetValue(name, out var idx))
-                        {
-                            progressTable.AddRow(
-                                $"[blue]{Markup.Escape(name)}[/]",
-                                $"[green]{bar}[/]",
-                                $"{pct}%",
-                                $"{actionType}"
-                            );
-                            rowIndex[name] = rowIndex.Count;
-                        }
-                        else
-                        {
-                            progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
-                            progressTable.UpdateCell(idx, 2, $"{pct}%");
-                            progressTable.UpdateCell(idx, 3, $"{actionType}");
-                        }
-
-                        ctx.Refresh();
+                        Console.WriteLine(); // Move to new line
+                        currentPkgIndex++;
                     }
-                };
-                manager.InstallPackages(packageList);
-            });
 
+                    lastPackageName = name;
+                    lastPercent = 0;
+                }
+
+                // Update current line with carriage return
+                Console.Write(
+                    $"\r({currentPkgIndex + 1}/{totalPkgs}) installing {name,-40}  [{bar}] {pct,3}% - {actionType,-20}");
+
+                lastPercent = pct;
+            }
+        };
+
+
+        manager.InstallPackages(packageList);
+        Console.WriteLine(); // Final newline after last package
+
+        manager.Dispose();
+        AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         manager.Dispose();
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;

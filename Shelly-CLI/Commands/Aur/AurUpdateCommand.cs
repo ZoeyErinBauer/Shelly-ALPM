@@ -8,10 +8,14 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
 {
-    //Todo: immplement isUiMode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
         [NotNull] AurPackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeUpdate(settings);
+        }
+        
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]No packages specified.[/]");
@@ -22,6 +26,7 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         try
         {
             manager = new AurPackageManager();
+            object renderLock = new();
             await manager.Initialize(root: true);
 
             manager.PackageProgress += (sender, args) =>
@@ -153,6 +158,120 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]Update failed:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
+
+    private static async Task<int> HandleUiModeUpdate(AurPackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("No packages specified.");
+            return 1;
+        }
+
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
+
+            manager.PackageProgress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
+                    (args.Message != null ? $" - {args.Message}" : ""));
+            };
+
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            manager.Question += (sender, args) =>
+            {
+                // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
+                if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
+                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
+                    && args.ProviderOptions?.Count > 0)
+                {
+                    if (settings.NoConfirm)
+                    {
+                        if (args.QuestionType == AlpmQuestionType.ConflictPkg)
+                        {
+                            // Dedicated conflict protocol for UI integration
+                            Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
+                            for (int i = 0; i < args.ProviderOptions.Count; i++)
+                            {
+                                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
+                            }
+
+                            Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
+                        }
+                        else
+                        {
+                            // Machine-readable format for UI integration
+                            Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
+                            for (int i = 0; i < args.ProviderOptions.Count; i++)
+                            {
+                                Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
+                            }
+
+                            Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
+                        }
+                        Console.Error.Flush();
+                        var input = Console.ReadLine();
+                        args.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
+                    }
+                    else
+                    {
+                        // Non-interactive mode: default to the first provider
+                        args.SetResponse(0);
+                    }
+                }
+                else if (settings.NoConfirm)
+                {
+                    // Machine-readable format for UI integration
+                    Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
+                    Console.Error.Flush();
+                    var input = Console.ReadLine();
+                    args.SetResponse(input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0);
+                }
+                else
+                {
+                    // Non-interactive mode: automatically confirm
+                    args.SetResponse(1);
+                }
+            };
+
+            manager.PkgbuildDiffRequest += (sender, args) =>
+            {
+                if (settings.NoConfirm)
+                {
+                    args.ProceedWithUpdate = true;
+                    return;
+                }
+
+                Console.Error.WriteLine($"PKGBUILD changed for {args.PackageName}.");
+                Console.Error.WriteLine("--- Old PKGBUILD ---");
+                Console.Error.WriteLine(args.OldPkgbuild);
+                Console.Error.WriteLine("--- New PKGBUILD ---");
+                Console.Error.WriteLine(args.NewPkgbuild);
+                args.ProceedWithUpdate = true;
+            };
+
+            Console.Error.WriteLine($"Updating AUR packages: {string.Join(", ", settings.Packages)}");
+            await manager.UpdatePackages(settings.Packages.ToList());
+            Console.Error.WriteLine("Update complete.");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Update failed: {ex.Message}");
             return 1;
         }
         finally

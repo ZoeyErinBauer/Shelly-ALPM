@@ -12,6 +12,11 @@ public class UpgradeCommand : Command<UpgradeSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeUpgrade(settings);
+        }
+        
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
         var manager = new AlpmManager();
@@ -105,6 +110,67 @@ public class UpgradeCommand : Command<UpgradeSettings>
             });
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
+        manager.Dispose();
+        return 0;
+    }
+
+    private static int HandleUiModeUpgrade(UpgradeSettings settings)
+    {
+        Console.Error.WriteLine("Performing full system upgrade...");
+
+        var manager = new AlpmManager();
+        object renderLock = new();
+
+        manager.Replaces += (sender, args) =>
+        {
+            foreach (var replace in args.Replaces)
+            {
+                Console.Error.WriteLine(
+                    $"Replacement: {args.Repository}/{args.PackageName} replaces {replace}");
+            }
+        };
+
+        manager.Question += (sender, args) =>
+        {
+            lock (renderLock)
+            {
+                Console.Error.WriteLine();
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
+            }
+        };
+
+        Console.Error.WriteLine("Checking for system updates...");
+        Console.Error.WriteLine(" Initializing and syncing repositories...");
+        manager.IntializeWithSync();
+        var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
+        if (packagesNeedingUpdate.Count == 0)
+        {
+            Console.Error.WriteLine("System is up to date!");
+            return 0;
+        }
+
+        Console.Error.WriteLine($"{packagesNeedingUpdate.Count} packages need updates:");
+        foreach (var pkg in packagesNeedingUpdate)
+        {
+            Console.Error.WriteLine($"  {pkg.Name}: {pkg.CurrentVersion} -> {pkg.NewVersion} ({pkg.DownloadSize} bytes)");
+        }
+
+        Console.Error.WriteLine(" Starting System Upgrade...");
+        
+        manager.Progress += (sender, args) =>
+        {
+            lock (renderLock)
+            {
+                var name = args.PackageName ?? "unknown";
+                var pct = args.Percent ?? 0;
+                var actionType = args.ProgressType;
+                Console.Error.WriteLine($"{name}: {pct}% - {actionType}");
+            }
+        };
+        
+        manager.SyncSystemUpdate();
+
+        Console.Error.WriteLine("System upgraded successfully!");
         manager.Dispose();
         return 0;
     }
