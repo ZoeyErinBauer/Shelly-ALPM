@@ -126,7 +126,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 }
 
                 //do work
-                if (App.Services.GetRequiredService<IConfigService>().LoadConfig().NoConfirm)
+                if (!App.Services.GetRequiredService<IConfigService>().LoadConfig().NoConfirm)
                 {
                     var packageBuilds = await _privilegedOperationService.GetAurPackageBuild(selectedPackages);
 
