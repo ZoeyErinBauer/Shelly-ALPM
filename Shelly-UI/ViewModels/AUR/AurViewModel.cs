@@ -5,6 +5,7 @@ using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.CustomControls.Dialogs;
@@ -125,23 +126,28 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 }
 
                 //do work
-                var packageBuilds = await _privilegedOperationService.GetAurPackageBuild(selectedPackages);
+                if (App.Services.GetRequiredService<IConfigService>().LoadConfig().NoConfirm)
+                {
+                    var packageBuilds = await _privilegedOperationService.GetAurPackageBuild(selectedPackages);
 
-                if (packageBuilds.Count == 0)
-                {
-                    Console.WriteLine("No packages found.");
-                    return;
-                }
-                
-                foreach (var pkgbuild in packageBuilds)
-                {
-                    var window = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop 
-                        ? desktop.MainWindow 
-                        : null;
-    
-                    var dialog = new PackageBuildDialog($"Displaying Package Build {pkgbuild.Name}", packageBuild: pkgbuild.PkgBuild);
-                    var dialogResult = await dialog.ShowDialog<bool>(window);
-                    if (!dialogResult) return;
+                    if (packageBuilds.Count == 0)
+                    {
+                        Console.WriteLine("No packages found.");
+                        return;
+                    }
+
+                    foreach (var pkgbuild in packageBuilds)
+                    {
+                        var window =
+                            Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                                ? desktop.MainWindow
+                                : null;
+
+                        var dialog = new PackageBuildDialog($"Displaying Package Build {pkgbuild.Name}",
+                            packageBuild: pkgbuild.PkgBuild);
+                        var dialogResult = await dialog.ShowDialog<bool>(window);
+                        if (!dialogResult) return;
+                    }
                 }
 
                 var result = await _privilegedOperationService.InstallAurPackagesAsync(selectedPackages);
