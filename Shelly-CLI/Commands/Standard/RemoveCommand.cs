@@ -13,6 +13,11 @@ public class RemoveCommand : Command<PackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeRemove(settings);
+        }
+        
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -89,5 +94,46 @@ public class RemoveCommand : Command<PackageSettings>
 
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
         return 0;
+    }
+
+    private static int HandleUiModeRemove(PackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        using var manager = new AlpmManager();
+        try
+        {
+            var packageList = settings.Packages.ToList();
+
+            // Handle questions
+            manager.Question += (sender, args) =>
+            {
+                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            // Handle progress events
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            Console.Error.WriteLine("Initializing ALPM...");
+            manager.Initialize(true);
+
+            Console.Error.WriteLine($"Removing packages: {string.Join(", ", packageList)}");
+            manager.RemovePackages(packageList);
+            Console.Error.WriteLine("Packages removed successfully!");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Removal failed: {ex.Message}");
+            return 1;
+        }
     }
 }

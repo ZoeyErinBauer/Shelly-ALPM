@@ -12,9 +12,13 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
 {
-    //TODO:  implement isuimode support
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurPackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeRemove(settings);
+        }
+        
         AurPackageManager? manager = null;
         if (settings.Packages.Length == 0)
         {
@@ -104,6 +108,58 @@ public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]Removal failed:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
+
+    private static async Task<int> HandleUiModeRemove(AurPackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
+
+            var packageList = settings.Packages.ToList();
+
+            // Handle package progress events
+            manager.PackageProgress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
+                    (args.Message != null ? $" - {args.Message}" : ""));
+            };
+
+            // Handle progress events
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            // Handle questions
+            manager.Question += (sender, args) =>
+            {
+                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            Console.Error.WriteLine($"Removing AUR packages: {string.Join(", ", packageList)}");
+            await manager.RemovePackages(packageList);
+            Console.Error.WriteLine("Removal complete.");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Removal failed: {ex.Message}");
             return 1;
         }
         finally

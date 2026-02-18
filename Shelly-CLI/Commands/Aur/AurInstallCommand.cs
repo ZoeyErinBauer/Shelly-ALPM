@@ -149,4 +149,79 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
             manager?.Dispose();
         }
     }
+
+    private static async Task<int> HandleUiModeInstall(AurInstallSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize(root: true);
+
+            var packageList = settings.Packages.ToList();
+
+            // Handle package progress events
+            manager.PackageProgress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
+                    (args.Message != null ? $" - {args.Message}" : ""));
+            };
+
+            // Handle progress events
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            // Handle questions
+            manager.Question += (sender, args) =>
+            {
+                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            // Handle build dependencies only mode
+            if (settings.BuildDepsOn)
+            {
+                if (settings.Packages.Length > 1)
+                {
+                    Console.Error.WriteLine("Cannot build dependencies for multiple packages at once.");
+                    return 1;
+                }
+
+                if (settings.MakeDepsOn)
+                {
+                    Console.Error.WriteLine("Installing dependencies (including make dependencies)...");
+                    await manager.InstallDependenciesOnly(packageList.First(), true);
+                    Console.Error.WriteLine("Dependencies installed successfully!");
+                    return 0;
+                }
+
+                Console.Error.WriteLine("Installing dependencies...");
+                await manager.InstallDependenciesOnly(packageList.First(), false);
+                Console.Error.WriteLine("Dependencies installed successfully!");
+                return 0;
+            }
+
+            Console.Error.WriteLine($"Installing AUR packages: {string.Join(", ", packageList)}");
+            await manager.InstallPackages(packageList);
+            Console.Error.WriteLine("Installation complete.");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Installation failed: {ex.Message}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
 }
