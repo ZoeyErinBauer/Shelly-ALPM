@@ -23,6 +23,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly ICredentialManager _credentialManager;
     private readonly IAlpmEventService _alpmEventService;
     private readonly IConfigService _configService;
+    private bool _usedPassword = false;
 
     public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
         IConfigService configService)
@@ -563,38 +564,10 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             }
         };
 
-        var passwordSent = false;
-        var passwordSentLock = new object();
-        
         process.ErrorDataReceived += async (sender, e) =>
         {
             if (e.Data != null)
             {
-                // Detect sudo password prompt and respond to it
-                if ((e.Data.Contains("[sudo]") || e.Data.Contains("password for")) && !passwordSent)
-                {
-                    lock (passwordSentLock)
-                    {
-                        if (!passwordSent)
-                        {
-                            passwordSent = true;
-                            stdinWriter.WriteLine(password);
-                            stdinWriter.Flush();
-                            Console.Error.WriteLine("[Shelly] Password sent to sudo");
-                        }
-                    }
-
-                    return;
-                }
-
-                // Filter out password prompts from being logged
-                if (e.Data.Contains("[sudo]") || e.Data.Contains("password for"))
-                {
-                    return;
-                }
-
-                Interlocked.Increment(ref pendingCallbacks);
-
                 // Filter out the password prompt from sudo
                 if (!e.Data.Contains("[sudo]") && !e.Data.Contains("password for"))
                 {
@@ -726,6 +699,13 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             stdinWriter = process.StandardInput;
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
+
+            // Write password to stdin followed by newline
+            if (!_usedPassword)
+            {
+                await stdinWriter.WriteLineAsync(password);
+                _usedPassword = true;
+            }
 
             await stdinWriter.FlushAsync();
 
