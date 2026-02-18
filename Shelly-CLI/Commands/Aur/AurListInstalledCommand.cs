@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using PackageManager.Aur;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -10,6 +11,10 @@ public class AurListInstalledCommand : AsyncCommand<ListSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeListInstalled(settings);
+        }
         AurPackageManager? manager = null;
         try
         {
@@ -75,6 +80,70 @@ public class AurListInstalledCommand : AsyncCommand<ListSettings>
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]Failed to list packages:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
+
+    private static async Task<int> HandleUiModeListInstalled(ListSettings settings)
+    {
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize();
+
+            var packages = await manager.GetInstalledPackages();
+
+            // Apply filter if specified
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
+            {
+                packages = packages.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting based on settings
+            var sortedPackages = settings.Sort switch
+            {
+                SortOption.Popularity => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Popularity)
+                    : packages.OrderByDescending(p => p.Popularity),
+                SortOption.Size => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name),
+                _ => settings.Order == SortDirection.Ascending
+                    ? packages.OrderBy(p => p.Name)
+                    : packages.OrderByDescending(p => p.Name)
+            };
+
+            if (settings.JsonOutput)
+            {
+                var sortedList = sortedPackages.ToList();
+                var json = JsonSerializer.Serialize(sortedList, ShellyCLIJsonContext.Default.ListAurPackageDto);
+                using var stdout = Console.OpenStandardOutput();
+                using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                writer.WriteLine(json);
+                writer.Flush();
+                return 0;
+            }
+
+            var skip = (settings.Page - 1) * settings.Take;
+            var displayPackages = sortedPackages.Skip(skip).Take(settings.Take).ToList();
+
+            foreach (var pkg in displayPackages)
+            {
+                Console.WriteLine($"{pkg.Name} {pkg.Version} - {pkg.Description ?? ""}");
+            }
+
+            Console.Error.WriteLine($"Total: {packages.Count} AUR packages installed");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to list packages: {ex.Message}");
             return 1;
         }
         finally

@@ -7,10 +7,31 @@ namespace PackageManager.Alpm;
 
 public class AlpmPackage(IntPtr pkgPtr)
 {
-    public IntPtr PackagePtr { get; } = pkgPtr;
+    public IntPtr PackagePtr { get; } = pkgPtr != IntPtr.Zero
+        ? pkgPtr
+        : throw new ArgumentException("Package pointer cannot be null", nameof(pkgPtr));
 
-    public string Name => Marshal.PtrToStringUTF8(AlpmReference.GetPkgName(PackagePtr))!;
-    public string Version => Marshal.PtrToStringUTF8(AlpmReference.GetPkgVersion(PackagePtr))!;
+    public string Name
+    {
+        get
+        {
+            var namePtr = AlpmReference.GetPkgName(PackagePtr);
+            return namePtr != IntPtr.Zero 
+                ? Marshal.PtrToStringUTF8(namePtr) ?? "unknown" 
+                : "unknown";
+        }
+    }
+    public string Version
+    {
+        get
+        {
+            var versionPtr = AlpmReference.GetPkgVersion(PackagePtr);
+            return versionPtr != IntPtr.Zero 
+                ? Marshal.PtrToStringUTF8(versionPtr) ?? "unknown" 
+                : "unknown";
+        }
+    }
+    
     public long Size => AlpmReference.GetPkgSize(PackagePtr);
     public string Description => Marshal.PtrToStringUTF8(AlpmReference.GetPkgDesc(PackagePtr))!;
 

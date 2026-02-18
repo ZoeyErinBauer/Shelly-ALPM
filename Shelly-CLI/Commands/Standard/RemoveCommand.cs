@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PackageManager.Alpm;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -12,6 +13,11 @@ public class RemoveCommand : Command<PackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeRemove(settings);
+        }
+        
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -22,7 +28,7 @@ public class RemoveCommand : Command<PackageSettings>
 
         AnsiConsole.MarkupLine($"[yellow]Packages to remove:[/] {string.Join(", ", packageList)}");
 
-        if (!settings.NoConfirm)
+        if (!Program.IsUiMode)
         {
             if (!AnsiConsole.Confirm("Do you want to proceed?"))
             {
@@ -39,78 +45,7 @@ public class RemoveCommand : Command<PackageSettings>
             lock (renderLock)
             {
                 AnsiConsole.WriteLine();
-                // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
-                    && args.ProviderOptions?.Count > 0)
-                {
-                    if (settings.NoConfirm)
-                    {
-                        if (Program.IsUiMode)
-                        {
-                            if (args.QuestionType == AlpmQuestionType.ConflictPkg)
-                            {
-                                // Dedicated conflict protocol for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
-                            }
-                            else
-                            {
-                                // Machine-readable format for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
-                            }
-                            Console.Error.Flush();
-                            var input = Console.ReadLine();
-                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
-                        }
-                        else
-                        {
-                            // Non-interactive CLI mode: default to the first provider
-                            args.Response = 0;
-                        }
-                    }
-                    else
-                    {
-                        var selection = AnsiConsole.Prompt(
-                            new SelectionPrompt<string>()
-                                .Title($"[yellow]{args.QuestionText}[/]")
-                                .AddChoices(args.ProviderOptions));
-                        args.Response = args.ProviderOptions.IndexOf(selection);
-                    }
-                }
-                else if (settings.NoConfirm)
-                {
-                    if (Program.IsUiMode)
-                    {
-                        // Machine-readable format for UI integration
-                        Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                        Console.Error.Flush();
-                        var input = Console.ReadLine();
-                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
-                    }
-                    else
-                    {
-                        // Non-interactive CLI mode: automatically confirm
-                        args.Response = 1;
-                    }
-                }
-                else
-                {
-                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                    args.Response = response ? 1 : 0;
-                }
-                
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
             }
         };
 
@@ -118,45 +53,87 @@ public class RemoveCommand : Command<PackageSettings>
         manager.Initialize(true);
 
         AnsiConsole.MarkupLine("[yellow]Removing packages...[/]");
-        var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
-        AnsiConsole.Live(progressTable).AutoClear(false)
-            .Start(ctx =>
+
+        int currentPkgIndex = 0;
+        int totalPkgs = packageList.Count;
+        string? lastPackageName = null;
+        int lastPercent = 0;
+
+        manager.Progress += (sender, args) =>
+        {
+            lock (renderLock)
             {
-                var rowIndex = new Dictionary<string, int>();
+                var name = args.PackageName ?? "unknown";
+                var pct = args.Percent ?? 0;
+                var bar = string.Join("", Enumerable.Repeat("🐚 ", pct * 2 / 5)) + new string('░', 20 - pct / 5);
+                var actionType = args.ProgressType;
 
-                manager.Progress += (sender, args) =>
+                // Detect package change
+                if (name != lastPackageName)
                 {
-                    lock (renderLock)
+                    // If this isn't the first package, complete the previous line
+                    if (lastPackageName != null)
                     {
-                        var name = args.PackageName ?? "unknown";
-                        var pct = args.Percent ?? 0;
-                        var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
-                        var actionType = args.ProgressType;
-
-                        if (!rowIndex.TryGetValue(name, out var idx))
-                        {
-                            progressTable.AddRow(
-                                $"[blue]{Markup.Escape(name)}[/]",
-                                $"[green]{bar}[/]",
-                                $"{pct}%",
-                                $"{actionType}"
-                            );
-                            rowIndex[name] = rowIndex.Count;
-                        }
-                        else
-                        {
-                            progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
-                            progressTable.UpdateCell(idx, 2, $"{pct}%");
-                            progressTable.UpdateCell(idx, 3, $"{actionType}");
-                        }
-
-                        ctx.Refresh();
+                        Console.WriteLine(); // Move to new line
+                        currentPkgIndex++;
                     }
-                };
-                manager.RemovePackages(packageList);
-            });
+
+                    lastPackageName = name;
+                    lastPercent = 0;
+                }
+
+                // Update current line with carriage return
+                Console.Write(
+                    $"\r({currentPkgIndex + 1}/{totalPkgs}) installing {name,-40}  [{bar}] {pct,3}% - {actionType,-20}");
+
+                lastPercent = pct;
+            }
+        };
+        manager.RemovePackages(packageList);
+
 
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
         return 0;
+    }
+
+    private static int HandleUiModeRemove(PackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        using var manager = new AlpmManager();
+        try
+        {
+            var packageList = settings.Packages.ToList();
+
+            // Handle questions
+            manager.Question += (sender, args) =>
+            {
+                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            // Handle progress events
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            Console.Error.WriteLine("Initializing ALPM...");
+            manager.Initialize(true);
+
+            Console.Error.WriteLine($"Removing packages: {string.Join(", ", packageList)}");
+            manager.RemovePackages(packageList);
+            Console.Error.WriteLine("Packages removed successfully!");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Removal failed: {ex.Message}");
+            return 1;
+        }
     }
 }

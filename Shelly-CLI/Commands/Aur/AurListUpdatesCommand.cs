@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using PackageManager.Aur;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -10,6 +11,11 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ListSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return await HandleUiModeListUpdates(settings);
+        }
+
         AurPackageManager? manager = null;
         try
         {
@@ -84,6 +90,76 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]Failed to check updates:[/] {ex.Message.EscapeMarkup()}");
+            return 1;
+        }
+        finally
+        {
+            manager?.Dispose();
+        }
+    }
+
+    private static async Task<int> HandleUiModeListUpdates(ListSettings settings)
+    {
+        AurPackageManager? manager = null;
+        try
+        {
+            manager = new AurPackageManager();
+            await manager.Initialize();
+
+            var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
+
+            // Apply filter if specified
+            if (!string.IsNullOrWhiteSpace(settings.Filter))
+            {
+                updates = updates.Where(p => p.Name.Contains(settings.Filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting based on settings
+            var sortedUpdates = settings.Sort switch
+            {
+                SortOption.Size => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.DownloadSize)
+                    : updates.OrderByDescending(p => p.DownloadSize),
+                SortOption.Popularity => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.Name)
+                    : updates.OrderByDescending(p => p.Name),
+                _ => settings.Order == SortDirection.Ascending
+                    ? updates.OrderBy(p => p.Name)
+                    : updates.OrderByDescending(p => p.Name)
+            };
+
+            if (settings.JsonOutput)
+            {
+                var sortedList = sortedUpdates.ToList();
+                var json = JsonSerializer.Serialize(sortedList, ShellyCLIJsonContext.Default.ListAurUpdateDto);
+                await using var stdout = Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
+                return 0;
+            }
+
+            if (updates.Count == 0)
+            {
+                Console.Error.WriteLine("All AUR packages are up to date.");
+                return 0;
+            }
+
+            var skip = (settings.Page - 1) * settings.Take;
+            var displayPackages = sortedUpdates.Skip(skip).Take(settings.Take).ToList();
+
+            foreach (var pkg in displayPackages)
+            {
+                Console.WriteLine($"{pkg.Name} {pkg.Version} -> {pkg.NewVersion} - {pkg.Description ?? "No Description Available"}");
+            }
+
+            Console.Error.WriteLine($"Total: {displayPackages.Count} packages need updates");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to check updates: {ex.Message}");
             return 1;
         }
         finally

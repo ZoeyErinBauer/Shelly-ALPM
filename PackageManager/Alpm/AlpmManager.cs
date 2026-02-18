@@ -76,6 +76,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         Directory.Delete(tempLocalDb, true);
                     }
                 }
+
                 Directory.CreateSymbolicLink(tempLocalDb, realLocalDb);
             }
         }
@@ -241,28 +242,64 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 {
                     packageName = Marshal.PtrToStringUTF8(GetPkgName(ignoreQuestion.Pkg));
                 }
+                else
+                {
+                    packageName = "unknown";
+                }
 
                 questionText = $"Install ignored package: {packageName}?";
                 break;
             case AlpmQuestionType.ReplacePkg:
                 var replaceQuestion = Marshal.PtrToStructure<ReplacePackage>(questionPtr);
+                AlpmPackage? oldPkg = null;
+                AlpmPackage? newPkg = null;
+
+
                 if (replaceQuestion.OldPkg != IntPtr.Zero)
                 {
-                    packageName = Marshal.PtrToStringUTF8(GetPkgName(replaceQuestion.OldPkg));
+                    oldPkg = new AlpmPackage(replaceQuestion.OldPkg);
                 }
 
-                questionText = $"Replace {packageName}?";
+                if (replaceQuestion.NewPkg != IntPtr.Zero)
+                {
+                    newPkg = new AlpmPackage(replaceQuestion.NewPkg);
+                }
+
+                questionText =
+                    $"Replace {oldPkg?.Name ?? "unknown"} - {oldPkg?.Version ?? "unknown"} with {newPkg?.Name ?? "unknown"} - {newPkg?.Version ?? "unknown"}?";
                 break;
             case AlpmQuestionType.ConflictPkg:
                 var conflictQuestion = Marshal.PtrToStructure<ConflictPackage>(questionPtr);
+                if (conflictQuestion.Conflict == IntPtr.Zero)
+                {
+                    questionText = "Package conflict detected (details unavailable)";
+                    Console.Error.WriteLine("[ALPM_ERROR]Conflict pointer is null");
+                    break;
+                }
+
+
                 var conflict = Marshal.PtrToStructure<Conflict>(conflictQuestion.Conflict);
-                var packageOne = Marshal.PtrToStringAnsi(conflict.PackageOne);
-                var packageTwo = Marshal.PtrToStringAnsi(conflict.PackageTwo);
-                packageName = $"{packageOne ?? ""} conflicts with {packageTwo ?? ""}";
-                questionText = $"{packageName}. Which package would you like to remove?";
+
+                AlpmPackage? packageOne = null;
+                AlpmPackage? packageTwo = null;
+
+                // Validate pointers before creating AlpmPackage objects
+                if (conflict.PackageOne != IntPtr.Zero)
+                {
+                    packageOne = new AlpmPackage(conflict.PackageOne);
+                }
+
+                if (conflict.PackageTwo != IntPtr.Zero)
+                {
+                    packageTwo = new AlpmPackage(conflict.PackageTwo);
+                }
+
+                packageName =
+                    $"{packageOne?.Name ?? "unknown"} - {packageOne?.Version ?? "unknown"} conflicts with {packageTwo?.Name ?? "unknown"} - {packageTwo?.Version ?? "unknown"}";
+                questionText = $"{packageName}. Remove {packageOne?.Name ?? "unknown"}?";
                 conflictOptions = new List<string>();
-                if (!string.IsNullOrEmpty(packageOne)) conflictOptions.Add(packageOne);
-                if (!string.IsNullOrEmpty(packageTwo)) conflictOptions.Add(packageTwo);
+                if (!string.IsNullOrEmpty(packageOne?.Name)) conflictOptions.Add(packageOne.Name);
+                if (!string.IsNullOrEmpty(packageTwo?.Name)) conflictOptions.Add(packageTwo.Name);
                 break;
             case AlpmQuestionType.CorruptedPkg:
                 var corruptQuestion = Marshal.PtrToStructure<CorruptedPackage>(questionPtr);
@@ -288,7 +325,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Block until the GUI user responds
         args.WaitForResponse();
 
-        Console.Error.WriteLine($"[ALPM_QUESTION] {questionText} (Answering {args.Response})");
+        Console.Error.WriteLine($"[ALPM_RESPONSE] {questionText} (Answering {args.Response})");
 
         // Write the response back to the answer field.
         question.Answer = args.Response;

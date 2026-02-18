@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -11,6 +12,11 @@ public class UpgradeCommand : Command<UpgradeSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] UpgradeSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeUpgrade(settings);
+        }
+        
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
         var manager = new AlpmManager();
@@ -30,77 +36,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
             lock (renderLock)
             {
                 AnsiConsole.WriteLine();
-                // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
-                    && args.ProviderOptions?.Count > 0)
-                {
-                    if (settings.NoConfirm)
-                    {
-                        if (Program.IsUiMode)
-                        {
-                            if (args.QuestionType == AlpmQuestionType.ConflictPkg)
-                            {
-                                // Dedicated conflict protocol for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
-                            }
-                            else
-                            {
-                                // Machine-readable format for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
-                            }
-                            Console.Error.Flush();
-                            var input = Console.ReadLine();
-                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
-                        }
-                        else
-                        {
-                            // Non-interactive CLI mode: default to the first provider
-                            args.Response = 0;
-                        }
-                    }
-                    else
-                    {
-                        var selection = AnsiConsole.Prompt(
-                            new SelectionPrompt<string>()
-                                .Title($"[yellow]{args.QuestionText}[/]")
-                                .AddChoices(args.ProviderOptions));
-                        args.Response = args.ProviderOptions.IndexOf(selection);
-                    }
-                }
-                else if (settings.NoConfirm)
-                {
-                    if (Program.IsUiMode)
-                    {
-                        // Machine-readable format for UI integration
-                        Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                        Console.Error.Flush();
-                        var input = Console.ReadLine();
-                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
-                    }
-                    else
-                    {
-                        // Non-interactive CLI mode: automatically confirm
-                        args.Response = 1;
-                    }
-                }
-                else
-                {
-                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                    args.Response = response ? 1 : 0;
-                }
+               QuestionHandler.HandleQuestion(args,Program.IsUiMode,settings.NoConfirm);
             }
         };
 
@@ -174,6 +110,67 @@ public class UpgradeCommand : Command<UpgradeSettings>
             });
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
+        manager.Dispose();
+        return 0;
+    }
+
+    private static int HandleUiModeUpgrade(UpgradeSettings settings)
+    {
+        Console.Error.WriteLine("Performing full system upgrade...");
+
+        var manager = new AlpmManager();
+        object renderLock = new();
+
+        manager.Replaces += (sender, args) =>
+        {
+            foreach (var replace in args.Replaces)
+            {
+                Console.Error.WriteLine(
+                    $"Replacement: {args.Repository}/{args.PackageName} replaces {replace}");
+            }
+        };
+
+        manager.Question += (sender, args) =>
+        {
+            lock (renderLock)
+            {
+                Console.Error.WriteLine();
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
+            }
+        };
+
+        Console.Error.WriteLine("Checking for system updates...");
+        Console.Error.WriteLine(" Initializing and syncing repositories...");
+        manager.IntializeWithSync();
+        var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
+        if (packagesNeedingUpdate.Count == 0)
+        {
+            Console.Error.WriteLine("System is up to date!");
+            return 0;
+        }
+
+        Console.Error.WriteLine($"{packagesNeedingUpdate.Count} packages need updates:");
+        foreach (var pkg in packagesNeedingUpdate)
+        {
+            Console.Error.WriteLine($"  {pkg.Name}: {pkg.CurrentVersion} -> {pkg.NewVersion} ({pkg.DownloadSize} bytes)");
+        }
+
+        Console.Error.WriteLine(" Starting System Upgrade...");
+        
+        manager.Progress += (sender, args) =>
+        {
+            lock (renderLock)
+            {
+                var name = args.PackageName ?? "unknown";
+                var pct = args.Percent ?? 0;
+                var actionType = args.ProgressType;
+                Console.Error.WriteLine($"{name}: {pct}% - {actionType}");
+            }
+        };
+        
+        manager.SyncSystemUpdate();
+
+        Console.Error.WriteLine("System upgraded successfully!");
         manager.Dispose();
         return 0;
     }

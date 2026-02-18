@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PackageManager.Alpm;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -11,6 +12,11 @@ public class InstallCommand : Command<InstallPackageSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] InstallPackageSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeInstall(settings);
+        }
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -21,14 +27,12 @@ public class InstallCommand : Command<InstallPackageSettings>
 
         AnsiConsole.MarkupLine($"[yellow]Packages to install:[/] {string.Join(", ", packageList)}");
 
-        if (!settings.NoConfirm)
+        if (!AnsiConsole.Confirm("Do you want to proceed?"))
         {
-            if (!AnsiConsole.Confirm("Do you want to proceed?"))
-            {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
-            }
+            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+            return 0;
         }
+
 
         var manager = new AlpmManager();
         object renderLock = new();
@@ -38,78 +42,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             lock (renderLock)
             {
                 AnsiConsole.WriteLine();
-                // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                     args.QuestionType == AlpmQuestionType.ConflictPkg) 
-                    && args.ProviderOptions?.Count > 0)
-                {
-                    if (settings.NoConfirm)
-                    {
-                        if (Program.IsUiMode)
-                        {
-                            if (args.QuestionType == AlpmQuestionType.ConflictPkg)
-                            {
-                                // Dedicated conflict protocol for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
-                            }
-                            else
-                            {
-                                // Machine-readable format for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                                for (int i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine($"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
-                            }
-                            Console.Error.Flush();
-                            var input = Console.ReadLine();
-                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
-                        }
-                        else
-                        {
-                            // Non-interactive CLI mode: default to the first provider
-                            args.Response = 0;
-                        }
-                    }
-                    else
-                    {
-                        var selection = AnsiConsole.Prompt(
-                            new SelectionPrompt<string>()
-                                .Title($"[yellow]{args.QuestionText}[/]")
-                                .AddChoices(args.ProviderOptions));
-                        args.Response = args.ProviderOptions.IndexOf(selection);
-                    }
-                }
-                else if (settings.NoConfirm)
-                {
-                    if (Program.IsUiMode)
-                    {
-                        // Machine-readable format for UI integration
-                        Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                        Console.Error.Flush();
-                        var input = Console.ReadLine();
-                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true ? 1 : 0;
-                    }
-                    else
-                    {
-                        // Non-interactive CLI mode: automatically confirm
-                        args.Response = 1;
-                    }
-                }
-                else
-                {
-                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                    args.Response = response ? 1 : 0;
-                }
-                
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
             }
         };
 
@@ -147,46 +80,112 @@ public class InstallCommand : Command<InstallPackageSettings>
         }
 
         AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-        var progressTable = new Table().AddColumns("Package", "Progress", "Status","Stage");
-        AnsiConsole.Live(progressTable).AutoClear(false)
-            .Start(ctx =>
+
+        int currentPkgIndex = 0;
+        int totalPkgs = packageList.Count;
+        string? lastPackageName = null;
+        int lastPercent = 0;
+
+        manager.Progress += (sender, args) =>
+        {
+            lock (renderLock)
             {
-                var rowIndex = new Dictionary<string, int>();
+                var name = args.PackageName ?? "unknown";
+                var pct = args.Percent ?? 0;
+                var bar = string.Join("", Enumerable.Repeat("🐚 ", pct * 2 / 5)) + new string('░', 20 - pct / 5);
+                var actionType = args.ProgressType;
 
-                manager.Progress += (sender, args) =>
+                // Detect package change
+                if (name != lastPackageName)
                 {
-                    lock (renderLock)
+                    // If this isn't the first package, complete the previous line
+                    if (lastPackageName != null)
                     {
-                        var name = args.PackageName ?? "unknown";
-                        var pct = args.Percent ?? 0;
-                        var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
-                        var actionType = args.ProgressType;
-
-                        if (!rowIndex.TryGetValue(name, out var idx))
-                        {
-                            progressTable.AddRow(
-                                $"[blue]{Markup.Escape(name)}[/]",
-                                $"[green]{bar}[/]",
-                                $"{pct}%",
-                                $"{actionType}"
-                            );
-                            rowIndex[name] = rowIndex.Count;
-                        }
-                        else
-                        {
-                            progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
-                            progressTable.UpdateCell(idx, 2, $"{pct}%");
-                            progressTable.UpdateCell(idx, 3, $"{actionType}");
-                        }
-
-                        ctx.Refresh();
+                        Console.WriteLine(); // Move to new line
+                        currentPkgIndex++;
                     }
-                };
-                manager.InstallPackages(packageList);
-            });
+
+                    lastPackageName = name;
+                    lastPercent = 0;
+                }
+
+                // Update current line with carriage return
+                Console.Write(
+                    $"\r({currentPkgIndex + 1}/{totalPkgs}) installing {name,-40}  [{bar}] {pct,3}% - {actionType,-20}");
+
+                lastPercent = pct;
+            }
+        };
+
+
+        manager.InstallPackages(packageList);
+        Console.WriteLine(); // Final newline after last package
 
         manager.Dispose();
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
+        manager.Dispose();
+        AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
+        return 0;
+    }
+
+    private static int HandleUiModeInstall(InstallPackageSettings settings)
+    {
+        if (settings.Packages.Length == 0)
+        {
+            Console.Error.WriteLine("Error: No packages specified");
+            return 1;
+        }
+
+        var manager = new AlpmManager();
+        manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+        Console.Error.WriteLine("Initializing and syncing ALPM...");
+        manager.IntializeWithSync();
+        if (settings.BuildDepsOn)
+        {
+            if (settings.Packages.Length > 1)
+            {
+                Console.WriteLine("Cannot build dependencies for multiple packages at once.");
+                return -1;
+            }
+
+            if (settings.MakeDepsOn)
+            {
+                Console.Error.WriteLine("Installing packages...");
+                manager.InstallDependenciesOnly(settings.Packages.ToList().First(), true, AlpmTransFlag.None);
+                return 0;
+            }
+
+            Console.Error.WriteLine("Installing packages...");
+            manager.InstallDependenciesOnly(settings.Packages.ToList().First(), false, AlpmTransFlag.None);
+            Console.Error.WriteLine("Packages installed successfully!");
+            return 0;
+        }
+
+        if (settings.NoDeps)
+        {
+            Console.Error.WriteLine("Skipping dependency installation.");
+            Console.Error.WriteLine("Installing packages...");
+            manager.InstallPackages(settings.Packages.ToList(), AlpmTransFlag.NoDeps);
+            Console.Error.WriteLine("Packages installed successfully!");
+            return 0;
+        }
+
+        Console.WriteLine("Installing packages...");
+        var rowIndex = new Dictionary<string, int>();
+        manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+        try
+        {
+            manager.InstallPackages(settings.Packages.ToList());
+            Console.Error.WriteLine("Finished installing packages.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ALPM_ERROR]Failed to install packages: {ex.Message}");
+            manager.Dispose();
+            return 1;
+        }
+
+        manager.Dispose();
         return 0;
     }
 }

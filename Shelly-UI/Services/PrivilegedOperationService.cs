@@ -10,6 +10,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using PackageManager.Alpm;
+using Shelly_UI.Models;
 using PackageManager.Aur.Models;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
@@ -20,11 +21,34 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 {
     private readonly string _cliPath;
     private readonly ICredentialManager _credentialManager;
+    private readonly IAlpmEventService _alpmEventService;
+    private readonly IConfigService _configService;
+    private bool _usedPassword = false;
 
-    public PrivilegedOperationService(ICredentialManager credentialManager)
+    public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
+        IConfigService configService)
     {
         _credentialManager = credentialManager;
+        _alpmEventService = alpmEventService;
+        _configService = configService;
         _cliPath = FindCliPath();
+    }
+
+    private string[] AppendNoConfirmIfNeeded(params string[] args)
+    {
+        var config = _configService.LoadConfig();
+        if (config.NoConfirm)
+        {
+            return [..args, "--no-confirm"];
+        }
+
+        return args;
+    }
+
+    private Task<OperationResult> ExecutePrivilegedWithNoConfirmCheck(string operationDescription, params string[] args)
+    {
+        var finalArgs = AppendNoConfirmIfNeeded(args);
+        return ExecutePrivilegedCommandAsync(operationDescription, finalArgs);
     }
 
     private static string FindCliPath()
@@ -111,29 +135,30 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install packages", "install", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install packages", "install", packageArgs);
     }
 
     public async Task<OperationResult> InstallLocalPackageAsync(string filePath)
     {
-        return await ExecutePrivilegedCommandAsync("Install local package", "install-local", "--location", filePath, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location",
+            filePath);
     }
 
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove packages", "remove", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
     }
 
     public async Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update packages", "update", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Update packages", "update", packageArgs);
     }
 
     public async Task<OperationResult> UpgradeSystemAsync()
     {
-        return await ExecutePrivilegedCommandAsync("Upgrade system", "upgrade", "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Upgrade system", "upgrade");
     }
 
     public async Task<OperationResult> ForceSyncDatabaseAsync()
@@ -144,21 +169,19 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Install AUR packages", "aur", "install", packageArgs,
-            "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Install AUR packages", "aur", "install", packageArgs);
     }
 
     public async Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Remove AUR packages", "aur", "remove", packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Remove AUR packages", "aur", "remove", packageArgs);
     }
 
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedCommandAsync("Update AUR packages", "aur", "update",
-            packageArgs, "--no-confirm");
+        return await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
     }
 
     public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
@@ -576,38 +599,22 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                 providerOptions.Add(payload);
                             }
                         }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_OPTION_END]"))
-                        {
-                            Console.Error.WriteLine($"[Shelly]Provider selection received");
-                            // Show selection dialog and send index
-                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop && desktop.MainWindow != null)
-                                {
-                                    var title = string.IsNullOrWhiteSpace(providerQuestion)
-                                        ? "Select provider"
-                                        : providerQuestion;
-                                    var dialog = new ProviderSelectionDialog("Select Provider for: {title}",
-                                        providerOptions);
-                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
-                                    return result;
-                                }
-
-                                return 0; // Default to first option
-                            });
-                            var selectedIndex = await selectedIndexTask;
-
-                            await SafeWriteAsync(selectedIndex.ToString());
-                            Console.Error.WriteLine($"[Shelly]Wrote selection {selectedIndex.ToString()}");
-
-                            awaitingProviderSelection = false;
-                            providerQuestion = null;
-                            providerOptions.Clear();
-                        }
                         else if (e.Data.StartsWith("[Shelly][ALPM_PROVIDER_END]"))
                         {
-                            // Reset state
+                            Console.Error.WriteLine($"[Shelly]Provider selection received");
+                            var args = new QuestionEventArgs(
+                                QuestionType.SelectProvider,
+                                providerQuestion ?? "Select provider",
+                                new List<string>(providerOptions),
+                                providerQuestion);
+
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
+
+                            await SafeWriteAsync(args.Response.ToString());
+                            Console.Error.WriteLine($"[Shelly]Wrote selection {args.Response}");
+
                             awaitingProviderSelection = false;
                             providerQuestion = null;
                             providerOptions.Clear();
@@ -638,26 +645,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_END]"))
                         {
                             Console.Error.WriteLine($"[Shelly]Conflict selection received");
-                            // Show selection dialog and send index
-                            var selectedIndexTask = Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop && desktop.MainWindow != null)
-                                {
-                                    var title = string.IsNullOrWhiteSpace(conflictQuestion)
-                                        ? "Package Conflict"
-                                        : conflictQuestion;
-                                    var dialog = new ProviderSelectionDialog(title, conflictOptions);
-                                    var result = await dialog.ShowDialog<int>(desktop.MainWindow);
-                                    return result;
-                                }
+                            var args = new QuestionEventArgs(
+                                QuestionType.ConflictPkg,
+                                conflictQuestion ?? "Package Conflict",
+                                new List<string>(conflictOptions));
 
-                                return 0; // Default to first option
-                            });
-                            var selectedIndex = await selectedIndexTask;
+                            _alpmEventService.RaiseQuestion(args);
 
-                            await SafeWriteAsync(selectedIndex.ToString());
-                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {selectedIndex.ToString()}");
+                            await Task.Run(() => args.WaitForResponse());
+
+                            await SafeWriteAsync(args.Response.ToString());
+                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {args.Response}");
 
                             awaitingConflictSelection = false;
                             conflictQuestion = null;
@@ -669,23 +667,16 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
-                            // Show dialog on UI thread and get response
-                            var response = await Dispatcher.UIThread.InvokeAsync(async () =>
-                            {
-                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-                                        desktop
-                                    && desktop.MainWindow != null)
-                                {
-                                    var dialog = new QuestionDialog(questionText);
-                                    var result = await dialog.ShowDialog<bool>(desktop.MainWindow);
-                                    return result;
-                                }
+                            var args = new QuestionEventArgs(
+                                QuestionType.InstallIgnorePkg,
+                                questionText);
 
-                                return true; // Default to yes if no window available
-                            });
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
 
                             // Send response to CLI via stdin
-                            await SafeWriteAsync(response ? "y" : "n");
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                         }
                         else
                         {
@@ -710,7 +701,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             process.BeginErrorReadLine();
 
             // Write password to stdin followed by newline
-            await stdinWriter.WriteLineAsync(password);
+            if (!_usedPassword)
+            {
+                await stdinWriter.WriteLineAsync(password);
+                _usedPassword = true;
+            }
+
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();

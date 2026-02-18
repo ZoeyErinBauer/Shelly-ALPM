@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 using PackageManager.Alpm;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -11,6 +12,10 @@ public class ListUpdatesCommand : Command<DefaultSettings>
 {
     public override int Execute([NotNull] CommandContext context, [NotNull] DefaultSettings settings)
     {
+        if (Program.IsUiMode)
+        {
+            return HandleUiModeListUpdates(settings);
+        }
         using var manager = new AlpmManager();
 
         if (!settings.JsonOutput)
@@ -76,5 +81,37 @@ public class ListUpdatesCommand : Command<DefaultSettings>
         }
 
         return $"{size:0.##} {sizes[order]}";
+    }
+
+    private static int HandleUiModeListUpdates(DefaultSettings settings)
+    {
+        using var manager = new AlpmManager();
+        manager.IntializeWithSync();
+
+        var updates = manager.GetPackagesNeedingUpdate();
+
+        if (settings.JsonOutput)
+        {
+            var json = JsonSerializer.Serialize(updates, ShellyCLIJsonContext.Default.ListAlpmPackageUpdateDto);
+            using var stdout = Console.OpenStandardOutput();
+            using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+            writer.WriteLine(json);
+            writer.Flush();
+            return 0;
+        }
+
+        if (updates.Count == 0)
+        {
+            Console.Error.WriteLine("All packages are up to date!");
+            return 0;
+        }
+
+        foreach (var pkg in updates.OrderBy(p => p.Name))
+        {
+            Console.WriteLine($"{pkg.Name} {pkg.CurrentVersion} -> {pkg.NewVersion} ({FormatSize(pkg.DownloadSize)})");
+        }
+
+        Console.Error.WriteLine($"{updates.Count} packages can be updated");
+        return 0;
     }
 }
