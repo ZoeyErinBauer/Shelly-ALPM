@@ -74,6 +74,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                     QuestionHandler.HandleQuestion(args,Program.IsUiMode,settings.NoConfirm);
                 }
             };
+            
 
             if (settings.BuildDepsOn)
             {
