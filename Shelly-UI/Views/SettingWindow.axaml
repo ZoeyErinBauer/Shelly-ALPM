@@ -36,6 +36,17 @@
                                   IsChecked="{Binding EnableTray, Mode=TwoWay}"
                                   Foreground="{DynamicResource SystemBaseHighColor}">
                     </ToggleSwitch>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="Tray Check Interval (Hours):" 
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemBaseHighColor}"/>
+                        <NumericUpDown Value="{Binding TrayCheckIntervalHours, Mode=TwoWay}"
+                                       Minimum="1"
+                                       Maximum="168"
+                                       Increment="1"
+                                       Width="100"
+                                       FormatString="0"/>
+                    </StackPanel>
                     <ToggleSwitch Content="No Confirm"
                                   IsChecked="{Binding NoConfirm, Mode=TwoWay}"
                                   Foreground="{DynamicResource SystemBaseHighColor}">

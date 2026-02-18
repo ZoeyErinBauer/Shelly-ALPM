@@ -8,13 +8,14 @@ namespace Shelly_UI.Services.TrayService;
 public class TrayService : ITrayService
 {
     private readonly IUnprivilegedOperationService _unprivilegedOperationService;
+    private readonly IConfigService _configService;
     private CancellationTokenSource? _cts;
     private Task? _backgroundTask;
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(12);
 
-    public TrayService(IUnprivilegedOperationService unprivilegedOperationService)
+    public TrayService(IUnprivilegedOperationService unprivilegedOperationService, IConfigService configService)
     {
         _unprivilegedOperationService = unprivilegedOperationService;
+        _configService = configService;
     }
 
     public void Start()
@@ -40,7 +41,9 @@ public class TrayService : ITrayService
 
                 try
                 {
-                    await Task.Delay(CheckInterval, token);
+                    var config = _configService.LoadConfig();
+                    var checkInterval = TimeSpan.FromHours(config.TrayCheckIntervalHours);
+                    await Task.Delay(checkInterval, token);
                 }
                 catch (TaskCanceledException)
                 {

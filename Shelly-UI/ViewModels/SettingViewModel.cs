@@ -50,6 +50,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _useKdeColor = config.UseKdeTheme;
         _useHorizontalMenu = config.UseHorizontalMenu;
         _enableTray = config.TrayEnabled;
+        _trayCheckIntervalHours = config.TrayCheckIntervalHours;
         _noConfirm = config.NoConfirm;
 
         _ = SetUpdateText();
@@ -76,6 +77,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private bool _useHorizontalMenu;
 
     private bool _enableTray;
+
+    private int _trayCheckIntervalHours;
 
     private bool _noConfirm;
 
@@ -245,6 +248,18 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             this.RaiseAndSetIfChanged(ref _enableTray, value);
             var config = _configService.LoadConfig();
             config.TrayEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
+    public int TrayCheckIntervalHours
+    {
+        get => _trayCheckIntervalHours;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _trayCheckIntervalHours, value);
+            var config = _configService.LoadConfig();
+            config.TrayCheckIntervalHours = value;
             _configService.SaveConfig(config);
         }
     }
