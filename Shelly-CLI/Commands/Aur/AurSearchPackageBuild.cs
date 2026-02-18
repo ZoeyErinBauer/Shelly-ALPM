@@ -33,7 +33,7 @@ public class AurSearchPackageBuild : AsyncCommand<AurPackageSettings>
                 else
                 {
                     AnsiConsole.MarkupLine($"[yellow]Package build for: {package}[/]");
-                    AnsiConsole.MarkupLine($"{pkgbuild}");
+                    AnsiConsole.MarkupLine($"{pkgbuild.EscapeMarkup()}");
                 }
             }
 
