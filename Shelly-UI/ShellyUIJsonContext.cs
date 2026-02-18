@@ -28,6 +28,7 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(SyncPackageModel))]
 [JsonSerializable(typeof(SyncAurModel))]
 [JsonSerializable(typeof(SyncFlatpakModel))]
+[JsonSerializable(typeof(List<PackageBuild>))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext
 {
 }
