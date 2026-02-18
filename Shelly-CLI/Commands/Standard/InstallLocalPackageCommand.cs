@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using PackageManager.Alpm;
 using SharpCompress.Compressors.Xz;
+using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using ZstdSharp;
@@ -18,18 +19,36 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         //Validate the file location and that a file is actually passed in
         if (settings.PackageLocation == null)
         {
-            AnsiConsole.MarkupLine("[red]Error: No package specified[/]");
+            if (Program.IsUiMode)
+            {
+                Console.Error.WriteLine("Error: No package specified");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[red]Error: No package specified[/]");
+            }
             return 1;
         }
 
         if (!File.Exists(settings.PackageLocation))
         {
-            AnsiConsole.MarkupLine("[red]Error: Specified file does not exist.[/]");
+            if (Program.IsUiMode)
+            {
+                Console.Error.WriteLine("Error: Specified file does not exist.");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[red]Error: Specified file does not exist.[/]");
+            }
             return 1;
         }
 
         if (await IsArchPackage(settings.PackageLocation))
         {
+            if (Program.IsUiMode)
+            {
+                return HandleUiModeInstall(settings);
+            }
             InitializeAndInstallLocalAlpmPackage(settings);
             return 0;
         }
@@ -240,82 +259,8 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         {
             lock (renderLock)
             {
-                // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                if ((args.QuestionType == AlpmQuestionType.SelectProvider ||
-                     args.QuestionType == AlpmQuestionType.ConflictPkg)
-                    && args.ProviderOptions?.Count > 0)
-                {
-                    if (settings.NoConfirm)
-                    {
-                        if (Program.IsUiMode)
-                        {
-                            if (args.QuestionType == AlpmQuestionType.ConflictPkg)
-                            {
-                                // Dedicated conflict protocol for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_CONFLICT]{args.QuestionText}");
-                                for (var i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine(
-                                        $"[Shelly][ALPM_CONFLICT_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_CONFLICT_END]");
-                            }
-                            else
-                            {
-                                // Machine-readable format for UI integration
-                                Console.Error.WriteLine($"[Shelly][ALPM_SELECT_PROVIDER]{args.DependencyName}");
-                                for (var i = 0; i < args.ProviderOptions.Count; i++)
-                                {
-                                    Console.Error.WriteLine(
-                                        $"[Shelly][ALPM_PROVIDER_OPTION]{i}:{args.ProviderOptions[i]}");
-                                }
-
-                                Console.Error.WriteLine("[Shelly][ALPM_PROVIDER_END]");
-                            }
-
-                            Console.Error.Flush();
-                            var input = Console.ReadLine();
-                            args.Response = int.TryParse(input?.Trim(), out var idx) ? idx : 0;
-                        }
-                        else
-                        {
-                            // Non-interactive CLI mode: default to the first provider
-                            args.Response = 0;
-                        }
-                    }
-                    else
-                    {
-                        var selection = AnsiConsole.Prompt(
-                            new SelectionPrompt<string>()
-                                .Title($"[yellow]{args.QuestionText}[/]")
-                                .AddChoices(args.ProviderOptions));
-                        args.Response = args.ProviderOptions.IndexOf(selection);
-                    }
-                }
-                else if (settings.NoConfirm)
-                {
-                    if (Program.IsUiMode)
-                    {
-                        // Machine-readable format for UI integration
-                        Console.Error.WriteLine($"[Shelly][ALPM_QUESTION]{args.QuestionText}");
-                        Console.Error.Flush();
-                        var input = Console.ReadLine();
-                        args.Response = input?.Trim().Equals("y", StringComparison.OrdinalIgnoreCase) == true
-                            ? 1
-                            : 0;
-                    }
-                    else
-                    {
-                        // Non-interactive CLI mode: automatically confirm
-                        args.Response = 1;
-                    }
-                }
-                else
-                {
-                    var response = AnsiConsole.Confirm($"[yellow]{args.QuestionText}[/]", defaultValue: true);
-                    args.Response = response ? 1 : 0;
-                }
+                AnsiConsole.WriteLine();
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
             }
         };
 
@@ -323,6 +268,45 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         manager.Initialize();
         manager.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation!));
         manager.Dispose();
+    }
+
+    private static int HandleUiModeInstall(InstallLocalPackageSettings settings)
+    {
+        if (settings.PackageLocation == null)
+        {
+            Console.Error.WriteLine("Error: No package specified");
+            return 1;
+        }
+
+        using var manager = new AlpmManager();
+        try
+        {
+            // Handle questions
+            manager.Question += (sender, args) =>
+            {
+                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            // Handle progress events
+            manager.Progress += (sender, args) =>
+            {
+                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
+            };
+
+            Console.Error.WriteLine("Initializing ALPM...");
+            manager.Initialize();
+
+            Console.Error.WriteLine($"Installing local package: {settings.PackageLocation}");
+            manager.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation));
+            Console.Error.WriteLine("Installation complete.");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Installation failed: {ex.Message}");
+            return 1;
+        }
     }
 
     internal async Task<bool> IsArchPackage(string filePath)
