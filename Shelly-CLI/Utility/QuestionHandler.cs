@@ -13,7 +13,6 @@ public static class QuestionHandler
                 HandleProviderSelection(question, uiMode, noConfirm);
                 break;
             case AlpmQuestionType.ReplacePkg:
-
             case AlpmQuestionType.ConflictPkg:
             case AlpmQuestionType.InstallIgnorePkg:
             case AlpmQuestionType.CorruptedPkg:
@@ -70,7 +69,28 @@ public static class QuestionHandler
                 return;
             }
 
-            Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
+            switch (question.QuestionType)
+            {
+                case AlpmQuestionType.ConflictPkg:
+                    Console.Error.WriteLine($"[ALPM_QUESTION_CONFLICT]{question.QuestionText}");
+                    break;
+                case AlpmQuestionType.ReplacePkg:
+                    Console.Error.WriteLine($"[ALPM_QUESTION_REPLACEPKG]{question.QuestionText}");
+                    break;
+                case AlpmQuestionType.CorruptedPkg:
+                    Console.Error.WriteLine($"[ALPM_QUESTION_CORRUPTEDPKG]{question.QuestionText}");
+                    break;
+                case AlpmQuestionType.ImportKey:
+                    Console.Error.WriteLine($"[ALPM_QUESTION_IMPORTKEY]{question.QuestionText}");
+                    break;
+                case AlpmQuestionType.SelectProvider:
+                    throw new Exception("Select provider is never a y / n question and is being invoked as one.");
+                case AlpmQuestionType.InstallIgnorePkg:
+                default:
+                    Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
+                    break;
+            }
+            
             Console.Error.Flush();
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");
