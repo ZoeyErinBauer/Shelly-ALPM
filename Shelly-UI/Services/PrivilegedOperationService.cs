@@ -184,6 +184,16 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
     }
 
+    public async Task<List<PackageBuild>> GetAurPackageBuild(IEnumerable<string> packages)
+    {
+        var packageArgs = string.Join(" ", packages);
+        var result =
+            await ExecutePrivilegedWithNoConfirmCheck("Get Package Builds", "aur", "get-package-build", packageArgs);
+        var trimmedLine = StripBom(result.Output);
+        return System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+            ShellyUIJsonContext.Default.ListPackageBuild) ?? [];
+    }
+
     public async Task<List<AlpmPackageUpdateDto>> GetPackagesNeedingUpdateAsync()
     {
         // Use privileged execution to sync databases and get updates

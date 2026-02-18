@@ -215,6 +215,9 @@ public class Program
                     .WithExample("aur", "remove", "yay")
                     .WithExample("aur", "remove", "yay", "paru")
                     .WithExample("aur", "remove", "yay", "--no-confirm");
+
+                aur.AddCommand<AurSearchPackageBuild>("get-package-build").WithDescription("Get package build")
+                    .WithExample("aur", "get-package-build", "yay", "paru");
             });
 
             config.AddBranch("flatpak", flatpak =>

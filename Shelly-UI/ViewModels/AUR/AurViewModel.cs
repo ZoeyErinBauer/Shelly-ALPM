@@ -1,15 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Http;
 using System.Reactive;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.XPath;
-using Avalonia.Controls;
-using PackageManager.Aur;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
+using Shelly_UI.CustomControls.Dialogs;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
@@ -42,14 +41,14 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
         AlpmInstallCommand = ReactiveCommand.CreateFromTask(AlpmInstall);
         TogglePackageCheckCommand = ReactiveCommand.Create<AurModel>(TogglePackageCheck);
         SearchCommand = ReactiveCommand.CreateFromTask(Search);
-        
+
         SearchedPackages = new ObservableCollection<AurModel>();
     }
 
     private async Task Search()
     {
         HelpTextVisibility = false;
-        
+
         if (string.IsNullOrWhiteSpace(SearchText))
             return;
 
@@ -58,7 +57,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
         Console.WriteLine($"[DEBUG_LOG] Search result: {result.Count}");
 
         result = result.OrderByDescending(x => x.NumVotes).ToList();
-        
+
         SearchedPackages.Clear();
         foreach (var dto in result)
         {
@@ -68,11 +67,11 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 Description = dto.Description,
                 Url = dto.Url,
                 Version = dto.Version,
-                Popularity = Math.Round(dto.Popularity,2,MidpointRounding.ToZero),
+                Popularity = Math.Round(dto.Popularity, 2, MidpointRounding.ToZero),
                 NumVotes = dto.NumVotes,
                 Maintainer = dto.Maintainer,
                 FirstSubmitted = DateTimeOffset.FromUnixTimeSeconds(dto?.FirstSubmitted ?? 0).DateTime,
-                LastModified =  DateTimeOffset.FromUnixTimeSeconds(dto?.LastModified ?? 0).DateTime
+                LastModified = DateTimeOffset.FromUnixTimeSeconds(dto?.LastModified ?? 0).DateTime
             });
         }
     }
@@ -95,11 +94,11 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
         var selectedPackages = SearchedPackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
 
         Console.WriteLine($"[DEBUG_LOG] Selected packages: {selectedPackages.Count}");
-        
-        if (selectedPackages.Any())
-        {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
 
+        if (selectedPackages.Count != 0)
+        {
+            var mainWindow = HostScreen as MainWindowViewModel;
+            
             try
             {
                 ShowConfirmDialog = false;
@@ -115,7 +114,8 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                     if (!isValidated) return;
                 }
 
-
+               
+                
                 // Set busy
                 if (mainWindow != null)
                 {
@@ -126,13 +126,35 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 }
 
                 //do work
-               
+                if (!App.Services.GetRequiredService<IConfigService>().LoadConfig().NoConfirm)
+                {
+                    var packageBuilds = await _privilegedOperationService.GetAurPackageBuild(selectedPackages);
+
+                    if (packageBuilds.Count == 0)
+                    {
+                        Console.WriteLine("No packages found.");
+                        return;
+                    }
+
+                    foreach (var pkgbuild in packageBuilds)
+                    {
+                        var window =
+                            Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                                ? desktop.MainWindow
+                                : null;
+
+                        var dialog = new PackageBuildDialog($"Displaying Package Build {pkgbuild.Name}",
+                            packageBuild: pkgbuild.PkgBuild);
+                        var dialogResult = await dialog.ShowDialog<bool>(window);
+                        if (!dialogResult) return;
+                    }
+                }
+
                 var result = await _privilegedOperationService.InstallAurPackagesAsync(selectedPackages);
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
                 }
-                
             }
             finally
             {
@@ -170,7 +192,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
     }
 
     private bool _helpTextVisibility = true;
-    
+
     public bool HelpTextVisibility
     {
         get => _helpTextVisibility;
@@ -185,6 +207,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
         {
             SearchedPackages?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }
