@@ -619,47 +619,69 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             providerQuestion = null;
                             providerOptions.Clear();
                         }
-                        // Handle conflict selection protocol
-                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT]"))
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
                         {
-                            Console.Error.WriteLine($"[Shelly]Conflict question: {e.Data}");
-                            awaitingConflictSelection = true;
-                            conflictOptions.Clear();
-                            conflictQuestion = e.Data.Substring("[Shelly][ALPM_CONFLICT]".Length);
-                        }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_OPTION]"))
-                        {
-                            Console.Error.WriteLine($"[Shelly]Conflict option received: {e.Data}");
-                            var payload = e.Data.Substring("[Shelly][ALPM_CONFLICT_OPTION]".Length);
-                            var parts = payload.Split(':', 2);
-                            if (parts.Length == 2 && int.TryParse(parts[0], out var idx))
-                            {
-                                while (conflictOptions.Count <= idx) conflictOptions.Add(string.Empty);
-                                conflictOptions[idx] = parts[1];
-                            }
-                            else
-                            {
-                                conflictOptions.Add(payload);
-                            }
-                        }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_CONFLICT_END]"))
-                        {
-                            Console.Error.WriteLine($"[Shelly]Conflict selection received");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CONFLICT]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+
                             var args = new QuestionEventArgs(
                                 QuestionType.ConflictPkg,
-                                conflictQuestion ?? "Package Conflict",
-                                new List<string>(conflictOptions));
+                                questionText);
 
                             _alpmEventService.RaiseQuestion(args);
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            await SafeWriteAsync(args.Response.ToString());
-                            Console.Error.WriteLine($"[Shelly]Wrote conflict selection {args.Response}");
+                            // Send response to CLI via stdin
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
+                        {
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
-                            awaitingConflictSelection = false;
-                            conflictQuestion = null;
-                            conflictOptions.Clear();
+                            var args = new QuestionEventArgs(
+                                QuestionType.ReplacePkg,
+                                questionText);
+
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
+
+                            // Send response to CLI via stdin
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]"))
+                        {
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+
+                            var args = new QuestionEventArgs(
+                                QuestionType.CorruptedPkg,
+                                questionText);
+
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
+
+                            // Send response to CLI via stdin
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_IMPORTKEY]"))
+                        {
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+
+                            var args = new QuestionEventArgs(
+                                QuestionType.ImportKey,
+                                questionText);
+
+                            _alpmEventService.RaiseQuestion(args);
+
+                            await Task.Run(() => args.WaitForResponse());
+
+                            // Send response to CLI via stdin
+                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                         }
                         // Check for generic ALPM question (yes/no)
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))

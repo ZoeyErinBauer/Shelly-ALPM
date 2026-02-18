@@ -16,43 +16,41 @@
                     BorderBrush="{DynamicResource SystemBaseLowColor}"
                     BorderThickness="1"
                     Margin="8,4,4,4">
-                <Grid RowDefinitions="Auto, Auto">
-                    <TextBlock Text="{x:Static lang:Resources.ArchNews}" FontWeight="Bold"
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="{x:Static lang:Resources.ArchNews}" FontWeight="Bold"
                                FontSize="18" Margin="10, 5,0 ,0">
                     </TextBlock>
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-                        <ListBox ItemsSource="{Binding FeedItems}"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel HorizontalAlignment="Stretch">
-                                        <TextBlock Text="{Binding Title}"
-                                                   FontWeight="Bold"
-                                                   FontSize="16"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Text="{Binding PubDate}"
-                                                   FontWeight="Bold"
-                                                   FontSize="10"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Text="{Binding Description}"
-                                                   Foreground="{DynamicResource SystemBaseMediumColor}"
-                                                   TextWrapping="Wrap"
-                                                   Margin="5,5,0,0" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                            <ListBox.Styles>
-                                <Style Selector="ListBoxItem">
-                                    <Setter Property="Padding" Value="6" />
-                                    <Setter Property="CornerRadius" Value="8" />
-                                    <Setter Property="Margin" Value="0,2" />
-                                </Style>
-                            </ListBox.Styles>
-                        </ListBox>
-                    </ScrollViewer>
-                </Grid>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding FeedItems}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding Title}"
+                                               FontWeight="Bold"
+                                               FontSize="16"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding PubDate}"
+                                               FontWeight="Bold"
+                                               FontSize="10"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding Description}"
+                                               Foreground="{DynamicResource SystemBaseMediumColor}"
+                                               TextWrapping="Wrap"
+                                               Margin="5,5,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="6" />
+                                <Setter Property="CornerRadius" Value="8" />
+                                <Setter Property="Margin" Value="0,2" />
+                            </Style>
+                        </ListBox.Styles>
+                    </ListBox>
+                </DockPanel>
             </Border>
             <Grid RowDefinitions="*,Auto">
                 <Border
@@ -62,11 +60,12 @@
                     BorderThickness="1"
                     Margin="4,4,8,4">
                     <DockPanel>
-                        <StackPanel DockPanel.Dock="Top">
-                            <TextBlock Text="{x:Static lang:Resources.InstalledPackages}" FontSize="18"
-                                       FontWeight="Bold"
-                                       Margin="10, 5,0 ,0" />
-                        </StackPanel>
+
+                        <TextBlock DockPanel.Dock="Top" Text="{x:Static lang:Resources.InstalledPackages}"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Margin="10, 5,0 ,0" />
+
                         <ListBox ItemsSource="{Binding InstalledPackages}" Background="Transparent" BorderThickness="0">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -97,36 +96,36 @@
                     <StackPanel>
                         <TextBlock Text="Package Dashboard" FontSize="18" FontWeight="Bold"
                                    Margin="10, 5,0 ,0" />
-                        <Border  Width="240"
-                                 Padding="8">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock FontSize="20"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       Text="Total Packages" />
-                            <TextBlock FontSize="73"
-                                       FontWeight="Light"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,8,0,8"
-                                       Text="{Binding TotalPackages}" />
-                            <Border Height="3"
-                                    Background="{DynamicResource SystemBaseLowColor}"
-                                    Margin="0,0,0,0"
-                                    HorizontalAlignment="Stretch" />
-                            <TextBlock
-                                FontSize="15"
-                                HorizontalAlignment="Center"
-                                Margin="0,15,0,4"
-                                Text="Up to date packages:" />
-                            <TextBlock
-                                Text="{Binding GaugeLabel}"
-                                FontSize="28"
-                                HorizontalAlignment="Center"
-                                FontWeight="SemiBold" />
-                        </StackPanel>
+                        <Border Width="240"
+                                Padding="8">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="20"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           Text="Total Packages" />
+                                <TextBlock FontSize="73"
+                                           FontWeight="Light"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,8"
+                                           Text="{Binding TotalPackages}" />
+                                <Border Height="3"
+                                        Background="{DynamicResource SystemBaseLowColor}"
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Stretch" />
+                                <TextBlock
+                                    FontSize="15"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,15,0,4"
+                                    Text="Up to date packages:" />
+                                <TextBlock
+                                    Text="{Binding GaugeLabel}"
+                                    FontSize="28"
+                                    HorizontalAlignment="Center"
+                                    FontWeight="SemiBold" />
+                            </StackPanel>
                         </Border>
                         <Button Margin="10" Padding="8" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                                Content="Export Sync file" Command="{Binding SyncExport}"/>
+                                Content="Export Sync file" Command="{Binding SyncExport}" />
                     </StackPanel>
 
                 </Border>
