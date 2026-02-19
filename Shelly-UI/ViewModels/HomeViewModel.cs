@@ -12,9 +12,9 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using PackageManager.Alpm;
 using ReactiveUI;
 using Shelly_UI.Models;
+using Shelly_UI.Models.PackageManagerObjects;
 using Shelly_UI.Services;
 
 namespace Shelly_UI.ViewModels;

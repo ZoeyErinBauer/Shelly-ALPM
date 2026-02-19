@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PackageManager.Alpm;
-using PackageManager.Aur.Models;
+using Shelly_UI.Models.PackageManagerObjects;
 
 namespace Shelly_UI.Services;
 
