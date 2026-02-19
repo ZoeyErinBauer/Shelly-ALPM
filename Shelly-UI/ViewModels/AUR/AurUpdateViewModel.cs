@@ -88,6 +88,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 {
                     mainWindow.GlobalProgressValue = 0;
                     mainWindow.GlobalProgressText = "0%";
+                    mainWindow.GlobalBytesValue = "";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = "Updating selected packages...";
                 }

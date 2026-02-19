@@ -118,6 +118,7 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                 if (mainWindow != null)
                 {
                     mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = "Installing selected packages...";

@@ -383,6 +383,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             {
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.IsGlobalBusy = true;
                 mainWindow.GlobalBusyMessage = "Installing flatpak...";
             }

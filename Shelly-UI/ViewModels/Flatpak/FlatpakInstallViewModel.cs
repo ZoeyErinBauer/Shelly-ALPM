@@ -190,6 +190,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.GlobalBusyMessage = "Installing package...";
             }
 

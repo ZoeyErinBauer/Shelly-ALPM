@@ -176,6 +176,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (mainWindow != null)
                 {
                     mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = "Installing selected packages...";
@@ -254,6 +255,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.GlobalBusyMessage = "Installing local package...";
             }
 
