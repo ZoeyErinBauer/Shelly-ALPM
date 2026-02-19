@@ -161,7 +161,7 @@ public class AurPackageManager(string? configPath = null)
         }
     }
 
-    private async Task<string?> FetchPkgbuildAsync(string packageName)
+    public async Task<string?> FetchPkgbuildAsync(string packageName)
     {
         try
         {

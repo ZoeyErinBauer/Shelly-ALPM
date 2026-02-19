@@ -5,7 +5,6 @@ using Shelly_UI.Models.PackageManagerObjects;
 
 namespace Shelly_UI;
 
-
 [JsonSerializable(typeof(ShellyConfig))]
 [JsonSerializable(typeof(CachedRssModel))]
 [JsonSerializable(typeof(RssModel))]
@@ -27,6 +26,7 @@ namespace Shelly_UI;
 [JsonSerializable(typeof(SyncPackageModel))]
 [JsonSerializable(typeof(SyncAurModel))]
 [JsonSerializable(typeof(SyncFlatpakModel))]
+[JsonSerializable(typeof(List<PackageBuild>))]
 [JsonSerializable(typeof(FlatpakPackageDto))]
 [JsonSerializable(typeof(List<FlatpakPackageDto>))]
 internal partial class ShellyUIJsonContext : JsonSerializerContext

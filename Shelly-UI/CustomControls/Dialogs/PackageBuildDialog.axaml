@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Shelly_UI.CustomControls.Dialogs.PackageBuildDialog"
+        Width="800"
+        Height="450"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="BorderOnly"
+        x:CompileBindings="True">
+    <Panel Background="{DynamicResource SystemChromeLowColor}">
+        <Border CornerRadius="12" ClipToBounds="True" BorderThickness="3"
+                BorderBrush="{DynamicResource SystemChromeMediumColor}"
+                Background="{DynamicResource SystemChromeLowColor}">
+            <Grid Margin="20" RowDefinitions="Auto, *, Auto">
+                <StackPanel Grid.Row="0" Spacing="15">
+                    <avalonia:MaterialIcon Kind="Arch" Width="32" Height="32"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource SystemAccentColor}" />
+                    <TextBlock x:Name="QuestionText"
+                               Text="Question text goes here"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               FontSize="14" />
+                </StackPanel>
+                <Border Grid.Row="1"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemChromeMediumColor}"
+                        CornerRadius="4"
+                        Margin="0,15,0,15">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" Padding="10">
+                        <TextBlock x:Name="PackageBuildText"></TextBlock>
+                    </ScrollViewer>
+                </Border>
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Spacing="15">
+                    <Button x:Name="YesButton"
+                            Content="Accept"
+                            Width="80"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Click="YesButton_Click" />
+                    <Button x:Name="NoButton"
+                            Content="Cancel"
+                            Width="80"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Click="NoButton_Click" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Panel>
+</Window>
