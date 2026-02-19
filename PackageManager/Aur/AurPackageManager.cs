@@ -382,8 +382,22 @@ public class AurPackageManager(string? configPath = null)
             };
             buildProcess.OutputDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+                if (e.Data?.Contains('%') == true)
+                {
+                    var match = Regex.Match(e.Data, @"\[\s*(?<percent>\d+)%\]\s+(?<message>.+)");
+
+                    if (!match.Success) return;
+                    var percent = match.Groups["percent"].Value;
+                    var message = match.Groups["message"].Value;
+                    if (!string.IsNullOrEmpty(e.Data))
+                        Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {percent}% Message: {message}");
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                        Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+                }
+                
             };
 
             buildProcess.ErrorDataReceived += (sender, e) =>

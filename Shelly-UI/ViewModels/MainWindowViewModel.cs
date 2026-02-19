@@ -32,11 +32,11 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private IConfigService _configService = App.Services.GetRequiredService<IConfigService>();
 
     private static readonly Regex AlpmProgressPattern =
-        new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)", RegexOptions.Compiled);
+        new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)(?:, bytesRead: (\d+), totalBytes: (\d+))?", RegexOptions.Compiled);
 
-    private static readonly Regex LogPercentagePattern =
-        new(@"(?:\[.*?\]\s*)*(.+?): (?:\d+% -> )?(\d+)%", RegexOptions.Compiled);
-
+    private static readonly Regex AurProgressPattern =
+        new(@"Percent:\s*(\d+)%\s+Message:\s*(.+)", RegexOptions.Compiled);
+    
     private static readonly Regex FlatpakProgressPattern =
         new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)",
             RegexOptions.Compiled);
@@ -342,9 +342,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             .Subscribe(log =>
             {
                 var matchAlpm = AlpmProgressPattern.Match(log);
-                var matchFormatted = LogPercentagePattern.Match(log);
                 var matchFlatpak = FlatpakProgressPattern.Match(log);
                 var matchHooks = RunningHooksPattern.Match(log);
+                var matchAur = AurProgressPattern.Match(log);
                 
                 if (matchAlpm.Success)
                 {
@@ -363,31 +363,42 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                             _ => progressType.Replace("Start", "ing")
                         };
 
+                        var bytes = matchAlpm.Groups[4].Value;
+                        var totalBytes = matchAlpm.Groups[5].Value;
+
+                        if (!string.IsNullOrEmpty(bytes) && !string.IsNullOrEmpty(totalBytes))
+                        {
+                            GlobalBytesValue = $"{bytes} / {totalBytes} bytes";
+                        }
+                        
                         GlobalProgressValue = percent;
                         GlobalProgressText = $"{percent}%";
                         GlobalBusyMessage = $"{action} {pkg}...";
                     }
+                }
+                else if (matchAur.Success)
+                {
+                    var percent = matchAur.Groups[1].Value;
+                    var message = matchAur.Groups[2].Value;
+                    GlobalBytesValue = "";
+                    GlobalProgressValue = int.Parse(percent);
+                    GlobalProgressText = $"{percent}%";
+                    GlobalBusyMessage = message;
                 }
                 else if (matchFlatpak.Success)
                 {
                     if (int.TryParse(matchFlatpak.Groups[1].Value, out var percent))
                     {
                         var status = matchFlatpak.Groups[2].Value.Trim();
+                        GlobalBytesValue = "";
                         GlobalProgressValue = percent;
                         GlobalProgressText = $"{percent}%";
                         GlobalBusyMessage = "Installing";
                     }
                 }
-                else if (matchFormatted.Success)
-                {
-                    var progressType = matchFormatted.Groups[1].Value.Trim();
-                    if (!int.TryParse(matchFormatted.Groups[2].Value, out var percent)) return;
-                    GlobalProgressValue = percent;
-                    GlobalProgressText = $"{percent}%";
-                    GlobalBusyMessage = $"{progressType}: {percent}%";
-                }
                 else if(matchHooks.Success)
                 {
+                    GlobalBytesValue = "";
                     GlobalBusyMessage = "Running hooks...";
                     GlobalProgressValue = 0;
                     ProgressIndeterminate = true;
@@ -462,6 +473,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         get => _globalProgressValue;
         set => this.RaiseAndSetIfChanged(ref _globalProgressValue, value);
+    }
+    
+    private string _globalBytesValue;
+
+    public string GlobalBytesValue
+    {
+        get => _globalBytesValue;
+        set => this.RaiseAndSetIfChanged(ref _globalBytesValue, value);
     }
 
     private string _globalProgressText = "0%";

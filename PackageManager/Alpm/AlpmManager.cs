@@ -528,9 +528,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         int percent = (int)((totalRead * 100) / totalBytes.Value);
                         if (percent != lastPercent)
                         {
-                            Console.Error.WriteLine($"[DEBUG_LOG] Download progress: {percent}%");
-                            Console.Error.WriteLine(
-                                $"[DEBUG_LOG] Download progress: {totalRead} / {totalBytes.Value} bytes");
+                           
+                            PercentLoggerHandler("Downloading", fileName, percent, totalRead, totalBytes.Value );
                             lastPercent = percent;
                             Progress?.Invoke(this, new AlpmProgressEventArgs(
                                 AlpmProgressType.PackageDownload,
@@ -546,7 +545,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 // Ensure 100% is sent
                 if (lastPercent != 100)
                 {
-                    Console.Error.WriteLine($"[DEBUG_LOG] Download progress: 100% (.)(.)");
+                    PercentLoggerHandler("Downloading", fileName, 100, totalBytes.Value, totalBytes.Value);
                     Progress?.Invoke(this, new AlpmProgressEventArgs(
                         AlpmProgressType.PackageDownload,
                         fileName,
@@ -1564,7 +1563,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             string? pkgName = pkgNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(pkgNamePtr) : null;
-            Console.Error.WriteLine($"[DEBUG_LOG] ALPM Progress: {progress}, Pkg: {pkgName}, %: {percent}");
+            PercentLoggerHandler(progress.ToString(), pkgName, percent);
 
             Progress?.Invoke(this, new AlpmProgressEventArgs(
                 progress,
@@ -1577,6 +1576,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[ALPM_ERROR] Error in progress callback: {ex.Message}");
+        }
+    }
+
+    private void PercentLoggerHandler(string type, string pkgName, int percent, long bytes = 0, long totalBytes = 0)
+    {
+        if (bytes > 0 && totalBytes > 0)
+        {
+            Console.Error.WriteLine(
+                $"[DEBUG_LOG] ALPM Progress: {type}, Pkg: {pkgName}, %: {percent}, bytesRead: {bytes}, totalBytes: {totalBytes}");
+        }
+        else
+        {
+            Console.Error.WriteLine($"[DEBUG_LOG] ALPM Progress: {type}, Pkg: {pkgName}, %: {percent}");
         }
     }
 

@@ -113,8 +113,6 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
 
                     if (!isValidated) return;
                 }
-
-               
                 
                 // Set busy
                 if (mainWindow != null)
@@ -149,6 +147,8 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                         if (!dialogResult) return;
                     }
                 }
+                
+                _ = Task.Run(() => { });
 
                 var result = await _privilegedOperationService.InstallAurPackagesAsync(selectedPackages);
                 if (!result.Success)
