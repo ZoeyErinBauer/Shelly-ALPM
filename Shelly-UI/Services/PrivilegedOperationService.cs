@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
-using PackageManager.Alpm;
 using Shelly_UI.Models;
-using PackageManager.Aur.Models;
+using Shelly_UI.Models.PackageManagerObjects;
 using Shelly.Utilities.System;
 using Shelly_UI.Views;
 

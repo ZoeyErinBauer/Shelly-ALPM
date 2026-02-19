@@ -55,7 +55,6 @@
         <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.10"/>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\PackageManager\PackageManager.csproj"/>
         <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
     </ItemGroup>
     <ItemGroup>
