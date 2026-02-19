@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.XPath;
 using Avalonia.Controls;
-using PackageManager.Aur;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
