@@ -40,8 +40,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private static readonly Regex FlatpakProgressPattern =
         new(@"\[DEBUG_LOG\]\s*Progress:\s*(\d+)%\s*-\s*Downloading:\s*([\d.]+)\s*(\w+)/([\d.]+)\s*(\w+)",
             RegexOptions.Compiled);
-    
-    private static readonly Regex RunningHooksPattern = new(@"(?:\[.*?\]\s*)*Running hooks\.\.\.", RegexOptions.Compiled);
+
+    private static readonly Regex RunningHooksPattern =
+        new(@"(?:\[.*?\]\s*)*Running hooks\.\.\.", RegexOptions.Compiled);
 
     public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmEventService alpmEventService,
         IServiceProvider services,
@@ -187,9 +188,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 var args = pattern.EventArgs;
                 QuestionTitle = GetQuestionTitle(args.QuestionType);
                 QuestionText = args.QuestionText;
-                
+
                 // Handle SelectProvider and ConflictPkg questions with a selection list
-                if ((args.QuestionType == QuestionType.SelectProvider || 
+                if ((args.QuestionType == QuestionType.SelectProvider ||
                      args.QuestionType == QuestionType.ConflictPkg)
                     && args.ProviderOptions?.Count > 0)
                 {
@@ -202,7 +203,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     IsSelectProviderQuestion = false;
                     ProviderOptions = null;
                 }
-                
+
                 ShowQuestion = true;
 
                 // Wait for user response
@@ -345,7 +346,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 var matchFormatted = LogPercentagePattern.Match(log);
                 var matchFlatpak = FlatpakProgressPattern.Match(log);
                 var matchHooks = RunningHooksPattern.Match(log);
-                
+
                 if (matchAlpm.Success)
                 {
                     var progressType = matchAlpm.Groups[1].Value;
@@ -386,7 +387,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     GlobalProgressText = $"{percent}%";
                     GlobalBusyMessage = $"{progressType}: {percent}%";
                 }
-                else if(matchHooks.Success)
+                else if (matchHooks.Success)
                 {
                     GlobalBusyMessage = "Running hooks...";
                     GlobalProgressValue = 0;
@@ -776,6 +777,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             if (AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
                 AppContext.BaseDirectory.StartsWith("/usr/share/Shelly"))
             {
+                return;
+            }
+
+            var privilegedService = _services.GetRequiredService<IPrivilegedOperationService>();
+            if (await privilegedService.IsPackageInstalledOnMachine("shelly"))
+            {
+                Console.WriteLine("Shelly is managed by pacman. Skipping GitHub update check.");
                 return;
             }
 
