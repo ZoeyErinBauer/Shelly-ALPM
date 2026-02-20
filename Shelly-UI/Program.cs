@@ -5,7 +5,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
-using Shelly_UI.Enums;
 using Shelly.Utilities.System;
 
 namespace Shelly_UI;
@@ -13,8 +12,6 @@ namespace Shelly_UI;
 sealed class Program
 {
     private static bool _crashed = false;
-    private static Mutex? _mutex = null;
-    private const string MutexName = "ShellyUI_SingleInstance_Mutex";
     private const string PipeName = "ShellyUI_ActivationPipe";
     private static CancellationTokenSource? _pipeCancellation;
 
@@ -22,25 +19,15 @@ sealed class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        // Check for single instance
-        bool createdNew;
-        _mutex = new Mutex(true, MutexName, out createdNew);
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         
-        if (!createdNew)
-        {
-            // Another instance is already running - signal it to show
-            Console.WriteLine("Another instance of Shelly UI is already running. Activating existing window...");
-            SignalExistingInstance();
-            return;
-        }
-
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANGOHUD")))
         {
             Environment.SetEnvironmentVariable("MANGOHUD", "0");
         }
-        
+
         // Start listening for activation signals from other instances
         _pipeCancellation = new CancellationTokenSource();
         Task.Run(() => ListenForActivationSignals(_pipeCancellation.Token));
@@ -68,11 +55,9 @@ sealed class Program
             {
                 Console.Error.WriteLine("Shelly-UI crashed. Check log file for details.");
             }
-            
+
             // Cleanup
             _pipeCancellation?.Cancel();
-            _mutex?.ReleaseMutex();
-            _mutex?.Dispose();
         };
 
         if (!OperatingSystem.IsLinux())
@@ -101,26 +86,10 @@ sealed class Program
                 UseDBusFilePicker = true,
                 RenderingMode =
                 [
-                    X11RenderingMode.Glx, X11RenderingMode.Vulkan,X11RenderingMode.Egl, X11RenderingMode.Software
+                    X11RenderingMode.Glx, X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Software
                 ],
             })
             .UsePlatformDetect();
-    }
-
-    private static void SignalExistingInstance()
-    {
-        try
-        {
-            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
-            client.Connect(1000); // 1 second timeout
-            using var writer = new StreamWriter(client);
-            writer.WriteLine("ACTIVATE");
-            writer.Flush();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Failed to signal existing instance: {ex.Message}");
-        }
     }
 
     private static async Task ListenForActivationSignals(CancellationToken cancellationToken)
@@ -129,12 +98,13 @@ sealed class Program
         {
             try
             {
-                using var server = new NamedPipeServerStream(PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                using var server = new NamedPipeServerStream(PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous);
                 await server.WaitForConnectionAsync(cancellationToken);
-                
+
                 using var reader = new StreamReader(server);
                 var message = await reader.ReadLineAsync();
-                
+
                 if (message == "ACTIVATE")
                 {
                     // Signal the App to show the window

@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.LocalDatabase;
-using Shelly_UI.Services.TrayService;
 using Shelly_UI.ViewModels;
 using Shelly_UI.Views;
 
@@ -57,7 +56,7 @@ public partial class App : Application
 #endif
     }
 
-    public override void OnFrameworkInitializationCompleted()
+    public override async void OnFrameworkInitializationCompleted()
     {
         // Register all the services needed for the application to run
         var collection = new ServiceCollection();
@@ -70,13 +69,20 @@ public partial class App : Application
         collection.AddSingleton<IUnprivilegedOperationService, UnprivilegedOperationService>();
         collection.AddSingleton<IDatabaseService, DatabaseService>();
         collection.AddSingleton<ThemeService>();
-        collection.AddSingleton<ITrayService, TrayService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         _services = collection.BuildServiceProvider();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            /*var isPrimary = await DBusService.TryStartAsync(_services);
+            if (!isPrimary)
+            {
+                Console.WriteLine("Another instance is already running.");
+                desktop.Shutdown();
+                return;
+            }*/
+            
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             var configService = _services.GetRequiredService<IConfigService>();
@@ -103,24 +109,9 @@ public partial class App : Application
             };
             if (config.TrayEnabled)
             {
-                _mainWindow.Closing += (_, e) =>
-                {
-                    if (e.CloseReason == WindowCloseReason.WindowClosing)
-                    {
-                        // User clicked X — hide to tray instead
-                        e.Cancel = true;
-                        _mainWindow.Hide();
-                    }
-                };
+                /*DBusService.App?.Initialize(_mainWindow);
 
-                desktop.ShutdownRequested += (_, _) =>
-                {
-                    var trayService = _services.GetRequiredService<ITrayService>();
-                    trayService.Stop();
-                };
-                
-                var trayService = _services.GetRequiredService<ITrayService>();
-                trayService.Start();
+                desktop.ShutdownRequested += (_, _) => DBusService.Stop();*/
             }
             else
             {
