@@ -128,6 +128,12 @@ public class Program
                 .WithExample("upgrade")
                 .WithExample("upgrade", "--no-confirm");
 
+            config.AddCommand<DowngradePackageCommand>("downgrade")
+                .WithDescription("Downgrade a package")
+                .WithExample("downgrade", "firefox")
+                .WithExample("downgrade", "firefox", "--oldest")
+                .WithExample("downgrade", "firefox", "--latest");
+
             config.AddBranch("keyring", keyring =>
             {
                 keyring.SetDescription("Manage pacman keyring");
