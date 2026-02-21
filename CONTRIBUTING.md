@@ -9,12 +9,13 @@ Shelly is organized into several interconnected projects:
 
 ### Core Components
 
-| Project              | Description                                                                                                    |
-|----------------------|----------------------------------------------------------------------------------------------------------------|
-| **Shelly-UI**        | The main Avalonia-based desktop application providing a graphical interface for package management             |
-| **Shelly-CLI**       | Command-line interface for terminal-based package management, also used by Shelly-UI for privileged operations |
-| **PackageManager**   | Core library containing libalpm bindings, AUR integration, and Flatpak support                                 |
-| **Shelly.Utilities** | Shared utility classes and extensions used across projects                                                     |
+| Project                  | Description                                                                                                    |
+|--------------------------|----------------------------------------------------------------------------------------------------------------|
+| **Shelly-UI**            | The main Avalonia-based desktop application providing a graphical interface for package management             |
+| **Shelly-CLI**           | Command-line interface for terminal-based package management, also used by Shelly-UI for privileged operations |
+| **Shelly-Notifications** | Application to handle tray services and notifications. Communicates with Shelly-UI.                            |
+| **PackageManager**       | Core library containing libalpm bindings, AUR integration, and Flatpak support                                 |
+| **Shelly.Utilities**     | Shared utility classes and extensions used across projects                                                     |
 
 ### Test Projects
 
@@ -26,47 +27,57 @@ Shelly is organized into several interconnected projects:
 ## How Components Interact
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        User                                 │
-└─────────────────┬───────────────────────┬───────────────────┘
-                  │                       │
-                  ▼                       ▼
-         ┌───────────────┐       ┌───────────────┐
-         │   Shelly-UI   │──────▶│  Shelly-CLI   │
-         │  (Avalonia)   │ sudo  │  (Terminal)   │
-         └───────┬───────┘       └───────┬───────┘
-                 │                       │
-                 │    ┌──────────────────┘
-                 │    │
-                 ▼    ▼
-         ┌───────────────┐
-         │ PackageManager │
-         │    (Core)      │
-         └───────┬───────┘
-                 │
-    ┌────────────┼────────────┐
-    ▼            ▼            ▼
-┌────────┐  ┌────────┐  ┌──────────┐
-│ libalpm│  │  AUR   │  │ Flatpak  │
-│ (arch) │  │  API   │  │  CLI     │
-└────────┘  └────────┘  └──────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                  USER                                       │
+└──────────┬──────────────────────────┬────────────────────────────┬──────────┘
+           │                          │                            │           
+           ▼                          │                            ▼           
+    ┌──────────────┐                  │                    ┌────────────────┐  
+    │              │ ─────────────────┼─────────────────►  │                │  
+    │ Shelly-Notif │                  ▼                    │   Shelly-CLI   │  
+    │              │  ◄─┐     ┌────────────────┐   sudo    │   (Terminal)   │  
+    │              │    │d-bus│                │ ────────► │                │  
+    └───────┬──────┘    └─────┤   Shelly-UI    │           └──────┬─────────┘  
+            │    d-bus        │   (Avalonia)   │                  │            
+            └───────────────► │                │                  │            
+                              └────────────────┘                  │            
+                                                                  │                            
+                                       ┌──────────────────────────┘                                                                                                                          
+                                       ▼                                       
+                             ┌───────────────────┐                                                              
+                             │   PackageManager  │                             
+                             │      (core)       │                                                                         
+                             └─────────┬─────────┘                                                                      
+                            ┌──────────┼───────────┐                           
+                            │          │           │                           
+                            ▼          ▼           ▼                           
+                       ┌─────────┐ ┌────────┐  ┌─────────┐                     
+                       │ libalpm │ │  AUR   │  │ flatpak │                     
+                       │ (arch)  │ │  API   │  │  .so    │                     
+                       └─────────┘ └────────┘  └─────────┘                                    
 ```
 
 ### Key Interactions
 
 1. **Shelly-UI ↔ Shelly-CLI**: The UI launches the CLI via `sudo` with `--ui-mode` flag for privileged operations (
    install, remove, upgrade). The CLI outputs structured messages that the UI parses for progress updates.
-    - **Note**: Goal is to eventually remove direct access to package managers from the UI and have all operations
-      performed via the CLI.
-2. **Both UIs → PackageManager**: Both Shelly-UI and Shelly-CLI use the PackageManager library for:
+
+2. **Shelly-CLI uses the PackageManager library for:
     - ALPM operations (via `AlpmManager`)
     - AUR package management (via `AurManager`)
     - Flatpak operations (via `FlatpakManager`)
+   
+3. **Shelly-Notifications** uses the d-bus to communicate with the UI process, tray icon, and notifications.
+   -Key interactions are: Start and stop shelly-ui
+   -Use CLI to get non-sudo updates
 
-3. **PackageManager → System**:
+4. **PackageManager → System**:
     - Directly interfaces with `libalpm` for native package operations
     - Calls AUR API for package searches and metadata
     - Invokes Flatpak CLI for Flatpak management
+
+5. Shelly-UI should never directly interact with the PackageManager library. All operations should be performed via the
+   CLI. Shelly-notifications can interact with the PackageManager library if necessary.
 
 ## Directory Structure
 
@@ -79,23 +90,37 @@ Shelly-ALPM/
 │   ├── Flatpak/              # Flatpak management
 │   ├── Models/               # Shared data models
 │   ├── User/                 # User-related functionality
-│   └── Utilities/            # Helper utilities
+│   ├── Utilities/            # Helper utilities
 ├── Shelly-CLI/               # Command-line interface
 │   └── Commands/             # CLI command implementations
+│   │   ├── Aur/              # Aur commands
+│   │   ├── Flatpak/          # Flatpak commands
+│   │   ├── Keyring/          # Keyring commands
+│   │   ├── Standard/         # Standard alpm commands
+│   │   └── Utility/          # Utility commands
+│   ├── Utility/              # CLI Utility classes
+│   └── Writers/              # CLI Output writer classes
+├── Shelly-Notifications/     # Tray application
+│   ├── Constants/            # Constants 
+│   ├── DbusHandlers/         # Handlers for d-bus messages
+│   ├── DBusXml/              # D-bus XML files
+│   ├── Models/               # Data models
+│   └──  Services/            # Application Services
 ├── Shelly-UI/                # Desktop application
 │   ├── Assets/               # Images, icons, resources
 │   ├── BaseClasses/          # Base ViewModels and classes
 │   ├── Converters/           # XAML value converters
 │   ├── CustomControls/       # Custom Avalonia controls
 │   ├── Enums/                # Enumeration types
-│   ├── Enums/                # Messages for UI Message bus
+│   ├── Messages/             # Messages for UI Message bus
 │   ├── Models/               # UI-specific models
 │   ├── Services/             # Application services
-│   │   └── AppCache/         # Caching services
 │   ├── ViewModels/           # MVVM ViewModels
-│   │   └── AUR/              # AUR-specific ViewModels
+│   │   ├── AUR/              # AUR-specific ViewModels
+│   │   └── Flatpak/          # Flatpak-specific ViewModels
 │   └── Views/                # XAML views
-│       └── AUR/              # AUR-specific views
+│       ├── AUR/              # AUR-specific ViewModels
+│       └── Flatpak/          # Flatpak-specific views
 ├── Shelly.Utilities/         # Shared utilities
 │   ├── Extensions/           # Extension methods
 │   └── System/               # System utilities

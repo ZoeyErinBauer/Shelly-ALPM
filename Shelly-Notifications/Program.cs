@@ -2,8 +2,6 @@
 using Shelly_Notifications.Constants;
 using Shelly_Notifications.DbusHandlers;
 using Shelly_Notifications.Services;
-using Shelly_Notifications.TrayService;
-using Shelly_Notifications.UpdateCheckService;
 using Tmds.DBus.Protocol;
 using Tmds.DBus.SourceGenerator;
 
@@ -12,11 +10,13 @@ try
     CancellationTokenSource? delayCts = null;
     var configReader = new ConfigReader();
 
+    //review later source generated code generated with obsolete 
+    //may need to take the source generated code and drop source generation
     using var connection = new Connection(DBusAddress.Session!);
     await connection.ConnectAsync();
 
-    const string ShellyNotificationsService = "org.shelly.Notifications";
-    await connection.RequestNameAsync(ShellyNotificationsService);
+    const string shellyNotificationsService = "org.shelly.Notifications";
+    await connection.RequestNameAsync(shellyNotificationsService);
 
     connection.AddMethodHandler(new ShellyUiReceiver(() =>
     {
@@ -113,7 +113,7 @@ try
     };
     connection.AddMethodHandler(menuHandler);
 
-    string trayServiceName = $"org.freedesktop.StatusNotifierItem-{Process.GetCurrentProcess().Id}-1";
+    var trayServiceName = $"org.freedesktop.StatusNotifierItem-{Process.GetCurrentProcess().Id}-1";
     await connection.RequestNameAsync(trayServiceName);
 
     // 3 Try Registering the Tray Icon
@@ -154,7 +154,7 @@ async Task TryRegisterTrayIconAsync(Connection connection, string serviceName)
             registered = true;
             break;
         }
-        catch (DBusException ex) when (ex.ErrorName is "org.freedesktop.DBus.Error.ServiceUnknown"
+        catch (DBusErrorReplyException ex) when (ex.ErrorName is "org.freedesktop.DBus.Error.ServiceUnknown"
                                            or "org.freedesktop.DBus.Error.NameHasNoOwner")
         {
             // Try the next one

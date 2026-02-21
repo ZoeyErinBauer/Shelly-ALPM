@@ -1,12 +1,12 @@
-using Shelly_Notifications.UpdateCheckService;
+using Shelly_Notifications.Services;
 using Tmds.DBus.Protocol;
 
-namespace Shelly_Notifications.TrayService;
+namespace Shelly_Notifications.DbusHandlers;
 
-internal class DBusMenuHandler : IMethodHandler
+internal class DBusMenuHandler : IPathMethodHandler
 {
     public string Path => "/MenuBar";
-    public bool RunMethodHandlerSynchronously(Message message) => true;
+    public bool HandlesChildPaths => false;
 
     public event Action? OnExitRequested;
 
@@ -149,7 +149,7 @@ internal class DBusMenuHandler : IMethodHandler
         {
             switch (id)
             {
-                case 1: new AppRunner().LaunchAppIfNotRunning(); break;
+                case 1: AppRunner.LaunchAppIfNotRunning(); break;
                 case 3: OnExitRequested?.Invoke(); break;
             }
         }

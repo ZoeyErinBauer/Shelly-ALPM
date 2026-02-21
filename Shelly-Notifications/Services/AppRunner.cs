@@ -1,8 +1,8 @@
-namespace Shelly_Notifications.UpdateCheckService;
+namespace Shelly_Notifications.Services;
 
-public class AppRunner
+public static class AppRunner
 {
-    public void LaunchAppIfNotRunning()
+    public static void LaunchAppIfNotRunning()
     {
         const string appName = "shelly-ui";
         const string optPath = "/opt/shelly/Shelly-UI";

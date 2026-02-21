@@ -25,6 +25,11 @@ if [ -L /usr/bin/shelly ] || [ -f /usr/bin/shelly ]; then
     rm -f /usr/bin/shelly
 fi
 
+# Remove shelly from /usr/bin (symlink from install.sh/local-install.sh OR binary from web-install.sh)
+if [ -L /usr/bin/shelly-notifications ] || [ -f /usr/bin/shelly-notifications ]; then
+    echo "Removing /usr/bin/shelly-notifications "
+    rm -f /usr/bin/shelly-notifications 
+fi
 # Remove native libraries installed by web-install.sh
 if [ -f /usr/bin/libSkiaSharp.so ]; then
     echo "Removing /usr/bin/libSkiaSharp.so"

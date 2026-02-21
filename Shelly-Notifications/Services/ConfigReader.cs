@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Shelly_Notifications.Models;
 
-namespace Shelly_Notifications.UpdateCheckService;
+namespace Shelly_Notifications.Services;
 
 public class ConfigReader
 {

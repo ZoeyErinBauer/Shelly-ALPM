@@ -1,11 +1,13 @@
-using Shelly_Notifications.UpdateCheckService;
+using Shelly_Notifications.Services;
 using Tmds.DBus.Protocol;
 
 namespace Shelly_Notifications.DbusHandlers;
 
-internal class StatusNotifierItemHandler : IMethodHandler
+internal class StatusNotifierItemHandler : IPathMethodHandler
 {
     public string Path => "/StatusNotifierItem";
+    
+    public bool HandlesChildPaths => false; 
 
     public bool RunMethodHandlerSynchronously(Message message) => true;
 
@@ -20,7 +22,7 @@ internal class StatusNotifierItemHandler : IMethodHandler
                 if (request.Member.SequenceEqual("Activate"u8))
                 {
                     context.Reply(context.CreateReplyWriter("").CreateMessage());
-                    new AppRunner().LaunchAppIfNotRunning();
+                    AppRunner.LaunchAppIfNotRunning();
                     Console.WriteLine("[DEBUG_LOG] Tray icon left-clicked (Activate).");
                     return new ValueTask(OnActivateAsync(0, 0));
                 }
@@ -37,7 +39,7 @@ internal class StatusNotifierItemHandler : IMethodHandler
                 if (request.Member.SequenceEqual("GetAll"u8))
                 {
                     var reader = request.GetBodyReader();
-                    string interfaceName = reader.ReadString();
+                    var interfaceName = reader.ReadString();
                     if (interfaceName == "org.kde.StatusNotifierItem" ||
                         interfaceName == "org.freedesktop.StatusNotifierItem")
                     {
@@ -65,8 +67,8 @@ internal class StatusNotifierItemHandler : IMethodHandler
                 if (request.Member.SequenceEqual("Get"u8))
                 {
                     var reader = request.GetBodyReader();
-                    string interfaceName = reader.ReadString();
-                    string propertyName = reader.ReadString();
+                    var interfaceName = reader.ReadString();
+                    var propertyName = reader.ReadString();
                     if (interfaceName == "org.kde.StatusNotifierItem" ||
                         interfaceName == "org.freedesktop.StatusNotifierItem")
                     {
@@ -103,7 +105,7 @@ internal class StatusNotifierItemHandler : IMethodHandler
         return ValueTask.CompletedTask;
     }
 
-    protected Task OnContextMenuAsync(int x, int y) => Task.CompletedTask;
+    private static Task OnContextMenuAsync(int x, int y) => Task.CompletedTask;
 
-    protected Task OnActivateAsync(int x, int y) => Task.CompletedTask;
+    private static Task OnActivateAsync(int x, int y) => Task.CompletedTask;
 }
