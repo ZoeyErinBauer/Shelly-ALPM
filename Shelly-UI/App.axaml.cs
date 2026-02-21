@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.LocalDatabase;
-using Shelly_UI.Services.TrayService;
+using Shelly_UI.Services.TrayServices;
 using Shelly_UI.ViewModels;
 using Shelly_UI.Views;
 
@@ -23,29 +25,9 @@ public partial class App : Application
     public static ServiceProvider Services => ((App)Current!)._services;
 
     private Window? _mainWindow;
-
-    public ICommand ShowWindowCommand { get; }
-    public ICommand ExitCommand { get; }
-
+    
     public App()
     {
-        ShowWindowCommand = new SimpleCommand(() =>
-        {
-            if (_mainWindow is not null)
-            {
-                _mainWindow.Show();
-                _mainWindow.Activate();
-            }
-        });
-
-        ExitCommand = new SimpleCommand(() =>
-        {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                desktop.Shutdown();
-            }
-        });
-
         DataContext = this;
     }
 
@@ -70,15 +52,12 @@ public partial class App : Application
         collection.AddSingleton<IUnprivilegedOperationService, UnprivilegedOperationService>();
         collection.AddSingleton<IDatabaseService, DatabaseService>();
         collection.AddSingleton<ThemeService>();
-        collection.AddSingleton<ITrayService, TrayService>();
 
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         _services = collection.BuildServiceProvider();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
             var configService = _services.GetRequiredService<IConfigService>();
             var themeService = _services.GetRequiredService<ThemeService>();
             var cacheService = _services.GetRequiredService<IAppCache>();
@@ -101,30 +80,12 @@ public partial class App : Application
             {
                 DataContext = new MainWindowViewModel(configService, cacheService, _services.GetRequiredService<IAlpmEventService>(), _services),
             };
+
+            desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+
             if (config.TrayEnabled)
             {
-                _mainWindow.Closing += (_, e) =>
-                {
-                    if (e.CloseReason == WindowCloseReason.WindowClosing)
-                    {
-                        // User clicked X — hide to tray instead
-                        e.Cancel = true;
-                        _mainWindow.Hide();
-                    }
-                };
-
-                desktop.ShutdownRequested += (_, _) =>
-                {
-                    var trayService = _services.GetRequiredService<ITrayService>();
-                    trayService.Stop();
-                };
-                
-                var trayService = _services.GetRequiredService<ITrayService>();
-                trayService.Start();
-            }
-            else
-            {
-                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                TrayStartService.Start();
             }
 
             desktop.MainWindow = _mainWindow;
@@ -132,6 +93,7 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
+
 }
 
 internal class SimpleCommand(Action execute) : ICommand

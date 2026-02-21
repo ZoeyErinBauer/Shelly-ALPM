@@ -115,13 +115,12 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
 
                     if (!isValidated) return;
                 }
-
-               
                 
                 // Set busy
                 if (mainWindow != null)
                 {
                     mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = "Installing selected packages...";
@@ -151,6 +150,8 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
                         if (!dialogResult) return;
                     }
                 }
+                
+                _ = Task.Run(() => { });
 
                 var result = await _privilegedOperationService.InstallAurPackagesAsync(selectedPackages);
                 if (!result.Success)

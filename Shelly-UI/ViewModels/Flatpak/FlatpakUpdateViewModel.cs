@@ -112,6 +112,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             if (mainWindow != null)
             {
                 mainWindow.GlobalProgressValue = 0;
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
                 mainWindow.GlobalBusyMessage = "Updated selected package...";
@@ -150,6 +151,7 @@ public class FlatpakUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableView
             {
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.IsGlobalBusy = true;
                 mainWindow.GlobalBusyMessage = "Updated selected package...";
             }

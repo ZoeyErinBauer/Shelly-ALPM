@@ -36,8 +36,18 @@ jobs:
       run: |
         dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui -p:InstructionSet=x86-64-v3
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
-        cp publish/shelly-cli/shelly publish/shelly-ui/
         cp install.sh publish/shelly-ui/
+        # Also bundle the CLI binary for convenience
+        cp publish/shelly-cli/shelly publish/shelly-ui/
+
+    - name: Publish Shelly-Notifications
+      run: |
+        dotnet publish Shelly-Notifications/Shelly-Notifications.csproj -c Release -o publish/shelly-notifications -p:InstructionSet=x86-64-v3
+        # Bundle Notifications into the UI directory
+        cp publish/shelly-notifications/Shelly-Notifications publish/shelly-ui/
+
+    - name: Bundle Shelly-ALPM
+      run: |
         cd publish/shelly-ui
         rm -f *.dbg *.pdb
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .

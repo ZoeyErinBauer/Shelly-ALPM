@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		MANUAL_TESTING.md = MANUAL_TESTING.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shelly-Notifications", "Shelly-Notifications\Shelly-Notifications.csproj", "{74BF380B-BDAA-4C89-9785-CE9D226494FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -113,6 +115,18 @@ Global
 		{FE3828D0-4DCC-4EC1-9A3F-9A65ADE68DA4}.Release|x64.Build.0 = Release|Any CPU
 		{FE3828D0-4DCC-4EC1-9A3F-9A65ADE68DA4}.Release|x86.ActiveCfg = Release|Any CPU
 		{FE3828D0-4DCC-4EC1-9A3F-9A65ADE68DA4}.Release|x86.Build.0 = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|x64.Build.0 = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Debug|x86.Build.0 = Debug|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|x64.ActiveCfg = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|x64.Build.0 = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|x86.ActiveCfg = Release|Any CPU
+		{74BF380B-BDAA-4C89-9785-CE9D226494FF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,17 +28,4 @@
         <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="{DynamicResource SystemBaseHighColor}" />
         <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource SystemBaseHighColor}" />
     </Application.Resources>
-    <TrayIcon.Icons>
-        <TrayIcons>
-            <TrayIcon Icon="/Assets/shellylogo.png" ToolTipText="Shelly" x:DataType="local:App" Command="{Binding ShowWindowCommand}">
-                <TrayIcon.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="Show" Command="{Binding ShowWindowCommand}" />
-                        <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="Exit" Command="{Binding ExitCommand}" />
-                    </NativeMenu>
-                </TrayIcon.Menu>
-            </TrayIcon>
-        </TrayIcons>
-    </TrayIcon.Icons>
 </Application>

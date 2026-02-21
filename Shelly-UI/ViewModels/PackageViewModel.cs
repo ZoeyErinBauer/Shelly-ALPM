@@ -16,6 +16,7 @@ using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
+using Tmds.DBus.Protocol;
 
 namespace Shelly_UI.ViewModels;
 
@@ -51,7 +52,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         InstallLocalPackageCommand = ReactiveCommand.CreateFromTask(InstallLocalPackage);
         SyncCommand = ReactiveCommand.CreateFromTask(Sync);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
-
+        
         // Load data when the view model is activated (navigated to)
         LoadData();
     }
@@ -176,6 +177,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 if (mainWindow != null)
                 {
                     mainWindow.GlobalProgressValue = 0;
+                    mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
                     mainWindow.GlobalBusyMessage = "Installing selected packages...";
@@ -254,6 +256,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 mainWindow.GlobalProgressValue = 0;
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
+                mainWindow.GlobalBytesValue = "";
                 mainWindow.GlobalBusyMessage = "Installing local package...";
             }
 

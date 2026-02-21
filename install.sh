@@ -27,6 +27,12 @@ echo ""
 echo "Installing Shelly-UI to $INSTALL_DIR"
 install -Dm755 "$SCRIPT_DIR/Shelly-UI" "$INSTALL_DIR/shelly-ui"
 
+# Install Shelly-Notifications binary
+echo "Installing Shelly-Notifications to $INSTALL_DIR"
+if [ -f "$SCRIPT_DIR/Shelly-Notifications" ]; then
+  install -Dm755 "$SCRIPT_DIR/Shelly-Notifications" "$INSTALL_DIR/shelly-notifications"
+fi
+
 # Install Shelly-CLI binary
 echo "Installing Shelly-CLI to $INSTALL_DIR"
 install -Dm755 "$SCRIPT_DIR/shelly" "$INSTALL_DIR/shelly"
@@ -61,5 +67,6 @@ echo ""
 echo "You can now:"
 echo "  - Run the GUI: shelly-ui"
 echo "  - Run the CLI: shelly"
+echo "  - Notification Service: shelly-notifications"
 echo "  - Find Shelly in your application menu"
 echo ""
