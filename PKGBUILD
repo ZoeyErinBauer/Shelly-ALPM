@@ -40,6 +40,7 @@ build() {
 
   dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo -p:InstructionSet=${INSTRUCTIONS:=x86-64-v3}
   dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -r linux-x64 -o out --nologo -p:InstructionSet=${INSTRUCTIONS:=x86-64-v3}
+  dotnet publish Shelly-Notifications/Shelly-Notifications.csproj -c Release -r linux-x64 -o out-notify --nologo -p:InstructionSet=${INSTRUCTIONS:=x86-64-v3}
 }
 
 package() {
@@ -51,6 +52,9 @@ package() {
   # Install bundled native libraries (SkiaSharp and HarfBuzzSharp)
   install -Dm755 out/libSkiaSharp.so "$pkgdir/usr/lib/shelly/libSkiaSharp.so"
   install -Dm755 out/libHarfBuzzSharp.so "$pkgdir/usr/lib/shelly/libHarfBuzzSharp.so"
+
+  # Install Shelly-Notifications binary
+  install -Dm755 out-notify/Shelly-Notifications "$pkgdir/usr/bin/shelly-notifications"
 
   # Install Shelly-CLI binary
   install -Dm755 out-cli/shelly "$pkgdir/usr/bin/shelly"

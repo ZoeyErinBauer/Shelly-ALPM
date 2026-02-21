@@ -14,7 +14,7 @@
         <StripSymbols>true</StripSymbols>
 
         <!-- Targets x86-64-v3 (AVX, AVX2, BMI1, BMI2, FMA, LZCNT, MOVBE, OSXSAVE) -->
-        <InstructionSet>x86-64-v3</InstructionSet>
+        <!--<InstructionSet>x86-64-v3</InstructionSet>-->
     </PropertyGroup>
 
     <PropertyGroup>
