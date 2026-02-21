@@ -62,7 +62,7 @@ if [ -f "$EXTRACT_DIR/shelly" ]; then
 fi
 
 if [ -f "$EXTRACT_DIR/Shelly-Notifications" ]; then
-    install -Dm755 "$EXTRACT_DIR/shelly-notifications" /usr/bin/shelly-notifications
+    install -Dm755 "$EXTRACT_DIR/Shelly-Notifications" /usr/bin/shelly-notifications
 fi
 
 REAL_USER=${SUDO_USER:-$USER}
