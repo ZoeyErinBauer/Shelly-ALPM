@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.LocalDatabase;
+using Shelly_UI.Services.TrayServices;
 using Shelly_UI.ViewModels;
 using Shelly_UI.Views;
 
@@ -22,29 +25,9 @@ public partial class App : Application
     public static ServiceProvider Services => ((App)Current!)._services;
 
     private Window? _mainWindow;
-
-    public ICommand ShowWindowCommand { get; }
-    public ICommand ExitCommand { get; }
-
+    
     public App()
     {
-        ShowWindowCommand = new SimpleCommand(() =>
-        {
-            if (_mainWindow is not null)
-            {
-                _mainWindow.Show();
-                _mainWindow.Activate();
-            }
-        });
-
-        ExitCommand = new SimpleCommand(() =>
-        {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                desktop.Shutdown();
-            }
-        });
-
         DataContext = this;
     }
 
@@ -56,7 +39,7 @@ public partial class App : Application
 #endif
     }
 
-    public override async void OnFrameworkInitializationCompleted()
+    public override void OnFrameworkInitializationCompleted()
     {
         // Register all the services needed for the application to run
         var collection = new ServiceCollection();
@@ -75,16 +58,6 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            /*var isPrimary = await DBusService.TryStartAsync(_services);
-            if (!isPrimary)
-            {
-                Console.WriteLine("Another instance is already running.");
-                desktop.Shutdown();
-                return;
-            }*/
-            
-            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
             var configService = _services.GetRequiredService<IConfigService>();
             var themeService = _services.GetRequiredService<ThemeService>();
             var cacheService = _services.GetRequiredService<IAppCache>();
@@ -107,15 +80,12 @@ public partial class App : Application
             {
                 DataContext = new MainWindowViewModel(configService, cacheService, _services.GetRequiredService<IAlpmEventService>(), _services),
             };
+
+            desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+
             if (config.TrayEnabled)
             {
-                /*DBusService.App?.Initialize(_mainWindow);
-
-                desktop.ShutdownRequested += (_, _) => DBusService.Stop();*/
-            }
-            else
-            {
-                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                TrayStartService.Start();
             }
 
             desktop.MainWindow = _mainWindow;
@@ -123,6 +93,7 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
+
 }
 
 internal class SimpleCommand(Action execute) : ICommand

@@ -33,6 +33,13 @@ echo ""
 
 # Build Shelly-UI
 echo "Building Shelly-UI..."
+cd "$SCRIPT_DIR/Shelly-Notifications"
+dotnet publish -c $BUILD_CONFIG -r linux-x64 --self-contained true -o "$SCRIPT_DIR/publish/Shelly-Notifications"
+echo "Shelly-UI build complete."
+echo ""
+
+# Build Shelly-UI
+echo "Building Shelly-UI..."
 cd "$SCRIPT_DIR/Shelly-UI"
 dotnet publish -c $BUILD_CONFIG -r linux-x64 --self-contained true -o "$SCRIPT_DIR/publish/Shelly-UI"
 echo "Shelly-UI build complete."
@@ -48,6 +55,10 @@ echo ""
 # Create installation directory
 echo "Creating installation directory: $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
+
+# Copy Shelly-Notifications files
+echo "Copying Shelly-UI files to $INSTALL_DIR"
+cp -r "$SCRIPT_DIR/publish/Shelly-Notifications/"* "$INSTALL_DIR/"
 
 # Copy Shelly-UI files
 echo "Copying Shelly-UI files to $INSTALL_DIR"
@@ -106,5 +117,6 @@ echo ""
 echo "You can now:"
 echo "  - Run the GUI: shelly-ui (or $INSTALL_DIR/Shelly-UI)"
 echo "  - Run the CLI: shelly (or $INSTALL_DIR/shelly)"
+echo "  - Notification Service added: or $INSTALL_DIR/Shelly-Notifications"
 echo "  - Find Shelly in your application menu"
 echo ""

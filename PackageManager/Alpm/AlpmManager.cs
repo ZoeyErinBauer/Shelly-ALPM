@@ -1552,9 +1552,20 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     public void Dispose()
     {
+        
         if (_handle == IntPtr.Zero) return;
+        UnregisterAllSyncDbs(_handle);
+        SetFetchCallback(_handle, null, IntPtr.Zero);
+        SetEventCallback(_handle, null, IntPtr.Zero);
+        SetQuestionCallback(_handle, null, IntPtr.Zero);
+        SetProgressCallback(_handle, null, IntPtr.Zero);
+        _fetchCallback = null!;
+        _eventCallback = null!;
+        _questionCallback = null!;
+        _progressCallback = null;
         Release(_handle);
         _handle = IntPtr.Zero;
+       
     }
 
     private void HandleProgress(IntPtr ctx, AlpmProgressType progress, IntPtr pkgNamePtr, int percent, ulong howmany,

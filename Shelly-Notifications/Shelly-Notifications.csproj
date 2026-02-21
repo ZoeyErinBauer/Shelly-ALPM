@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>Shelly_Notifications</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!-- Enable Native AOT -->
+        <PublishAot>true</PublishAot>
+        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>true</PublishSingleFile>
+        <!-- Optimization: Remove symbols for smaller binary -->
+        <StripSymbols>true</StripSymbols>
+
+        <!-- Targets x86-64-v3 (AVX, AVX2, BMI1, BMI2, FMA, LZCNT, MOVBE, OSXSAVE) -->
+        <InstructionSet>x86-64-v3</InstructionSet>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Version>1.5.0</Version>
+        <AssemblyVersion>1.5.0</AssemblyVersion>
+        <AssemblyTitle>Shelly VALPM</AssemblyTitle>
+        <Description>Shelly is a visual arch linux package manager</Description>
+        <Company>ZC Development</Company>
+        <Product>Shelly VALPM by ZC Development</Product>
+        <Copyright>2026 ZC Development</Copyright>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="NotificationIcon.NET" Version="1.2.8" />
+      
+       <PackageReference Include="Tmds.DBus.Protocol" Version="0.90.3" />
+        <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.22">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+        <AdditionalFiles Include="DBusXml/Notifications.xml" DBusGeneratorMode="Proxy" />
+        <AdditionalFiles Include="DBusXml/StatusNotifierItem.xml" DBusGeneratorMode="Handler" />
+        <AdditionalFiles Include="DBusXml/StatusNotifierWatcher.xml" DBusGeneratorMode="Proxy" />
+        <AdditionalFiles Include="DBusXml/DBusMenu.xml" DBusGeneratorMode="Handler" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\PackageManager\PackageManager.csproj" />
+    </ItemGroup>
+</Project>

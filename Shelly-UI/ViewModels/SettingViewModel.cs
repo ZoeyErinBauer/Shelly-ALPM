@@ -15,6 +15,7 @@ using Shelly_UI.Enums;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
+using Shelly_UI.Services.TrayServices;
 
 namespace Shelly_UI.ViewModels;
 
@@ -136,12 +137,12 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set
         {
             var config = _configService.LoadConfig();
-            
+
             // Show warning dialog if enabling AUR for the first time
             if (value && !config.AurWarningConfirmed)
             {
                 ShowAurDialog = true;
-                
+
                 // Reset toggle to off until user confirms
                 Task.Run(async () =>
                 {
@@ -151,10 +152,10 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
                         this.RaisePropertyChanged(nameof(EnableAur));
                     });
                 });
-                
+
                 return;
             }
-            
+
             this.RaiseAndSetIfChanged(ref _enableAur, value);
 
             MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
@@ -180,7 +181,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         var config = _configService.LoadConfig();
         config.AurWarningConfirmed = true;
         _configService.SaveConfig(config);
-        
+
         ShowAurDialog = false;
         EnableAur = true;
     }
@@ -205,7 +206,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             var config = _configService.LoadConfig();
             config.UseKdeTheme = value;
             _configService.SaveConfig(config);
-            
+
             var sessionDesktop = Environment.GetEnvironmentVariable("XDG_SESSION_DESKTOP");
             if (sessionDesktop != "KDE") return;
 
@@ -234,9 +235,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             {
                 new ThemeService().ApplyKdeTheme();
             }
-
-          
-
         }
     }
 
@@ -249,6 +247,15 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             var config = _configService.LoadConfig();
             config.TrayEnabled = value;
             _configService.SaveConfig(config);
+            if (value)
+            {
+                TrayStartService.Start();
+            }
+            else
+            {
+                var busService = new TrayDBus();
+                _ = busService.CloseTrayAsync();
+            }
         }
     }
 
@@ -260,7 +267,9 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             this.RaiseAndSetIfChanged(ref _trayCheckIntervalHours, value);
             var config = _configService.LoadConfig();
             config.TrayCheckIntervalHours = value;
-            _configService.SaveConfig(config);
+
+            if (!EnableTray) return;
+            _ = new TrayDBus().RefreshSettingsAsync();
         }
     }
 
@@ -443,7 +452,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         bool updateAvailable = await _updateService.CheckForUpdateAsync();
         await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), updateAvailable);
         await SetUpdateText();
-        
+
         if (updateAvailable)
         {
             // Here you might want to show a dialog to the user

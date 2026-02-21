@@ -12,25 +12,48 @@ namespace Shelly_UI;
 sealed class Program
 {
     private static bool _crashed = false;
-    private const string PipeName = "ShellyUI_ActivationPipe";
     private static CancellationTokenSource? _pipeCancellation;
+    private static FileStream? _lockFileStream;
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        if (!OperatingSystem.IsLinux())
+        {
+            Console.Error.WriteLine("Shelly-UI is exclusively for Arch Linux.");
+            return;
+        }
+
+        // Single instance lock
+        try
+        {
+            var lockPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly", "ui.lock");
+            var lockDir = Path.GetDirectoryName(lockPath);
+            if (!string.IsNullOrEmpty(lockDir) && !Directory.Exists(lockDir))
+            {
+                Directory.CreateDirectory(lockDir);
+            }
+            
+            _lockFileStream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException)
+        {
+            Console.WriteLine("Another instance of Shelly-UI is already running. Exiting...");
+            return;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to acquire lock: {ex.Message}");
+        }
+        
         
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANGOHUD")))
         {
             Environment.SetEnvironmentVariable("MANGOHUD", "0");
         }
-
-        // Start listening for activation signals from other instances
-        _pipeCancellation = new CancellationTokenSource();
-        Task.Run(() => ListenForActivationSignals(_pipeCancellation.Token));
 
         Console.WriteLine($"Running with user path {EnvironmentManager.UserPath}");
         var logPath = Path.Combine(EnvironmentManager.UserPath, ".config", "shelly", "logs");
@@ -58,6 +81,7 @@ sealed class Program
 
             // Cleanup
             _pipeCancellation?.Cancel();
+            _lockFileStream?.Dispose();
         };
 
         if (!OperatingSystem.IsLinux())
@@ -90,42 +114,5 @@ sealed class Program
                 ],
             })
             .UsePlatformDetect();
-    }
-
-    private static async Task ListenForActivationSignals(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                using var server = new NamedPipeServerStream(PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-                await server.WaitForConnectionAsync(cancellationToken);
-
-                using var reader = new StreamReader(server);
-                var message = await reader.ReadLineAsync();
-
-                if (message == "ACTIVATE")
-                {
-                    // Signal the App to show the window
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    {
-                        if (App.Current is App app)
-                        {
-                            app.ShowWindowCommand.Execute(null);
-                        }
-                    });
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error in activation listener: {ex.Message}");
-                await Task.Delay(100, cancellationToken);
-            }
-        }
     }
 }
