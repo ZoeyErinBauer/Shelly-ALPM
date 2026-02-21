@@ -31,6 +31,7 @@ if [ -L /usr/bin/shelly-notifications ] || [ -f /usr/bin/shelly-notifications ];
     rm -f /usr/bin/shelly-notifications 
 fi
 # Remove native libraries installed by web-install.sh
+#check both lib and bin locations from older versions.
 if [ -f /usr/bin/libSkiaSharp.so ]; then
     echo "Removing /usr/bin/libSkiaSharp.so"
     rm -f /usr/bin/libSkiaSharp.so
@@ -39,6 +40,16 @@ fi
 if [ -f /usr/bin/libHarfBuzzSharp.so ]; then
     echo "Removing /usr/bin/libHarfBuzzSharp.so"
     rm -f /usr/bin/libHarfBuzzSharp.so
+fi
+
+if [ -f /usr/lib/libSkiaSharp.so ]; then
+    echo "Removing /usr/lib/libSkiaSharp.so"
+    rm -f /usr/lib/libSkiaSharp.so
+fi
+
+if [ -f /usr/lib/libHarfBuzzSharp.so ]; then
+    echo "Removing /usr/lib/libHarfBuzzSharp.so"
+    rm -f /usr/lib/libHarfBuzzSharp.so
 fi
 
 # Remove desktop entry
