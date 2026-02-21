@@ -74,10 +74,6 @@ sealed class Program
             {
                 logWriter.DeleteLog();
             }
-            else
-            {
-                Console.Error.WriteLine("Shelly-UI crashed. Check log file for details.");
-            }
 
             // Cleanup
             _pipeCancellation?.Cancel();
