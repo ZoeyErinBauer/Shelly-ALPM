@@ -26,7 +26,7 @@ jobs:
 
     - name: Publish Shelly-CLI
       run: |
-        dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli
+        dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli -p:InstructionSet=x86-64-v3
         cd publish/shelly-cli
         rm -f *.dbg *.pdb
         tar -czf ../Shelly-CLI-linux-x64.tar.gz .
@@ -34,7 +34,7 @@ jobs:
 
     - name: Publish Shelly-UI
       run: |
-        dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
+        dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui -p:InstructionSet=x86-64-v3
         cp Shelly-UI/Assets/shellylogo.png publish/shelly-ui/
         cp publish/shelly-cli/shelly publish/shelly-ui/
         cp install.sh publish/shelly-ui/
