@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Threading.Channels;
 using Shelly_Notifications.Constants;
 using Shelly_Notifications.DbusHandlers;
 using Shelly_Notifications.Services;
@@ -7,7 +6,6 @@ using Shelly_Notifications.TrayService;
 using Shelly_Notifications.UpdateCheckService;
 using Tmds.DBus.Protocol;
 using Tmds.DBus.SourceGenerator;
-
 
 try
 {
@@ -81,7 +79,7 @@ try
     }, token);
 
 
-    // 2. Setup Status Notifier Item (Tray Icon)
+    //Setup Status Notifier Item (Tray Icon)
     var trayHandler = new StatusNotifierItemHandler();
     connection.AddMethodHandler(trayHandler);
 
@@ -118,6 +116,7 @@ try
     string trayServiceName = $"org.freedesktop.StatusNotifierItem-{Process.GetCurrentProcess().Id}-1";
     await connection.RequestNameAsync(trayServiceName);
 
+    // 3 Try Registering the Tray Icon
     await TryRegisterTrayIconAsync(connection, trayServiceName);
 
     Console.WriteLine("Shelly Notifications started. Press Ctrl+C to exit.");
@@ -127,7 +126,6 @@ catch (Exception ex)
 {
     Console.WriteLine($"[Error] Shelly Notifications failed to start: {ex.Message}");
 }
-
 async Task TryRegisterTrayIconAsync(Connection connection, string serviceName)
 {
     var watchers = new[]
@@ -136,7 +134,7 @@ async Task TryRegisterTrayIconAsync(Connection connection, string serviceName)
         ("org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher")
     };
 
-    bool registered = false;
+    var registered = false;
     foreach (var (service, path) in watchers)
     {
         try

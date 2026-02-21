@@ -34,7 +34,7 @@
                                       IsChecked="{Binding UseHorizontalMenu, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
-                        <ToggleSwitch Content="Enable Tray Icon (Restart Required)"
+                        <ToggleSwitch Content="Enable Tray Icon"
                                       IsChecked="{Binding EnableTray, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
