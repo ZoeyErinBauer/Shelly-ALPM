@@ -24,6 +24,11 @@ Recommended install for Shelly with a single command:
 curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
 ```
 
+Or if on CachyOS or using CachyOS packages
+```
+sudo pacman -S shelly
+```
+
 This will download and install the latest release, including the UI and CLI tools.
 
 
