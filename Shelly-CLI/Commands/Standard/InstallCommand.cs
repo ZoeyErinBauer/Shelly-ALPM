@@ -92,7 +92,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             {
                 var name = args.PackageName ?? "unknown";
                 var pct = args.Percent ?? 0;
-                var bar = string.Join("", Enumerable.Repeat("🐚 ", pct * 2 / 5)) + new string('░', 20 - pct / 5);
+                var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
                 var actionType = args.ProgressType;
 
                 // Detect package change

@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
-using PackageManager.Flatpak;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;

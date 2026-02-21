@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PackageManager.Flatpak;
 using Shelly_UI.Models;
+using Shelly_UI.Models.PackageManagerObjects;
 
 namespace Shelly_UI.Services;
 
@@ -25,7 +25,7 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream();
 
     Task<SyncModel> CheckForApplicationUpdates();
-    
+
     Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name);
 }
 

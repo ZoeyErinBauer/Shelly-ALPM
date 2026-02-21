@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
-using PackageManager.Flatpak;
 using Shelly_UI.Models;
+using Shelly_UI.Models.PackageManagerObjects;
 using Shelly_UI.Views;
 using Shelly.Utilities.System;
 
@@ -81,13 +81,13 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
                     var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                        ShellyUIJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
 
             var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                ShellyUIJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -115,13 +115,13 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
                     var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                        ShellyUIJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
 
             var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                ShellyUIJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)
@@ -156,13 +156,13 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
                     var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                        ShellyUIJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
 
             var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                FlatpakDtoJsonContext.Default.ListFlatpakPackageDto);
+                ShellyUIJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
         catch (Exception ex)

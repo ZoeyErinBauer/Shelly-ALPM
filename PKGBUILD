@@ -9,48 +9,24 @@ url="https://github.com/ZoeyErinBauer/Shelly-ALPM"
 license=('GPL-3.0-only')
 provides=('shelly')
 depends=(
-    'brotli'
-    'bzip2'
-    'expat'
-    'fontconfig'
-    'freetype2'
-    'glibc'
-    'graphite'
-    'harfbuzz'
-    'hicolor-icon-theme'
-    'icu'
-    'libdisplay-info'
-    'libdrm'
-    'libedit'
-    'libice'
-    'libpng'
-    'libtirpc'
-    'libx11'
-    'libxau'
-    'libxcb'
-    'libxcrypt'
-    'libxcursor'
-    'libxdmcp'
-    'libxext'
-    'libxfixes'
-    'libxi'
-    'libxrandr'
-    'libxrender'
-    'libxshmfence'
-    'ncurses'
     'pacman'
-    'pcre2'
-    'sh'
     'sudo'
     'tar'
-    'util-linux'
-    'vulkan-driver'
-    'xcb-util-keysyms'
+    'sh'
     'xdg-utils'
-    'zlib'
+    'hicolor-icon-theme'
+    'icu'
+    'fontconfig'
+    'freetype2'
+    'harfbuzz'
+    'libpng'
+    'libx11'
+    'libxcb'
+    'libxcursor'
 )
 optdepends=(
     'flatpak'
+    'glib2'
 )
 makedepends=('dotnet-sdk-10.0')
 
@@ -62,34 +38,22 @@ sha256sums=('b8a284a2faa90155c934162b87211eb834aa7877023844ea94668c3575c2b7d4')
 build() {
   cd "$srcdir/Shelly-ALPM-${pkgver}"
 
-  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o out --nologo
-  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo
+  dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o out-cli --nologo -p:InstructionSet=${INSTRUCTIONS:=x86-64-v3}
+  dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -r linux-x64 -o out --nologo -p:InstructionSet=${INSTRUCTIONS:=x86-64-v3}
 }
 
 package() {
   cd "$srcdir/Shelly-ALPM-${pkgver}"
 
   # Install Shelly-UI binary
-  install -Dm755 out/Shelly-UI "$pkgdir/usr/lib/shelly/Shelly-UI"
+  install -Dm755 out/Shelly-UI "$pkgdir/usr/bin/shelly-ui"
 
   # Install bundled native libraries (SkiaSharp and HarfBuzzSharp)
   install -Dm755 out/libSkiaSharp.so "$pkgdir/usr/lib/shelly/libSkiaSharp.so"
   install -Dm755 out/libHarfBuzzSharp.so "$pkgdir/usr/lib/shelly/libHarfBuzzSharp.so"
 
   # Install Shelly-CLI binary
-  install -Dm755 out-cli/shelly "$pkgdir/usr/lib/shelly/shelly"
-
-  # Install shelly launch wrapper
-  cat <<'EOF' | install -Dm755 /dev/stdin "$pkgdir/usr/bin/shelly"
-#!/bin/sh
-exec /usr/lib/shelly/shelly "$@"
-EOF
-
-  # Install shelly-ui launch wrapper
-  cat <<'EOF' | install -Dm755 /dev/stdin "$pkgdir/usr/bin/shelly-ui"
-#!/bin/sh
-exec /usr/lib/shelly/Shelly-UI "$@"
-EOF
+  install -Dm755 out-cli/shelly "$pkgdir/usr/bin/shelly"
 
   # Install desktop entry
   cat <<'EOF' | install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/shelly.desktop"
