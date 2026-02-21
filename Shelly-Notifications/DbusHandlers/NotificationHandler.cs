@@ -1,7 +1,7 @@
 using Tmds.DBus.Protocol;
 using Tmds.DBus.SourceGenerator;
 
-namespace Shelly_Notifications.TrayService;
+namespace Shelly_Notifications.DbusHandlers;
 
 public class NotificationHandler
 {

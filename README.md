@@ -98,6 +98,7 @@ You can also build the project manually using the .NET CLI:
 ```bash
 dotnet publish Shelly-UI/Shelly-UI.csproj -c Release -o publish/shelly-ui
 dotnet publish Shelly-CLI/Shelly-CLI.csproj -C Release -o publish/shelly-cli
+dotnet publish Shelly-CLI/Shelly-CLI.csproj -C Release -o publish/shelly-notifications
 ```
 
 alternatively you can run
@@ -250,6 +251,7 @@ Shelly is structured into several components:
 
 - **Shelly-UI**: The main Avalonia-based desktop application.
 - **Shelly-CLI**: Command-line interface for terminal-based package management.
+- **Shelly-Notifications**: Tray service to manage notifactions the Shelly-UI.
 - **PackageManager**: The core logic library providing bindings and abstractions for `libalpm`.
 - **PackageManager.Tests**: Comprehensive tests for the package management logic.
 - **Shelly-UI.Tests**: Unit tests for the Avalonia UI components.
