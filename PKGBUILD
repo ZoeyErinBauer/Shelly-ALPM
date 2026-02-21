@@ -1,7 +1,7 @@
 # Maintainer: Zoey Bauer <zoey.erin.bauer@gmail.com>
-# Maintainer: Caroline Snyder
+# Maintainer: Caroline Snyder <hirpeng@gmail.com>
 pkgname=shelly
-pkgver=1.5.0
+pkgver=1.5.1
 pkgrel=1
 pkgdesc="Shelly: A Modern Arch Package Manager"
 arch=('x86_64')
@@ -33,7 +33,7 @@ makedepends=('dotnet-sdk-10.0')
 # Source tarball from GitHub release
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ZoeyErinBauer/Shelly-ALPM/archive/v${pkgver}.tar.gz")
 
-sha256sums=('b8a284a2faa90155c934162b87211eb834aa7877023844ea94668c3575c2b7d4')
+sha256sums=('a00b159faa548a37663a552ab24159788cd2201ce7c717218e21567744b6a3a1')
 
 build() {
   cd "$srcdir/Shelly-ALPM-${pkgver}"
@@ -50,8 +50,8 @@ package() {
   install -Dm755 out/Shelly-UI "$pkgdir/usr/bin/shelly-ui"
 
   # Install bundled native libraries (SkiaSharp and HarfBuzzSharp)
-  install -Dm755 out/libSkiaSharp.so "$pkgdir/usr/lib/shelly/libSkiaSharp.so"
-  install -Dm755 out/libHarfBuzzSharp.so "$pkgdir/usr/lib/shelly/libHarfBuzzSharp.so"
+  install -Dm755 out/libSkiaSharp.so "$pkgdir/usr/lib/libSkiaSharp.so"
+  install -Dm755 out/libHarfBuzzSharp.so "$pkgdir/usr/lib/libHarfBuzzSharp.so"
 
   # Install Shelly-Notifications binary
   install -Dm755 out-notify/Shelly-Notifications "$pkgdir/usr/bin/shelly-notifications"
