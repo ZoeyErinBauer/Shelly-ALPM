@@ -6,7 +6,7 @@ public class AppRunner
     {
         const string appName = "shelly-ui";
         const string optPath = "/opt/shelly/Shelly-UI";
-        const string appPath = "/usr/shelly/Shelly-UI";
+        const string appPath = "/usr/bin/shelly-ui";
 
         string targetPath;
         if (File.Exists(appPath))

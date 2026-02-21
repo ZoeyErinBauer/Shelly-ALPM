@@ -10,7 +10,7 @@ public static class TrayStartService
     {
         try
         {
-            const string appPath = "/usr/shelly/Shelly-UI";
+            const string appPath = "/usr/bin/shelly-notifications";
             const string optPath = "/opt/shelly/Shelly-Notifications";
             var path = "";
 

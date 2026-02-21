@@ -29,9 +29,7 @@ install -Dm755 "$SCRIPT_DIR/Shelly-UI" "$INSTALL_DIR/shelly-ui"
 
 # Install Shelly-Notifications binary
 echo "Installing Shelly-Notifications to $INSTALL_DIR"
-if [ -f "$SCRIPT_DIR/Shelly-Notifications" ]; then
-  install -Dm755 "$SCRIPT_DIR/Shelly-Notifications" "$INSTALL_DIR/shelly-notifications"
-fi
+install -Dm755 "$SCRIPT_DIR/Shelly-Notifications" "$INSTALL_DIR/shelly-notifications"
 
 # Install Shelly-CLI binary
 echo "Installing Shelly-CLI to $INSTALL_DIR"
