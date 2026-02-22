@@ -94,7 +94,7 @@
         <value>Refresh</value>
     </data>
     <data name="AuthRequired" xml:space="preserve">
-        <value>Authentication is required to perform this action.</value>
+        <value>Authentication Required</value>
     </data>
     <data name="EnterPassword" xml:space="preserve">
         <value>Please enter your sudo password:</value>
@@ -121,7 +121,7 @@
         <value>Installed</value>
     </data>
     <data name="PackageRepository" xml:space="preserve">
-        <value>PackageRepository</value>
+        <value>Package Repository</value>
     </data>
     <data name="ForceSync" xml:space="preserve">
         <value>Force Database Update</value>
@@ -130,10 +130,10 @@
         <value>Remove Packages</value>
     </data>
     <data name="UpdatePackages" xml:space="preserve">
-        <value>Update Packages</value>
+        <value>Update Package(s)</value>
     </data>
     <data name="InstallPackages" xml:space="preserve">
-        <value>Install Packages</value>
+        <value>Install Package(s)</value>
     </data>
     <data name="InstallAUR" xml:space="preserve">
         <value>Install AUR</value>
@@ -143,5 +143,110 @@
     </data>
     <data name="UpdateAUR" xml:space="preserve">
         <value>Update AUR</value>
+    </data>
+    <data name="TotalPackages" xml:space="preserve">
+        <value>Total Packages</value>
+    </data>
+    <data name="UpToDatePackages" xml:space="preserve">
+        <value>Up to date packages:</value>
+    </data>
+    <data name="ExportSyncFile" xml:space="preserve">
+        <value>Export Sync file</value>
+    </data>
+    <data name="PackageDashboard" xml:space="preserve">
+        <value>Package Dashboard</value>
+    </data>
+    <data name="DefaultContent" xml:space="preserve">
+        <value>Default Content</value>
+    </data>
+    <data name="PackageOperations" xml:space="preserve">
+        <value>Package Operations</value>
+    </data>
+    <data name="EnterPasswordLockout" xml:space="preserve">
+        <value>Enter your password to continue. Your password will be remembered for this session. Multiple failed attempts may cause a lockout.</value>
+    </data>
+    <data name="PasswordButton" xml:space="preserve">
+        <value>Password</value>
+    </data>
+    <data name="AuthenticateButton" xml:space="preserve">
+        <value>Authenticate</value>
+    </data>
+    <data name="IdMetaSearch" xml:space="preserve">
+        <value>Id</value>
+    </data>
+    <data name="PackageType" xml:space="preserve">
+        <value>Package Type</value>
+    </data>
+    <data name="DescriptionMetaSearch" xml:space="preserve">
+        <value>Description</value>
+    </data>
+    <data name="SummaryMetaSearch" xml:space="preserve">
+        <value>Summary</value>
+    </data>
+    <data name="InstallLocalPackages" xml:space="preserve">
+        <value>Install Local Packages</value>
+    </data>
+    <data name="InstallLocalPackagesTooltip" xml:space="preserve">
+        <value>Install a local package file (.xz, .gz, .zst)</value>
+    </data>
+    <data name="ToggleConsole" xml:space="preserve">
+        <value>Enable Console</value>
+    </data>
+    <data name="ToggleAUR" xml:space="preserve">
+        <value>Enable AUR (Beta)</value>
+    </data>
+    <data name="ToggleFlatpak" xml:space="preserve">
+        <value>Enable Flatpak (Alpha)</value>
+    </data>
+    <data name="ToggleHorizontalMenu" xml:space="preserve">
+        <value>Enable Horizontal Menu</value>
+    </data>
+    <data name="ToggleTrayIcon" xml:space="preserve">
+        <value>Enable Tray Icon</value>
+    </data>
+    <data name="AppSettings" xml:space="preserve">
+        <value>App Settings</value>
+    </data>
+    <data name="ToggleTrayCheckInterval" xml:space="preserve">
+        <value>Tray Check Interval (Hours):</value>
+    </data>
+    <data name="ToggleNoConfirm" xml:space="preserve">
+        <value>No Confirm</value>
+    </data>
+    <data name="ToggleLightDarkMode" xml:space="preserve">
+        <value>Toggle Dark/Light Mode</value>
+    </data>
+    <data name="DefaultPageOnStartup" xml:space="preserve">
+        <value>Default Page on startup</value>
+    </data>
+    <data name="ToggleKDEColorScheme" xml:space="preserve">
+        <value>Use KDE Color Scheme</value>
+    </data>
+    <data name="BuyMeACoffeeButton" xml:space="preserve">
+        <value>Buy me a coffee</value>
+    </data>
+    <data name="FlatpakWarning" xml:space="preserve">
+        <value>Enabling requires flatpak</value>
+    </data>
+    <data name="FlatpakDependency" xml:space="preserve">
+        <value>Press confirm to install now or please install yourself</value>
+    </data>
+    <data name="AURWarning" xml:space="preserve">
+        <value>AUR Warning</value>
+    </data>
+    <data name="AURDisclaimer" xml:space="preserve">
+        <value>AUR packages are user-submitted and not officially supported. Use at your own risk.</value>
+    </data>
+    <data name="InstallingUpdate" xml:space="preserve">
+        <value>Installing Update...</value>
+    </data>
+    <data name="ExportSyncLocation" xml:space="preserve">
+        <value>Select a save location</value>
+    </data>
+    <data name="ExportSyncFailedToast" xml:space="preserve">
+        <value>Sync export failed</value>
+    </data>
+    <data name="ExportSyncSuccessToast" xml:space="preserve">
+        <value>Successfully exported sync file</value>
     </data>
 </root>

@@ -32,7 +32,7 @@
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Install Package(s)"
+                            Title="{x:Static lang:Resources.InstallPackages}"
                             TitleIcon="Download"
                             TitleCommand="{Binding ToggleConfirmAction}"
                             ShowTitleButton="True"
@@ -92,11 +92,11 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn
-                                    Header="Id"
+                                    Header="{x:Static lang:Resources.IdMetaSearch}"
                                     Binding="{Binding Id}"
                                     Width="*" />
                                 <DataGridTextColumn
-                                    Header="Package Type"
+                                    Header="{x:Static lang:Resources.PackageType}"
                                     Binding="{Binding PackageType}"
                                     Width="*" />
                                 <DataGridTextColumn
@@ -104,7 +104,7 @@
                                     Binding="{Binding Version}"
                                     Width="*" />
                                 <DataGridTemplateColumn
-                                    Header="Description"
+                                    Header="{x:Static lang:Resources.DescriptionMetaSearch}"
                                     Width="*">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
@@ -121,7 +121,7 @@
                                     Binding="{Binding Repository}"
                                     Width="*" />
                                 <DataGridTextColumn
-                                    Header="Summary"
+                                    Header="{x:Static lang:Resources.SummaryMetaSearch}"
                                     Binding="{Binding Summary}"
                                     Width="*" />
                                 <DataGridTemplateColumn

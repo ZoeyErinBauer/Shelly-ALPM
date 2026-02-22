@@ -38,14 +38,14 @@
                     <Grid RowDefinitions="Auto,*">
                         <StackPanel Grid.Row="0">
                             <menus:HeaderRow
-                                Title="Install Package(s)"
+                                Title="{x:Static lang:Resources.InstallPackages}"
                                 TitleIcon="Download"
                                 TitleCommand="{Binding ToggleConfirmAction}"
                                 ShowTitleButton="True"
                                 ShowSecondaryButton="True"
                                 SecondaryButtonCommand="{Binding InstallLocalPackageCommand}"
-                                SecondaryButtonText="Install Local Package"
-                                SecondaryButtonTooltip="Install a local package file (.xz, .gz, .zst)"
+                                SecondaryButtonText="{x:Static lang:Resources.InstallLocalPackages}"
+                                SecondaryButtonTooltip="{x:Static lang:Resources.InstallLocalPackagesTooltip}"
                                 SecondaryButtonIcon="FolderOpen"
                                 SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                                 SearchText="{Binding SearchText, Mode=TwoWay}"

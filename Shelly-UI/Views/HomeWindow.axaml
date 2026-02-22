@@ -94,15 +94,16 @@
                         BorderThickness="1"
                         Margin="4,4,8,4">
                     <StackPanel>
-                        <TextBlock Text="Package Dashboard" FontSize="18" FontWeight="Bold"
+                        <TextBlock Text="{x:Static lang:Resources.PackageDashboard}" FontSize="18" FontWeight="Bold"
                                    Margin="10, 5,0 ,0" />
+                        <!--Horizontal Menu-->
                         <Border Width="240"
                                 Padding="8">
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock FontSize="20"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
-                                           Text="Total Packages" />
+                                           Text="{x:Static lang:Resources.TotalPackages}"/>
                                 <TextBlock FontSize="73"
                                            FontWeight="Light"
                                            HorizontalAlignment="Center"
@@ -116,7 +117,7 @@
                                     FontSize="15"
                                     HorizontalAlignment="Center"
                                     Margin="0,15,0,4"
-                                    Text="Up to date packages:" />
+                                    Text="{x:Static lang:Resources.UpToDatePackages}" />
                                 <TextBlock
                                     Text="{Binding GaugeLabel}"
                                     FontSize="28"
@@ -125,7 +126,8 @@
                             </StackPanel>
                         </Border>
                         <Button Margin="10" Padding="8" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                                Content="Export Sync file" Command="{Binding SyncExport}" />
+                                Content="{x:Static lang:Resources.ExportSyncFile}" Command="{Binding SyncExport}" />
+                        <!-- Export Sync File -->
                     </StackPanel>
 
                 </Border>

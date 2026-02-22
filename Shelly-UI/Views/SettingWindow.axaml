@@ -15,31 +15,31 @@
                     Margin="0 16"
                     TabStripPlacement="Top">
 
-            <TabItem Header="App Settings" Foreground="{DynamicResource SystemBaseHighColor}">
+            <TabItem Header="{x:Static lang:Resources.AppSettings}" Foreground="{DynamicResource SystemBaseHighColor}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <StackPanel Orientation="Vertical" Spacing="8">
-                        <ToggleSwitch Content="Enable Console"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleConsole}"
                                       IsChecked="{Binding EnableConsole, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <ToggleSwitch Content="Enable AUR (Beta)"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleAUR}"
                                       IsChecked="{Binding EnableAur, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
-                        <ToggleSwitch Content="Enable FlatPack (Alpha)"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleFlatpak}"
                                       IsChecked="{Binding EnableFlatpak, Mode=TwoWay}"
                                       PointerPressed="OnFlatpakPointerPressed"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
-                        <ToggleSwitch Content="Use Horizontal Menu"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleHorizontalMenu}"
                                       IsChecked="{Binding UseHorizontalMenu, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
-                        <ToggleSwitch Content="Enable Tray Icon"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleTrayIcon}"
                                       IsChecked="{Binding EnableTray, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <TextBlock Text="Tray Check Interval (Hours):"
+                            <TextBlock Text="{x:Static lang:Resources.ToggleTrayCheckInterval}"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource SystemBaseHighColor}" />
                             <NumericUpDown Value="{Binding TrayCheckIntervalHours, Mode=TwoWay}"
@@ -49,7 +49,7 @@
                                            Width="100"
                                            FormatString="0" />
                         </StackPanel>
-                        <ToggleSwitch Content="No Confirm"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleNoConfirm}"
                                       IsChecked="{Binding NoConfirm, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
@@ -72,7 +72,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Appearance" Foreground="{DynamicResource SystemBaseHighColor}">
+            <TabItem Header="{x:Static lang:Resources.Appearance}" Foreground="{DynamicResource SystemBaseHighColor}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <StackPanel Orientation="Vertical" Spacing="8" Margin="0,10">
                         <TextBlock Text="{x:Static lang:Resources.AccentHexColor}" FontSize="14"
@@ -90,15 +90,15 @@
                                     Background="{DynamicResource SystemAccentColor}"
                                     Foreground="{DynamicResource SystemBaseHighColor}" />
                         </Grid>
-                        <ToggleSwitch Content="Toggle Dark/Light Mode"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleLightDarkMode}"
                                       IsEnabled="{Binding !UseKdeColor }"
                                       IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
-                        <TextBlock Text="Default Page on startup" FontSize="14" />
+                        <TextBlock Text="{x:Static lang:Resources.DefaultPageOnStartup}" FontSize="14" />
                         <ComboBox
                             ItemsSource="{Binding DefaultViews}"
                             SelectedItem="{Binding DefaultScreenEnum}"
                             Width="200" />
-                        <ToggleSwitch Content="Use KDE Color Scheme"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleKDEColorScheme}"
                                       IsChecked="{Binding UseKdeColor, Mode=TwoWay}" />
                     </StackPanel>
                 </ScrollViewer>
@@ -116,7 +116,7 @@
                                            Foreground="{DynamicResource SystemBaseHighColor}"
                                            Width="20"
                                            Height="20" />
-                    <TextBlock Grid.Column="1" Text="Buy me a coffee" Opacity=".7" Padding="10, 0"
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.BuyMeACoffeeButton}" Opacity=".7" Padding="10, 0"
                                Foreground="{DynamicResource SystemBaseHighColor}">
                     </TextBlock>
                 </Grid>
@@ -135,9 +135,9 @@
                     VerticalAlignment="Center"
                     BoxShadow="0 10 30 0 #A0000000">
                 <StackPanel Spacing="15">
-                    <TextBlock Text="Enabling requires flatpak" FontWeight="Bold" FontSize="18"
+                    <TextBlock Text="{x:Static lang:Resources.FlatpakWarning}" FontWeight="Bold" FontSize="18"
                                HorizontalAlignment="Center" Foreground="{DynamicResource SystemBaseHighColor}" />
-                    <TextBlock Text="Press confirm to install now or please install yourself" TextWrapping="Wrap"
+                    <TextBlock Text="{x:Static lang:Resources.FlatpakDependency}" TextWrapping="Wrap"
                                HorizontalAlignment="Center" TextAlignment="Center"
                                Foreground="{DynamicResource SystemBaseHighColor}" />
                     <Grid ColumnDefinitions="*,*">
@@ -165,10 +165,10 @@
                     VerticalAlignment="Center"
                     BoxShadow="0 10 30 0 #A0000000">
                 <StackPanel Spacing="15">
-                    <TextBlock Text="AUR Warning" FontWeight="UltraBold" FontSize="18"
+                    <TextBlock Text="{x:Static lang:Resources.AURWarning}" FontWeight="UltraBold" FontSize="18"
                                HorizontalAlignment="Center" Foreground="{DynamicResource SystemBaseHighColor}" />
                     <TextBlock
-                        Text="AUR packages are user-submitted and not officially supported. Use at your own risk."
+                        Text="{x:Static lang:Resources.AURDisclaimer}"
                         TextWrapping="Wrap"
                         HorizontalAlignment="Center" FontWeight="ExtraBold" TextAlignment="Center"
                         Foreground="{DynamicResource SystemBaseHighColor}" />
