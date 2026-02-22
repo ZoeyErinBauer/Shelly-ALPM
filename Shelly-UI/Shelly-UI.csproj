@@ -66,4 +66,30 @@
             <HintPath>..\..\..\.nuget\packages\litedb\6.0.0-prerelease.75\lib\net8.0\LiteDB.dll</HintPath>
         </Reference>
     </ItemGroup>
+    <ItemGroup>
+      <Compile Update="Views\Package\PackageManagement.axaml.cs">
+        <DependentUpon>RemoveWindow.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\Package\PackageWindow.axaml.cs">
+        <DependentUpon>PackageWindow.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\Dialogs\UpdateProgressDialog.axaml.cs">
+        <DependentUpon>UpdateProgressDialog.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\Dialogs\QuestionDialog.axaml.cs">
+        <DependentUpon>QuestionDialog.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\HomeWindow.axaml.cs">
+        <DependentUpon>HomeWindow.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\Package\UpdateWindow.axaml.cs">
+        <DependentUpon>UpdateWindow.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+    </ItemGroup>
 </Project>

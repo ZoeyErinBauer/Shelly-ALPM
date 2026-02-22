@@ -11,11 +11,11 @@ using Shelly_UI.ViewModels;
 
 namespace Shelly_UI.Views;
 
-public partial class RemoveWindow : ReactiveUserControl<RemoveViewModel>
+public partial class PackageManagement : ReactiveUserControl<PackageManagementViewModel>
 {
     private DataGrid? _dataGrid;
     
-    public RemoveWindow()
+    public PackageManagement()
     {
         AvaloniaXamlLoader.Load(this);
         this.WhenActivated(disposables =>
@@ -34,7 +34,7 @@ public partial class RemoveWindow : ReactiveUserControl<RemoveViewModel>
             _dataGrid = null;
         }
         
-        if (DataContext is RemoveViewModel and IDisposable disposable)
+        if (DataContext is PackageManagementViewModel and IDisposable disposable)
         {
             disposable.Dispose();
         }
@@ -52,7 +52,7 @@ public partial class RemoveWindow : ReactiveUserControl<RemoveViewModel>
         var row = (e.Source as Visual)?.FindAncestorOfType<DataGridRow>();
 
         if (row?.DataContext is not PackageModel package) return;
-        if (DataContext is not RemoveViewModel vm) return;
+        if (DataContext is not PackageManagementViewModel vm) return;
 
 
         vm.TogglePackageCheckCommand.Execute(package).Subscribe();

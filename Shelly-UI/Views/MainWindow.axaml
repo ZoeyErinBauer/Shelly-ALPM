@@ -7,7 +7,6 @@
         xmlns:avalonia="http://reactiveui.net"
         xmlns:shellyUi="clr-namespace:Shelly_UI"
         xmlns:converters="clr-namespace:Shelly_UI.Converters"
-        xmlns:enums="clr-namespace:Shelly_UI.Enums"
         xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Shelly_UI.Views.MainWindow"

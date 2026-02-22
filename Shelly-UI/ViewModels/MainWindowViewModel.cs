@@ -228,9 +228,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             var vm = new UpdateViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
-        GoRemove = ReactiveCommand.CreateFromObservable(() =>
+        GoManage = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            var vm = new PackageManagementViewModel(this, appCache, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
@@ -299,7 +299,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             { DefaultViewEnum.HomeScreen, GoHome },
             { DefaultViewEnum.InstallPackage, GoPackages },
-            { DefaultViewEnum.RemovePackage, GoRemove },
+            { DefaultViewEnum.PackageManagement, GoManage },
             { DefaultViewEnum.UpdatePackage, GoUpdate },
             { DefaultViewEnum.UpdateAur, GoAurUpdate },
             { DefaultViewEnum.InstallAur, GoAur },
@@ -317,7 +317,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 HomeViewModel => "Shelly - Home",
                 PackageViewModel => "Shelly - Install Packages",
                 UpdateViewModel => "Shelly - Update Packages",
-                RemoveViewModel => "Shelly - Remove Packages",
+                PackageManagementViewModel => "Shelly - Manage Packages",
                 SettingViewModel => "Shelly - Settings",
                 AurViewModel => "Shelly - AUR Install",
                 AurUpdateViewModel => "Shelly - AUR Update",
@@ -652,7 +652,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoUpdate { get; set; } = null!;
 
-    public static ReactiveCommand<Unit, IRoutableViewModel> GoRemove { get; set; } = null!;
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoManage { get; set; } = null!;
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoSetting { get; set; } = null!;
 
