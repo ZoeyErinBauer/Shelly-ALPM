@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
+using Shelly_CLI.Commands.Aur;
+using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -111,6 +113,21 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         manager.Dispose();
+        if (settings.Aur || settings.All)
+        {
+            var aurCommand = new AurUpgradeCommand();
+            var aurSettings = new AurUpgradeSettings()
+            {
+                NoConfirm = settings.NoConfirm
+            };
+            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+        }
+
+        if (settings.Flatpak || settings.All)
+        {
+            var flatpakCommand = new FlatpakUpgrade();
+            flatpakCommand.Execute(context);
+        }
         return 0;
     }
 

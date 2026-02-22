@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:vm="clr-namespace:PackageManager.Alpm;assembly=PackageManager"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:models="clr-namespace:Shelly_UI.Models"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
