@@ -72,21 +72,6 @@ cp "$SCRIPT_DIR/publish/Shelly-CLI/shelly" "$INSTALL_DIR/shelly"
 echo "Copying logo..."
 cp "$SCRIPT_DIR/Shelly-UI/Assets/shellylogo.png" "$INSTALL_DIR/"
 
-# Ensure the UI binary is executable and create symlink
-if [ -f "$INSTALL_DIR/Shelly-UI" ]; then
-    chmod +x "$INSTALL_DIR/Shelly-UI"
-    echo "Made Shelly-UI executable"
-    echo "Creating symlink for shelly-ui in /usr/bin"
-    ln -sf "$INSTALL_DIR/Shelly-UI" /usr/bin/shelly-ui
-fi
-
-# Ensure the CLI binary is executable and accessible in PATH
-if [ -f "$INSTALL_DIR/shelly" ]; then
-    chmod +x "$INSTALL_DIR/shelly"
-    echo "Made Shelly-CLI executable"
-    echo "Creating symlink for shelly in /usr/bin"
-    ln -sf "$INSTALL_DIR/shelly" /usr/bin/shelly
-fi
 
 # Install icon to standard location
 echo "Installing icon to standard location..."
