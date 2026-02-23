@@ -81,6 +81,13 @@ public class Program
             config.AddCommand<ListUpdatesCommand>("list-updates")
                 .WithDescription("List packages that need updates")
                 .WithExample("list-updates");
+            
+            config.AddCommand<PackageInformationCommand>("info")
+                .WithDescription("Display information about a package")
+                .WithExample("info", "firefox", "--installed")
+                .WithExample("info", "firefox", "--repository")
+                .WithExample("info", "firefox", "-i")
+                .WithExample("info", "firefox", "-r");
 
             config.AddCommand<InstallCommand>("install")
                 .WithDescription("Install one or more packages")

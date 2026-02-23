@@ -21,11 +21,11 @@
                         <ToggleSwitch Content="Enable Console"
                                       IsChecked="{Binding EnableConsole, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <ToggleSwitch Content="Enable AUR (Beta)"
+                        <ToggleSwitch Content="Enable AUR"
                                       IsChecked="{Binding EnableAur, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
-                        <ToggleSwitch Content="Enable FlatPack (Alpha)"
+                        <ToggleSwitch Content="Enable FlatPack"
                                       IsChecked="{Binding EnableFlatpak, Mode=TwoWay}"
                                       PointerPressed="OnFlatpakPointerPressed"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
