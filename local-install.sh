@@ -72,6 +72,7 @@ cp "$SCRIPT_DIR/publish/Shelly-CLI/shelly" "$INSTALL_DIR/shelly"
 echo "Copying logo..."
 cp "$SCRIPT_DIR/Shelly-UI/Assets/shellylogo.png" "$INSTALL_DIR/"
 
+
 # Install icon to standard location
 echo "Installing icon to standard location..."
 mkdir -p /usr/share/icons/hicolor/256x256/apps

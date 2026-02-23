@@ -52,6 +52,6 @@ public interface IAlpmManager
     /// <param name="dependency">The dependency string to check (e.g., "dotnetsdk", "python>=3.10")</param>
     /// <returns>True if the dependency is satisfied by an installed package, false otherwise</returns>
     bool IsDependencySatisfiedByInstalled(string dependency);
-
+    
     void Refresh();
 }

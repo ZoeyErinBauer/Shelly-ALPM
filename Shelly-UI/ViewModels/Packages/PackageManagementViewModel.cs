@@ -16,7 +16,7 @@ using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels;
 
-public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
+public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private readonly IPrivilegedOperationService _privilegedOperationService;
@@ -26,7 +26,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     
     private List<PackageModel> _avaliablePackages = new();
 
-    public RemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
+    public PackageManagementViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _appCache = appCache;

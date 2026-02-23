@@ -1,13 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:vm="clr-namespace:PackageManager.Alpm;assembly=PackageManager"
              xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
-             xmlns:models="clr-namespace:Shelly_UI.Models"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
+             xmlns:converters="clr-namespace:Shelly_UI.Converters"
+             xmlns:models="clr-namespace:Shelly_UI.Models.PackageManagerObjects"
              x:Class="Shelly_UI.Views.HomeWindow"
              x:DataType="viewModels:HomeViewModel"
              x:CompileBindings="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converters:FileSizeConverter x:Key="ByteConverter" />
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
         <UniformGrid Columns="2" Background="{DynamicResource SystemChromeLowColor}">
             <Border Grid.Column="0"
@@ -73,6 +77,16 @@
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                                             <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#999999" />
+                                            <TextBlock
+                                                Text="{Binding InstalledSize, Converter={StaticResource ByteConverter}}"
+                                                FontSize="11" Foreground="#999999" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                            <TextBlock Text="" FontSize="11" />
+                                            <TextBlock HorizontalAlignment="Right" Text="{Binding InstallReason}"
+                                                       FontSize="11" Foreground="#999999" />
+                                            <TextBlock HorizontalAlignment="Right" Text="{Binding InstallDate}"
+                                                       FontSize="11" Foreground="#999999" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -83,6 +97,123 @@
                                     <Setter Property="CornerRadius" Value="8" />
                                     <Setter Property="Margin" Value="2,2" />
                                 </Style>
+                                <Style Selector="ListBoxItem" x:DataType="models:AlpmPackageDto">
+                                <Setter Property="ContextMenu">
+                                    <Setter.Value>
+                                        <ContextMenu x:DataType="models:AlpmPackageDto" MaxWidth="350">
+                                            <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
+                                            <Separator />
+                                            <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
+                                                      IsEnabled="False" />
+                                            <MenuItem
+                                                Header="{Binding InstalledSize, Converter={StaticResource ByteConverter}, StringFormat='Size: {0}'}"
+                                                IsEnabled="False" />
+                                            <MenuItem Header="{Binding InstallReason, StringFormat='Reason: {0}'}"
+                                                      IsEnabled="False" />
+                                            <MenuItem Header="{Binding InstallDate, StringFormat='Install Date: {0}'}"
+                                                      IsEnabled="False" />
+                                            <MenuItem Header="Replaces">
+                                                <ItemsControl ItemsSource="{Binding Replaces}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="Licenses">
+                                                <ItemsControl ItemsSource="{Binding Licenses}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="Groups">
+                                                <ItemsControl ItemsSource="{Binding Groups}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="Provides">
+                                                <ItemsControl ItemsSource="{Binding Provides}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="RequiredBy">
+                                                <ItemsControl ItemsSource="{Binding RequiredBy}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="OptionalFor">
+                                                <ItemsControl ItemsSource="{Binding OptionalFor}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="Depends">
+                                                <ItemsControl ItemsSource="{Binding Depends}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="OptDepends">
+                                                <ItemsControl ItemsSource="{Binding OptDepends}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding }"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem Header="Conflicts">
+                                                <ItemsControl ItemsSource="{Binding Conflicts}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <MenuItem Header="{Binding}"
+                                                                      IsEnabled="False"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </MenuItem>
+                                            <MenuItem IsEnabled="False">
+                                                <MenuItem.Header>
+                                                    <TextBlock
+                                                        Text="{Binding Description, StringFormat='Description: {0}'}"
+                                                        TextWrapping="Wrap"
+                                                        MaxWidth="300" />
+                                                </MenuItem.Header>
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
                             </ListBox.Styles>
                         </ListBox>
                     </DockPanel>
