@@ -11,6 +11,7 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.Enums;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
@@ -372,7 +373,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             var credManager = App.Services.GetService<ICredentialManager>();
             if (!credManager!.IsValidated)
             {
-                if (!await credManager.RequestCredentialsAsync("Install flatpak") ||
+                if (!await credManager.RequestCredentialsAsync(Resources.InstallFlatpak) ||
                     string.IsNullOrEmpty(credManager.GetPassword()))
                 {
                     ShowFlatpakDialog = false;
@@ -394,7 +395,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.GlobalBytesValue = "";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Installing flatpak...";
+                mainWindow.GlobalBusyMessage = Resources.InstallingFlatpak;
             }
 
             var result =
@@ -448,7 +449,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
 #endif
 
-        UpdateAvailableText = "Checking for updates...";
+        UpdateAvailableText = Resources.CheckingForUpdates;
         bool updateAvailable = await _updateService.CheckForUpdateAsync();
         await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), updateAvailable);
         await SetUpdateText();
@@ -464,8 +465,8 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private async Task SetUpdateText()
     {
         UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache))
-            ? "Update Available Click to Download"
-            : "No Update Available";
+            ? Resources.UpdateAvailable
+            : Resources.NoUpdateAvailable;
     }
 
     private string _updateAvailable = "Check for update";

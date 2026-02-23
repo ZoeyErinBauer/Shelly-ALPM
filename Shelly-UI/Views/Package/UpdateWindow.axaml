@@ -28,7 +28,7 @@
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}" RowDefinitions="Auto,*">
                     <menus:HeaderRow
-                        Title="Update Package(s)"
+                        Title="{x:Static lang:Resources.UpdatePackages}"
                         ShowTitleButton="True"
                         TitleIcon="Download"
                         TitleCommand="{Binding AlpmUpdateCommand}"

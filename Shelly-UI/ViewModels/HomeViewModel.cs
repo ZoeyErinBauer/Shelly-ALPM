@@ -13,6 +13,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.Models;
 using Shelly_UI.Models.PackageManagerObjects;
 using Shelly_UI.Services;
@@ -208,7 +209,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
             
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "Select a save location",
+                Title = Resources.ExportSyncLocation,
                 SuggestedFileName = $"{suggestName}", 
                 DefaultExtension = "sync", 
                 FileTypeChoices =
@@ -234,11 +235,11 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to export sync file: {result.Error}");
-                    mainWindow?.ShowToast($"Sync export failed", isSuccess: false);
+                    mainWindow?.ShowToast(Resources.ExportSyncFailedToast + result.Error, isSuccess: false);
                 }
                 else
                 {
-                    mainWindow?.ShowToast($"Successfully exported sync file");
+                    mainWindow?.ShowToast(Resources.ExportSyncSuccessToast);
                 }
             }
         }

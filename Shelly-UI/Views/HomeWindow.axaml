@@ -103,16 +103,16 @@
                                         <ContextMenu x:DataType="models:AlpmPackageDto" MaxWidth="350">
                                             <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
                                             <Separator />
-                                            <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
+                                            <MenuItem Header="{Binding Version, StringFormat={x:Static lang:Resources.LabelVersion}}"
                                                       IsEnabled="False" />
                                             <MenuItem
-                                                Header="{Binding InstalledSize, Converter={StaticResource ByteConverter}, StringFormat='Size: {0}'}"
+                                                Header="{Binding InstalledSize, Converter={StaticResource ByteConverter}, StringFormat='{x:Static lang:Resources.LabelSize}'}"
                                                 IsEnabled="False" />
-                                            <MenuItem Header="{Binding InstallReason, StringFormat='Reason: {0}'}"
+                                            <MenuItem Header="{Binding InstallReason, StringFormat='{x:Static lang:Resources.LabelReason}'}"
                                                       IsEnabled="False" />
-                                            <MenuItem Header="{Binding InstallDate, StringFormat='Install Date: {0}'}"
+                                            <MenuItem Header="{Binding InstallDate, StringFormat='{x:Static lang:Resources.LabelInstallDate}'}"
                                                       IsEnabled="False" />
-                                            <MenuItem Header="Replaces">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuReplaces}">
                                                 <ItemsControl ItemsSource="{Binding Replaces}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -122,7 +122,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="Licenses">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuLicenses}">
                                                 <ItemsControl ItemsSource="{Binding Licenses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -132,7 +132,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="Groups">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuGroups}">
                                                 <ItemsControl ItemsSource="{Binding Groups}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -142,7 +142,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="Provides">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuProvides}">
                                                 <ItemsControl ItemsSource="{Binding Provides}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -152,7 +152,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="RequiredBy">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuRequiredBy}">
                                                 <ItemsControl ItemsSource="{Binding RequiredBy}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -162,7 +162,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="OptionalFor">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuOptionalFor}">
                                                 <ItemsControl ItemsSource="{Binding OptionalFor}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -172,7 +172,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="Depends">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuDepends}">
                                                 <ItemsControl ItemsSource="{Binding Depends}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -182,7 +182,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="OptDepends">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuOptDepends}">
                                                 <ItemsControl ItemsSource="{Binding OptDepends}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -192,7 +192,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </MenuItem>
-                                            <MenuItem Header="Conflicts">
+                                            <MenuItem Header="{x:Static lang:Resources.MenuConflicts}">
                                                 <ItemsControl ItemsSource="{Binding Conflicts}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -205,7 +205,7 @@
                                             <MenuItem IsEnabled="False">
                                                 <MenuItem.Header>
                                                     <TextBlock
-                                                        Text="{Binding Description, StringFormat='Description: {0}'}"
+                                                        Text="{Binding Description, StringFormat='{x:Static lang:Resources.LabelDescription}'}"
                                                         TextWrapping="Wrap"
                                                         MaxWidth="300" />
                                                 </MenuItem.Header>
@@ -225,15 +225,16 @@
                         BorderThickness="1"
                         Margin="4,4,8,4">
                     <StackPanel>
-                        <TextBlock Text="Package Dashboard" FontSize="18" FontWeight="Bold"
+                        <TextBlock Text="{x:Static lang:Resources.PackageDashboard}" FontSize="18" FontWeight="Bold"
                                    Margin="10, 5,0 ,0" />
+                        <!--Horizontal Menu-->
                         <Border Width="240"
                                 Padding="8">
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock FontSize="20"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
-                                           Text="Total Packages" />
+                                           Text="{x:Static lang:Resources.TotalPackages}"/>
                                 <TextBlock FontSize="73"
                                            FontWeight="Light"
                                            HorizontalAlignment="Center"
@@ -247,7 +248,7 @@
                                     FontSize="15"
                                     HorizontalAlignment="Center"
                                     Margin="0,15,0,4"
-                                    Text="Up to date packages:" />
+                                    Text="{x:Static lang:Resources.UpToDatePackages}" />
                                 <TextBlock
                                     Text="{Binding GaugeLabel}"
                                     FontSize="28"
@@ -256,7 +257,8 @@
                             </StackPanel>
                         </Border>
                         <Button Margin="10" Padding="8" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                                Content="Export Sync file" Command="{Binding SyncExport}" />
+                                Content="{x:Static lang:Resources.ExportSyncFile}" Command="{Binding SyncExport}" />
+                        <!-- Export Sync File -->
                     </StackPanel>
 
                 </Border>

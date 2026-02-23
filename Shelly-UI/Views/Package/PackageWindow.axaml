@@ -38,14 +38,14 @@
                     <Grid RowDefinitions="Auto,*">
                         <StackPanel Grid.Row="0">
                             <menus:HeaderRow
-                                Title="Install Package(s)"
+                                Title="{x:Static lang:Resources.InstallPackages}"
                                 TitleIcon="Download"
                                 TitleCommand="{Binding ToggleConfirmAction}"
                                 ShowTitleButton="True"
                                 ShowSecondaryButton="True"
                                 SecondaryButtonCommand="{Binding InstallLocalPackageCommand}"
-                                SecondaryButtonText="Install Local Package"
-                                SecondaryButtonTooltip="Install a local package file (.xz, .gz, .zst)"
+                                SecondaryButtonText="{x:Static lang:Resources.InstallLocalPackages}"
+                                SecondaryButtonTooltip="{x:Static lang:Resources.InstallLocalPackagesTooltip}"
                                 SecondaryButtonIcon="FolderOpen"
                                 SearchWatermark="{x:Static lang:Resources.SearchPackages}"
                                 SearchText="{Binding SearchText, Mode=TwoWay}"
@@ -69,14 +69,14 @@
                                             <ContextMenu x:DataType="models:PackageModel">
                                                 <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
                                                 <Separator />
-                                                <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
+                                                <MenuItem Header="{Binding Version, StringFormat='{x:Static lang:Resources.LabelVersion}'}"
                                                           IsEnabled="False" />
-                                                <MenuItem Header="{Binding SizeString, StringFormat='Size: {0}'}"
+                                                <MenuItem Header="{Binding SizeString, StringFormat='{x:Static lang:Resources.LabelSize}'}"
                                                           IsEnabled="False" />
                                                 <MenuItem IsEnabled="False">
                                                     <MenuItem.Header>
                                                         <TextBlock
-                                                            Text="{Binding Description, StringFormat='Description: {0}'}"
+                                                            Text="{Binding Description, StringFormat='{x:Static lang:Resources.LabelDescription}'}"
                                                             TextWrapping="Wrap"
                                                             MaxWidth="300" />
                                                     </MenuItem.Header>

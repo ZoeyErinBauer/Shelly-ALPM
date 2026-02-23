@@ -5,12 +5,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
@@ -180,7 +182,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.InstallingSelectedPackages;
                 }
 
                 //do work
@@ -189,12 +191,12 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
                     var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-                    mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.StandardInstallationFailed, err), isSuccess: false);
                 }
                 else
                 {
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully installed {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.StandardInstallSuccess, packageCount), isSuccess: false);
                 }
 
                 await Sync();
@@ -225,11 +227,11 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Select a local package file",
+                Title = Resources.SelectLocalPackageFile,
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Package files (*.xz, *.gz, *.zst)")
+                    new FilePickerFileType(Resources.PackageFilesFilter)
                     {
                         Patterns = ["*.xz", "*.gz", "*.zst"]
                     }
@@ -257,7 +259,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.IsGlobalBusy = true;
                 mainWindow.GlobalBytesValue = "";
-                mainWindow.GlobalBusyMessage = "Installing local package...";
+                mainWindow.GlobalBusyMessage = Resources.InstallingLocalPackages;
             }
 
             var result = await _privilegedOperationService.InstallLocalPackageAsync(filePath);
@@ -265,11 +267,11 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 Console.WriteLine($"Failed to install local package: {result.Error}");
                 var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-                mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
+                mainWindow?.ShowToast(string.Format(Resources.GenericPackageInstallFail, err), isSuccess: false);
             }
             else
             {
-                mainWindow?.ShowToast($"Successfully installed local package");
+                mainWindow?.ShowToast(Resources.LocalPackageInstallSuccess);
             }
 
             await Sync();

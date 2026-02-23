@@ -8,6 +8,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
@@ -97,7 +98,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
 
             if (!_credentialManager.IsValidated)
             {
-                if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
+                if (!await _credentialManager.RequestCredentialsAsync(Resources.InstallPackages)) return;
 
                 if (string.IsNullOrEmpty(_credentialManager.GetPassword())) return;
 
@@ -112,7 +113,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 mainWindow.GlobalProgressText = "0%";
                 mainWindow.GlobalBytesValue = "";
                 mainWindow.IsGlobalBusy = true;
-                mainWindow.GlobalBusyMessage = "Installing selected packages...";
+                mainWindow.GlobalBusyMessage = Resources.InstallingSelectedPackages;
             }
 
             var standardPackages = selected.Where(x => x.PackageType == PackageType.STANDARD).Select(x => x.Name).ToList();
@@ -126,11 +127,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 {
                     Console.WriteLine($"Failed to install standard packages: {result.Error}");
                     var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-                    mainWindow?.ShowToast($"Standard installation failed: {err}", isSuccess: false);
+                    mainWindow?.ShowToast(Resources.StandardInstallationFailed + err, isSuccess: false);
                 }
                 else
                 {
-                    mainWindow?.ShowToast($"Successfully installed {standardPackages.Count} standard package{(standardPackages.Count > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.StandardInstallSuccess, standardPackages.Count));
                 }
             }
 
@@ -141,11 +142,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                 {
                     Console.WriteLine($"Failed to install AUR packages: {result.Error}");
                     var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-                    mainWindow?.ShowToast($"AUR installation failed: {err}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.AurInstallFailed, err), isSuccess: false);
                 }
                 else
                 {
-                    mainWindow?.ShowToast($"Successfully installed {aurPackages.Count} AUR package{(aurPackages.Count > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.AurInstallSuccess, aurPackages.Count));
                 }
             }
 
@@ -157,11 +158,11 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
                     if (!result.Success)
                     {
                         Console.WriteLine($"Failed to install Flatpak package {package}: {result.Error}");
-                        mainWindow?.ShowToast($"Flatpak installation failed: {result.Error}", isSuccess: false);
+                        mainWindow?.ShowToast(string.Format(Resources.FlatpakInstallationFailed), isSuccess: false);
                     }
                     else
                     {
-                        mainWindow?.ShowToast($"Successfully installed Flatpak package {package}");
+                        mainWindow?.ShowToast(string.Format(Resources.FlatpakInstallationSuccess, flatpakPackages.Count));
                     }
                 }
             }
@@ -172,7 +173,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         {
             Console.WriteLine($"Failed to install packages: {e.Message}");
             var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-            mainWindow?.ShowToast($"Installation failed: {err}", isSuccess: false);
+            mainWindow?.ShowToast(string.Format(Resources.StandardInstallationFailed, err), isSuccess: false);
         }
         finally
         {
