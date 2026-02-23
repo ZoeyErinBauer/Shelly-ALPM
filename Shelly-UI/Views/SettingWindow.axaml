@@ -21,7 +21,7 @@
                         <ToggleSwitch Content="{x:Static lang:Resources.ToggleConsole}"
                                       IsChecked="{Binding EnableConsole, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleAUR}"
+                        <ToggleSwitch Content="{x:Static lang:Resources.ToggleAur}"
                                       IsChecked="{Binding EnableAur, Mode=TwoWay}"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
@@ -165,10 +165,10 @@
                     VerticalAlignment="Center"
                     BoxShadow="0 10 30 0 #A0000000">
                 <StackPanel Spacing="15">
-                    <TextBlock Text="{x:Static lang:Resources.AURWarning}" FontWeight="UltraBold" FontSize="18"
+                    <TextBlock Text="{x:Static lang:Resources.AurWarning}" FontWeight="UltraBold" FontSize="18"
                                HorizontalAlignment="Center" Foreground="{DynamicResource SystemBaseHighColor}" />
                     <TextBlock
-                        Text="{x:Static lang:Resources.AURDisclaimer}"
+                        Text="{x:Static lang:Resources.AurDisclaimer}"
                         TextWrapping="Wrap"
                         HorizontalAlignment="Center" FontWeight="ExtraBold" TextAlignment="Center"
                         Foreground="{DynamicResource SystemBaseHighColor}" />

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
 using Microsoft.Extensions.DependencyInjection;
+using Shelly_UI.Assets;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Messages;
@@ -74,7 +75,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             if (!string.IsNullOrEmpty(PasswordInput))
             {
                 _credentialManager.StorePassword(PasswordInput);
-                PasswordErrorMessage = "Validating...";
+                PasswordErrorMessage = Resources.Validating;
 
                 await _credentialManager.CompleteCredentialRequestAsync(true);
 
@@ -86,12 +87,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 }
                 else
                 {
-                    PasswordErrorMessage = "Invalid password. Please try again.";
+                    PasswordErrorMessage = Resources.InvalidPassword;
                 }
             }
             else
             {
-                PasswordErrorMessage = "Password cannot be empty.";
+                PasswordErrorMessage = Resources.EmptyPassword;
             }
         });
 
@@ -122,15 +123,15 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                         IsProcessing = true;
                         if (!string.IsNullOrEmpty(args.PackageName))
                         {
-                            ProcessingMessage = $"Completing requested actions: {args.PackageName}";
+                            ProcessingMessage = string.Format(Resources.CompletingRequestedActions,args.PackageName);
                         }
                         else if (args.OperationType == OperationType.TransactionStart)
                         {
-                            ProcessingMessage = "Starting transaction...";
+                            ProcessingMessage = Resources.StartTransaction;
                         }
                         else
                         {
-                            ProcessingMessage = "Processing...";
+                            ProcessingMessage = Resources.Processing;
                         }
 
                         ProgressValue = 0;
@@ -310,27 +311,28 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         };
 
         NavigateToDefaultView();
+        
+           Router.CurrentViewModel
+          .Select(vm => vm switch
+          {
+              HomeViewModel => Resources.TitleHome,
+              PackageViewModel => Resources.TitleInstallPackages,
+              UpdateViewModel => Resources.TitleUpdatePackages,
+              RemoveViewModel => Resources.TitleRemovePackages,
+              SettingViewModel => Resources.TitleSettings,
+              AurViewModel => Resources.TitleAurInstall,
+              AurUpdateViewModel => Resources.TitleAurUpdate,
+              AurRemoveViewModel => Resources.TitleAurRemove,
+              FlatpakInstallViewModel => Resources.TitleFlatpakInstall,
+              FlatpakUpdateViewModel => Resources.TitleFlatpakUpdate,
+              FlatpakRemoveViewModel => Resources.TitleFlatpakRemove,
+              MetaSearchViewModel => Resources.TitleSearch,
+              _ => Resources.AppTitle
+          })
+          .ObserveOn(scheduler)
+          .Subscribe(title => Title = title)
+          .DisposeWith(_disposables); 
 
-        Router.CurrentViewModel
-            .Select(vm => vm switch
-            {
-                HomeViewModel => "Shelly - Home",
-                PackageViewModel => "Shelly - Install Packages",
-                UpdateViewModel => "Shelly - Update Packages",
-                RemoveViewModel => "Shelly - Remove Packages",
-                SettingViewModel => "Shelly - Settings",
-                AurViewModel => "Shelly - AUR Install",
-                AurUpdateViewModel => "Shelly - AUR Update",
-                AurRemoveViewModel => "Shelly - AUR Remove",
-                FlatpakInstallViewModel => "Shelly - Flatpak Install",
-                FlatpakUpdateViewModel => "Shelly - Flatpak Update",
-                FlatpakRemoveViewModel => "Shelly - Flatpak Remove",
-                MetaSearchViewModel => "Shelly - Search",
-                _ => "Shelly"
-            })
-            .ObserveOn(scheduler)
-            .Subscribe(title => Title = title)
-            .DisposeWith(_disposables);
 
         Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
                 h => ConsoleLogService.Instance.Logs.CollectionChanged += h,
@@ -353,16 +355,16 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     if (int.TryParse(matchAlpm.Groups[3].Value, out var percent))
                     {
                         var action = progressType switch
-                        {
-                            "PackageDownload" => "Downloading",
-                            "ReinstallStart" => "Reinstalling",
-                            "AddStart" => "Installing",
-                            "UpgradeStart" => "Updating",
-                            "ConflictStart" => "Checking conflicts",
-                            "RemoveStart" => "Removing",
-                            _ => progressType.Replace("Start", "ing")
-                        };
-
+                         {
+                             "PackageDownload" => Resources.ActionDownloading,
+                             "ReinstallStart" => Resources.ActionReinstalling,
+                             "AddStart" => Resources.ActionInstalling,
+                             "UpgradeStart" => Resources.ActionUpdating,
+                             "ConflictStart" => Resources.ActionCheckingConflicts,
+                             "RemoveStart" => Resources.ActionRemoving,
+                             _ => progressType.Replace("Start", "ing")
+                         }; 
+                       
                         var bytes = matchAlpm.Groups[4].Value;
                         var totalBytes = matchAlpm.Groups[5].Value;
 
@@ -773,13 +775,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         return questionType switch
         {
-            QuestionType.InstallIgnorePkg => "Install Ignore Package?",
-            QuestionType.ReplacePkg => "Replace Package?",
-            QuestionType.ConflictPkg => "Package Conflict",
-            QuestionType.CorruptedPkg => "Corrupted Package",
-            QuestionType.ImportKey => "Import GPG Key?",
-            QuestionType.SelectProvider => "Select Provider",
-            _ => "Package Manager Question"
+            QuestionType.InstallIgnorePkg => Resources.QuestionInstallIgnorePkg,
+            QuestionType.ReplacePkg => Resources.QuestionReplacePkg,
+            QuestionType.ConflictPkg => Resources.QuestionConflictPkg,
+            QuestionType.CorruptedPkg => Resources.QuestionCorruptedPkg,
+            QuestionType.ImportKey => Resources.QuestionImportKey,
+            QuestionType.SelectProvider => Resources.QuestionSelectProvider,
+            _ => Resources.QuestionDefault
         };
     }
 

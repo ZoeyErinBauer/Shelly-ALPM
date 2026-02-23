@@ -235,7 +235,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to export sync file: {result.Error}");
-                    mainWindow?.ShowToast(Resources.ExportSyncFailedToast, isSuccess: false);
+                    mainWindow?.ShowToast(Resources.ExportSyncFailedToast + result.Error, isSuccess: false);
                 }
                 else
                 {

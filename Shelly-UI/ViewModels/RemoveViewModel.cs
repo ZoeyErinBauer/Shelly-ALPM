@@ -7,6 +7,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
+using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Enums;
 using Shelly_UI.Models;
@@ -152,7 +153,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     mainWindow.GlobalBytesValue = "";
                     mainWindow.GlobalProgressText = "0%";
                     mainWindow.IsGlobalBusy = true;
-                    mainWindow.GlobalBusyMessage = "Removing selected packages...";
+                    mainWindow.GlobalBusyMessage = Resources.RemovingSelectedPackages;
                 }
 
                 //do work
@@ -162,7 +163,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
                     var err = Logs.FirstOrDefault(x => x.Contains("[ALPM_ERROR]"));
-                    mainWindow?.ShowToast($"Removal failed: {err}", isSuccess: false);
+                    mainWindow?.ShowToast(string.Format(Resources.PackageRemovalFailed, err), isSuccess: false);
                 }
                 else
                 {
@@ -170,7 +171,7 @@ public class RemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                     var installedPackages = await _privilegedOperationService.GetInstalledPackagesAsync();
                     await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
                     var packageCount = selectedPackages.Count;
-                    mainWindow?.ShowToast($"Successfully removed {packageCount} package{(packageCount > 1 ? "s" : "")}");
+                    mainWindow?.ShowToast(string.Format(Resources.PackageRemovalSuccess, packageCount));
                 }
 
                 await Refresh();

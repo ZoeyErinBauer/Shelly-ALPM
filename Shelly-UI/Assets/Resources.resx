@@ -135,13 +135,13 @@
     <data name="InstallPackages" xml:space="preserve">
         <value>Install Package(s)</value>
     </data>
-    <data name="InstallAUR" xml:space="preserve">
+    <data name="InstallAur" xml:space="preserve">
         <value>Install AUR</value>
     </data>
-    <data name="RemoveAUR" xml:space="preserve">
+    <data name="RemoveAur" xml:space="preserve">
         <value>Remove AUR</value>
     </data>
-    <data name="UpdateAUR" xml:space="preserve">
+    <data name="UpdateAur" xml:space="preserve">
         <value>Update AUR</value>
     </data>
     <data name="TotalPackages" xml:space="preserve">
@@ -192,7 +192,7 @@
     <data name="ToggleConsole" xml:space="preserve">
         <value>Enable Console</value>
     </data>
-    <data name="ToggleAUR" xml:space="preserve">
+    <data name="ToggleAur" xml:space="preserve">
         <value>Enable AUR (Beta)</value>
     </data>
     <data name="ToggleFlatpak" xml:space="preserve">
@@ -231,10 +231,10 @@
     <data name="FlatpakDependency" xml:space="preserve">
         <value>Press confirm to install now or please install yourself</value>
     </data>
-    <data name="AURWarning" xml:space="preserve">
+    <data name="AurWarning" xml:space="preserve">
         <value>AUR Warning</value>
     </data>
-    <data name="AURDisclaimer" xml:space="preserve">
+    <data name="AurDisclaimer" xml:space="preserve">
         <value>AUR packages are user-submitted and not officially supported. Use at your own risk.</value>
     </data>
     <data name="InstallingUpdate" xml:space="preserve">
@@ -248,5 +248,172 @@
     </data>
     <data name="ExportSyncSuccessToast" xml:space="preserve">
         <value>Successfully exported sync file</value>
+    </data>
+    <data name="Validating" xml:space="preserve">
+        <value>Validating...</value>
+    </data>
+    <data name="InvalidPassword" xml:space="preserve">
+        <value>Invalid password. Please try again.</value>
+    </data>
+    <data name="EmptyPassword" xml:space="preserve">
+        <value>Password cannot be empty.</value>
+    </data>
+    <data name="Processing" xml:space="preserve">
+        <value>Processing...</value>
+    </data>
+    <data name="StartTransaction" xml:space="preserve">
+        <value>Starting transaction...</value>
+    </data>
+    <data name="CompletingRequestedActions" xml:space="preserve">
+        <value>Completing requested actions: </value>
+    </data>
+    <data name="TitleHome" xml:space="preserve">
+        <value>Shelly - Home</value>
+    </data>
+    <data name="TitleInstallPackages" xml:space="preserve">
+        <value>Shelly - Install Packages</value>
+    </data>
+    <data name="TitleUpdatePackages" xml:space="preserve">
+        <value>Shelly - Update Packages</value>
+    </data>
+    <data name="TitleRemovePackages" xml:space="preserve">
+        <value>Shelly - Remove Packages</value>
+    </data>
+    <data name="TitleSettings" xml:space="preserve">
+        <value>Shelly - Settings</value>
+    </data>
+    <data name="TitleAurInstall" xml:space="preserve">
+        <value>Shelly - AUR Install</value>
+    </data>
+    <data name="TitleAurUpdate" xml:space="preserve">
+        <value>Shelly - AUR Update</value>
+    </data>
+    <data name="TitleAurRemove" xml:space="preserve">
+        <value>Shelly - AUR Remove</value>
+    </data>
+    <data name="TitleFlatpakInstall" xml:space="preserve">
+        <value>Shelly - Flatpak Install</value>
+    </data>
+    <data name="TitleFlatpakUpdate" xml:space="preserve">
+        <value>Shelly - Flatpak Update</value>
+    </data>
+    <data name="TitleFlatpakRemove" xml:space="preserve">
+        <value>Shelly - Flatpak Remove</value>
+    </data>
+    <data name="TitleSearch" xml:space="preserve">
+        <value>Shelly - Search</value>
+    </data>
+    <data name="AppTitle" xml:space="preserve">
+        <value>Shelly</value>
+    </data>
+    <data name="ActionDownloading" xml:space="preserve">
+        <value>Downloading</value>
+    </data>
+    <data name="ActionReinstalling" xml:space="preserve">
+        <value>Reinstalling</value>
+    </data>
+    <data name="ActionInstalling" xml:space="preserve">
+        <value>Installing</value>
+    </data>
+    <data name="ActionUpdating" xml:space="preserve">
+        <value>Updating</value>
+    </data>
+    <data name="ActionCheckingConflicts" xml:space="preserve">
+        <value>Checking conflicts</value>
+    </data>
+    <data name="ActionRemoving" xml:space="preserve">
+        <value>Removing</value>
+    </data>
+    <data name="ActionRunningHooks" xml:space="preserve">
+        <value>Running hooks...</value>
+    </data>
+    <data name="QuestionInstallIgnorePkg" xml:space="preserve">
+        <value>Install Ignore Package?</value>
+    </data>
+    <data name="QuestionReplacePkg" xml:space="preserve">
+        <value>Replace Package?</value>
+    </data>
+    <data name="QuestionConflictPkg" xml:space="preserve">
+        <value>Package Conflict</value>
+    </data>
+    <data name="QuestionCorruptedPkg" xml:space="preserve">
+        <value>Corrupted Package</value>
+    </data>
+    <data name="QuestionImportKey" xml:space="preserve">
+        <value>Import GPG Key?</value>
+    </data>
+    <data name="QuestionSelectProvider" xml:space="preserve">
+        <value>Select Provider</value>
+    </data>
+    <data name="QuestionDefault" xml:space="preserve">
+        <value>Package Manager Question</value>
+    </data>
+    <data name="InstallingSelectedPackages" xml:space="preserve">
+        <value>Installing selected packages...</value>
+    </data>
+    <data name="StandardInstallationFailed" xml:space="preserve">
+        <value>Standard installation failed: {0}</value>
+    </data>
+    <data name="InstallSuccess" xml:space="preserve">
+        <value>Successfully installed</value>
+    </data>
+    <data name="StandardPackage" xml:space="preserve">
+        <value>standard package</value>
+    </data>
+    <data name="StandardInstallSuccess" xml:space="preserve">
+        <value>Successfully installed {0} standard package(s)
+</value>
+    </data>
+    <data name="AurInstallFailed" xml:space="preserve">
+        <value>AUR installation failed: {0}</value>
+    </data>
+    <data name="AurInstallSuccess" xml:space="preserve">
+        <value>Successfully installed {0} AUR package(s)</value>
+    </data>
+    <data name="FlatpakInstallationFailed" xml:space="preserve">
+        <value>Flatpak installation failed: {0}</value>
+    </data>
+    <data name="FlatpakInstallationSuccess" xml:space="preserve">
+        <value>Successfully installed {0} Flatpak package(s)</value>
+    </data>
+    <data name="GenericPackageInstallFail" xml:space="preserve">
+        <value>Installation failed: {0}
+</value>
+    </data>
+    <data name="SelectLocalPackageFile" xml:space="preserve">
+        <value>Select a local package file</value>
+    </data>
+    <data name="PackageFilesFilter" xml:space="preserve">
+        <value>Package files (*.xz, *.gz, *.zst)</value>
+    </data>
+    <data name="InstallingLocalPackages" xml:space="preserve">
+        <value>Installing local packages...</value>
+    </data>
+    <data name="LocalPackageInstallSuccess" xml:space="preserve">
+        <value>Successfully Installed local packages</value>
+    </data>
+    <data name="RemovingSelectedPackages" xml:space="preserve">
+        <value>Removing selected packages...</value>
+    </data>
+    <data name="PackageRemovalFailed" xml:space="preserve">
+        <value>Removal failed: {0}</value>
+    </data>
+    <data name="PackageRemovalSuccess" xml:space="preserve">
+        <value>Successfuly removed {0} packages</value>
+    </data>
+    <data name="InstallFlatpak" xml:space="preserve">
+        <value>Install Flatpak</value>
+    </data>
+    <data name="InstallingFlatpak" xml:space="preserve">
+        <value>Installing flatpak...</value>
+    </data>
+    <data name="CheckingForUpdates" xml:space="preserve">
+        <value>Checking for updates...</value>
+    </data>
+    <data name="NoUpdateAvailable" xml:space="preserve">
+        <value>No Update Available</value>
+    </data>
+    <data name="UpdateAvailable" xml:space="preserve">
+        <value>Update Available Click to Download</value>
     </data>
 </root>
