@@ -70,11 +70,11 @@ curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/un
 
 Upcoming features and development targets:
 
-- **Repository Modification**: Allow modification of supported repositories (First future release).
-- **Package Grouping**: Group related packages for easier management.
+- **Repository Modification**: Allow modification of supported repositories (In progress).
+- **Package Grouping**: Group related packages for easier management. (In progress)
 - **Desktop Integration**: Enhance integration with the desktop environment for seamless experience. Targeting KDE
-  Plasma and Gnome initially.
-- **Shelly Sync**: Multi-system sync lists that keep packages together across computers
+  Plasma and Gnome initially. (In progress)
+- **Shelly Sync**: Multi-system sync lists that keep packages together across computers (In progress)
 
 ## Prerequisites
 
