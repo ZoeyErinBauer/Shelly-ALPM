@@ -4,7 +4,7 @@ public enum DefaultViewEnum
 {
     HomeScreen,
     InstallPackage,
-    RemovePackage,
+    PackageManagement,
     UpdatePackage,
     InstallAur,
     RemoveAur,

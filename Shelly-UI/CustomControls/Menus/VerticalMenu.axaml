@@ -86,15 +86,15 @@
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>
-                <ToggleButton Command="{Binding GoRemove}"
+                <ToggleButton Command="{Binding GoManage}"
                               HorizontalAlignment="Stretch" Background="Transparent"
                               IsChecked="{Binding ActiveMenu,
     Converter={StaticResource EnumEqualsConverter},
-    ConverterParameter={x:Static enums:MenuOptions.RemovePackage}}">
+    ConverterParameter={x:Static enums:MenuOptions.PackageManagement}}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Delete" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="Remove Packages" FontSize="13"
+                        <TextBlock Text="Manage Packages" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>

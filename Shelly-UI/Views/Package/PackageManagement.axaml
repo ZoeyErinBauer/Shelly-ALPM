@@ -9,8 +9,8 @@
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Shelly_UI.Views.RemoveWindow"
-             x:DataType="viewModels:RemoveViewModel"
+             x:Class="Shelly_UI.Views.PackageManagement"
+             x:DataType="viewModels:PackageManagementViewModel"
              x:CompileBindings="True">
     <UserControl.Styles>
         <Style Selector="DataGridColumnHeader">

@@ -6,7 +6,7 @@ public enum MenuOptions
 {
     None,
     InstallPackage,
-    RemovePackage,
+    PackageManagement,
     UpdatePackage,
     InstallAurPackage,
     RemoveAurPackage,

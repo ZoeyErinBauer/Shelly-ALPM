@@ -25,6 +25,7 @@
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
+                            
                                 <StackPanel HorizontalAlignment="Stretch">
                                     <TextBlock Text="{Binding Title}"
                                                FontWeight="Bold"
@@ -39,6 +40,7 @@
                                                TextWrapping="Wrap"
                                                Margin="5,5,0,0" />
                                 </StackPanel>
+                                 
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                         <ListBox.Styles>
@@ -72,6 +74,12 @@
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                                             <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#999999" />
+                                            <TextBlock Text="140 MiB" FontSize="11" Foreground="#999999" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                            <TextBlock Text=""  FontSize="11" />
+                                            <TextBlock Text="cachyos-znver4"  FontSize="11" Foreground="#999999" />
+                                            <TextBlock Text="x86_64_v4"  FontSize="11" Foreground="#999999" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
