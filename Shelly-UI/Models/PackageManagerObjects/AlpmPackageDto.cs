@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Shelly_UI.Models.PackageManagerObjects;
@@ -15,4 +16,28 @@ public record AlpmPackageDto
     public string Repository { get; init; } = string.Empty;
 
     public List<string> Replaces { get; init; } = [];
+
+    public List<string> Licenses { get; init; } = [];
+
+    public List<string> Groups { get; init; } = [];
+
+    public List<string> Provides { get; init; } = [];
+
+    public List<string> Depends { get; init; } = [];
+
+    public List<string> OptDepends { get; init; } = [];
+
+    public List<string> Conflicts { get; init; } = [];
+
+    public string InstallReason { get; init; } = string.Empty;
+
+    public DateTime? InstallDate { get; init; } = null;
+
+    public long DownloadSize { get; init; } = 0;
+
+    public long InstalledSize { get; init; } = 0;
+
+    public List<string> RequiredBy { get; init; } = [];
+
+    public List<string> OptionalFor { get; init; } = [];
 }
