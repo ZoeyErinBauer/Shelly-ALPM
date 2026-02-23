@@ -184,7 +184,7 @@ public class AlpmPackage(IntPtr pkgPtr)
 
     public AlpmPackageDto ToDto() => new AlpmPackageDto
     {
-        //Todo: implement optional for and requiredby
+        //Todo: implement optionalfor and requiredby
         Name = Name,
         Version = Version,
         Size = Size,
