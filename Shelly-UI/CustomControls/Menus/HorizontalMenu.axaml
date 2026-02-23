@@ -49,7 +49,7 @@
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="Remove Packages" Command="{Binding GoManage}">
+                            <MenuItem Header="Manage Packages" Command="{Binding GoManage}">
                                 <MenuItem.Icon>
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
                                 </MenuItem.Icon>
