@@ -95,7 +95,7 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
         {
             ShowConfirmDialog = false;
 
-            if (!_credentialManager.IsValidated)
+            if (!_credentialManager.IsValidated || _credentialManager.IsExpired())
             {
                 if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
 

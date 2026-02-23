@@ -514,7 +514,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "sudo",
-                Arguments = $"-S {fullCommand} --ui-mode",
+                Arguments = $"-S -k {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -732,12 +732,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             process.BeginErrorReadLine();
 
             // Write password to stdin followed by newline
-            if (!_usedPassword)
-            {
-                await stdinWriter.WriteLineAsync(password);
-                _usedPassword = true;
-            }
-
+            await stdinWriter.WriteLineAsync(password);
+            
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();

@@ -134,7 +134,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             {
                 ShowConfirmDialog = false;
                 // Request credentials 
-                if (!_credentialManager.IsValidated)
+                if (!_credentialManager.IsValidated || _credentialManager.IsExpired())
                 {
                     if (!await _credentialManager.RequestCredentialsAsync("Remove Packages")) return;
 

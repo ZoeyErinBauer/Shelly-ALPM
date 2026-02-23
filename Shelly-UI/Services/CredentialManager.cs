@@ -12,7 +12,7 @@ public class CredentialManager : ICredentialManager
     private TaskCompletionSource<bool>? _pendingRequest;
     private readonly object _lock = new();
     private DateTime _storedTime;
-    private const double TimeToLive = 1;
+    private const double TimeToLive = 9;
 
     public bool HasStoredCredentials
     {
@@ -44,7 +44,6 @@ public class CredentialManager : ICredentialManager
             _storedPassword = "";
             _isValidated = false;
             return true;
-
         }
     }
 
