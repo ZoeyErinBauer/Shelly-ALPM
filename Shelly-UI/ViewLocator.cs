@@ -24,7 +24,7 @@ public class ViewLocator : ReactiveUI.IViewLocator
         SettingViewModel context => new SettingWindow() { DataContext = context },
         UpdateViewModel context => new UpdateWindow() { DataContext = context },
         PackageViewModel context => new PackageWindow() { DataContext = context },
-        RemoveViewModel context => new RemoveWindow() { DataContext = context },
+        PackageManagementViewModel context => new PackageManagement() { DataContext = context },
         AurViewModel context => new AurWindow() { DataContext = context },
         AurRemoveViewModel context => new RemoveAurWindow() { DataContext = context },
         AurUpdateViewModel context => new UpdateAurWindow() { DataContext = context },
