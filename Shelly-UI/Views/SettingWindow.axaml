@@ -109,6 +109,21 @@
                        Foreground="{DynamicResource SystemBaseHighColor}" />
             <Button
                 Padding="0"
+                Click="OpenGithub"
+                HorizontalAlignment="Right"
+                Background="Transparent">
+                <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">
+                    <avalonia:MaterialIcon Kind="Github" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SystemBaseHighColor}"
+                                           Width="20"
+                                           Height="20" />
+                    <TextBlock Grid.Column="1" Text="{x:Static lang:Resources.Github}" Opacity=".7" Padding="10, 0"
+                               Foreground="{DynamicResource SystemBaseHighColor}">
+                    </TextBlock>
+                </Grid>
+            </Button>
+            <Button
+                Padding="0"
                 Click="OpenUrlCrossPlatform"
                 Background="Transparent">
                 <Grid ColumnDefinitions="*, Auto" HorizontalAlignment="Left">

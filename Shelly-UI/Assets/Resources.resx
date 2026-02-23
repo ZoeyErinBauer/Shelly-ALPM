@@ -509,4 +509,7 @@
     <data name="UpdateAllFlatpak" xml:space="preserve">
         <value>Update All Flatpak</value>
     </data>
+    <data name="Github" xml:space="preserve">
+        <value>Github</value>
+    </data>
 </root>
