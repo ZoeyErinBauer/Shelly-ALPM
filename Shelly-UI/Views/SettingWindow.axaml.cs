@@ -51,4 +51,23 @@ public partial class SettingWindow : ReactiveUserControl<SettingViewModel>
             Console.Error.WriteLine($"Failed to open URL: {ex.Message}");
         }
     }
+    
+    private void OpenGithub(object? sender, RoutedEventArgs routedEventArgs)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "xdg-open",
+                Arguments = "https://github.com/ZoeyErinBauer/Shelly-ALPM",
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to open URL: {ex.Message}");
+        }
+    }
 }
