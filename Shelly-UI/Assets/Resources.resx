@@ -416,4 +416,28 @@
     <data name="UpdateAvailable" xml:space="preserve">
         <value>Update Available Click to Download</value>
     </data>
+    <data name="AlpmUpdatePromptDialog" xml:space="preserve">
+        <value>Some packages are not selected. A full system upgrade is always recommended when updating.</value>
+    </data>
+    <data name="Continue" xml:space="preserve">
+        <value>Continue</value>
+    </data>
+    <data name="PerformingFullSystemUpgrade" xml:space="preserve">
+        <value>Performing full system upgrade...</value>
+    </data>
+    <data name="UpdatingSelectedPackages" xml:space="preserve">
+        <value>Updating selected packages...</value>
+    </data>
+    <data name="GenericPackageUpdateSuccess" xml:space="preserve">
+        <value>Successfully updated {0} packages</value>
+    </data>
+    <data name="UpdateFlatpak" xml:space="preserve">
+        <value>Update Flatpak</value>
+    </data>
+    <data name="RemoveFlatpak" xml:space="preserve">
+        <value>Remove Flatpak</value>
+    </data>
+    <data name="ShellySearch" xml:space="preserve">
+        <value>Shelly Search</value>
+    </data>
 </root>
