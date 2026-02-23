@@ -122,7 +122,7 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             try
             {
                 // Request credentials 
-                if (!_credentialManager.IsValidated)
+                if (!_credentialManager.IsValidated || _credentialManager.IsExpired())
                 {
                     if (!await _credentialManager.RequestCredentialsAsync(Resources.UpdatePackages)) return;
 

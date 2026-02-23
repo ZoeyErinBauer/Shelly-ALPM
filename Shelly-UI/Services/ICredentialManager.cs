@@ -14,6 +14,11 @@ public interface ICredentialManager
     /// Gets whether the stored credentials have been validated.
     /// </summary>
     bool IsValidated { get; }
+
+    /// <summary>
+    /// Gets whether the stored credentials are expired.
+    /// </summary>
+    bool IsExpired();
     
     /// <summary>
     /// Stores the password for the current session.

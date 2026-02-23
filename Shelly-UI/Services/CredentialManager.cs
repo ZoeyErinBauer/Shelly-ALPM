@@ -11,6 +11,8 @@ public class CredentialManager : ICredentialManager
     private bool _isValidated;
     private TaskCompletionSource<bool>? _pendingRequest;
     private readonly object _lock = new();
+    private DateTime _storedTime;
+    private const double TimeToLive = 9;
 
     public bool HasStoredCredentials
     {
@@ -34,12 +36,24 @@ public class CredentialManager : ICredentialManager
         }
     }
 
+    public bool IsExpired()
+    {
+        lock (_lock)
+        {
+            if (!((DateTime.Now - _storedTime).TotalMinutes > TimeToLive)) return false;
+            _storedPassword = "";
+            _isValidated = false;
+            return true;
+        }
+    }
+
     public void StorePassword(string password)
     {
         lock (_lock)
         {
             _storedPassword = password;
             _isValidated = false;
+            _storedTime = DateTime.Now;
         }
     }
 

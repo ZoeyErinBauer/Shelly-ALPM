@@ -164,7 +164,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 ShowConfirmDialog = false;
 
-                if (!_credentialManager.IsValidated)
+                if (!_credentialManager.IsValidated || _credentialManager.IsExpired())
                 {
                     if (!await _credentialManager.RequestCredentialsAsync("Install Packages")) return;
 
@@ -242,7 +242,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
             var filePath = files[0].Path.LocalPath;
 
-            if (!_credentialManager.IsValidated)
+            if (!_credentialManager.IsValidated || _credentialManager.IsExpired())
             {
                 if (!await _credentialManager.RequestCredentialsAsync("Install Local Package")) return;
 
