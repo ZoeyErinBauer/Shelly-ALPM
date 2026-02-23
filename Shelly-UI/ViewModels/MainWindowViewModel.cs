@@ -21,6 +21,7 @@ using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 using Shelly_UI.ViewModels.Flatpak;
+using Shelly_UI.Views;
 
 namespace Shelly_UI.ViewModels;
 
@@ -229,9 +230,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             var vm = new UpdateViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
-        GoRemove = ReactiveCommand.CreateFromObservable(() =>
+        GoManage = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new RemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            var vm = new PackageViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
@@ -300,7 +301,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             { DefaultViewEnum.HomeScreen, GoHome },
             { DefaultViewEnum.InstallPackage, GoPackages },
-            { DefaultViewEnum.RemovePackage, GoRemove },
+            { DefaultViewEnum.PackageManagement, GoManage },
             { DefaultViewEnum.UpdatePackage, GoUpdate },
             { DefaultViewEnum.UpdateAur, GoAurUpdate },
             { DefaultViewEnum.InstallAur, GoAur },
@@ -318,7 +319,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
               HomeViewModel => Resources.TitleHome,
               PackageViewModel => Resources.TitleInstallPackages,
               UpdateViewModel => Resources.TitleUpdatePackages,
-              RemoveViewModel => Resources.TitleRemovePackages,
+              PackageManagement => Resources.TitleRemovePackages,
               SettingViewModel => Resources.TitleSettings,
               AurViewModel => Resources.TitleAurInstall,
               AurUpdateViewModel => Resources.TitleAurUpdate,
@@ -654,7 +655,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoUpdate { get; set; } = null!;
 
-    public static ReactiveCommand<Unit, IRoutableViewModel> GoRemove { get; set; } = null!;
+    public static ReactiveCommand<Unit, IRoutableViewModel> GoManage { get; set; } = null!;
 
     public static ReactiveCommand<Unit, IRoutableViewModel> GoSetting { get; set; } = null!;
 

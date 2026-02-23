@@ -50,7 +50,7 @@
                                     <icons:MaterialIcon Kind="Update" Width="18" Height="18" />
                                 </MenuItem.Icon>
                             </MenuItem>
-                            <MenuItem Header="{x:Static lang:Resources.RemovePackages}" Command="{Binding GoRemove}">
+                            <MenuItem Header="{x:Static lang:Resources.RemovePackages}" Command="{Binding GoManage}">
                                 <MenuItem.Icon>
                                     <icons:MaterialIcon Kind="Delete" Width="18" Height="18" />
                                 </MenuItem.Icon>

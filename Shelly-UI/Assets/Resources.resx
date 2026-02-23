@@ -440,4 +440,73 @@
     <data name="ShellySearch" xml:space="preserve">
         <value>Shelly Search</value>
     </data>
+    <data name="LabelVersion" xml:space="preserve">
+        <value>Version: {0}</value>
+    </data>
+    <data name="LabelSize" xml:space="preserve">
+        <value>Size: {0}</value>
+    </data>
+    <data name="LabelReason" xml:space="preserve">
+        <value>Reason: {0}</value>
+    </data>
+    <data name="LabelInstallDate" xml:space="preserve">
+        <value>Install Date: {0}</value>
+    </data>
+    <data name="LabelDescription" xml:space="preserve">
+        <value>Description: {0}</value>
+    </data>
+    <data name="MenuReplaces" xml:space="preserve">
+        <value>Replaces</value>
+    </data>
+    <data name="MenuLicenses" xml:space="preserve">
+        <value>Licenses</value>
+    </data>
+    <data name="MenuGroups" xml:space="preserve">
+        <value>Groups</value>
+    </data>
+    <data name="MenuProvides" xml:space="preserve">
+        <value>Provides</value>
+    </data>
+    <data name="MenuRequiredBy" xml:space="preserve">
+        <value>Required By</value>
+    </data>
+    <data name="MenuOptionalFor" xml:space="preserve">
+        <value>Optional For</value>
+    </data>
+    <data name="MenuDepends" xml:space="preserve">
+        <value>Depends</value>
+    </data>
+    <data name="MenuOptDepends" xml:space="preserve">
+        <value>Optional Dependencies</value>
+    </data>
+    <data name="MenuConflicts" xml:space="preserve">
+        <value>Conflitcs</value>
+    </data>
+    <data name="InstallAurPackages" xml:space="preserve">
+        <value>Install AUR package(s)</value>
+    </data>
+    <data name="RightClickAdditionalInfo" xml:space="preserve">
+        <value>Right click for additional information</value>
+    </data>
+    <data name="LabelMaintainer" xml:space="preserve">
+        <value>Maintainer: {0}</value>
+    </data>
+    <data name="LabelFirstSubmitted" xml:space="preserve">
+        <value>First Submitted: {0}</value>
+    </data>
+    <data name="LabelLastModified" xml:space="preserve">
+        <value>Last Modified: {0}</value>
+    </data>
+    <data name="RemoveAurPackages" xml:space="preserve">
+        <value>Remove AUR Package(s)</value>
+    </data>
+    <data name="UpdateAurPackages" xml:space="preserve">
+        <value>Update AUR Package(s)</value>
+    </data>
+    <data name="LoadingFlatpakInformation" xml:space="preserve">
+        <value>Loading flatpak information this may take a moment on first load.</value>
+    </data>
+    <data name="UpdateAllFlatpak" xml:space="preserve">
+        <value>Update All Flatpak</value>
+    </data>
 </root>

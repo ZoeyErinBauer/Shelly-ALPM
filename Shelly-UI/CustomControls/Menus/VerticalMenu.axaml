@@ -86,8 +86,8 @@
                         <TextBlock Text="{x:Static lang:Resources.UpdatePackages}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
-                </ToggleButton>
-                <ToggleButton Command="{Binding GoManage}"
+                </ToggleButton> <!--changed for testing purposes.-->
+                <ToggleButton Command="{Binding GoManage}" 
                               HorizontalAlignment="Stretch" Background="Transparent"
                               IsChecked="{Binding ActiveMenu,
     Converter={StaticResource EnumEqualsConverter},

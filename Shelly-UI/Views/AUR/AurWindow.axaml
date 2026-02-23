@@ -36,7 +36,7 @@
                                ZIndex="10" Opacity=".7" IsVisible="{Binding HelpTextVisibility}" />
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
-                            Title="Install AUR Package(s)"
+                            Title="{x:Static lang:Resources.InstallAurPackages}"
                             TitleIcon="Download"
                             ShowTitleButton="True"
                             TitleCommand="{Binding ToggleConfirmAction}"
@@ -66,7 +66,7 @@
                                                            FontSize="12" />
                                                 <Separator Margin="0,5"
                                                            Background="{DynamicResource SystemBaseLowColor}" />
-                                                <TextBlock Text="Right click for additional information" FontSize="11"
+                                                <TextBlock Text="{x:Static lang:Resources.RightClickAdditionalInfo}" FontSize="11"
                                                            Opacity="0.7" />
                                             </StackPanel>
                                         </Template>
@@ -76,15 +76,15 @@
                                             <ContextMenu x:DataType="models:AurModel">
                                                 <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
                                                 <Separator />
-                                                <MenuItem Header="{Binding Version, StringFormat='Version: {0}'}"
+                                                <MenuItem Header="{Binding Version, StringFormat='{x:Static lang:Resources.LabelVersion}'}"
                                                           IsEnabled="False" />
-                                                <MenuItem Header="{Binding Maintainer, StringFormat='Maintainer: {0}'}"
+                                                <MenuItem Header="{Binding Maintainer, StringFormat='{x:Static lang:Resources.LabelMaintainer}'}"
                                                           IsEnabled="False" />
                                                 <MenuItem
-                                                    Header="{Binding FirstSubmitted, StringFormat='First Submitted: {0}'}"
+                                                    Header="{Binding FirstSubmitted, StringFormat='{x:Static lang:Resources.LabelFirstSubmitted}'}"
                                                     IsEnabled="False" />
                                                 <MenuItem
-                                                    Header="{Binding LastModified, StringFormat='Last Modified: {0}'}"
+                                                    Header="{Binding LastModified, StringFormat='{x:Static lang:Resources.LabelLastModified}'}"
                                                     IsEnabled="False" />
                                                 <MenuItem Click="OpenUrl_Click" CommandParameter="{Binding Url}">
                                                     <MenuItem.Header>
