@@ -3,18 +3,19 @@ using Tmds.DBus.Protocol;
 
 namespace Shelly_Notifications.DbusHandlers;
 
-internal class DBusMenuHandler : IPathMethodHandler
+internal class DBusMenuHandler(Connection connection) : IPathMethodHandler
 {
     public string Path => "/MenuBar";
     public bool HandlesChildPaths => false;
 
     public event Action? OnExitRequested;
 
-    private static readonly Dictionary<int, (string Label, string Type)> Items = new()
+    private static readonly Dictionary<int, (string Label, string Type, bool Enabled, string icon)> Items = new()
     {
-        [1] = ("Open", "standard"),
-        [2] = ("", "separator"),
-        [3] = ("Exit", "standard"),
+        [1] = ("Open Shelly", "standard", true, "shelly"),
+        [2] = ("Check for Updates", "standard", true, ""),
+        [3] = ("", "separator", false, ""),
+        [4] = ("Exit", "standard", true, ""),
     };
 
     private static readonly int[] RootChildren = { 1, 2, 3, 4 };
@@ -90,14 +91,15 @@ internal class DBusMenuHandler : IPathMethodHandler
         return ValueTask.CompletedTask;
     }
 
-    private VariantValue BuildMenuItemVariant(int id, string label, string type)
+    private VariantValue BuildMenuItemVariant(int id, string label, string type, bool enabled, string icon)
     {
         Dict<string, VariantValue> props = new(new Dictionary<string, VariantValue>
         {
             { "label", label },
             { "type", type },
-            { "enabled", true },
+            { "enabled", enabled },
             { "visible", true },
+            {"icon-name", icon}
         });
 
         return VariantValue.Struct(
@@ -130,14 +132,14 @@ internal class DBusMenuHandler : IPathMethodHandler
         var av = w.WriteArrayStart(DBusType.Variant);
         foreach (var id in RootChildren)
             if (Items.TryGetValue(id, out var item))
-                w.WriteVariant(BuildMenuItemVariant(id, item.Label, item.Type));
+                w.WriteVariant(BuildMenuItemVariant(id, item.Label, item.Type, item.Enabled, item.icon));
         w.WriteArrayEnd(av);
 
         context.Reply(w.CreateMessage());
         return ValueTask.CompletedTask;
     }
 
-    private ValueTask HandleEvent(MethodContext context)
+    private async ValueTask HandleEvent(MethodContext context)
     {
         var reader = context.Request.GetBodyReader();
         var id = reader.ReadInt32();
@@ -150,13 +152,13 @@ internal class DBusMenuHandler : IPathMethodHandler
             switch (id)
             {
                 case 1: AppRunner.LaunchAppIfNotRunning(); break;
-                case 3: OnExitRequested?.Invoke(); break;
+                case 2: new NotificationHandler().SendNotif(connection, $"Updates available: {await new UpdateService().CheckForUpdates()}"); break;
+                case 4: OnExitRequested?.Invoke(); break;
             }
         }
 
         using var w = context.CreateReplyWriter("");
         context.Reply(w.CreateMessage());
-        return ValueTask.CompletedTask;
     }
 
     private static ValueTask HandleEventGroup(MethodContext context)

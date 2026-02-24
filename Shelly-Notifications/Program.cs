@@ -83,7 +83,7 @@ try
     var trayHandler = new StatusNotifierItemHandler();
     connection.AddMethodHandler(trayHandler);
 
-    var menuHandler = new DBusMenuHandler();
+    var menuHandler = new DBusMenuHandler(connection);
     menuHandler.OnExitRequested += () =>
     {
         Console.WriteLine("Exit requested via tray menu.");
