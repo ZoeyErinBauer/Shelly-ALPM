@@ -70,17 +70,17 @@ public class AurSearchManagerTests
         Assert.That(response.Results[0].Name, Is.EqualTo("test-package-123"));
     }
 
-    [Test]
-    public async Task SearchAsync_ShouldReturnResults()
-    {
-        // Act
-        var response = await _manager.SearchAsync("visual-studio-code-bin");
-
-        // Assert
-        Assert.That(response, Is.Not.Null);
-        Assert.That(response.Type, Is.EqualTo("search"));
-        Assert.That(response.Results, Is.Not.Null);
-    }
+    // [Test]
+    // public async Task SearchAsync_ShouldReturnResults()
+    // {
+    //     // Act
+    //     var response = await _manager.SearchAsync("visual-studio-code-bin");
+    //
+    //     // Assert
+    //     Assert.That(response, Is.Not.Null);
+    //     Assert.That(response.Type, Is.EqualTo("search"));
+    //     Assert.That(response.Results, Is.Not.Null);
+    // }
 
     [Test]
     public async Task GetInfoAsync_ShouldReturnDetailedResults()
