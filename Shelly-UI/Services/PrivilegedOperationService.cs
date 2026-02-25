@@ -514,7 +514,8 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "sudo",
-                Arguments = $"-S -k {fullCommand} --ui-mode",
+                //removing -k from sudo as a test
+                Arguments = $"-S {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
