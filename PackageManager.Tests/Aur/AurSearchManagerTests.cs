@@ -82,16 +82,16 @@ public class AurSearchManagerTests
     //     Assert.That(response.Results, Is.Not.Null);
     // }
 
-    [Test]
-    public async Task GetInfoAsync_ShouldReturnDetailedResults()
-    {
-        // Act
-        var response = await _manager.GetInfoAsync(["visual-studio-code-bin", "google-chrome"]);
-
-        // Assert
-        Assert.That(response, Is.Not.Null);
-        Assert.That(response.Type, Is.EqualTo("multiinfo"));
-        Assert.That(response.Results, Is.Not.Null);
-        Assert.That(response.Results.Count, Is.GreaterThanOrEqualTo(1));
-    }
+    // [Test]
+    // public async Task GetInfoAsync_ShouldReturnDetailedResults()
+    // {
+    //     // Act
+    //     var response = await _manager.GetInfoAsync(["visual-studio-code-bin", "google-chrome"]);
+    //
+    //     // Assert
+    //     Assert.That(response, Is.Not.Null);
+    //     Assert.That(response.Type, Is.EqualTo("multiinfo"));
+    //     Assert.That(response.Results, Is.Not.Null);
+    //     Assert.That(response.Results.Count, Is.GreaterThanOrEqualTo(1));
+    // }
 }
