@@ -32,7 +32,7 @@
             IsBottomPanelCollapsed="{Binding IsBottomPanelCollapsed, Mode=TwoWay}">
             <customControls:ConsoleSplitControl.MainContent>
                 <Grid Background="{DynamicResource SystemChromeLowColor}">
-                    <TextBlock Text="Search To get started!" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    <TextBlock Text="{x:Static lang:Resources.SearchToGetStarted}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                ZIndex="10" Opacity=".7" IsVisible="{Binding HelpTextVisibility}" />
                     <Grid RowDefinitions="Auto,*">
                         <menus:HeaderRow
@@ -124,11 +124,11 @@
                                     Binding="{Binding Version}"
                                     Width="*" />
                                 <DataGridTextColumn
-                                    Header="Votes"
+                                    Header="{x:Static lang:Resources.Votes}"
                                     Binding="{Binding NumVotes}"
                                     Width="*" />
                                 <DataGridTextColumn
-                                    Header="Popularity"
+                                    Header="{x:Static lang:Resources.Popularity}"
                                     Binding="{Binding Popularity}"
                                     Width="*" />
                                 <DataGridTemplateColumn

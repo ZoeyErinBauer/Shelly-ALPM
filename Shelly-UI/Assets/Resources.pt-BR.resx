@@ -510,4 +510,13 @@
     <data name="ActionDownloading" xml:space="preserve">
         <value>Baixando</value>
     </data>
+    <data name="Popularity" xml:space="preserve">
+        <value>Popularidade</value>
+    </data>
+    <data name="Votes" xml:space="preserve">
+        <value>Votos</value>
+    </data>
+    <data name="SearchToGetStarted" xml:space="preserve">
+        <value>Faça uma pesquisa para começar!</value>
+    </data>
 </root>

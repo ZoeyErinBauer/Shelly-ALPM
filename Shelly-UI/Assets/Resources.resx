@@ -512,4 +512,13 @@
     <data name="Github" xml:space="preserve">
         <value>Github</value>
     </data>
+    <data name="Votes" xml:space="preserve">
+        <value>Votes</value>
+    </data>
+    <data name="Popularity" xml:space="preserve">
+        <value>Popularity</value>
+    </data>
+    <data name="SearchToGetStarted" xml:space="preserve">
+        <value>Search To get started!</value>
+    </data>
 </root>
