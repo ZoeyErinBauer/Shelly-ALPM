@@ -28,22 +28,6 @@ public partial class App : Application
     
     public App()
     {
-        // Check for detecting system culture
-        // Still in testing
-        var systemCulture = CultureInfo.InstalledUICulture;
-        //var systemCulture = new CultureInfo("pt-BR");
-
-        CultureInfo.CurrentCulture = systemCulture;
-        CultureInfo.CurrentUICulture = systemCulture;
-        CultureInfo.DefaultThreadCurrentCulture = systemCulture;
-        CultureInfo.DefaultThreadCurrentUICulture = systemCulture;
-        Console.WriteLine($"CurrentCulture: {CultureInfo.CurrentCulture}");
-        Console.WriteLine($"CurrentUICulture: {CultureInfo.CurrentUICulture}");
-        Console.WriteLine($"InstalledUICulture: {CultureInfo.InstalledUICulture}");
-        Console.WriteLine($"DefaultThreadCurrentCulture: {CultureInfo.DefaultThreadCurrentCulture}");
-        Console.WriteLine($"DefaultThreadCurrentUICulture: {CultureInfo.DefaultThreadCurrentUICulture}");
-        Console.WriteLine($"ArchNews resource: {Assets.Resources.ArchNews}");
-        Console.WriteLine($"NoUpdateAvailable resource: {Assets.Resources.NoUpdateAvailable}");
         DataContext = this;
     }
 
@@ -90,7 +74,9 @@ public partial class App : Application
             }
 
             Assets.Resources.Culture =
-                config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
+               config.Culture != null
+                   ? new CultureInfo(config.Culture)
+                   : CultureInfo.CurrentUICulture;
 
             _mainWindow = new MainWindow
             {
@@ -104,7 +90,7 @@ public partial class App : Application
                 TrayStartService.Start();
             }
 
-            desktop.MainWindow = _mainWindow;
+            desktop.MainWindow = _mainWindow; 
         }
 
         base.OnFrameworkInitializationCompleted();
