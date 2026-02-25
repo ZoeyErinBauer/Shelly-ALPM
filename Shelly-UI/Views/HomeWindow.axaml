@@ -240,10 +240,9 @@
                     <StackPanel>
                         <TextBlock Text="{x:Static lang:Resources.PackageDashboard}" FontSize="18" FontWeight="Bold"
                                    Margin="10, 5,0 ,0" />
-                        <!--Horizontal Menu-->
-                        <Border Width="240"
-                                Padding="8">
-                            <StackPanel VerticalAlignment="Center">
+
+                        <Grid Grid.ColumnDefinitions="*,Auto,*">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock FontSize="20"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
@@ -268,10 +267,59 @@
                                     HorizontalAlignment="Center"
                                     FontWeight="SemiBold" />
                             </StackPanel>
-                        </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock FontSize="20"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           Text="{x:Static lang:Resources.TotalPackages}" />
+                                <TextBlock FontSize="73"
+                                           FontWeight="Light"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,8"
+                                           Text="{Binding TotalPackages}" />
+                                <Border Height="3"
+                                        Background="{DynamicResource SystemBaseLowColor}"
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Stretch" />
+                                <TextBlock
+                                    FontSize="15"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,15,0,4"
+                                    Text="{x:Static lang:Resources.UpToDatePackages}" />
+                                <TextBlock
+                                    Text="{Binding GaugeLabel}"
+                                    FontSize="28"
+                                    HorizontalAlignment="Center"
+                                    FontWeight="SemiBold" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock FontSize="20"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           Text="{x:Static lang:Resources.TotalPackages}" />
+                                <TextBlock FontSize="73"
+                                           FontWeight="Light"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,8"
+                                           Text="{Binding TotalPackages}" />
+                                <Border Height="3"
+                                        Background="{DynamicResource SystemBaseLowColor}"
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Stretch" />
+                                <TextBlock
+                                    FontSize="15"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,15,0,4"
+                                    Text="{x:Static lang:Resources.UpToDatePackages}" />
+                                <TextBlock
+                                    Text="{Binding GaugeLabel}"
+                                    FontSize="28"
+                                    HorizontalAlignment="Center"
+                                    FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Grid>
                         <Button Margin="10" Padding="8" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
                                 Content="{x:Static lang:Resources.ExportSyncFile}" Command="{Binding SyncExport}" />
-                        <!-- Export Sync File -->
                     </StackPanel>
 
                 </Border>
