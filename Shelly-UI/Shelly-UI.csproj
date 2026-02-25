@@ -29,9 +29,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Assets\**" Exclude="Assets\Resources*.resx"/>
     </ItemGroup>
-
+    
+    
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.10"/>
         <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.10"/>
