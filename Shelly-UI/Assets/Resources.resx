@@ -521,4 +521,7 @@
     <data name="SearchToGetStarted" xml:space="preserve">
         <value>Search To get started!</value>
     </data>
+    <data name="CheckForUpdate" xml:space="preserve">
+        <value>Check for update</value>
+    </data>
 </root>

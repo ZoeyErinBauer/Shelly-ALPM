@@ -139,7 +139,7 @@
         <value>Habilitar essa funcionalidade requer Flatpak</value>
     </data>
     <data name="ForceSync" xml:space="preserve">
-        <value>Forçar atualização do banco de dados</value>
+        <value>Forçar atualização do banco</value>
     </data>
     <data name="GenericPackageInstallFail" xml:space="preserve">
         <value>Falha na instalação: {0}</value>
@@ -518,5 +518,8 @@
     </data>
     <data name="SearchToGetStarted" xml:space="preserve">
         <value>Faça uma pesquisa para começar!</value>
+    </data>
+    <data name="CheckForUpdate" xml:space="preserve">
+        <value>Buscar Atualização</value>
     </data>
 </root>
