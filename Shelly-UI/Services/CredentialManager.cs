@@ -118,6 +118,13 @@ public class CredentialManager : ICredentialManager
                 return true;
             }
 
+            if (IsSudoPasswordless())
+            {
+                _isValidated = true;
+                _storedPassword = "NOPASSWORD67";
+                return true;
+            }
+
             // If there's already a pending request, return its task
             if (_pendingRequest != null)
             {
@@ -220,5 +227,28 @@ public class CredentialManager : ICredentialManager
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Verifies sudo execution can  work without needing to validate the password 
+    /// </summary>
+    /// <returns>If sudo is passwordless</returns>
+    private bool IsSudoPasswordless()
+    {
+        try
+        {
+            using var process = new System.Diagnostics.Process();
+            process.StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "sudo",
+                Arguments = "-n true", // -n is 'non-interactive'
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch { return false; }
     }
 }
