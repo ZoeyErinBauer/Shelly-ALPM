@@ -1,5 +1,4 @@
 using System;
-using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -20,9 +19,8 @@ public static class AurCachingUtility
             PooledConnectionLifetime = TimeSpan.FromMinutes(1)
         };
         var client = new HttpClient(handler);
-        var result = client.GetStreamAsync("https://aur.archlinux.org/packages.gz").GetAwaiter().GetResult();
+        var result = client.GetStreamAsync("https://aur.archlinux.org/packages-meta-v1.json.gz").GetAwaiter().GetResult();
         var gZipStream = new GZipStream(result, CompressionMode.Decompress);
-        var tarReader = new TarReader(gZipStream);
 
         var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shelly");
         if (!Directory.Exists(configPath))
@@ -30,12 +28,8 @@ public static class AurCachingUtility
             Directory.CreateDirectory(configPath);
         }
 
-        while (tarReader.GetNextEntry(true) is { } entry)
-        {
-            if (entry.Name.EndsWith(".json"))
-            {
-                entry.ExtractToFile(Path.Combine(configPath, "aur-packages.json"), true);
-            }
-        }
+        var filePath = Path.Combine(configPath, "aur-packages.json");
+        using var fileStream = File.Create(filePath);
+        gZipStream.CopyTo(fileStream);
     }
 }

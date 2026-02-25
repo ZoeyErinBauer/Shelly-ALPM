@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Formats.Tar;
 using System.Net.Http;
 using NUnit.Framework;
 using PackageManager.Aur;
