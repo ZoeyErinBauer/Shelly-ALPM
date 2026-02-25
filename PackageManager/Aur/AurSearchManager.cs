@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using PackageManager.Aur.Models;
@@ -13,15 +15,52 @@ public class AurSearchManager : IAurSearchManager, IDisposable
 {
     private readonly HttpClient _httpClient;
     private const string BaseUrl = "https://aur.archlinux.org/rpc/v5/";
+    private readonly string _cacheFilePath;
 
     public AurSearchManager(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shelly");
+        _cacheFilePath = Path.Combine(configPath, "aur-packages.json");
     }
 
     public async Task<AurResponse<AurPackageDto>> SearchAsync(string query,
         CancellationToken cancellationToken = default)
     {
+        if (File.Exists(_cacheFilePath))
+        {
+            try
+            {
+                await using var fs = File.OpenRead(_cacheFilePath);
+                var cachedPackages = await JsonSerializer.DeserializeAsync<List<AurPackageDto>>(fs,
+                    AurJsonContext.Default.ListAurPackageDto, cancellationToken);
+
+                if (cachedPackages != null)
+                {
+                    var results = cachedPackages
+                        .Where(p => p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                    (p.Description != null &&
+                                     p.Description.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                        .Take(100)
+                        .ToList();
+
+                    if (results.Count > 0)
+                    {
+                        return new AurResponse<AurPackageDto>
+                        {
+                            Type = "search",
+                            ResultCount = results.Count,
+                            Results = results
+                        };
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fallback to API if cache reading fails
+            }
+        }
+
         var url = $"{BaseUrl}search/{Uri.EscapeDataString(query)}";
         var response =
             await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.AurResponseAurPackageDto, cancellationToken);
