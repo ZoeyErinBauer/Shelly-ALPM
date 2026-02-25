@@ -280,7 +280,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             var vm = new MetaSearchViewModel(this);
             vm.SearchText = MetaSearchString;
-            return Router.NavigateAndReset.Execute(vm);
+            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
 
         SearchButtonCommand = ReactiveCommand.Create(() =>
