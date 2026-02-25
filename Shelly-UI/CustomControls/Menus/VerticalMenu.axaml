@@ -95,7 +95,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <icons:MaterialIcon Kind="Delete" Width="18" Height="18"
                                             Foreground="{DynamicResource SystemBaseHighColor}" />
-                        <TextBlock Text="{x:Static lang:Resources.UpdatePackages}" FontSize="13"
+                        <TextBlock Text="{x:Static lang:Resources.ManagePackages}" FontSize="13"
                                    Foreground="{DynamicResource SystemBaseHighColor}" />
                     </StackPanel>
                 </ToggleButton>

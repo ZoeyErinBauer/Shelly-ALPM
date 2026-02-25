@@ -2,9 +2,7 @@
 using ReactiveUI.Avalonia;
 using System;
 using System.IO;
-using System.IO.Pipes;
 using System.Threading;
-using System.Threading.Tasks;
 using Shelly.Utilities.System;
 
 namespace Shelly_UI;

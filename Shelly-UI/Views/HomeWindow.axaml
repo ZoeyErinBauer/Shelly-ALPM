@@ -10,6 +10,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <converters:FileSizeConverter x:Key="ByteConverter" />
+            <converters:ListContainsItemConverter x:Key="ListContainsItemConverter" />
         </ResourceDictionary>
     </UserControl.Resources>
     <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
@@ -98,122 +99,134 @@
                                     <Setter Property="Margin" Value="2,2" />
                                 </Style>
                                 <Style Selector="ListBoxItem" x:DataType="models:AlpmPackageDto">
-                                <Setter Property="ContextMenu">
-                                    <Setter.Value>
-                                        <ContextMenu x:DataType="models:AlpmPackageDto" MaxWidth="350">
-                                            <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
-                                            <Separator />
-                                            <MenuItem Header="{Binding Version, StringFormat={x:Static lang:Resources.LabelVersion}}"
-                                                      IsEnabled="False" />
-                                            <MenuItem
-                                                Header="{Binding InstalledSize, Converter={StaticResource ByteConverter}, StringFormat='{x:Static lang:Resources.LabelSize}'}"
-                                                IsEnabled="False" />
-                                            <MenuItem Header="{Binding InstallReason, StringFormat='{x:Static lang:Resources.LabelReason}'}"
-                                                      IsEnabled="False" />
-                                            <MenuItem Header="{Binding InstallDate, StringFormat='{x:Static lang:Resources.LabelInstallDate}'}"
-                                                      IsEnabled="False" />
-                                            <MenuItem Header="{x:Static lang:Resources.MenuReplaces}">
-                                                <ItemsControl ItemsSource="{Binding Replaces}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuLicenses}">
-                                                <ItemsControl ItemsSource="{Binding Licenses}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuGroups}">
-                                                <ItemsControl ItemsSource="{Binding Groups}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuProvides}">
-                                                <ItemsControl ItemsSource="{Binding Provides}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuRequiredBy}">
-                                                <ItemsControl ItemsSource="{Binding RequiredBy}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuOptionalFor}">
-                                                <ItemsControl ItemsSource="{Binding OptionalFor}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuDepends}">
-                                                <ItemsControl ItemsSource="{Binding Depends}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuOptDepends}">
-                                                <ItemsControl ItemsSource="{Binding OptDepends}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding }"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem Header="{x:Static lang:Resources.MenuConflicts}">
-                                                <ItemsControl ItemsSource="{Binding Conflicts}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <MenuItem Header="{Binding}"
-                                                                      IsEnabled="False"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </MenuItem>
-                                            <MenuItem IsEnabled="False">
-                                                <MenuItem.Header>
-                                                    <TextBlock
-                                                        Text="{Binding Description, StringFormat='{x:Static lang:Resources.LabelDescription}'}"
-                                                        TextWrapping="Wrap"
-                                                        MaxWidth="300" />
-                                                </MenuItem.Header>
-                                            </MenuItem>
-                                        </ContextMenu>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu x:DataType="models:AlpmPackageDto" MaxWidth="350">
+                                                <MenuItem Header="{Binding Name}" FontWeight="Bold" IsEnabled="False" />
+                                                <Separator />
+                                                <MenuItem
+                                                    Header="{Binding Version, StringFormat={x:Static lang:Resources.LabelVersion}}"
+                                                    IsEnabled="False" />
+                                                <MenuItem
+                                                    Header="{Binding InstalledSize, Converter={StaticResource ByteConverter}, StringFormat='{x:Static lang:Resources.LabelSize}'}"
+                                                    IsEnabled="False" />
+                                                <MenuItem
+                                                    Header="{Binding InstallReason, StringFormat='{x:Static lang:Resources.LabelReason}'}"
+                                                    IsEnabled="False" />
+                                                <MenuItem
+                                                    Header="{Binding InstallDate, StringFormat='{x:Static lang:Resources.LabelInstallDate}'}"
+                                                    IsEnabled="False" />
+                                                <MenuItem Header="{x:Static lang:Resources.MenuReplaces}"
+                                                          IsVisible="{Binding Replaces, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Replaces}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuLicenses}"
+                                                          IsVisible="{Binding Licenses, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Licenses}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuGroups}"
+                                                          IsVisible="{Binding Groups, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Groups}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuProvides}"
+                                                          IsVisible="{Binding Provides, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Provides}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuRequiredBy}"
+                                                          IsVisible="{Binding RequiredBy, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding RequiredBy}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuOptionalFor}"
+                                                          IsVisible="{Binding OptionalFor, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding OptionalFor}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuDepends}"
+                                                          IsVisible="{Binding Depends, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Depends}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuOptDepends}"
+                                                          IsVisible="{Binding OptDepends, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding OptDepends}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding }"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem Header="{x:Static lang:Resources.MenuConflicts}"
+                                                          IsVisible="{Binding Conflicts, Converter={StaticResource ListContainsItemConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding Conflicts}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <MenuItem Header="{Binding}"
+                                                                          IsEnabled="False" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </MenuItem>
+                                                <MenuItem IsEnabled="False">
+                                                    <MenuItem.Header>
+                                                        <TextBlock
+                                                            Text="{Binding Description, StringFormat='{x:Static lang:Resources.LabelDescription}'}"
+                                                            TextWrapping="Wrap"
+                                                            MaxWidth="300" />
+                                                    </MenuItem.Header>
+                                                </MenuItem>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
                             </ListBox.Styles>
                         </ListBox>
                     </DockPanel>
@@ -234,7 +247,7 @@
                                 <TextBlock FontSize="20"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
-                                           Text="{x:Static lang:Resources.TotalPackages}"/>
+                                           Text="{x:Static lang:Resources.TotalPackages}" />
                                 <TextBlock FontSize="73"
                                            FontWeight="Light"
                                            HorizontalAlignment="Center"

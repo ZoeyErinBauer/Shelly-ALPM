@@ -5,20 +5,15 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using ReactiveUI;
 using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
-using Tmds.DBus.Protocol;
 
 namespace Shelly_UI.ViewModels;
 

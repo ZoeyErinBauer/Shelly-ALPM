@@ -126,8 +126,8 @@
     <data name="ForceSync" xml:space="preserve">
         <value>Force Database Update</value>
     </data>
-    <data name="RemovePackages" xml:space="preserve">
-        <value>Remove Packages</value>
+    <data name="ManagePackages" xml:space="preserve">
+        <value>Manage Package(s)</value>
     </data>
     <data name="UpdatePackages" xml:space="preserve">
         <value>Update Package(s)</value>
@@ -276,8 +276,8 @@
     <data name="TitleUpdatePackages" xml:space="preserve">
         <value>Shelly - Update Packages</value>
     </data>
-    <data name="TitleRemovePackages" xml:space="preserve">
-        <value>Shelly - Remove Packages</value>
+    <data name="TitleManagePackages" xml:space="preserve">
+        <value>Shelly - Manage Packages</value>
     </data>
     <data name="TitleSettings" xml:space="preserve">
         <value>Shelly - Settings</value>
@@ -511,5 +511,8 @@
     </data>
     <data name="Github" xml:space="preserve">
         <value>Github</value>
+    </data>
+    <data name="RemovePackages" xml:space="preserve">
+        <value>Remove Package(s)</value>
     </data>
 </root>

@@ -21,7 +21,6 @@ using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 using Shelly_UI.ViewModels.Flatpak;
-using Shelly_UI.Views;
 
 namespace Shelly_UI.ViewModels;
 
@@ -232,7 +231,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         GoManage = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new PackageViewModel(this, _privilegedOperationService, _credentialManager);
+            var vm = new PackageManagementViewModel(this, _appCache, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
@@ -319,7 +318,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
               HomeViewModel => Resources.TitleHome,
               PackageViewModel => Resources.TitleInstallPackages,
               UpdateViewModel => Resources.TitleUpdatePackages,
-              PackageManagement => Resources.TitleRemovePackages,
+              PackageManagementViewModel => Resources.TitleManagePackages,
               SettingViewModel => Resources.TitleSettings,
               AurViewModel => Resources.TitleAurInstall,
               AurUpdateViewModel => Resources.TitleAurUpdate,
