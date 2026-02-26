@@ -710,6 +710,20 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                 await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                             }
                         }
+                        else if (e.Data.StartsWith("[Shelly][[ALPM_QUESTION_REPLACEPKG]"))
+                        {
+                            Console.WriteLine("Replace Question Found");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+                            var args = new QuestionEventArgs(QuestionType.ReplacePkg, questionText);
+                            _alpmEventService.RaiseQuestion(args);
+                            await Task.Run(() => args.WaitForResponse());
+
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
+                        }
                         // Check for generic ALPM question (yes/no)
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
                         {
