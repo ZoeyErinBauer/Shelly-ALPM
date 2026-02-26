@@ -584,6 +584,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                     Interlocked.Increment(ref pendingCallbacks);
                     try
                     {
+                        Console.WriteLine(e.Data);
                         // Handle provider selection protocol
                         if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
                         {
