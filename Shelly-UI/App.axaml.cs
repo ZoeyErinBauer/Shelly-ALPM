@@ -74,7 +74,9 @@ public partial class App : Application
             }
 
             Assets.Resources.Culture =
-                config.Culture != null ? new CultureInfo(config.Culture) : new CultureInfo("default");
+               config.Culture != null
+                   ? new CultureInfo(config.Culture)
+                   : CultureInfo.CurrentUICulture;
 
             _mainWindow = new MainWindow
             {
@@ -88,7 +90,7 @@ public partial class App : Application
                 TrayStartService.Start();
             }
 
-            desktop.MainWindow = _mainWindow;
+            desktop.MainWindow = _mainWindow; 
         }
 
         base.OnFrameworkInitializationCompleted();

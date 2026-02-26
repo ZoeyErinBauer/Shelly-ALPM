@@ -2,7 +2,10 @@
 using ReactiveUI.Avalonia;
 using System;
 using System.IO;
+using System.IO.Pipes;
 using System.Threading;
+using System.Globalization;
+using System.Threading.Tasks;
 using Shelly.Utilities.System;
 
 namespace Shelly_UI;
@@ -24,7 +27,6 @@ sealed class Program
             Console.Error.WriteLine("Shelly-UI is exclusively for Arch Linux.");
             return;
         }
-
         // Single instance lock
         try
         {

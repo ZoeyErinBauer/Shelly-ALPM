@@ -21,6 +21,7 @@ using Shelly_UI.Services;
 using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 using Shelly_UI.ViewModels.Flatpak;
+using Shelly_UI.Views;
 
 namespace Shelly_UI.ViewModels;
 
@@ -280,7 +281,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         {
             var vm = new MetaSearchViewModel(this);
             vm.SearchText = MetaSearchString;
-            return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
+            return Router.NavigateAndReset.Execute(vm);
         });
 
         SearchButtonCommand = ReactiveCommand.Create(() =>

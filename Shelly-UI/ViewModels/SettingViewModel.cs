@@ -468,7 +468,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             : Resources.NoUpdateAvailable;
     }
 
-    private string _updateAvailable = "Check for update";
+    private string _updateAvailable = Resources.CheckForUpdate;
 
     public string UpdateAvailableText
     {
