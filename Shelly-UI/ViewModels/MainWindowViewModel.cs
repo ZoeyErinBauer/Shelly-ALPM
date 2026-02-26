@@ -232,7 +232,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         GoManage = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new PackageViewModel(this, _privilegedOperationService, _credentialManager);
+            var vm = new PackageManagementViewModel(this, appCache,_privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
