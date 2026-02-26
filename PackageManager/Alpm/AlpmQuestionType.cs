@@ -7,5 +7,6 @@ public enum AlpmQuestionType
     ConflictPkg = 4,
     CorruptedPkg = 8,
     ImportKey = 16,
-    SelectProvider = 32
+    SelectProvider = 32,
+    RemovePkgs = 64
 }

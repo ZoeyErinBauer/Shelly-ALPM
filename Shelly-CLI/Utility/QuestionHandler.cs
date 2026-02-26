@@ -85,12 +85,15 @@ public static class QuestionHandler
                     break;
                 case AlpmQuestionType.SelectProvider:
                     throw new Exception("Select provider is never a y / n question and is being invoked as one.");
+                case AlpmQuestionType.RemovePkgs:
+                    Console.Error.WriteLine($"[ALPM_QUESTION_REMOVEPKG]{question.QuestionText}");
+                    break;
                 case AlpmQuestionType.InstallIgnorePkg:
                 default:
                     Console.Error.WriteLine($"[ALPM_QUESTION]{question.QuestionText}");
                     break;
             }
-            
+
             Console.Error.Flush();
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");

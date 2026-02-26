@@ -645,9 +645,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             // Send response to CLI via stdin
                             await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                         }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REMOVEPKG]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REMOVEPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
