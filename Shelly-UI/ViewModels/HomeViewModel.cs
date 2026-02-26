@@ -51,16 +51,30 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
             var aur = await _privilegedOperationService.GetAurInstalledPackagesAsync();
             var flatpak = await _unprivilegedOperationService.ListFlatpakPackages();
 
-            TotalPackages = packages.Count + aur.Count + flatpak.Count;
+            TotalPackages = packages.Count;
 
-            var updates = await _unprivilegedOperationService.CheckForApplicationUpdates();
-
-            var packagePercent =
-                TotalPackages - (updates.Packages.Count + updates.Aur.Count + updates.Flatpaks.Count);
-
-            var ratio = (double)packagePercent / TotalPackages * 100;
+            TotalFlatpakPackages = flatpak.Count;
             
-            GaugeLabel = $"{ratio:F2} %";
+            TotalAurPackages = aur.Count;
+            
+            var updates = await _unprivilegedOperationService.CheckForApplicationUpdates();
+            
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                var ratio = (double)(TotalPackages - updates.Packages.Count) / TotalPackages * 100;
+                GaugeLabel = $"{ratio:F2} %";
+                
+                ratio = (double)(TotalAurPackages - updates.Aur.Count) / TotalAurPackages * 100;
+                AurGaugeLabel = $"{ratio:F2} %";
+                AurGaugeLabelVisibility = TotalAurPackages > 0;
+            
+                ratio = (double) (TotalFlatpakPackages - updates.Flatpaks.Count) / TotalFlatpakPackages * 100;
+                FlatpakGaugeLabel = $"{ratio:F2} %";
+                FlatpakGaugeLabelVisibility = TotalFlatpakPackages > 0;
+                
+                GaugeLabelVisibility = true;
+            });
+            
         }
         catch (Exception e)
         {
@@ -184,7 +198,21 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
         get => _totalPackages;
         set => this.RaiseAndSetIfChanged(ref _totalPackages, value);
     }
-
+    
+    private int _totalAurPackages = 0;
+    public int TotalAurPackages
+    {
+        get => _totalAurPackages;
+        set => this.RaiseAndSetIfChanged(ref _totalAurPackages, value);
+    }
+    
+    private int _totalFlatpakPackages = 0;
+    public int TotalFlatpakPackages
+    {
+        get => _totalFlatpakPackages;
+        set => this.RaiseAndSetIfChanged(ref _totalFlatpakPackages, value);
+    }
+    
     private int _packagesForUpdates = 0;
 
     private string _gaugeLabel = "";
@@ -193,6 +221,46 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
     {
         get => _gaugeLabel;
         set => this.RaiseAndSetIfChanged(ref _gaugeLabel, value);
+    }
+    
+    private string _flatpakGaugeLabel = "";
+
+    public string FlatpakGaugeLabel
+    {
+        get => _flatpakGaugeLabel;
+        set => this.RaiseAndSetIfChanged(ref _flatpakGaugeLabel, value);
+    }
+    
+    private string _aurGaugeLabel = "";
+
+    public string AurGaugeLabel
+    {
+        get => _aurGaugeLabel;
+        set => this.RaiseAndSetIfChanged(ref _aurGaugeLabel, value);
+    }
+    
+    private bool _gaugeLabelVisibility = false;
+
+    public bool GaugeLabelVisibility
+    {
+        get => _gaugeLabelVisibility;
+        set => this.RaiseAndSetIfChanged(ref _gaugeLabelVisibility, value);
+    }
+    
+    private bool _flatpakGaugeLabelVisibility = false;
+
+    public bool FlatpakGaugeLabelVisibility
+    {
+        get => _flatpakGaugeLabelVisibility;
+        set => this.RaiseAndSetIfChanged(ref _flatpakGaugeLabelVisibility, value);
+    }
+    
+    private bool _aurGaugeLabelVisibility = false;
+
+    public bool AurGaugeLabelVisibility
+    {
+        get => _aurGaugeLabelVisibility;
+        set => this.RaiseAndSetIfChanged(ref _aurGaugeLabelVisibility, value);
     }
 
     private async Task ExportSync()

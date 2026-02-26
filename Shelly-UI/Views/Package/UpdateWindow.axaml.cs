@@ -20,7 +20,7 @@ public partial class UpdateWindow : ReactiveUserControl<UpdateViewModel>
         
         this.WhenActivated(disposables =>
         {
-            _dataGrid = this.FindControl<DataGrid>("PackageDataGrid");
+            _dataGrid = this.FindControl<DataGrid>("UpdateDataGrid");
         });
         
         this.DetachedFromVisualTree += OnDetachedFromVisualTree;

@@ -298,4 +298,14 @@ public class MetaSearchViewModel : ConsoleEnabledViewModelBase, IRoutableViewMod
             Console.WriteLine($"Failed to refresh installed packages: {e.Message}");
         }
     }
+    
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            AvailablePackages?.Clear();
+            _availablePackages?.Clear();
+        }
+        base.Dispose(disposing);
+    }
 }

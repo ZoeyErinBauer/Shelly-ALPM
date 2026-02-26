@@ -126,8 +126,8 @@
     <data name="ForceSync" xml:space="preserve">
         <value>Force Database Update</value>
     </data>
-    <data name="RemovePackages" xml:space="preserve">
-        <value>Remove Packages</value>
+    <data name="ManagePackages" xml:space="preserve">
+        <value>Manage Package(s)</value>
     </data>
     <data name="UpdatePackages" xml:space="preserve">
         <value>Update Package(s)</value>
@@ -148,7 +148,7 @@
         <value>Total Packages</value>
     </data>
     <data name="UpToDatePackages" xml:space="preserve">
-        <value>Up to date packages:</value>
+        <value>Up to date:</value>
     </data>
     <data name="ExportSyncFile" xml:space="preserve">
         <value>Export Sync file</value>
@@ -512,6 +512,9 @@
     <data name="Github" xml:space="preserve">
         <value>Github</value>
     </data>
+    <data name="RemovePackages" xml:space="preserve">
+        <value>Remove Package(s)</value>
+    </data>
     <data name="Votes" xml:space="preserve">
         <value>Votes</value>
     </data>
@@ -523,5 +526,14 @@
     </data>
     <data name="CheckForUpdate" xml:space="preserve">
         <value>Check for update</value>
+    </data>
+    <data name="TotalAur" xml:space="preserve">
+        <value>Total Aur</value>
+    </data>
+    <data name="TotalFlatpak" xml:space="preserve">
+        <value>Total Flatpak</value>
+    </data>
+    <data name="TitleManagePackages" xml:space="preserve">
+        <value>Shelly - Manage Packages</value>
     </data>
 </root>
