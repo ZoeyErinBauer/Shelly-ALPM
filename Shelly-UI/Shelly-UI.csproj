@@ -29,27 +29,26 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.resx" />
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Update="Resources.resx">
-            <Generator>PublicResXFileCodeGenerator</Generator>
-            <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+        <EmbeddedResource Update="Assets\Resources.resx">
+            <GenerateSource>true</GenerateSource>
+            <Namespace>Shelly_UI.Assets</Namespace>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Assets\Resources.pt-BR.resx">
         </EmbeddedResource>
     </ItemGroup>
 
-    <ItemGroup>
-        <Compile Update="Resources.Designer.cs">
-            <DesignTime>True</DesignTime>
-            <AutoGen>True</AutoGen>
-            <DependentUpon>Resources.resx</DependentUpon>
-        </Compile> 
-    </ItemGroup>
     
     
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.10"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.10"/>
         <PackageReference Include="Avalonia.Desktop" Version="11.3.10"/>
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10"/>
@@ -61,10 +60,6 @@
         </PackageReference>
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1"/>
         <PackageReference Include="LiteDB" Version="6.0.0-prerelease.75"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1"/>
         <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8"/>
         <PackageReference Include="Material.Icons.Avalonia" Version="2.1.10"/>
