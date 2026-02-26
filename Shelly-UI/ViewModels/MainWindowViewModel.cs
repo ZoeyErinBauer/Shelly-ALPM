@@ -319,7 +319,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
               HomeViewModel => Resources.TitleHome,
               PackageViewModel => Resources.TitleInstallPackages,
               UpdateViewModel => Resources.TitleUpdatePackages,
-              PackageManagement => Resources.TitleRemovePackages,
+              PackageManagementViewModel => Resources.TitleRemovePackages,
               SettingViewModel => Resources.TitleSettings,
               AurViewModel => Resources.TitleAurInstall,
               AurUpdateViewModel => Resources.TitleAurUpdate,
