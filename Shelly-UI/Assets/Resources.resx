@@ -527,4 +527,13 @@
     <data name="CheckForUpdate" xml:space="preserve">
         <value>Check for update</value>
     </data>
+    <data name="TotalAur" xml:space="preserve">
+        <value>Total Aur</value>
+    </data>
+    <data name="TotalFlatpak" xml:space="preserve">
+        <value>Total Flatpak</value>
+    </data>
+    <data name="TitleManagePackages" xml:space="preserve">
+        <value>Shelly - Manage Packages</value>
+    </data>
 </root>
