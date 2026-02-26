@@ -46,7 +46,17 @@ public static class QuestionHandler
             Console.Error.WriteLine("[ALPM_PROVIDER_END]");
             Console.Error.Flush();
             var input = Console.ReadLine();
-            question.SetResponse(int.TryParse(input?.Trim(), out var idx) ? idx : 0);
+            if (int.TryParse(input?.Trim(), out var idx))
+            {
+                question.SetResponse(idx);
+            }
+            else
+            {
+                // If input is empty or invalid, we don't call SetResponse
+                // The underlying ALPM logic should decide how to handle timeout or abort
+                // But in UI mode, we usually expect a response
+                // For safety, we could set a default if needed, but the UI shouldn't send empty input
+            }
             return;
         }
 
@@ -97,7 +107,14 @@ public static class QuestionHandler
             Console.Error.Flush();
             var input = Console.ReadLine();
             Console.WriteLine($"Received: {input}");
-            question.SetResponse(input is "y" or "Y" ? 1 : 0);
+            if (input is "y" or "Y")
+            {
+                question.SetResponse(1);
+            }
+            else if (input is "n" or "N")
+            {
+                question.SetResponse(0);
+            }
             return;
         }
 

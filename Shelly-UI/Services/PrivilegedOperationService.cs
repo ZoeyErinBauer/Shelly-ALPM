@@ -587,6 +587,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         // Handle provider selection protocol
                         if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
                         {
+                            Console.WriteLine("Provider question received");
                             Console.Error.WriteLine($"[Shelly]Select provider for: {e.Data}");
                             awaitingProviderSelection = true;
                             providerOptions.Clear();
@@ -622,7 +623,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            await SafeWriteAsync(args.Response.ToString());
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response.ToString());
+                            }
+
                             Console.Error.WriteLine($"[Shelly]Wrote selection {args.Response}");
 
                             awaitingProviderSelection = false;
@@ -631,6 +636,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
                         {
+                            Console.WriteLine("Conflict question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CONFLICT]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -642,8 +648,10 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REMOVEPKG]"))
                         {
@@ -659,11 +667,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]"))
                         {
+                            Console.WriteLine("Corrupted package question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -675,11 +686,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_IMPORTKEY]"))
                         {
+                            Console.WriteLine("Inmport key question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_IMPORTKEY]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -691,12 +705,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         // Check for generic ALPM question (yes/no)
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
                         {
+                            Console.WriteLine("Generic question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -708,11 +725,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             await Task.Run(() => args.WaitForResponse());
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else
                         {
+                            Console.WriteLine("Yo how did we get here dawg");
                             errorBuilder.AppendLine(e.Data);
                             Console.Error.WriteLine(e.Data);
                         }
@@ -735,7 +755,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
             // Write password to stdin followed by newline
             await stdinWriter.WriteLineAsync(password);
-            
+
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();

@@ -174,7 +174,9 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             }
             else
             {
-                questionResponseSubject.OnNext(0); // Default to No
+                // If it's not a valid integer, we don't push to the subject
+                // This prevents accidental dismissals from auto-responding
+                // questionResponseSubject.OnNext(0); 
             }
 
             ShowQuestion = false;
@@ -202,7 +204,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     ProviderOptions = null;
                 }
                 
-                using (questionResponseSubject.Subscribe(result => tcs.TrySetResult(result)))
+                using (questionResponseSubject.Take(1).Subscribe(result => tcs.TrySetResult(result)))
                 {
                     ShowQuestion = true;
                     var response = await tcs.Task;

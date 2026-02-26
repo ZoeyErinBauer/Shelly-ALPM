@@ -22,7 +22,7 @@ public class QuestionEventArgs : EventArgs
     public string QuestionText { get; }
     public List<string>? ProviderOptions { get; }
     public string? DependencyName { get; }
-    public int Response { get; set; } = 0;
+    public int Response { get; set; } = -1;
 
     private volatile bool _responded;
 
