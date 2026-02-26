@@ -522,4 +522,16 @@
     <data name="CheckForUpdate" xml:space="preserve">
         <value>Buscar Atualização</value>
     </data>
+    <data name="TitleManagePackages" xml:space="preserve">
+        <value>Shelly - Gerenciar Pacotes</value>
+    </data>
+    <data name="ManagePackages" xml:space="preserve">
+        <value>Gerenciar Pacote(s)</value>
+    </data>
+    <data name="TotalFlatpak" xml:space="preserve">
+        <value>Total Flatpak</value>
+    </data>
+    <data name="TotalAur" xml:space="preserve">
+        <value>Total Aur</value>
+    </data>
 </root>

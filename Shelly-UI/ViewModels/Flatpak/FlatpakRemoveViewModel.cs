@@ -5,13 +5,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Shelly_UI.BaseClasses;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 
