@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Shelly_UI.Models;
 
 public class QuestionEventArgs : EventArgs
 {
+    private readonly TaskCompletionSource<int> _tcs = new();
+    public Task<int> ResponseTask => _tcs.Task;
+
     public QuestionEventArgs(
         QuestionType questionType,
         string questionText,
@@ -22,21 +26,16 @@ public class QuestionEventArgs : EventArgs
     public string QuestionText { get; }
     public List<string>? ProviderOptions { get; }
     public string? DependencyName { get; }
-    public int Response { get; set; } = -1;
-
-    private volatile bool _responded;
+    public int Response { get; private set; } = -1;
 
     public void SetResponse(int response)
     {
         Response = response;
-        _responded = true;
+        _tcs.TrySetResult(response);
     }
 
-    public void WaitForResponse()
+    public Task WaitForResponseAsync()
     {
-        while (!_responded)
-        {
-            Thread.Sleep(50);
-        }
+        return _tcs.Task;
     }
 }

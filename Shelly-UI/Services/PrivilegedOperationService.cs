@@ -622,7 +622,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -647,7 +647,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -666,7 +666,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -685,7 +685,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -704,7 +704,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -718,7 +718,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
                             var args = new QuestionEventArgs(QuestionType.ReplacePkg, questionText);
                             _alpmEventService.RaiseQuestion(args);
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -738,7 +738,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
                             if (args.Response != -1)
                             {
@@ -747,7 +747,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else
                         {
-                            Console.WriteLine("Yo how did we get here dawg");
                             errorBuilder.AppendLine(e.Data);
                             Console.Error.WriteLine(e.Data);
                         }

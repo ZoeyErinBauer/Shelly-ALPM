@@ -32,6 +32,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly ICredentialManager _credentialManager;
     private IConfigService _configService = App.Services.GetRequiredService<IConfigService>();
+    private QuestionEventArgs? _currentQuestionArgs;
 
     private static readonly Regex AlpmProgressPattern =
         new(@"ALPM Progress: (\w+), Pkg: ([^,]+), %: (\d+)(?:, bytesRead: (\d+), totalBytes: (\d+))?", RegexOptions.Compiled);
@@ -165,20 +166,14 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 ProcessingMessage = string.Empty;
             });
 
-        var questionResponseSubject = new Subject<int>();
         RespondToQuestion = ReactiveCommand.Create<string>(response =>
         {
             if (int.TryParse(response, out var result))
             {
-                questionResponseSubject.OnNext(result);
+                _currentQuestionArgs?.SetResponse(result);
             }
-            else
-            {
-                // If it's not a valid integer, we don't push to the subject
-                // This prevents accidental dismissals from auto-responding
-                // questionResponseSubject.OnNext(0); 
-            }
-
+            
+            _currentQuestionArgs = null;
             ShowQuestion = false;
         });
 
@@ -186,12 +181,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 h => alpmEventService.Question += h,
                 h => alpmEventService.Question -= h)
             .ObserveOn(scheduler)
-            .SelectMany(async pattern =>
+            .Subscribe(pattern =>
             {
                 var args = pattern.EventArgs;
+                _currentQuestionArgs = args;
                 QuestionTitle = GetQuestionTitle(args.QuestionType);
                 QuestionText = args.QuestionText;
-                var tcs = new TaskCompletionSource<int>();
+                
                 if (args is { QuestionType: QuestionType.SelectProvider, ProviderOptions.Count: > 0 })
                 {
                     IsSelectProviderQuestion = true;
@@ -204,21 +200,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     ProviderOptions = null;
                 }
                 
-                using (questionResponseSubject.Take(1).Subscribe(result => tcs.TrySetResult(result)))
-                {
-                    ShowQuestion = true;
-                    var response = await tcs.Task;
-                    args.SetResponse(response);
-                    ShowQuestion = false;
-                }
-                //ShowQuestion = true;
-
-                // Wait for user response
-                //var response = await questionResponseSubject.FirstAsync();
-                //args.SetResponse(response);
-                return Unit.Default;
-            })
-            .Subscribe();
+                ShowQuestion = true;
+            });
 
         GoHome = ReactiveCommand.CreateFromObservable(() =>
         {
