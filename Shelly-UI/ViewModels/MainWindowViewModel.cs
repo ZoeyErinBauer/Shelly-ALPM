@@ -189,11 +189,8 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                 var args = pattern.EventArgs;
                 QuestionTitle = GetQuestionTitle(args.QuestionType);
                 QuestionText = args.QuestionText;
-                
-                // Handle SelectProvider and ConflictPkg questions with a selection list
-                if ((args.QuestionType == QuestionType.SelectProvider || 
-                     args.QuestionType == QuestionType.ConflictPkg)
-                    && args.ProviderOptions?.Count > 0)
+                var tcs = new TaskCompletionSource<int>();
+                if (args is { QuestionType: QuestionType.SelectProvider, ProviderOptions.Count: > 0 })
                 {
                     IsSelectProviderQuestion = true;
                     ProviderOptions = args.ProviderOptions;
@@ -205,11 +202,18 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
                     ProviderOptions = null;
                 }
                 
-                ShowQuestion = true;
+                using (questionResponseSubject.Subscribe(result => tcs.TrySetResult(result)))
+                {
+                    ShowQuestion = true;
+                    var response = await tcs.Task;
+                    args.SetResponse(response);
+                    ShowQuestion = false;
+                }
+                //ShowQuestion = true;
 
                 // Wait for user response
-                var response = await questionResponseSubject.FirstAsync();
-                args.SetResponse(response);
+                //var response = await questionResponseSubject.FirstAsync();
+                //args.SetResponse(response);
                 return Unit.Default;
             })
             .Subscribe();
