@@ -789,6 +789,12 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             {
                 return;
             }
+            var privilegedService = _services.GetRequiredService<IPrivilegedOperationService>();
+            if (await privilegedService.IsPackageInstalledOnMachine("shelly"))
+            {
+                Console.WriteLine("Shelly is managed by pacman. Skipping GitHub update check.");
+                return;
+            }
 
             var updateAvailable = await _services.GetRequiredService<IUpdateService>().CheckForUpdateAsync();
             if (updateAvailable)
