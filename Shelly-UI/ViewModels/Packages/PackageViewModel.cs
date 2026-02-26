@@ -127,7 +127,6 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
                 _availablePackages = models;
                 ApplyFilter();
             });
-            models.Clear();
         }
         catch (Exception e)
         {
