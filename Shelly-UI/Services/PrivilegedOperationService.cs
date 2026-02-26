@@ -515,7 +515,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             {
                 FileName = "sudo",
                 //removing -k from sudo as a test
-                Arguments = $"-S {fullCommand} --ui-mode",
+                Arguments = $"-S -k {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -584,9 +584,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                     Interlocked.Increment(ref pendingCallbacks);
                     try
                     {
+                        Console.WriteLine(e.Data);
                         // Handle provider selection protocol
                         if (e.Data.StartsWith("[Shelly][ALPM_SELECT_PROVIDER]"))
                         {
+                            Console.WriteLine("Provider question received");
                             Console.Error.WriteLine($"[Shelly]Select provider for: {e.Data}");
                             awaitingProviderSelection = true;
                             providerOptions.Clear();
@@ -620,9 +622,13 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            await SafeWriteAsync(args.Response.ToString());
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response.ToString());
+                            }
+
                             Console.Error.WriteLine($"[Shelly]Wrote selection {args.Response}");
 
                             awaitingProviderSelection = false;
@@ -631,6 +637,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
                         {
+                            Console.WriteLine("Conflict question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CONFLICT]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -640,30 +647,36 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
-                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CONFLICT]"))
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REMOVEPKG]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.WriteLine("Found Remove Package Question");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REMOVEPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
-                                QuestionType.ReplacePkg,
+                                QuestionType.RemovePkgs,
                                 questionText);
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.WriteLine("Corrupted package question found");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
@@ -672,14 +685,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_IMPORTKEY]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.WriteLine("Inmport key question found");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_IMPORTKEY]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
@@ -688,14 +704,31 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
+                        }
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REPLACEPKG]"))
+                        {
+                            Console.WriteLine("Replace Question Found");
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
+                            var args = new QuestionEventArgs(QuestionType.ReplacePkg, questionText);
+                            _alpmEventService.RaiseQuestion(args);
+                            await args.WaitForResponseAsync();
+
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         // Check for generic ALPM question (yes/no)
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION]"))
                         {
+                            Console.WriteLine("Generic question found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
@@ -705,10 +738,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
                             _alpmEventService.RaiseQuestion(args);
 
-                            await Task.Run(() => args.WaitForResponse());
+                            await args.WaitForResponseAsync();
 
-                            // Send response to CLI via stdin
-                            await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            if (args.Response != -1)
+                            {
+                                await SafeWriteAsync(args.Response == 1 ? "y" : "n");
+                            }
                         }
                         else
                         {
@@ -734,7 +769,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
             // Write password to stdin followed by newline
             await stdinWriter.WriteLineAsync(password);
-            
+
             await stdinWriter.FlushAsync();
 
             await process.WaitForExitAsync();

@@ -314,6 +314,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 questionText = "Import missing GPG Key?";
 
                 break;
+            case AlpmQuestionType.RemovePkgs:
+                var removeQuestion = Marshal.PtrToStructure<RemovePackages>(questionPtr);
+                var packages = AlpmPackage.FromList(removeQuestion.Pkgs);
+                var pkgNames = string.Join(", ", packages.Select(p => p.Name));
+                questionText = $"The following packages will be removed: {pkgNames}. Proceed?";
+                break;
             default:
                 questionText = $"Unknown question type: {question.Type}";
                 break;
@@ -528,8 +534,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         int percent = (int)((totalRead * 100) / totalBytes.Value);
                         if (percent != lastPercent)
                         {
-                           
-                            PercentLoggerHandler("Downloading", fileName, percent, totalRead, totalBytes.Value );
+                            PercentLoggerHandler("Downloading", fileName, percent, totalRead, totalBytes.Value);
                             lastPercent = percent;
                             Progress?.Invoke(this, new AlpmProgressEventArgs(
                                 AlpmProgressType.PackageDownload,
@@ -1552,7 +1557,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
     public void Dispose()
     {
-        
         if (_handle == IntPtr.Zero) return;
         UnregisterAllSyncDbs(_handle);
         SetFetchCallback(_handle, null, IntPtr.Zero);
@@ -1565,7 +1569,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         _progressCallback = null;
         Release(_handle);
         _handle = IntPtr.Zero;
-       
     }
 
     private void HandleProgress(IntPtr ctx, AlpmProgressType progress, IntPtr pkgNamePtr, int percent, ulong howmany,

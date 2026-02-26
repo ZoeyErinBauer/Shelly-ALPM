@@ -43,7 +43,7 @@ public class AlpmQuestionEventArgs : EventArgs
     /// For yes/no questions: 1 = Yes, 0 = No
     /// For SelectProvider: the index of the selected provider (0-based)
     /// </summary>
-    public int Response { get; set; } = 0; // Default to No (0)
+    public int Response { get; set; } = -1; // Default to No (-1)
 
     private volatile bool _responded;
 
