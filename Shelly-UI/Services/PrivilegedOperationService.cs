@@ -711,7 +711,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                 await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                             }
                         }
-                        else if (e.Data.StartsWith("[Shelly][[ALPM_QUESTION_REPLACEPKG]"))
+                        else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REPLACEPKG]"))
                         {
                             Console.WriteLine("Replace Question Found");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
