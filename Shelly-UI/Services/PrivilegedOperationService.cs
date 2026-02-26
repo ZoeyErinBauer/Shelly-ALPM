@@ -515,7 +515,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             {
                 FileName = "sudo",
                 //removing -k from sudo as a test
-                Arguments = $"-S {fullCommand} --ui-mode",
+                Arguments = $"-S -k {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
