@@ -1,7 +1,9 @@
 using System.Reactive.Concurrency;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Reactive;
 using System.Text.Json;
@@ -90,7 +92,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
     public ObservableCollection<AlpmPackageDto> InstalledPackages { get; set; } =
         [];
 
-    public ObservableCollection<RssModel> FeedItems { get; } = new ObservableCollection<RssModel>();
+    public ObservableCollection<RssModel> FeedItems { get; set; } = new ObservableCollection<RssModel>();
 
 
     private async void LoadFeed()
@@ -106,7 +108,7 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
                 return;
             }
         }
-        catch (Exception e)
+        catch (Exception e)  
         {
             Console.WriteLine(e);
         }
@@ -115,6 +117,18 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
         try
         {
             var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/");
+            ObservableCollection<RssModel> cachyFeed = [];
+            if (GetOperatingSystem() == "CachyOS")
+            {
+                try
+                {
+                    cachyFeed = await GetRssFeedAsync("https://iso-stats.cachyos.org/api/v2/last_update_notice");
+                }
+                catch (Exception e)
+                {
+                    //Let it fail silently here as there was not a notification.
+                }
+            }
             var cachedFeed = new CachedRssModel();
             RxApp.MainThreadScheduler.Schedule(() =>
             {
@@ -124,6 +138,15 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
                     cachedFeed.Rss.Add(item);
                 }
 
+                foreach (var item in cachyFeed)
+                {
+                    FeedItems.Add(item);
+                    FeedItems.Move(FeedItems.Count, 0);
+                    
+                    
+                    cachedFeed.Rss.Insert(0, item);
+                }
+                
                 cachedFeed.TimeCached = DateTime.Now;
                 CacheFeed(cachedFeed);
             });
@@ -134,6 +157,13 @@ public class HomeViewModel : ViewModelBase, IRoutableViewModel, IDisposable
         }
     }
 
+    private string GetOperatingSystem()
+    {
+        var lines = File.ReadAllLines("/etc/os-release");
+        var osDictionary = lines.Select(x => x.Split('=')).ToDictionary(y => y[0], y => y[1]);
+        return osDictionary.GetValueOrDefault("PRETTY_NAME", "ArchLinux");
+    }
+    
     public async Task<ObservableCollection<RssModel>> GetRssFeedAsync(string url)
     {
         var items = new ObservableCollection<RssModel>();
