@@ -647,11 +647,12 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_REMOVEPKG]"))
                         {
+                            Console.WriteLine("Found Remove Package Question");
                             var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REMOVEPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
-                                QuestionType.ReplacePkg,
+                                QuestionType.RemovePkgs,
                                 questionText);
 
                             _alpmEventService.RaiseQuestion(args);
@@ -663,7 +664,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_CORRUPTEDPKG]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
@@ -679,7 +680,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                         }
                         else if (e.Data.StartsWith("[Shelly][ALPM_QUESTION_IMPORTKEY]"))
                         {
-                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_REPLACEPKG]".Length);
+                            var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION_IMPORTKEY]".Length);
                             Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
 
                             var args = new QuestionEventArgs(
