@@ -148,7 +148,7 @@
         <value>Total Packages</value>
     </data>
     <data name="UpToDatePackages" xml:space="preserve">
-        <value>Up to date packages:</value>
+        <value>Up to date:</value>
     </data>
     <data name="ExportSyncFile" xml:space="preserve">
         <value>Export Sync file</value>
