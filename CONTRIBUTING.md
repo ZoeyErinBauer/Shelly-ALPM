@@ -248,11 +248,8 @@ Do not change:
 ### Build and Test
 
 1. Build the application
-2. Force the culture (if necessary) for testing
-3. Verify that:
-  - The application is built and starts
-  - All UI elements are translated
-  - No fallback to English occurs unexpectedly
+2. Verify that the application builds and starts correctly
+3. Confirm that all UI elements are translated and that no unexpected fallback to English occurs
 
 Once these steps are validated, please submit a pull request.
   
