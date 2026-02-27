@@ -68,6 +68,21 @@ public partial class HeaderRow : UserControl
     public static readonly StyledProperty<bool> ShowSecondaryButtonProperty =
         AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowSecondaryButton), false);
 
+    public static readonly StyledProperty<ICommand> TertiaryButtonCommandProperty =
+        AvaloniaProperty.Register<HeaderRow, ICommand>(nameof(TertiaryButtonCommand));
+
+    public static readonly StyledProperty<string> TertiaryButtonTextProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(TertiaryButtonText));
+
+    public static readonly StyledProperty<string> TertiaryButtonTooltipProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(TertiaryButtonTooltip));
+
+    public static readonly StyledProperty<MaterialIconKind> TertiaryButtonIconProperty =
+        AvaloniaProperty.Register<HeaderRow, MaterialIconKind>(nameof(TertiaryButtonIcon));
+
+    public static readonly StyledProperty<bool> ShowTertiaryButtonProperty =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowTertiaryButton), false);
+
     public string Title
     {
         get => GetValue(TitleProperty);
@@ -186,6 +201,36 @@ public partial class HeaderRow : UserControl
     {
         get => GetValue(ShowSecondaryButtonProperty);
         set => SetValue(ShowSecondaryButtonProperty, value);
+    }
+
+    public ICommand TertiaryButtonCommand
+    {
+        get => GetValue(TertiaryButtonCommandProperty);
+        set => SetValue(TertiaryButtonCommandProperty, value);
+    }
+
+    public string TertiaryButtonText
+    {
+        get => GetValue(TertiaryButtonTextProperty);
+        set => SetValue(TertiaryButtonTextProperty, value);
+    }
+
+    public string TertiaryButtonTooltip
+    {
+        get => GetValue(TertiaryButtonTooltipProperty);
+        set => SetValue(TertiaryButtonTooltipProperty, value);
+    }
+
+    public MaterialIconKind TertiaryButtonIcon
+    {
+        get => GetValue(TertiaryButtonIconProperty);
+        set => SetValue(TertiaryButtonIconProperty, value);
+    }
+
+    public bool ShowTertiaryButton
+    {
+        get => GetValue(ShowTertiaryButtonProperty);
+        set => SetValue(ShowTertiaryButtonProperty, value);
     }
 
     public HeaderRow()
