@@ -157,6 +157,105 @@ dotnet test Shelly-UI.Tests/Shelly-UI.Tests.csproj
 3. **Documentation**: Update relevant documentation when adding features
 4. **Commits**: Use clear, descriptive commit messages
 
+## Localization Guidelines
+
+If you're interested in helping localizing Shelly to your language, here are the steps that must be followed:
+
+1. Locate the resource folder:
+
+Navigate to:
+
+```
+├── Shelly-UI/               
+│   ├── Assets/ 
+```
+
+This folder contains the localization resource files used by the application.
+
+**Warning:** The file Resources.resx contains the default (English) language and acts as the fallback language.
+
+- Do not rename this file.
+- Do not remove it.
+- Do not translate it to another language.
+
+All new cultures must be created as separate `.resx` files.
+
+2. Create a new culture file
+
+Create a new `.resx` file using the correct ISO culture naming convention:
+
+```
+
+Resources.<culture-code>.resx
+
+```
+
+Examples:
+
+```
+
+Resources.fr-FR.resx -> French (France)
+Resources.es-ES.resx -> Spanish (Spain)
+Resources.de-DE.resx -> German (Germany)
+
+```
+
+Make sure the culture code follows the standard .NET naming convention.
+
+If you are unsure which culture code to use, refer to Microsoft’s documentation:
+https://learn.microsoft.com/en-us/dotnet/api/system.globalization.culturetypes
+
+3. Copy existing keys
+
+Using `Resources.resx` as your reference file:
+- Copy all keys over to another document
+- Translate the values within each key to the appropriate language
+
+You may use:
+
+- A regular text editor
+
+- An IDE such as JetBrains Rider or Visual Studio
+
+If editing manually, a typical entry looks like this:
+
+``` xml
+
+    <data name="Home" xml:space="preserve">
+        <value>Home</value>
+    </data>
+
+```
+
+Only modify the text inside `<value>`:
+
+``` xml
+
+    <data name="Home" xml:space="preserve">
+        <value>Translation</value>
+    </data>
+
+```
+
+Do not change:
+
+- The name attribute
+
+- The XML structure
+
+- The xml:space attribute
+
+4. Build and Test
+
+1. Build the application
+2. Force the culture (if necessary) for testing
+3. Verify that:
+  - The application is built and starts
+  - All UI elements are translated
+  - No fallback to English occurs unexpectedly
+
+Once these steps are validated, please submit a pull request.
+  
 ## Getting Help
 
 If you have questions or need help, please open an issue on the GitHub repository or reach out on Discord to zoeybear.
