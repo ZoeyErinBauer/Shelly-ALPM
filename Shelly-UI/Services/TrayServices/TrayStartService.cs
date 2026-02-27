@@ -65,4 +65,30 @@ public static class TrayStartService
             Console.WriteLine($"Failed to start tray service: {ex.Message}");
         }
     }
+    
+    public static void End()
+    {
+        Console.WriteLine("Closing shelly notifications.");
+        try
+        {
+            const string appName = "shelly-notifications";
+            var processes = Process.GetProcessesByName(appName);
+            foreach (var process in processes)
+            {
+                try
+                {
+                    process.Kill();
+                    process.WaitForExit(TimeSpan.FromSeconds(2));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to kill {appName} (PID: {process.Id}): {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while trying to kill app: {ex.Message}");
+        }
+    }
 }
