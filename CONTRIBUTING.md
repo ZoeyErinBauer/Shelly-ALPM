@@ -161,7 +161,7 @@ dotnet test Shelly-UI.Tests/Shelly-UI.Tests.csproj
 
 If you're interested in helping localize Shelly into your language, please follow the steps below
 
-1. Locate the resource folder:
+### Locate the resource folder:
 
 Navigate to:
 
@@ -180,7 +180,7 @@ This folder contains the localization resource files used by the application.
 
 All new cultures must be created as separate `.resx` files.
 
-2. Create a new culture file
+### Create a new culture file
 
 Create a new `.resx` file using the correct ISO culture naming convention:
 
@@ -205,7 +205,7 @@ Make sure the culture code follows the standard .NET naming convention.
 If you are unsure which culture code to use, refer to Microsoft’s documentation:
 https://learn.microsoft.com/en-us/dotnet/api/system.globalization.culturetypes
 
-3. Copy existing keys
+### Copy existing keys
 
 Using `Resources.resx` as your reference file:
 - Copy all keys over to another document
@@ -245,7 +245,7 @@ Do not change:
 
 - The xml:space attribute
 
-4. Build and Test
+### Build and Test
 
 1. Build the application
 2. Force the culture (if necessary) for testing
