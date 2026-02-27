@@ -1,9 +1,9 @@
-using System.Reactive.Concurrency;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -15,7 +15,7 @@ using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
 
-namespace Shelly_UI.ViewModels;
+namespace Shelly_UI.ViewModels.Packages;
 
 public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
@@ -23,7 +23,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private string? _searchText;
     
-    private List<PackageModel> _availablePackages = new();
+    private List<PackageModel> _availablePackages = [];
 
     private readonly ConfigService _configService = new();
     
@@ -33,7 +33,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         ICredentialManager credentialManager)
     {
         HostScreen = screen;
-        AvailablePackages = new ObservableCollection<PackageModel>();
+        AvailablePackages = [];
         
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
@@ -77,8 +77,6 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
-       
-            var installed = await _privilegedOperationService.GetInstalledPackagesAsync();
             
             RxApp.MainThreadScheduler.Schedule(() =>
             {
@@ -151,9 +149,9 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
 
-        if (selectedPackages.Any())
+        if (selectedPackages.Count != 0)
         {
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+            var mainWindow = HostScreen as MainWindowViewModel;
 
             try
             {
@@ -199,10 +197,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
             finally
             {
                 //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                mainWindow?.IsGlobalBusy = false;
             }
         }
         else
@@ -213,7 +208,7 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 
     private async Task InstallLocalPackage()
     {
-        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+        using var mainWindow = HostScreen as MainWindowViewModel;
 
         try
         {
@@ -273,14 +268,11 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
         }
         finally
         {
-            if (mainWindow != null)
-            {
-                mainWindow.IsGlobalBusy = false;
-            }
+            mainWindow?.IsGlobalBusy = false;
         }
     }
 
-    private void TogglePackageCheck(PackageModel package)
+    private static void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
 
@@ -307,8 +299,8 @@ public class PackageViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         if (disposing)
         {
-            AvailablePackages?.Clear();
-            _availablePackages?.Clear();
+            AvailablePackages.Clear();
+            _availablePackages.Clear();
         }
         base.Dispose(disposing);
     }

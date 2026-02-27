@@ -14,7 +14,6 @@ using Shelly_UI.Assets;
 using Shelly_UI.Enums;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.TrayServices;
 
 namespace Shelly_UI.ViewModels;
@@ -27,15 +26,13 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private readonly IPrivilegedOperationService _privilegedOperationService;
 
-    private IAppCache _appCache;
-
-    public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService,
-        IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
+    private bool _updateAvailable;
+    
+    public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService, IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         _configService = configService;
         _updateService = updateService;
-        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
@@ -435,9 +432,9 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     public ReactiveCommand<Unit, bool> InstallFlatpakCommand { get; }
 
 
-    public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
-                                        !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
-                                        !AppContext.BaseDirectory.StartsWith("/usr/bin/Shelly");
+    public static bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
+                                               !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
+                                               !AppContext.BaseDirectory.StartsWith("/usr/bin/Shelly");
 
     private async Task CheckForUpdates()
     {
@@ -449,11 +446,10 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 #endif
 
         UpdateAvailableText = Resources.CheckingForUpdates;
-        bool updateAvailable = await _updateService.CheckForUpdateAsync();
-        await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), updateAvailable);
+        _updateAvailable = await _updateService.CheckForUpdateAsync();
         await SetUpdateText();
 
-        if (updateAvailable)
+        if (_updateAvailable)
         {
             // Here you might want to show a dialog to the user
             // For now, as per requirement, we proceed with download and install
@@ -463,17 +459,17 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private async Task SetUpdateText()
     {
-        UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache))
+        UpdateAvailableText = _updateAvailable
             ? Resources.UpdateAvailable
             : Resources.NoUpdateAvailable;
     }
 
-    private string _updateAvailable = Resources.CheckForUpdate;
+    private string _updateAvailableText = Resources.CheckForUpdate;
 
     public string UpdateAvailableText
     {
-        get => _updateAvailable;
-        set => this.RaiseAndSetIfChanged(ref _updateAvailable, value);
+        get => _updateAvailableText;
+        set => this.RaiseAndSetIfChanged(ref _updateAvailableText, value);
     }
 
     public string AppVersion { get; } = GetAppVersion();

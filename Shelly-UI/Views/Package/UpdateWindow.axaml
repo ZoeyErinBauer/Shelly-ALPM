@@ -2,14 +2,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:viewModels="clr-namespace:Shelly_UI.ViewModels"
              xmlns:lang="clr-namespace:Shelly_UI.Assets"
-             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
+             xmlns:packages="clr-namespace:Shelly_UI.ViewModels.Packages"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.UpdateWindow"
-             x:DataType="viewModels:UpdateViewModel"
+             x:DataType="packages:UpdateViewModel"
              x:CompileBindings="True">
     <UserControl.Styles>
         <Style Selector="DataGridColumnHeader">

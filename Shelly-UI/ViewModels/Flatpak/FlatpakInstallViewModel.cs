@@ -24,11 +24,10 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     private string? _searchText;
 
    private readonly IDatabaseService _databaseService;
-    public ObservableCollection<FlatpakModel> Flatpaks { get; set; } = new();
-    private int _currentPage = 0;
-    private bool _isLoading = false;
-
-    public ReactiveCommand<Unit, Unit> LoadInitialDataCommand { get; }
+    public ObservableCollection<FlatpakModel> Flatpaks { get; set; } = [];
+    private int _currentPage;
+    private bool _isLoading;
+    
     public ReactiveCommand<Unit, Unit> LoadMoreCommand { get; }
     public ReactiveCommand<Unit, Unit> SearchCommand { get; }
 
@@ -40,7 +39,6 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         _unprivilegedOperationService = App.Services.GetRequiredService<IUnprivilegedOperationService>();
         _databaseService = App.Services.GetRequiredService<IDatabaseService>();
         
-        LoadInitialDataCommand = ReactiveCommand.CreateFromTask(LoadInitialDataAsync);
         LoadMoreCommand = ReactiveCommand.CreateFromTask(LoadMoreAsync);
         SearchCommand = ReactiveCommand.CreateFromTask(PerformSearchAsync);
 
@@ -53,10 +51,9 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
             .Subscribe(_ => PerformSearchAsync());
 
         if (_databaseService.CollectionExists<FlatpakModel>("flatpaks")) return;
-        Refresh();
+        _ = Refresh();
         _databaseService.EnsureIndex<FlatpakModel>("collectionName", x => x.Name, x => x.Categories);
         LoadingData = true;
-        //LoadData();
     }
 
     /// <summary>
@@ -91,12 +88,12 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
 
         if (LoadingData)
         {
-            LoadInitialDataAsync();
+            await LoadInitialDataAsync();
             LoadingData = false;
         }
     }
 
-    private async Task PerformSearchAsync()
+    private Task PerformSearchAsync()
     {
         Flatpaks.Clear();
         _currentPage = 0;
@@ -107,9 +104,11 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         {
             Flatpaks.Add(item);
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task LoadInitialDataAsync()
+    private Task LoadInitialDataAsync()
     {
         Flatpaks.Clear();
         _currentPage = 0;
@@ -120,11 +119,13 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         {
             Flatpaks.Add(item);
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task LoadMoreAsync()
+    private Task LoadMoreAsync()
     {
-        if (_isLoading) return;
+        if (_isLoading) return Task.CompletedTask;
 
         _isLoading = true;
         _currentPage++;
@@ -144,6 +145,8 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         {
             _isLoading = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private List<FlatpakModel> GetNextPage(string? category) => _databaseService.GetNextPage<FlatpakModel, string>(
@@ -178,9 +181,9 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     }
 
 
-    public async Task InstallPackage(FlatpakModel package)
+    private async Task InstallPackage(FlatpakModel package)
     {
-        MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+        var mainWindow = HostScreen as MainWindowViewModel;
 
         try
         {
@@ -205,24 +208,17 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
         finally
         {
             //always exit globally busy in case of failure
-            if (mainWindow != null)
-            {
-                mainWindow.IsGlobalBusy = false;
-            }
+            mainWindow?.IsGlobalBusy = false;
         }
     }
 
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
-
-    public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
-
-    public ReactiveCommand<FlatpakModel, System.Reactive.Unit> InstallPackagesCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
-
-    public ObservableCollection<FlatpakModel> AvailablePackages { get; set; }
-
-
+    
+    public ReactiveCommand<FlatpakModel, Unit> InstallPackagesCommand { get; }
+    public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
+    
+    
     public string? SearchText
     {
         get => _searchText;
@@ -233,8 +229,7 @@ public class FlatpakInstallViewModel : ConsoleEnabledViewModelBase, IRoutableVie
     {
         if (disposing)
         {
-            AvailablePackages?.Clear();
-            Flatpaks?.Clear();
+            Flatpaks.Clear();
         }
 
         base.Dispose(disposing);
