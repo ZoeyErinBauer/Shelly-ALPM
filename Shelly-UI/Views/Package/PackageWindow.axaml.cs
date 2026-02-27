@@ -1,17 +1,17 @@
-using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
-using ReactiveUI;
-using ReactiveUI.Avalonia;
-using Shelly_UI.ViewModels;
-using System.Diagnostics;
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
+using ReactiveUI;
+using ReactiveUI.Avalonia;
 using Shelly_UI.Models;
+using Shelly_UI.ViewModels.Packages;
 
-namespace Shelly_UI.Views;
+namespace Shelly_UI.Views.Package;
 
 public partial class PackageWindow : ReactiveUserControl<PackageViewModel>
 {
