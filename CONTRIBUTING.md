@@ -159,7 +159,7 @@ dotnet test Shelly-UI.Tests/Shelly-UI.Tests.csproj
 
 ## Localization Guidelines
 
-If you're interested in helping localizing Shelly to your language, here are the steps that must be followed:
+If you're interested in helping localize Shelly into your language, please follow the steps below
 
 1. Locate the resource folder:
 
