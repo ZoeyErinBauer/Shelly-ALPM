@@ -2,7 +2,7 @@ namespace Shelly_Notifications.Services;
 
 public static class AppRunner
 {
-    public static void LaunchAppIfNotRunning()
+    public static void LaunchAppIfNotRunning(string args)
     {
         const string appName = "shelly-ui";
         const string optPath = "/opt/shelly/Shelly-UI";
@@ -34,6 +34,7 @@ public static class AppRunner
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
             FileName = targetPath,
+            Arguments = args,
             UseShellExecute = false,
             CreateNoWindow = true,
         });

@@ -435,10 +435,24 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     {
         var defaultView = _configService.LoadConfig().DefaultView;
 
-        if (_navigationMap.TryGetValue(defaultView, out var command))
+        var startPage = Program.StartPage;
+        
+        if (!string.IsNullOrEmpty(startPage))
         {
-            command.Execute(null);
+            if (_navigationMap.TryGetValue(DefaultViewEnum.UpdatePackage, out var command))
+            {
+                command.Execute(null);
+            }
         }
+        else
+        {
+            if (_navigationMap.TryGetValue(defaultView, out var command))
+            {
+                command.Execute(null);
+            }
+        }
+        
+      
     }
 
     private readonly Dictionary<DefaultViewEnum, ICommand> _navigationMap;

@@ -15,6 +15,7 @@ sealed class Program
     private static bool _crashed = false;
     private static CancellationTokenSource? _pipeCancellation;
     private static FileStream? _lockFileStream;
+    public static string? StartPage { get; private set; }
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
@@ -49,6 +50,13 @@ sealed class Program
             Console.Error.WriteLine($"Failed to acquire lock: {ex.Message}");
         }
         
+        
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] != "--page") continue;
+            StartPage = args[i + 1];
+            break;
+        }
         
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANGOHUD")))
         {

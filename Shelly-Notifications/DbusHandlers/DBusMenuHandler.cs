@@ -13,9 +13,10 @@ internal class DBusMenuHandler(Connection connection) : IPathMethodHandler
     private static readonly Dictionary<int, (string Label, string Type, bool Enabled, string icon)> Items = new()
     {
         [1] = ("Open Shelly", "standard", true, "shelly"),
-        [2] = ("Check for Updates", "standard", true, ""),
-        [3] = ("", "separator", false, ""),
-        [4] = ("Exit", "standard", true, ""),
+        [2] = ("Update Packages", "standard", true, ""),
+        [3] = ("Check for Updates", "standard", true, ""),
+        [4] = ("", "separator", false, ""),
+        [5] = ("Exit", "standard", true, ""),
     };
 
     private static readonly int[] RootChildren = { 1, 2, 3, 4 };
@@ -151,9 +152,10 @@ internal class DBusMenuHandler(Connection connection) : IPathMethodHandler
         {
             switch (id)
             {
-                case 1: AppRunner.LaunchAppIfNotRunning(); break;
-                case 2: new NotificationHandler().SendNotif(connection, $"Updates available: {await new UpdateService().CheckForUpdates()}"); break;
-                case 4: OnExitRequested?.Invoke(); break;
+                case 1: AppRunner.LaunchAppIfNotRunning(""); break;
+                case 2: AppRunner.LaunchAppIfNotRunning("--page UpdatePackage");  break;
+                case 3: new NotificationHandler().SendNotif(connection, $"Updates available: {await new UpdateService().CheckForUpdates()}"); break;
+                case 5: OnExitRequested?.Invoke(); break;
             }
         }
 

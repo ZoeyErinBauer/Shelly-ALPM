@@ -22,7 +22,7 @@ internal class StatusNotifierItemHandler : IPathMethodHandler
                 if (request.Member.SequenceEqual("Activate"u8))
                 {
                     context.Reply(context.CreateReplyWriter("").CreateMessage());
-                    AppRunner.LaunchAppIfNotRunning();
+                    AppRunner.LaunchAppIfNotRunning("");
                     Console.WriteLine("[DEBUG_LOG] Tray icon left-clicked (Activate).");
                     return new ValueTask(OnActivateAsync(0, 0));
                 }
