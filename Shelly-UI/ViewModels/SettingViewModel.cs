@@ -27,8 +27,11 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     private readonly IPrivilegedOperationService _privilegedOperationService;
 
     private bool _updateAvailable;
-    
-    public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService, IPrivilegedOperationService privilegedOperationService)
+
+    private bool _aurWarningConfirmed;
+
+    public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService,
+        IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         _configService = configService;
@@ -50,6 +53,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _enableTray = config.TrayEnabled;
         _trayCheckIntervalHours = config.TrayCheckIntervalHours;
         _noConfirm = config.NoConfirm;
+        _aurWarningConfirmed = config.AurWarningConfirmed;
 
         _ = SetUpdateText();
         _ = CheckAndEnableFlatpakAsync();
@@ -127,41 +131,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-
-    public bool EnableAur
-    {
-        get => _enableAur;
-        set
-        {
-            var config = _configService.LoadConfig();
-
-            // Show warning dialog if enabling AUR for the first time
-            if (value && !config.AurWarningConfirmed)
-            {
-                ShowAurDialog = true;
-
-                // Reset toggle to off until user confirms
-                Task.Run(async () =>
-                {
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        _enableAur = false;
-                        this.RaisePropertyChanged(nameof(EnableAur));
-                    });
-                });
-
-                return;
-            }
-
-            this.RaiseAndSetIfChanged(ref _enableAur, value);
-
-            MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
-
-            config.AurEnabled = value;
-            _configService.SaveConfig(config);
-        }
-    }
-
     private bool _showAurDialog;
 
     public bool ShowAurDialog
@@ -170,17 +139,16 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set => this.RaiseAndSetIfChanged(ref _showAurDialog, value);
     }
 
-    public ReactiveCommand<Unit, Unit> CancelAurDialog { get; }
-    public ReactiveCommand<Unit, Unit> ConfirmAurWarningCommand { get; }
-
     private void ConfirmAurWarning()
     {
         var config = _configService.LoadConfig();
-        config.AurWarningConfirmed = true;
+        _aurWarningConfirmed = true;
+        config.AurWarningConfirmed = _aurWarningConfirmed;
         _configService.SaveConfig(config);
-
-        ShowAurDialog = false;
         EnableAur = true;
+        ShowAurDialog = false;
+        IsAurToggleEnabled = true;
+        SendAurMessage();
     }
 
 
@@ -293,6 +261,65 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             _configService.SaveConfig(config);
             MessageBus.Current.SendMessage(new MainWindowMessage { MenuLayoutChanged = true });
         }
+    }
+
+
+    public bool EnableAur
+    {
+        get => _enableAur;
+        set
+        {
+            var oldValue = _enableAur;
+            this.RaiseAndSetIfChanged(ref _enableAur, value);
+
+            if (value && !_aurWarningConfirmed)
+            {
+                ShowAurDialog = true;
+
+                Task.Run(async () =>
+                {
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _enableFlatpak = false;
+                        this.RaisePropertyChanged(nameof(EnableAur));
+                    });
+                });
+
+                return;
+            }
+
+            SetEnableAurAsync(value);
+            if (value == oldValue) return;
+            var config = _configService.LoadConfig();
+            config.AurEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
+    private Task SetEnableAurAsync(bool value)
+    {
+        _enableAur = value;
+        this.RaisePropertyChanged(nameof(EnableAur));
+
+        SendAurMessage();
+
+        var config = _configService.LoadConfig();
+        config.AurEnabled = value;
+        _configService.SaveConfig(config);
+        return Task.CompletedTask;
+    }
+
+    private static void SendAurMessage()
+    {
+        MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
+    }
+
+    private bool _isAurToggleEnabled = false;
+
+    public bool IsAurToggleEnabled
+    {
+        get => _isAurToggleEnabled;
+        private set => this.RaiseAndSetIfChanged(ref _isAurToggleEnabled, value);
     }
 
     public bool EnableFlatpak
@@ -430,6 +457,9 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
     public ReactiveCommand<Unit, Unit> CancelFlatpakDialog { get; }
 
     public ReactiveCommand<Unit, bool> InstallFlatpakCommand { get; }
+
+    public ReactiveCommand<Unit, Unit> CancelAurDialog { get; }
+    public ReactiveCommand<Unit, Unit> ConfirmAurWarningCommand { get; }
 
 
     public static bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||

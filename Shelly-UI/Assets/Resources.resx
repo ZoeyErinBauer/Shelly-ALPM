@@ -193,10 +193,10 @@
         <value>Enable Console</value>
     </data>
     <data name="ToggleAur" xml:space="preserve">
-        <value>Enable AUR (Beta)</value>
+        <value>Enable AUR</value>
     </data>
     <data name="ToggleFlatpak" xml:space="preserve">
-        <value>Enable Flatpak (Alpha)</value>
+        <value>Enable Flatpak</value>
     </data>
     <data name="ToggleHorizontalMenu" xml:space="preserve">
         <value>Enable Horizontal Menu</value>
