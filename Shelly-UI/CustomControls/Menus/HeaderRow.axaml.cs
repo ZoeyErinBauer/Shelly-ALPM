@@ -20,8 +20,23 @@ public partial class HeaderRow : UserControl
     public static readonly StyledProperty<string> CheckboxContentProperty =
         AvaloniaProperty.Register<HeaderRow, string>(nameof(CheckboxContent));
 
+    public static readonly StyledProperty<string> CheckboxTooltipProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(CheckboxTooltip));
+
     public static readonly StyledProperty<bool> ShowCheckboxProperty =
         AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowCheckbox), false);
+
+    public static readonly StyledProperty<bool> IsChecked2Property =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(IsChecked2), false);
+
+    public static readonly StyledProperty<string> CheckboxContent2Property =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(CheckboxContent2));
+
+    public static readonly StyledProperty<string> CheckboxTooltip2Property =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(CheckboxTooltip2));
+
+    public static readonly StyledProperty<bool> ShowCheckbox2Property =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowCheckbox2), false);
 
     public static readonly StyledProperty<MaterialIconKind> TitleIconProperty =
         AvaloniaProperty.Register<HeaderRow, MaterialIconKind>(nameof(TitleIcon));
@@ -104,10 +119,40 @@ public partial class HeaderRow : UserControl
         set => SetValue(CheckboxContentProperty, value);
     }
 
+    public string CheckboxTooltip
+    {
+        get => GetValue(CheckboxTooltipProperty);
+        set => SetValue(CheckboxTooltipProperty, value);
+    }
+
     public bool ShowCheckbox
     {
         get => GetValue(ShowCheckboxProperty);
         set => SetValue(ShowCheckboxProperty, value);
+    }
+
+    public bool IsChecked2
+    {
+        get => GetValue(IsChecked2Property);
+        set => SetValue(IsChecked2Property, value);
+    }
+
+    public string CheckboxContent2
+    {
+        get => GetValue(CheckboxContent2Property);
+        set => SetValue(CheckboxContent2Property, value);
+    }
+
+    public string CheckboxTooltip2
+    {
+        get => GetValue(CheckboxTooltip2Property);
+        set => SetValue(CheckboxTooltip2Property, value);
+    }
+
+    public bool ShowCheckbox2
+    {
+        get => GetValue(ShowCheckbox2Property);
+        set => SetValue(ShowCheckbox2Property, value);
     }
 
     public string Title

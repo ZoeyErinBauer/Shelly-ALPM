@@ -536,4 +536,16 @@
     <data name="TitleManagePackages" xml:space="preserve">
         <value>Shelly - Manage Packages</value>
     </data>
+    <data name="CheckboxCascade" xml:space="preserve">
+        <value>Cascade</value>
+    </data>
+    <data name="CheckboxCascadeTooltip" xml:space="preserve">
+        <value>Remove packages and all their dependencies</value>
+    </data>
+    <data name="CheckboxConfig" xml:space="preserve">
+        <value>Config Cleanup (Experimental)</value>
+    </data>
+    <data name="CheckboxConfigTooltip" xml:space="preserve">
+        <value>Attempt to remove config files from ~/.config</value>
+    </data>
 </root>

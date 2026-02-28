@@ -77,6 +77,14 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         _isCascade = !_isCascade;
     }
 
+    private bool _isCleanup = false;
+
+    public bool IsCleanup
+    {
+        get => _isCleanup;
+        set => _isCleanup = this.RaiseAndSetIfChanged(ref _isCascade, value);
+    }
+
     private async Task Refresh()
     {
         try
@@ -172,7 +180,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
                 //do work
 
-                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages, IsCascade);
+                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages, IsCascade, IsCleanup);
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
@@ -211,7 +219,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
-    
+
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
     public string? SearchText

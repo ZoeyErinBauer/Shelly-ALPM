@@ -9,7 +9,7 @@
              x:Name="Root"
              x:CompileBindings="True">
     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
             <Button
                 HorizontalAlignment="Left"
                 IsVisible="{Binding #Root.ShowTitleButton}"
@@ -67,9 +67,18 @@
                 IsVisible="{Binding #Root.ShowCheckbox}"
                 IsChecked="{Binding #Root.IsChecked, Mode=TwoWay}"
                 Content="{Binding #Root.CheckboxContent}"
+                ToolTip.Tip="{Binding #Root.CheckboxTooltip}"
+                Foreground="{DynamicResource SystemBaseHighColor}" />
+            <CheckBox
+                Grid.Column="5"
+                Margin="12,0"
+                IsVisible="{Binding #Root.ShowCheckbox2}"
+                IsChecked="{Binding #Root.IsChecked2, Mode=TwoWay}"
+                Content="{Binding #Root.CheckboxContent2}"
+                ToolTip.Tip="{Binding #Root.CheckboxTooltip2}"
                 Foreground="{DynamicResource SystemBaseHighColor}" />
             <ComboBox
-                Grid.Column="5"
+                Grid.Column="6"
                 HorizontalAlignment="Right"
                 SelectedIndex="{Binding #Root.ComboBoxSelectedIndex, Mode=TwoWay}"
                 Width="150"
@@ -79,7 +88,7 @@
                 SelectedItem="{Binding #Root.ComboBoxSelectedItem, Mode=TwoWay}"
                 IsVisible="{Binding #Root.ShowComboBox}" />
             <TextBox
-                Grid.Column="6"
+                Grid.Column="7"
                 Width="220"
                 Margin="12,0"
                 IsVisible="{Binding #Root.ShowSearchBox}"
@@ -99,7 +108,7 @@
                     </TextBox.KeyBindings>
             </TextBox>
             <Button
-                Grid.Column="7"
+                Grid.Column="8"
                 Margin="12,0,0,0"
                 Padding="8"
                 Background="Transparent"
