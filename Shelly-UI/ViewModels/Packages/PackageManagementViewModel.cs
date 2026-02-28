@@ -23,17 +23,18 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
     private readonly IAppCache _appCache;
     private string? _searchText;
     private readonly ICredentialManager _credentialManager;
-    
+
     private List<PackageModel> _avaliablePackages = new();
 
-    public PackageManagementViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
+    public PackageManagementViewModel(IScreen screen, IAppCache appCache,
+        IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = new ObservableCollection<PackageModel>();
         _credentialManager = credentialManager;
-        
+
         // When search text changes, update the observable collection
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -43,7 +44,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
-        
+
         LoadData();
     }
 
@@ -56,11 +57,18 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
                 p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         AvailablePackages.Clear();
-        
+
         foreach (var package in filtered)
         {
             AvailablePackages.Add(package);
         }
+    }
+
+    private bool _isCascade { get; set; } = true;
+
+    private async Task ToggleCascade()
+    {
+        _isCascade = !_isCascade;
     }
 
     private async Task Refresh()
@@ -72,6 +80,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
+
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 _avaliablePackages.Clear();
@@ -97,7 +106,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
                 DownloadSize = u.Size,
                 IsChecked = false
             }).ToList();
-            
+
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 _avaliablePackages = models;
@@ -128,7 +137,6 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
         if (selectedPackages.Any())
         {
-            
             MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
 
             try
@@ -145,7 +153,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
                     if (!isValidated) return;
                 }
-                
+
                 // Set busy
                 if (mainWindow != null)
                 {
@@ -198,6 +206,8 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
 
+    public ReactiveCommand<Unit, Unit> ToggleCascadeCommand { get; }
+
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
     public string? SearchText
@@ -205,14 +215,14 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     private void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-    
+
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     protected override void Dispose(bool disposing)
@@ -222,6 +232,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             AvailablePackages?.Clear();
             _avaliablePackages?.Clear();
         }
+
         base.Dispose(disposing);
     }
 }
