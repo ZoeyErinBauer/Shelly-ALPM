@@ -7,7 +7,7 @@ using Avalonia.VisualTree;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
 using Shelly_UI.Models;
-using Shelly_UI.ViewModels;
+using Shelly_UI.ViewModels.Packages;
 
 namespace Shelly_UI.Views;
 

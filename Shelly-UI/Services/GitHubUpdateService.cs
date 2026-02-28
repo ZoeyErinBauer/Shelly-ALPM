@@ -13,6 +13,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Models;
+using Shelly_UI.Services.TrayServices;
 using Shelly_UI.Views;
 
 namespace Shelly_UI.Services;
@@ -113,7 +114,7 @@ public class GitHubUpdateService : IUpdateService
         if (Directory.Exists(extractPath))
             Directory.Delete(extractPath, true);
         Directory.CreateDirectory(extractPath);
-
+        
         try
         {
             Console.WriteLine($"Downloading update from {asset.BrowserDownloadUrl}...");
@@ -192,6 +193,8 @@ public class GitHubUpdateService : IUpdateService
             Console.WriteLine("Update cancelled: No password available.");
             return;
         }
+        
+        TrayStartService.End();
 
         // Delay so it doesn't open in the wrong location
         await Task.Delay(100);

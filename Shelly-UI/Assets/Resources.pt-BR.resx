@@ -427,13 +427,13 @@
         <value>Habilitar Tudo</value>
     </data>
     <data name="ToggleAur" xml:space="preserve">
-        <value>Habilitar AUR (Beta)</value>
+        <value>Habilitar AUR</value>
     </data>
     <data name="ToggleConsole" xml:space="preserve">
         <value>Habilitar Console</value>
     </data>
     <data name="ToggleFlatpak" xml:space="preserve">
-        <value>Habilitar Flatpak (Alpha)</value>
+        <value>Habilitar Flatpak</value>
     </data>
     <data name="ToggleHorizontalMenu" xml:space="preserve">
         <value>Habilitar Menu Horizontal</value>

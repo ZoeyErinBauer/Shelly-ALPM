@@ -11,7 +11,6 @@ using Shelly_UI.BaseClasses;
 using Shelly_UI.CustomControls.Dialogs;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels.AUR;
 
@@ -23,16 +22,14 @@ public class AurViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel, IAc
     private string? _searchText;
 
     private readonly ConfigService _configService = new();
-
-    private IAppCache _appCache;
+    
     private readonly ICredentialManager _credentialManager;
 
-    public AurViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService,
+    public AurViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService,
         ICredentialManager credentialManager)
     {
         HostScreen = screen;
-
-        _appCache = appCache;
+        
         _privilegedOperationService = privilegedOperationService;
         _credentialManager = credentialManager;
 

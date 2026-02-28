@@ -1,7 +1,6 @@
 using Moq;
 using Shelly_UI.ViewModels;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 using PackageManager.Alpm;
 using Microsoft.Reactive.Testing;
 using System.Reactive.Linq;

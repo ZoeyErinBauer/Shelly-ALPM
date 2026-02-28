@@ -23,7 +23,7 @@ public partial class SettingWindow : ReactiveUserControl<SettingViewModel>
     
     private void OnFlatpakPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
-        if (sender is not ToggleSwitch toggleSwitch || DataContext is not SettingViewModel viewModel) return;
+        if (sender is not ToggleSwitch || DataContext is not SettingViewModel viewModel) return;
         var currentValue = viewModel.EnableFlatpak;
         var wouldBeNewValue = !currentValue;
 
@@ -31,6 +31,18 @@ public partial class SettingWindow : ReactiveUserControl<SettingViewModel>
         e.Handled = true;
                 
         viewModel.ShowFlatpakDialog = true;
+    }
+    
+    private void OnAurPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (sender is not ToggleSwitch || DataContext is not SettingViewModel viewModel) return;
+        var currentValue = viewModel.EnableAur;
+        var wouldBeNewValue = !currentValue;
+
+        if (!wouldBeNewValue || viewModel.IsAurToggleEnabled) return;
+        e.Handled = true;
+                
+        viewModel.ShowAurDialog = true;
     }
 
     private void OpenUrlCrossPlatform(object? sender, RoutedEventArgs routedEventArgs)

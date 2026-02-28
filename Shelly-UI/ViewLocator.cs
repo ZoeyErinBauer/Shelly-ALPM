@@ -4,9 +4,11 @@ using ReactiveUI;
 using Shelly_UI.ViewModels;
 using Shelly_UI.ViewModels.AUR;
 using Shelly_UI.ViewModels.Flatpak;
+using Shelly_UI.ViewModels.Packages;
 using Shelly_UI.Views;
 using Shelly_UI.Views.AUR;
 using Shelly_UI.Views.Flatpak;
+using PackageWindow = Shelly_UI.Views.Package.PackageWindow;
 
 namespace Shelly_UI;
 
