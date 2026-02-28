@@ -143,9 +143,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             filePath);
     }
 
-    public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages)
+    public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages, bool isCascade)
     {
-        var packageArgs = string.Join(" ", packages);
+        var packageArgs = string.Join(" ", packages, "-c");
         return await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
     }
 

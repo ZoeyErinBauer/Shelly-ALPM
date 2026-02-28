@@ -38,7 +38,10 @@
                             SearchText="{Binding SearchText, Mode=TwoWay}"
                             SyncCommand="{Binding RefreshCommand}"
                             SyncTooltip="{x:Static lang:Resources.Sync}"
-                            SyncIcon="Sync"/>
+                            SyncIcon="Sync"
+                            ShowCheckbox="True"
+                            CheckboxContent="Cascade"
+                            IsChecked="{Binding IsCascade, Mode=TwoWay}"/>
                         <DataGrid
                             Name="RemoveDataGrid"
                             Grid.Row="1"

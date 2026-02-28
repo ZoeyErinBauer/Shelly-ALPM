@@ -64,7 +64,13 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         }
     }
 
-    private bool _isCascade { get; set; } = true;
+    private bool _isCascade = true;
+
+    public bool IsCascade
+    {
+        get => _isCascade;
+        set => this.RaiseAndSetIfChanged(ref _isCascade, value);
+    }
 
     private async Task ToggleCascade()
     {
@@ -166,7 +172,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
                 //do work
 
-                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages);
+                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages, IsCascade);
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");

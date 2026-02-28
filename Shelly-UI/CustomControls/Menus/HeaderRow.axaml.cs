@@ -12,7 +12,16 @@ public partial class HeaderRow : UserControl
         AvaloniaProperty.Register<HeaderRow, string>(nameof(Title));
     
     public static readonly StyledProperty<bool> ShowTitleButtonProperty =
-        AvaloniaProperty.Register<HeaderRow, bool>(nameof(Title));
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowTitleButton));
+
+    public static readonly StyledProperty<bool> IsCheckedProperty =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(IsChecked), false);
+
+    public static readonly StyledProperty<string> CheckboxContentProperty =
+        AvaloniaProperty.Register<HeaderRow, string>(nameof(CheckboxContent));
+
+    public static readonly StyledProperty<bool> ShowCheckboxProperty =
+        AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowCheckbox), false);
 
     public static readonly StyledProperty<MaterialIconKind> TitleIconProperty =
         AvaloniaProperty.Register<HeaderRow, MaterialIconKind>(nameof(TitleIcon));
@@ -82,6 +91,24 @@ public partial class HeaderRow : UserControl
 
     public static readonly StyledProperty<bool> ShowTertiaryButtonProperty =
         AvaloniaProperty.Register<HeaderRow, bool>(nameof(ShowTertiaryButton), false);
+
+    public bool IsChecked
+    {
+        get => GetValue(IsCheckedProperty);
+        set => SetValue(IsCheckedProperty, value);
+    }
+
+    public string CheckboxContent
+    {
+        get => GetValue(CheckboxContentProperty);
+        set => SetValue(CheckboxContentProperty, value);
+    }
+
+    public bool ShowCheckbox
+    {
+        get => GetValue(ShowCheckboxProperty);
+        set => SetValue(ShowCheckboxProperty, value);
+    }
 
     public string Title
     {

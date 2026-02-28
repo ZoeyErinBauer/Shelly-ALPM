@@ -9,7 +9,7 @@
              x:Name="Root"
              x:CompileBindings="True">
     <Border Background="{DynamicResource SystemAccentColor}" Padding="8">
-        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
             <Button
                 HorizontalAlignment="Left"
                 IsVisible="{Binding #Root.ShowTitleButton}"
@@ -61,8 +61,15 @@
                         VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
-            <ComboBox
+            <CheckBox
                 Grid.Column="4"
+                Margin="12,0"
+                IsVisible="{Binding #Root.ShowCheckbox}"
+                IsChecked="{Binding #Root.IsChecked, Mode=TwoWay}"
+                Content="{Binding #Root.CheckboxContent}"
+                Foreground="{DynamicResource SystemBaseHighColor}" />
+            <ComboBox
+                Grid.Column="5"
                 HorizontalAlignment="Right"
                 SelectedIndex="{Binding #Root.ComboBoxSelectedIndex, Mode=TwoWay}"
                 Width="150"
@@ -72,7 +79,7 @@
                 SelectedItem="{Binding #Root.ComboBoxSelectedItem, Mode=TwoWay}"
                 IsVisible="{Binding #Root.ShowComboBox}" />
             <TextBox
-                Grid.Column="5"
+                Grid.Column="6"
                 Width="220"
                 Margin="12,0"
                 IsVisible="{Binding #Root.ShowSearchBox}"
@@ -92,7 +99,7 @@
                     </TextBox.KeyBindings>
             </TextBox>
             <Button
-                Grid.Column="6"
+                Grid.Column="7"
                 Margin="12,0,0,0"
                 Padding="8"
                 Background="Transparent"
