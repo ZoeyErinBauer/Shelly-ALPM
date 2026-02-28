@@ -90,7 +90,9 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             {
                 Name = u.Name,
                 Version = u.Version,
-                DownloadSize = u.Size,
+                DownloadSize = u.DownloadSize,
+                InstallSize = u.InstalledSize,
+                InstallDate = u.InstallDate.ToString() ?? string.Empty,
                 IsChecked = false
             }).ToList();
             

@@ -6,6 +6,7 @@
              xmlns:customControls="clr-namespace:Shelly_UI.CustomControls"
              xmlns:menus="clr-namespace:Shelly_UI.CustomControls.Menus"
              xmlns:packages="clr-namespace:Shelly_UI.ViewModels.Packages"
+             xmlns:converters="clr-namespace:Shelly_UI.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Shelly_UI.Views.PackageManagement"
              x:DataType="packages:PackageManagementViewModel"
@@ -20,6 +21,11 @@
             <Setter Property="SeparatorBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converters:FileSizeConverter x:Key="ByteConverter" />
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Border CornerRadius="12" ClipToBounds="True" Background="{DynamicResource SystemChromeLowColor}">
         <customControls:ConsoleSplitControl
             IsBottomPanelVisible="{Binding IsBottomPanelVisible}"
@@ -51,6 +57,14 @@
                                     Header="{x:Static lang:Resources.PackageName}"
                                     Binding="{Binding Name}"
                                     Width="*" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.PackageSize}"
+                                    Binding="{Binding InstallSize, Converter={StaticResource ByteConverter}}"
+                                    Width="100" />
+                                <DataGridTextColumn
+                                    Header="{x:Static lang:Resources.Installed}"
+                                    Binding="{Binding InstallDate}"
+                                    Width="200" />
                                 <DataGridTextColumn
                                     Header="{x:Static lang:Resources.Version}"
                                     Binding="{Binding Version}"
