@@ -1,3 +1,4 @@
+using System;
 using ReactiveUI;
 
 namespace Shelly_UI.Models;
@@ -12,6 +13,8 @@ public class PackageModel : ReactiveObject
 
     // Helper property to format bytes to MB
     public string SizeString => $"{(DownloadSize / 1024.0 / 1024.0):F2} MB";
+    
+    public long InstallSize { get; set; }
 
     public string? Description { get; set; }
 
@@ -20,6 +23,8 @@ public class PackageModel : ReactiveObject
     public string? Repository { get; set; }
 
     public bool IsInstalled { get; set; } = false;
+    
+    public string InstallDate { get; set; } = string.Empty;
 
     private bool _isChecked;
 
