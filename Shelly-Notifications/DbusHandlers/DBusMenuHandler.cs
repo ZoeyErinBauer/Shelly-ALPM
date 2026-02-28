@@ -19,7 +19,7 @@ internal class DBusMenuHandler(Connection connection) : IPathMethodHandler
         [5] = ("Exit", "standard", true, ""),
     };
 
-    private static readonly int[] RootChildren = { 1, 2, 3, 4, 5 };
+    private static readonly int[] RootChildren = [1, 2, 3, 4, 5];
 
     public ValueTask HandleMethodAsync(MethodContext context)
     {
