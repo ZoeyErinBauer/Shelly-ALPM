@@ -123,7 +123,7 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
                 CurrentVersion = u.Version,
                 NewVersion = u.NewVersion,
                 DownloadSize = u.DownloadSize,
-                IsChecked = false
+                IsChecked = true
             }).ToList();
 
             RxApp.MainThreadScheduler.Schedule(() =>
@@ -153,8 +153,8 @@ public class AurUpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
             p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
     }
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AlpmUpdateCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SyncCommand { get; }
+    public ReactiveCommand<Unit, Unit> AlpmUpdateCommand { get; }
+    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
 
     public IEnumerable<UpdateModel> FilteredPackages => _filteredPackages.Value;
 
