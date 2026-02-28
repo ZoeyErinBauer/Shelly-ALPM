@@ -23,6 +23,7 @@
                                       Foreground="{DynamicResource SystemBaseHighColor}" />
                         <ToggleSwitch Content="{x:Static lang:Resources.ToggleAur}"
                                       IsChecked="{Binding EnableAur, Mode=TwoWay}"
+                                      PointerPressed="OnAurPointerPressed"
                                       Foreground="{DynamicResource SystemBaseHighColor}">
                         </ToggleSwitch>
                         <ToggleSwitch Content="{x:Static lang:Resources.ToggleFlatpak}"

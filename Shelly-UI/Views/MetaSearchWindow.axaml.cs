@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
 using Shelly_UI.ViewModels;
+using Shelly_UI.ViewModels.Packages;
 
 namespace Shelly_UI.Views;
 

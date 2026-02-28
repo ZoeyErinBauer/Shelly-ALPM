@@ -9,15 +9,15 @@ using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Standard;
 
-public class RemoveCommand : Command<PackageSettings>
+public class RemoveCommand : Command<RemovePackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] PackageSettings settings)
+    public override int Execute([NotNull] CommandContext context, [NotNull] RemovePackageSettings settings)
     {
         if (Program.IsUiMode)
         {
             return HandleUiModeRemove(settings);
         }
-        
+
         if (settings.Packages.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
@@ -89,10 +89,40 @@ public class RemoveCommand : Command<PackageSettings>
                 lastPercent = pct;
             }
         };
-        manager.RemovePackages(packageList);
 
+        if (settings.Cascade)
+        {
+            manager.RemovePackages(packageList, AlpmTransFlag.Cascade);
+        }
+        else
+        {
+            manager.RemovePackages(packageList);
+        }
+
+        if (settings.RemoveConfig)
+        {
+            HandleConfigRemoval(settings.Packages);
+        }
 
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
+        return 0;
+    }
+
+    private static int HandleConfigRemoval(string[] packageNames)
+    {
+        foreach (var package in packageNames)
+        {
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), package);
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to find directory for {package} moving on");
+            }
+        }
+
         return 0;
     }
 
@@ -110,16 +140,10 @@ public class RemoveCommand : Command<PackageSettings>
             var packageList = settings.Packages.ToList();
 
             // Handle questions
-            manager.Question += (sender, args) =>
-            {
-                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
-            };
+            manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
 
             // Handle progress events
-            manager.Progress += (sender, args) =>
-            {
-                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
-            };
+            manager.Progress += (sender, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
 
             Console.Error.WriteLine("Initializing ALPM...");
             manager.Initialize(true);

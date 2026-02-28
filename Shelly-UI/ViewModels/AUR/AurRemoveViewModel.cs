@@ -10,7 +10,6 @@ using ReactiveUI;
 using Shelly_UI.BaseClasses;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 
 namespace Shelly_UI.ViewModels.AUR;
 
@@ -23,11 +22,11 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     private readonly ObservableAsPropertyHelper<IEnumerable<AurModel>> _filteredPackages;
     private readonly ICredentialManager _credentialManager;
 
-    public AurRemoveViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
+    public AurRemoveViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
         _privilegedOperationService = privilegedOperationService;
-        AvailablePackages = new ObservableCollection<AurModel>();
+        AvailablePackages = [];
         _credentialManager = credentialManager;
         
         _filteredPackages = this
@@ -170,15 +169,13 @@ public class AurRemoveViewModel : ConsoleEnabledViewModelBase, IRoutableViewMode
     }
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
-
-    public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
-
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
+    
+    public ReactiveCommand<Unit, Unit> RemovePackagesCommand { get; }
+    public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
 
     public ObservableCollection<AurModel> AvailablePackages { get; set; }
 
-    public IEnumerable<AurModel> FilteredPackages => _filteredPackages.Value;
+    private IEnumerable<AurModel> FilteredPackages => _filteredPackages.Value;
 
     public string? SearchText
     {

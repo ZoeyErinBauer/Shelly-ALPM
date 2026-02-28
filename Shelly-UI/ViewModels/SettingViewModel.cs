@@ -14,7 +14,6 @@ using Shelly_UI.Assets;
 using Shelly_UI.Enums;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.TrayServices;
 
 namespace Shelly_UI.ViewModels;
@@ -27,15 +26,16 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private readonly IPrivilegedOperationService _privilegedOperationService;
 
-    private IAppCache _appCache;
+    private bool _updateAvailable;
+
+    private bool _aurWarningConfirmed;
 
     public SettingViewModel(IScreen screen, IConfigService configService, IUpdateService updateService,
-        IAppCache appCache, IPrivilegedOperationService privilegedOperationService)
+        IPrivilegedOperationService privilegedOperationService)
     {
         HostScreen = screen;
         _configService = configService;
         _updateService = updateService;
-        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
         var fluentTheme = Application.Current?.Styles.OfType<FluentTheme>().FirstOrDefault();
         if (fluentTheme != null && fluentTheme.Palettes.TryGetValue(ThemeVariant.Dark, out var dark) && dark is { } pal)
@@ -53,6 +53,7 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         _enableTray = config.TrayEnabled;
         _trayCheckIntervalHours = config.TrayCheckIntervalHours;
         _noConfirm = config.NoConfirm;
+        _aurWarningConfirmed = config.AurWarningConfirmed;
 
         _ = SetUpdateText();
         _ = CheckAndEnableFlatpakAsync();
@@ -130,41 +131,6 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         }
     }
 
-
-    public bool EnableAur
-    {
-        get => _enableAur;
-        set
-        {
-            var config = _configService.LoadConfig();
-
-            // Show warning dialog if enabling AUR for the first time
-            if (value && !config.AurWarningConfirmed)
-            {
-                ShowAurDialog = true;
-
-                // Reset toggle to off until user confirms
-                Task.Run(async () =>
-                {
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        _enableAur = false;
-                        this.RaisePropertyChanged(nameof(EnableAur));
-                    });
-                });
-
-                return;
-            }
-
-            this.RaiseAndSetIfChanged(ref _enableAur, value);
-
-            MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
-
-            config.AurEnabled = value;
-            _configService.SaveConfig(config);
-        }
-    }
-
     private bool _showAurDialog;
 
     public bool ShowAurDialog
@@ -173,17 +139,16 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
         set => this.RaiseAndSetIfChanged(ref _showAurDialog, value);
     }
 
-    public ReactiveCommand<Unit, Unit> CancelAurDialog { get; }
-    public ReactiveCommand<Unit, Unit> ConfirmAurWarningCommand { get; }
-
     private void ConfirmAurWarning()
     {
         var config = _configService.LoadConfig();
-        config.AurWarningConfirmed = true;
+        _aurWarningConfirmed = true;
+        config.AurWarningConfirmed = _aurWarningConfirmed;
         _configService.SaveConfig(config);
-
-        ShowAurDialog = false;
         EnableAur = true;
+        ShowAurDialog = false;
+        IsAurToggleEnabled = true;
+        SendAurMessage();
     }
 
 
@@ -296,6 +261,65 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
             _configService.SaveConfig(config);
             MessageBus.Current.SendMessage(new MainWindowMessage { MenuLayoutChanged = true });
         }
+    }
+
+
+    public bool EnableAur
+    {
+        get => _enableAur;
+        set
+        {
+            var oldValue = _enableAur;
+            this.RaiseAndSetIfChanged(ref _enableAur, value);
+
+            if (value && !_aurWarningConfirmed)
+            {
+                ShowAurDialog = true;
+
+                Task.Run(async () =>
+                {
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _enableFlatpak = false;
+                        this.RaisePropertyChanged(nameof(EnableAur));
+                    });
+                });
+
+                return;
+            }
+
+            SetEnableAurAsync(value);
+            if (value == oldValue) return;
+            var config = _configService.LoadConfig();
+            config.AurEnabled = value;
+            _configService.SaveConfig(config);
+        }
+    }
+
+    private Task SetEnableAurAsync(bool value)
+    {
+        _enableAur = value;
+        this.RaisePropertyChanged(nameof(EnableAur));
+
+        SendAurMessage();
+
+        var config = _configService.LoadConfig();
+        config.AurEnabled = value;
+        _configService.SaveConfig(config);
+        return Task.CompletedTask;
+    }
+
+    private static void SendAurMessage()
+    {
+        MessageBus.Current.SendMessage(new MainWindowMessage { AurEnable = true });
+    }
+
+    private bool _isAurToggleEnabled = false;
+
+    public bool IsAurToggleEnabled
+    {
+        get => _isAurToggleEnabled;
+        private set => this.RaiseAndSetIfChanged(ref _isAurToggleEnabled, value);
     }
 
     public bool EnableFlatpak
@@ -434,10 +458,13 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     public ReactiveCommand<Unit, bool> InstallFlatpakCommand { get; }
 
+    public ReactiveCommand<Unit, Unit> CancelAurDialog { get; }
+    public ReactiveCommand<Unit, Unit> ConfirmAurWarningCommand { get; }
 
-    public bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
-                                        !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
-                                        !AppContext.BaseDirectory.StartsWith("/usr/bin/Shelly");
+
+    public static bool IsUpdateCheckVisible => !AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
+                                               !AppContext.BaseDirectory.StartsWith("/usr/share/Shelly") ||
+                                               !AppContext.BaseDirectory.StartsWith("/usr/bin/Shelly");
 
     private async Task CheckForUpdates()
     {
@@ -449,11 +476,10 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 #endif
 
         UpdateAvailableText = Resources.CheckingForUpdates;
-        bool updateAvailable = await _updateService.CheckForUpdateAsync();
-        await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), updateAvailable);
+        _updateAvailable = await _updateService.CheckForUpdateAsync();
         await SetUpdateText();
 
-        if (updateAvailable)
+        if (_updateAvailable)
         {
             // Here you might want to show a dialog to the user
             // For now, as per requirement, we proceed with download and install
@@ -463,17 +489,17 @@ public class SettingViewModel : ViewModelBase, IRoutableViewModel
 
     private async Task SetUpdateText()
     {
-        UpdateAvailableText = await _appCache.GetAsync<bool>(nameof(CacheEnums.UpdateAvailableCache))
+        UpdateAvailableText = _updateAvailable
             ? Resources.UpdateAvailable
             : Resources.NoUpdateAvailable;
     }
 
-    private string _updateAvailable = Resources.CheckForUpdate;
+    private string _updateAvailableText = Resources.CheckForUpdate;
 
     public string UpdateAvailableText
     {
-        get => _updateAvailable;
-        set => this.RaiseAndSetIfChanged(ref _updateAvailable, value);
+        get => _updateAvailableText;
+        set => this.RaiseAndSetIfChanged(ref _updateAvailableText, value);
     }
 
     public string AppVersion { get; } = GetAppVersion();

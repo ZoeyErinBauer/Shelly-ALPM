@@ -15,7 +15,7 @@ using Shelly_UI.Models;
 using Shelly_UI.Services;
 using Shelly_UI.Views;
 
-namespace Shelly_UI.ViewModels;
+namespace Shelly_UI.ViewModels.Packages;
 
 public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
@@ -225,8 +225,8 @@ public class UpdateViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
     {
         if (disposing)
         {
-            PackagesForUpdating?.Clear();
-            _allPackagesForUpdate?.Clear();
+            PackagesForUpdating.Clear();
+            _allPackagesForUpdate.Clear();
         }
 
         base.Dispose(disposing);

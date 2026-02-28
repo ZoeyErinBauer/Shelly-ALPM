@@ -1,7 +1,5 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,7 +8,6 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 using Shelly_UI.Services.LocalDatabase;
 using Shelly_UI.Services.TrayServices;
 using Shelly_UI.ViewModels;
@@ -44,7 +41,6 @@ public partial class App : Application
         // Register all the services needed for the application to run
         var collection = new ServiceCollection();
         collection.AddSingleton<IConfigService, ConfigService>();
-        collection.AddSingleton<IAppCache, AppCache>();
         collection.AddSingleton<IUpdateService, GitHubUpdateService>();
         collection.AddSingleton<ICredentialManager, CredentialManager>();
         collection.AddSingleton<IAlpmEventService, AlpmEventService>();
@@ -60,7 +56,6 @@ public partial class App : Application
         {
             var configService = _services.GetRequiredService<IConfigService>();
             var themeService = _services.GetRequiredService<ThemeService>();
-            var cacheService = _services.GetRequiredService<IAppCache>();
             var config = configService.LoadConfig();
             var sessionDesktop = Environment.GetEnvironmentVariable("XDG_SESSION_DESKTOP");
             if (config.UseKdeTheme && sessionDesktop == "KDE")
@@ -80,7 +75,7 @@ public partial class App : Application
 
             _mainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(configService, cacheService, _services.GetRequiredService<IAlpmEventService>(), _services),
+                DataContext = new MainWindowViewModel(configService, _services.GetRequiredService<IAlpmEventService>(), _services),
             };
 
             desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;

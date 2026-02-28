@@ -18,20 +18,18 @@ using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Messages;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 using Shelly_UI.ViewModels.AUR;
 using Shelly_UI.ViewModels.Flatpak;
-using Shelly_UI.Views;
+using Shelly_UI.ViewModels.Packages;
 
 namespace Shelly_UI.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
 {
     private readonly IServiceProvider _services;
-    private IAppCache _appCache;
     private readonly IPrivilegedOperationService _privilegedOperationService;
     private readonly ICredentialManager _credentialManager;
-    private IConfigService _configService = App.Services.GetRequiredService<IConfigService>();
+    private readonly IConfigService _configService = App.Services.GetRequiredService<IConfigService>();
     private QuestionEventArgs? _currentQuestionArgs;
 
     private static readonly Regex AlpmProgressPattern =
@@ -46,14 +44,13 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
     
     private static readonly Regex RunningHooksPattern = new(@"(?:\[.*?\]\s*)*Running hooks\.\.\.", RegexOptions.Compiled);
 
-    public MainWindowViewModel(IConfigService configService, IAppCache appCache, IAlpmEventService alpmEventService,
+    public MainWindowViewModel(IConfigService configService, IAlpmEventService alpmEventService,
         IServiceProvider services,
         IScheduler? scheduler = null)
     {
         _services = services;
         scheduler ??= RxApp.MainThreadScheduler;
-
-        _appCache = appCache;
+        
         _privilegedOperationService = services.GetRequiredService<IPrivilegedOperationService>();
         _credentialManager = services.GetRequiredService<ICredentialManager>();
 
@@ -221,19 +218,19 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         GoManage = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new PackageManagementViewModel(this, _appCache, _privilegedOperationService, _credentialManager);
+            var vm = new PackageManagementViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoSetting = ReactiveCommand.CreateFromObservable(() =>
         {
             IsSettingsOpen = true;
             var vm = new SettingViewModel(this, configService,
-                _services.GetRequiredService<IUpdateService>(), appCache, _privilegedOperationService);
+                _services.GetRequiredService<IUpdateService>(), _privilegedOperationService);
             return SettingRouter.NavigateAndReset.Execute(vm);
         });
         GoAur = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new AurViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            var vm = new AurViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         GoAurUpdate = ReactiveCommand.CreateFromObservable(() =>
@@ -243,7 +240,7 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
         });
         GoAurRemove = ReactiveCommand.CreateFromObservable(() =>
         {
-            var vm = new AurRemoveViewModel(this, appCache, _privilegedOperationService, _credentialManager);
+            var vm = new AurRemoveViewModel(this, _privilegedOperationService, _credentialManager);
             return Router.NavigateAndReset.Execute(vm).Finally(() => vm?.Dispose());
         });
         CloseSettingsCommand = ReactiveCommand.Create(() => IsSettingsOpen = false);
@@ -787,53 +784,6 @@ public class MainWindowViewModel : ViewModelBase, IScreen, IDisposable
             QuestionType.SelectProvider => Resources.QuestionSelectProvider,
             _ => Resources.QuestionDefault
         };
-    }
-
-    #endregion
-
-    #region UpdateNotification
-
-    private async Task CheckForUpdates()
-    {
-        Console.WriteLine("Checking for updates...");
-        try
-        {
-            if (AppContext.BaseDirectory.StartsWith("/usr/share/bin/Shelly") ||
-                AppContext.BaseDirectory.StartsWith("/usr/share/Shelly"))
-            {
-                return;
-            }
-            var privilegedService = _services.GetRequiredService<IPrivilegedOperationService>();
-            if (await privilegedService.IsPackageInstalledOnMachine("shelly"))
-            {
-                Console.WriteLine("Shelly is managed by pacman. Skipping GitHub update check.");
-                return;
-            }
-
-            var updateAvailable = await _services.GetRequiredService<IUpdateService>().CheckForUpdateAsync();
-            if (updateAvailable)
-            {
-                ShowNotification = true;
-                await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), true);
-                return;
-            }
-
-            ShowNotification = false;
-            await _appCache.StoreAsync(nameof(CacheEnums.UpdateAvailableCache), false);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Failed to check for updates:");
-            Console.Error.WriteLine(e);
-        }
-    }
-
-    private bool _showNotification = false;
-
-    public bool ShowNotification
-    {
-        get => _showNotification;
-        set => this.RaiseAndSetIfChanged(ref _showNotification, value);
     }
 
     #endregion

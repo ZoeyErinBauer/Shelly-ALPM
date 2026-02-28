@@ -1,37 +1,33 @@
-using System.Reactive.Concurrency;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
 using Shelly_UI.Assets;
 using Shelly_UI.BaseClasses;
-using Shelly_UI.Enums;
 using Shelly_UI.Models;
 using Shelly_UI.Services;
-using Shelly_UI.Services.AppCache;
 
-namespace Shelly_UI.ViewModels;
+namespace Shelly_UI.ViewModels.Packages;
 
 public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutableViewModel
 {
     public IScreen HostScreen { get; }
     private readonly IPrivilegedOperationService _privilegedOperationService;
-    private readonly IAppCache _appCache;
     private string? _searchText;
     private readonly ICredentialManager _credentialManager;
     
-    private List<PackageModel> _avaliablePackages = new();
+    private List<PackageModel> _avaliablePackages = [];
 
-    public PackageManagementViewModel(IScreen screen, IAppCache appCache, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
+    public PackageManagementViewModel(IScreen screen, IPrivilegedOperationService privilegedOperationService, ICredentialManager credentialManager)
     {
         HostScreen = screen;
-        _appCache = appCache;
         _privilegedOperationService = privilegedOperationService;
-        AvailablePackages = new ObservableCollection<PackageModel>();
+        AvailablePackages = [];
         _credentialManager = credentialManager;
         
         // When search text changes, update the observable collection
@@ -126,10 +122,9 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
     private async Task RemovePackages()
     {
         var selectedPackages = AvailablePackages.Where(x => x.IsChecked).Select(x => x.Name).ToList();
-        if (selectedPackages.Any())
+        if (selectedPackages.Count != 0)
         {
-            
-            MainWindowViewModel? mainWindow = HostScreen as MainWindowViewModel;
+            using var mainWindow = HostScreen as MainWindowViewModel;
 
             try
             {
@@ -167,9 +162,6 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
                 }
                 else
                 {
-                    // Update the installed packages cache after successful removal
-                    var installedPackages = await _privilegedOperationService.GetInstalledPackagesAsync();
-                    await _appCache.StoreAsync(nameof(CacheEnums.InstalledCache), installedPackages);
                     var packageCount = selectedPackages.Count;
                     mainWindow?.ShowToast(string.Format(Resources.PackageRemovalSuccess, packageCount));
                 }
@@ -179,10 +171,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             finally
             {
                 //always exit globally busy in case of failure
-                if (mainWindow != null)
-                {
-                    mainWindow.IsGlobalBusy = false;
-                }
+                mainWindow?.IsGlobalBusy = false;
             }
         }
         else
@@ -193,10 +182,8 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
     public string UrlPathSegment { get; } = Guid.NewGuid().ToString().Substring(0, 5);
 
-    public System.Reactive.Unit Unit => System.Reactive.Unit.Default;
-
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
+    public ReactiveCommand<Unit, Unit> RemovePackagesCommand { get; }
+    public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
 
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
@@ -219,8 +206,8 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
     {
         if (disposing)
         {
-            AvailablePackages?.Clear();
-            _avaliablePackages?.Clear();
+            AvailablePackages.Clear();
+            _avaliablePackages.Clear();
         }
         base.Dispose(disposing);
     }
