@@ -211,9 +211,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RemovePackagesCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RefreshCommand { get; }
-
-    public ReactiveCommand<Unit, Unit> ToggleCascadeCommand { get; }
-
+    
     public ObservableCollection<PackageModel> AvailablePackages { get; set; }
 
     public string? SearchText
