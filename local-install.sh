@@ -83,12 +83,24 @@ echo "Creating desktop entry"
 cat <<EOF > /usr/share/applications/shelly.desktop
 [Desktop Entry]
 Name=Shelly
-Exec=/usr/bin/shelly-ui
+Exec=/opt/bin/shelly-ui
 Icon=shelly
 Type=Application
 Categories=System;Utility;
 Terminal=false
 EOF
+
+echo "Creating notifications entry"
+cat <<EOF > /usr/share/applications/shelly.desktop
+[Desktop Entry]
+Name=Shelly-Notifications
+Exec=/opt/bin/shelly-notifications
+Icon=shelly
+Type=Application
+Categories=System;Utility;
+Terminal=false
+EOF
+
 
 # Clean up publish directory (optional - comment out to keep build artifacts)
 echo "Cleaning up build artifacts..."
