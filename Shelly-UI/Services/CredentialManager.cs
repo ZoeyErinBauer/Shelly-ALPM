@@ -118,7 +118,7 @@ public class CredentialManager : ICredentialManager
                 return true;
             }
 
-            if (IsSudoPasswordless())
+            if (IsAccountPasswordless(Environment.UserName))
             {
                 _isValidated = true;
                 _storedPassword = "NOPASSWORD67";
@@ -251,4 +251,31 @@ public class CredentialManager : ICredentialManager
         }
         catch { return false; }
     }
+    private bool IsAccountPasswordless(string username)
+    {
+        try
+        {
+            using var process = new System.Diagnostics.Process();
+            process.StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "passwd",
+                Arguments = $"--status {username}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            // Output format: "username NP ..." where NP = No Password
+            // "P" = has password, "L" = locked, "NP" = no password
+            var parts = output.Split(' ', '\t');
+            if (parts.Length >= 2 && parts[1] == "NP")
+                return true;
+        }
+        catch { /* ignore */ }
+        return false;
+    }
+    
 }
