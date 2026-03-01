@@ -155,6 +155,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         {
             packageArgs += " -r";
         }
+
         return await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
     }
 
@@ -517,14 +518,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var fullCommand = $"{_cliPath} {arguments}";
 
         Console.WriteLine($"Executing privileged command: sudo {fullCommand}");
-
+        var isPasswordless = password == "NOPASSWORD67";
         var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "sudo",
                 //removing -k from sudo as a test
-                Arguments = $"-S -k {fullCommand} --ui-mode",
+                Arguments = isPasswordless ? $"-k {fullCommand} --ui-mode" : $"-S -k {fullCommand} --ui-mode",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -777,9 +778,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             process.BeginErrorReadLine();
 
             // Write password to stdin followed by newline
-            await stdinWriter.WriteLineAsync(password);
-
-            await stdinWriter.FlushAsync();
+            if (!isPasswordless)
+            {
+                await stdinWriter.WriteLineAsync(password);
+                await stdinWriter.FlushAsync();
+            }
 
             await process.WaitForExitAsync();
 
