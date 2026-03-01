@@ -42,7 +42,15 @@
                             SearchText="{Binding SearchText, Mode=TwoWay}"
                             SyncCommand="{Binding RefreshCommand}"
                             SyncTooltip="{x:Static lang:Resources.Sync}"
-                            SyncIcon="Sync"/>
+                            SyncIcon="Sync"
+                            ShowCheckbox="True"
+                            CheckboxContent="{x:Static lang:Resources.CheckboxCascade}"
+                            CheckboxTooltip="{x:Static lang:Resources.CheckboxCascadeTooltip}"
+                            IsChecked="{Binding IsCascade, Mode=TwoWay}"
+                            ShowCheckbox2="True"
+                            CheckboxContent2="{x:Static lang:Resources.CheckboxConfig}"
+                            CheckboxTooltip2="{x:Static lang:Resources.CheckboxConfigTooltip}"
+                            IsChecked2="{Binding IsCleanup, Mode=TwoWay}" />
                         <DataGrid
                             Name="RemoveDataGrid"
                             Grid.Row="1"

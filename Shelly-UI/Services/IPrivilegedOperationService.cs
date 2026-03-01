@@ -11,7 +11,7 @@ public interface IPrivilegedOperationService
     Task<List<AlpmPackageDto>> SearchPackagesAsync(string query);
     Task<OperationResult> InstallPackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> InstallLocalPackageAsync(string filePath);
-    Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages);
+    Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages, bool isCascade, bool isCleanup);
     Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpgradeSystemAsync();
     Task<OperationResult> ForceSyncDatabaseAsync();

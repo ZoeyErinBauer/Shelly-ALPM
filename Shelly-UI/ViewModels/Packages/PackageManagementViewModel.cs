@@ -29,7 +29,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         _privilegedOperationService = privilegedOperationService;
         AvailablePackages = [];
         _credentialManager = credentialManager;
-        
+
         // When search text changes, update the observable collection
         this.WhenAnyValue(x => x.SearchText)
             .Throttle(TimeSpan.FromMilliseconds(250))
@@ -39,7 +39,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         RemovePackagesCommand = ReactiveCommand.CreateFromTask(RemovePackages);
         RefreshCommand = ReactiveCommand.CreateFromTask(Refresh);
         TogglePackageCheckCommand = ReactiveCommand.Create<PackageModel>(TogglePackageCheck);
-        
+
         LoadData();
     }
 
@@ -52,11 +52,32 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
                 p.Version.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         AvailablePackages.Clear();
-        
+
         foreach (var package in filtered)
         {
             AvailablePackages.Add(package);
         }
+    }
+
+    private bool _isCascade = true;
+
+    public bool IsCascade
+    {
+        get => _isCascade;
+        set => this.RaiseAndSetIfChanged(ref _isCascade, value);
+    }
+
+    private async Task ToggleCascade()
+    {
+        _isCascade = !_isCascade;
+    }
+
+    private bool _isCleanup = false;
+
+    public bool IsCleanup
+    {
+        get => _isCleanup;
+        set => _isCleanup = this.RaiseAndSetIfChanged(ref _isCascade, value);
     }
 
     private async Task Refresh()
@@ -68,6 +89,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             {
                 Console.Error.WriteLine($"Failed to sync databases: {result.Error}");
             }
+
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 _avaliablePackages.Clear();
@@ -95,7 +117,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
                 InstallDate = u.InstallDate.ToString() ?? string.Empty,
                 IsChecked = false
             }).ToList();
-            
+
             RxApp.MainThreadScheduler.Schedule(() =>
             {
                 _avaliablePackages = models;
@@ -142,7 +164,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
                     if (!isValidated) return;
                 }
-                
+
                 // Set busy
                 if (mainWindow != null)
                 {
@@ -155,7 +177,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
 
                 //do work
 
-                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages);
+                var result = await _privilegedOperationService.RemovePackagesAsync(selectedPackages, IsCascade, IsCleanup);
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
@@ -194,14 +216,14 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
         get => _searchText;
         set => this.RaiseAndSetIfChanged(ref _searchText, value);
     }
-    
+
     private void TogglePackageCheck(PackageModel package)
     {
         package.IsChecked = !package.IsChecked;
 
         Console.Error.WriteLine($"[DEBUG_LOG] Package {package.Name} checked state: {package.IsChecked}");
     }
-    
+
     public ReactiveCommand<PackageModel, Unit> TogglePackageCheckCommand { get; }
 
     protected override void Dispose(bool disposing)
@@ -211,6 +233,7 @@ public class PackageManagementViewModel : ConsoleEnabledViewModelBase, IRoutable
             AvailablePackages.Clear();
             _avaliablePackages.Clear();
         }
+
         base.Dispose(disposing);
     }
 }
