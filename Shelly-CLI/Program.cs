@@ -140,6 +140,10 @@ public class Program
                 .WithExample("downgrade", "firefox")
                 .WithExample("downgrade", "firefox", "--oldest")
                 .WithExample("downgrade", "firefox", "--latest");
+            
+            config.AddCommand<ArchNews>("news")
+                .WithDescription("Shows Arch news you haven't seen before")
+                .WithExample("news","--all");
 
             config.AddBranch("keyring", keyring =>
             {
