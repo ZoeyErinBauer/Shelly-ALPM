@@ -19,6 +19,9 @@ public class UpgradeCommand : Command<UpgradeSettings>
             return HandleUiModeUpgrade(settings);
         }
         
+        var archNews = new ArchNews();
+        archNews.ExecuteAsync(context, new ArchNewsSettings()).GetAwaiter().GetResult();
+        
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
         var manager = new AlpmManager();

@@ -26,6 +26,8 @@
             <Type Name="Shelly_CLI.Commands.Standard.UpdateCommand" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.UpgradeSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.UpgradeCommand" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.ArchNews" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.ArchNewsSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.DowngradePackageCommand" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.DowngradePackageCommandSettings" Dynamic="Required All"/>
             <!-- Keyring commands -->
