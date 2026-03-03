@@ -195,6 +195,28 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 | `utility updates`          | check for updates as non-root  |
 
 
+### CLI Configuration
+
+Shelly-CLI uses a JSON configuration file to customize its behavior. On the first run, it automatically creates a default configuration file at:
+
+`~/.config/shelly/config.json`
+
+#### Configuration Options
+
+| Option             | Description                                                                                                                                                                                                                                                                    |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `FileSizeDisplay`  | Controls how file sizes are displayed. <br> Possible values: 0 = `Bytes`, 1=`Megabytes`, 2=`Gigabytes`. <br> Default: 0                                                                                                                                                        |
+| `DefaultExecution` | Determines which command is executed when `shelly` is run without any arguments (the default command). <br> Possible values: 0=`UpgradeStandard`, 1=`UpgradeFlatpak`, 2=`UpgradeAur`, 3=`UpgradeAll`, 4=`Sync`, 5=`SyncForce`, 6=`ListInstalled`. <br> Default: 3=`UpgradeAll` |
+
+#### Example `config.json`
+
+```json
+{
+  "FileSizeDisplay": "0,
+  "DefaultExecution": 3
+}
+```
+
 ### CLI Options
 
 **Global options:**
