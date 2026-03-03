@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Keyring;
@@ -16,6 +17,22 @@ public class Program
 
     public static int Main(string[] args)
     {
+        // Ensure default configuration exists in ~/.config/shelly/config.json
+        var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shelly", "config.json");
+        if (!File.Exists(configPath))
+        {
+            var configDir = Path.GetDirectoryName(configPath);
+            if (!string.IsNullOrEmpty(configDir))
+            {
+                Directory.CreateDirectory(configDir);
+            }
+
+            var defaultConfig = new ShellyConfig();
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(defaultConfig, typeof(ShellyConfig), new ShellyCLIJsonContext(options));
+            File.WriteAllText(configPath, json);
+        }
+
         // Check if running in UI mode (--ui-mode flag passed by Shelly-UI)
         var argsList = args.ToList();
         IsUiMode = argsList.Remove("--ui-mode");
@@ -49,11 +66,12 @@ public class Program
         }
 
         var app = new CommandApp();
+        app.SetDefaultCommand<UpgradeCommand>();
         app.Configure(config =>
         {
             config.SetApplicationName("shelly");
             config.SetApplicationVersion(Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "unknown");
-
+            
             config.AddCommand<VersionCommand>("version")
                 .WithDescription("Display the application version")
                 .WithExample("version");

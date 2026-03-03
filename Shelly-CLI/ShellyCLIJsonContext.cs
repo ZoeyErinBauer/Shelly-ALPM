@@ -22,6 +22,7 @@ namespace Shelly_CLI;
 [JsonSerializable(typeof(List<AurSearchPackageBuild.PackageBuild>))]
 [JsonSerializable(typeof(ArchNews.RssModel))]
 [JsonSerializable(typeof(List<ArchNews.RssModel>))]
+[JsonSerializable(typeof(ShellyConfig))]
 internal partial class ShellyCLIJsonContext : JsonSerializerContext
 {
 }
