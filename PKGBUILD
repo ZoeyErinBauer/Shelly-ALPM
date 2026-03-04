@@ -25,8 +25,8 @@ depends=(
     'libxcursor'
 )
 optdepends=(
-    'flatpak'
-    'glib2'
+    'flatpak:  For supporting flatpak implementation.'
+    'glib2: Enables better skia compatibility'
 )
 makedepends=('dotnet-sdk-10.0')
 
