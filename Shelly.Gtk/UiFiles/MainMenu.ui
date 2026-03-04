@@ -2,27 +2,27 @@
 <interface>
   <menu id="AppMenu">
     <section>
-      <item>
+      <submenu>
         <attribute name="label">_File</attribute>
         <item>
           <attribute name="label">_Quit</attribute>
           <attribute name="action">app.quit</attribute>
         </item>
-      </item>
-      <item>
+      </submenu>
+      <submenu>
         <attribute name="label">_Edit</attribute>
         <item>
           <attribute name="label">_Preferences</attribute>
           <attribute name="action">app.preferences</attribute>
         </item>
-      </item>
-      <item>
+      </submenu>
+      <submenu>
         <attribute name="label">_Help</attribute>
         <item>
           <attribute name="label">_About</attribute>
           <attribute name="action">app.about</attribute>
         </item>
-      </item>
+      </submenu>
     </section>
   </menu>
 </interface>
