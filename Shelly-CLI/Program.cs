@@ -5,6 +5,7 @@ using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Keyring;
 using Shelly_CLI.Commands.Standard;
 using Shelly_CLI.Commands.Utility;
+using Shelly_CLI.Configuration;
 using Shelly.Writers;
 using Spectre.Console;
 using Spectre.Console.Cli;

@@ -18,6 +18,7 @@ of how a user
 interacts with their Arch Linux system, providing a more streamlined and intuitive experience.
 
 ## Quick Install
+
 Recommended install for Shelly with a single command:
 
 ```bash
@@ -25,12 +26,12 @@ curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/we
 ```
 
 Or if on CachyOS or using CachyOS packages
+
 ```
 sudo pacman -S shelly
 ```
 
 This will download and install the latest release, including the UI and CLI tools.
-
 
 To install with an AUR helper like yay or paru.
 
@@ -48,12 +49,12 @@ paru -S shelly
 update.
 
 ## Uninstall
+
 To uninstall the quick installer version is you wish to switch to the AUR managed version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/uninstall.sh | sudo bash
 ```
-
 
 ## Features
 
@@ -135,17 +136,17 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 #### Package Management
 
-| Command              | Description                   |
-|----------------------|-------------------------------|
-| `sync`               | Synchronize package databases |
-| `list-installed`     | List all installed packages   |
-| `list-available`     | List all available packages   |
+| Command              | Description                     |
+|----------------------|---------------------------------|
+| `sync`               | Synchronize package databases   |
+| `list-installed`     | List all installed packages     |
+| `list-available`     | List all available packages     |
 | `list-updates`       | List packages that need updates |
-| `install <packages>` | Install one or more packages  |
-| `install-local`      | Install a local package file  |
-| `remove <packages>`  | Remove one or more packages   |
-| `update <packages>`  | Update one or more packages   |
-| `upgrade`            | Perform a full system upgrade |
+| `install <packages>` | Install one or more packages    |
+| `install-local`      | Install a local package file    |
+| `remove <packages>`  | Remove one or more packages     |
+| `update <packages>`  | Update one or more packages     |
+| `upgrade`            | Perform a full system upgrade   |
 
 #### Keyring Management (`keyring`)
 
@@ -189,31 +190,31 @@ CLI provides the same core functionality as the UI but in a scriptable, terminal
 
 #### Shelly Utility (`utility`)
 
-| Command                    | Description                    |
-|----------------------------|--------------------------------|
-| `utility export`           | Export sync file               |
-| `utility updates`          | check for updates as non-root  |
-
+| Command           | Description                   |
+|-------------------|-------------------------------|
+| `utility export`  | Export sync file              |
+| `utility updates` | check for updates as non-root |
 
 ### CLI Configuration
 
-Shelly-CLI uses a JSON configuration file to customize its behavior. On the first run, it automatically creates a default configuration file at:
+Shelly-CLI uses a JSON configuration file to customize its behavior. On the first run, it automatically creates a
+default configuration file at:
 
 `~/.config/shelly/config.json`
 
 #### Configuration Options
 
-| Option             | Description                                                                                                                                                                                                                                                                    |
-|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `FileSizeDisplay`  | Controls how file sizes are displayed. <br> Possible values: 0 = `Bytes`, 1=`Megabytes`, 2=`Gigabytes`. <br> Default: 0                                                                                                                                                        |
-| `DefaultExecution` | Determines which command is executed when `shelly` is run without any arguments (the default command). <br> Possible values: 0=`UpgradeStandard`, 1=`UpgradeFlatpak`, 2=`UpgradeAur`, 3=`UpgradeAll`, 4=`Sync`, 5=`SyncForce`, 6=`ListInstalled`. <br> Default: 3=`UpgradeAll` |
+| Option             | Description                                                                                                                                                                                                                                                    |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `FileSizeDisplay`  | Controls how file sizes are displayed. <br> Possible values: "Bytes", "Megabytes", "Gigabytes". <br> Default: "Bytes"                                                                                                                                          |
+| `DefaultExecution` | Determines which command is executed when `shelly` is run without any arguments (the default command). <br> Possible values: "UpgradeStandard", "UpgradeFlatpak", "UpgradeAur", "UpgradeAll", "Sync", "SyncForce", "ListInstalled". <br> Default: "UpgradeAll" |
 
 #### Example `config.json`
 
 ```json
 {
-  "FileSizeDisplay": "0,
-  "DefaultExecution": 3
+  "FileSizeDisplay": "Bytes",
+  "DefaultExecution": "UpgradeAll"
 }
 ```
 
@@ -305,4 +306,5 @@ Shelly is in active development. It comes with no guarantees and may contain bug
 please report them by opening an issue on this page and we will do our best to resolve the issues.
 
 ## Inspirations
+
 - Some UI controls were inspired by [Aura.UI](https://github.com/PieroCastillo/Aura.UI)

@@ -3,6 +3,7 @@ using PackageManager.Alpm;
 using PackageManager.Aur.Models;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Standard;
+using Shelly_CLI.Configuration;
 
 namespace Shelly_CLI;
 

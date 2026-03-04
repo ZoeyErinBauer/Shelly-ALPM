@@ -1,4 +1,4 @@
-namespace Shelly_CLI;
+namespace Shelly_CLI.Configuration;
 
 public enum DefaultCommand
 {

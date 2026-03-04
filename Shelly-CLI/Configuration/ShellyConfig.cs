@@ -1,8 +1,8 @@
-namespace Shelly_CLI;
+namespace Shelly_CLI.Configuration;
 
 public class ShellyConfig
 {
-    public SizeDisplay FileSizeDisplay { get; set; } = SizeDisplay.Bytes;
+    public string FileSizeDisplay { get; set; } = nameof(SizeDisplay.Bytes);
 
-    public DefaultCommand DefaultExecution { get; set; } = DefaultCommand.UpgradeAll;
+    public string DefaultExecution { get; set; } = nameof(DefaultCommand.UpgradeAll);
 }
