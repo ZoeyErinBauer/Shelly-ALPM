@@ -83,6 +83,7 @@ echo "Creating desktop entry"
 cat <<EOF > /usr/share/applications/shelly.desktop
 [Desktop Entry]
 Name=Shelly
+Comment=A Modern Arch Package Manager
 Exec=/opt/bin/shelly-ui
 Icon=shelly
 Type=Application
