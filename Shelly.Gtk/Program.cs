@@ -79,7 +79,7 @@ sealed class Program
             var initialHomeWindow = serviceProvider.GetRequiredService<HomeWindow>();
             contentArea.Append(initialHomeWindow.CreateWindow());
 
-            //Subscribing to credential required to trigger dialog
+            //Subscribing to credential required to trigger the password dialog
             var credentialManager = serviceProvider.GetRequiredService<ICredentialManager>();
             credentialManager.CredentialRequested += (s, e) =>
             {

@@ -174,15 +174,18 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
 
             GLib.Functions.IdleAdd(0, () =>
             {
-                const int batchSize = 500;
-                int count = 0;
+                // This number might need to be adjusted based on cpu. This comment is just so we can find this later
+                // when we inevitably get a bug report about the package page being slow.
+                const int batchSize = 1000;
+                var count = 0;
                 var batch = new List<AlpmPackageGObject>();
                 while (queue.Count > 0 && count < batchSize)
                 {
                     batch.Add(new AlpmPackageGObject(){ Package = queue.Dequeue()});
                     count++;
                 }
-                // Single splice call = single notification for the whole batch
+                
+                // ReSharper disable once CoVariantArrayConversion
                 _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(),(uint)batch.Count);
     
                 return queue.Count > 0;
