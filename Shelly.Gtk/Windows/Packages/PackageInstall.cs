@@ -170,14 +170,22 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         try
         {
             var packages = await privilegedOperationService.GetAvailablePackagesAsync();
+            var queue = new Queue<AlpmPackageDto>(packages);
+
             GLib.Functions.IdleAdd(0, () =>
             {
-                _listStore.RemoveAll();
-                foreach (var package in packages)
+                const int batchSize = 500;
+                int count = 0;
+                var batch = new List<AlpmPackageGObject>();
+                while (queue.Count > 0 && count < batchSize)
                 {
-                    _listStore.Append(new AlpmPackageGObject { Package = package });
+                    batch.Add(new AlpmPackageGObject(){ Package = queue.Dequeue()});
+                    count++;
                 }
-                return false;
+                // Single splice call = single notification for the whole batch
+                _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(),(uint)batch.Count);
+    
+                return queue.Count > 0;
             });
         }
         catch (Exception e)
