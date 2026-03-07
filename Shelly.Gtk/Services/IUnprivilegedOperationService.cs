@@ -28,6 +28,8 @@ public interface IUnprivilegedOperationService
     Task<SyncModel> CheckForApplicationUpdates();
 
     Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name);
+
+    Task<List<FlatpakPackageDto>> SearchFlathubAsync(string query);
 }
 
 public class UnprivilegedOperationResult

@@ -1,4 +1,5 @@
 using Gtk;
+using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 
@@ -15,7 +16,7 @@ public class Settings(
 
     public Widget CreateWindow()
     {
-        var builder = Builder.NewFromFile("UiFiles/SettingWindow.ui");
+        var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/SettingWindow.ui"), -1);
         _box = (Box)builder.GetObject("SettingWindow")!;
 
         _config = configService.LoadConfig();

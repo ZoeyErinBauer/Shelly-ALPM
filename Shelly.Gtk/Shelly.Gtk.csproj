@@ -29,7 +29,6 @@
     <ItemGroup>
         <PackageReference Include="GirCore.Gtk-4.0" Version="0.7.0"/>
         <PackageReference Include="GirCore.GObject-2.0.Integration" Version="0.7.0"/>
-        <PackageReference Include="LiteDB" Version="6.0.0-prerelease.77" />
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Assets\style.css" />

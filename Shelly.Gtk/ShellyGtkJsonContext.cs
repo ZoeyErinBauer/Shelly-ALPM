@@ -26,11 +26,16 @@ namespace Shelly.Gtk;
 [JsonSerializable(typeof(SyncAurModel))]
 [JsonSerializable(typeof(SyncFlatpakModel))]
 [JsonSerializable(typeof(List<PackageBuild>))]
+[JsonSerializable(typeof(FlathubSearchResponse))]
+[JsonSerializable(typeof(FlathubHit))]
 [JsonSerializable(typeof(FlatpakPackageDto))]
 [JsonSerializable(typeof(List<FlatpakPackageDto>))]
 [JsonSerializable(typeof(List<AppstreamRelease>))]
 [JsonSerializable(typeof(AppstreamRelease))]
-internal  partial class ShellyGtkJsonContext : JsonSerializerContext
+[JsonSerializable(typeof(FlatpakApiResponse))]
+[JsonSerializable(typeof(Hit))]
+[JsonSerializable(typeof(List<Hit>))]
+internal partial class ShellyGtkJsonContext : JsonSerializerContext
 {
     
 }

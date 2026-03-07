@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Shelly.Gtk.UiModels;
@@ -224,6 +225,45 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         {
             Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
             return new SyncModel();
+        }
+    }
+
+    public async Task<List<FlatpakPackageDto>> SearchFlathubAsync(string query)
+    {
+        var result = await ExecuteUnprivilegedCommandAsync("Search Flathub", "flatpak search", query, "--json", "--limit", "100");
+
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var trimmedOutput = StripBom(result.Output.Trim());
+
+            if (trimmedOutput.StartsWith("{"))
+            {
+                var response = System.Text.Json.JsonSerializer.Deserialize(trimmedOutput, 
+                    ShellyGtkJsonContext.Default.FlathubSearchResponse);
+
+                if (response?.Hits == null) return [];
+
+                return response.Hits.Select(hit => new FlatpakPackageDto
+                {
+                    Id = hit.AppId ?? hit.Id ?? string.Empty,
+                    Name = hit.Name ?? string.Empty,
+                    Summary = hit.Summary ?? string.Empty,
+                    Description = hit.Description ?? string.Empty,
+                    IconPath = hit.Icon
+                }).ToList();
+            }
+
+            return [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse Flathub search JSON: {ex.Message}");
+            return [];
         }
     }
 

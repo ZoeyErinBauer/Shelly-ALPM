@@ -29,7 +29,11 @@ public class FlathubSearchCommand : AsyncCommand<FlathubSearchSettings>
                 var results = await manager.SearchFlathubJsonAsync(
                         settings.Query, page: settings.Page,
                         limit: settings.Limit, ct: CancellationToken.None);
-                AnsiConsole.MarkupLine($"[grey]Response JSON:[/] {results.EscapeMarkup()}");
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(results);
+                await writer.FlushAsync();
+                return 0;
             }
             else
             {
@@ -94,7 +98,11 @@ public class FlathubSearchCommand : AsyncCommand<FlathubSearchSettings>
                 var results = await manager.SearchFlathubJsonAsync(
                         settings.Query, page: settings.Page,
                         limit: settings.Limit, ct: CancellationToken.None);
-                Console.WriteLine($"Response JSON: {results}");
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(results);
+                await writer.FlushAsync();
+                return 0;
             }
             else
             {

@@ -32,7 +32,8 @@ public class MetaSearch(
     public Widget CreateWindow(string? initialQuery)
     {
         _initialQuery = initialQuery;
-        var builder = Builder.NewFromFile("UiFiles/MetaSearchWindow.ui");
+        var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/MetaSearchWindow.ui"), -1);
+       
         _box = (Box)builder.GetObject("MetaSearchWindow")!;
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
         _installButton = (Button)builder.GetObject("install_button")!;
@@ -172,11 +173,13 @@ public class MetaSearch(
                 var flatPakInstalled = await unprivilegedOperationService.ListFlatpakPackages().ContinueWith(x =>
                     x.Result.Select(y => new MetaPackageModel(y.Id, y.Name, y.Version, y.Description,
                         PackageType.FLATPAK, y.Summary, "Flathub", true)).ToList());
-                /*var flatPakAvailable = _databaseService.SearchDatabase<FlatpakModel, string>("flatpaks",  x => string.IsNullOrWhiteSpace(SearchText) ||
-                        x.Name.Contains(SearchText)).Select(y =>
-                        new MetaPackageModel(y.Id, y.Name, y.Version, y.Description, PackageType.FLATPAK, y.Summary,
-                            "Flathub", flatPakInstalled.Any(z => z.Name == y.Name))).ToList();*/
-                return flatPakInstalled;
+                var flatpakAvailable = await unprivilegedOperationService.SearchFlathubAsync(_initialQuery)
+                    .ContinueWith(x =>
+                        x.Result.Select(y => new MetaPackageModel(y.Id, y.Name, y.Version, y.Description,
+                            PackageType.FLATPAK, y.Description, y.Id,
+                            flatPakInstalled.Any(z => z.Name == y.Name))).ToList());
+                
+                return flatpakAvailable;
             });
             groupList.Add(flatpakGroup);
         }
@@ -222,31 +225,44 @@ public class MetaSearch(
 
     private async Task InstallSelectedAsync()
     {
-        /*var selected = new List<MetaPackageGObject>();
+        var selected = new List<MetaPackageModel>();
         for (uint i = 0; i < _listStore.GetNItems(); i++)
         {
-            if (_listStore.GetItem(i) is MetaPackageGObject { IsSelected: true } pkg)
-                selected.Add(pkg);
+            var item = _listStore.GetObject(i);
+            if (item is MetaPackageGObject { IsSelected: true, Package: not null } pkgObj)
+            {
+                selected.Add(pkgObj.Package);
+            }
         }
 
         if (selected.Count == 0) return;
 
-        if (!credentialManager.IsValidated || credentialManager.IsExpired())
+        try
         {
-            var overlay = (Overlay)_box.GetParent()!; // Assumption based on typical Shelly GTK patterns
-            new PasswordDialog(credentialManager).ShowPasswordDialog(overlay, "Install Packages");
-            if (!await credentialManager.WaitForValidationAsync()) return;
+            lockoutService.Show($"Installing...");
+
+            var standard = selected.Where(x => x.PackageType == PackageType.STANDARD).Select(x => x.Name).ToList();
+            var aur = selected.Where(x => x.PackageType == PackageType.AUR).Select(x => x.Name).ToList();
+            var flatpak = selected.Where(x => x.PackageType == PackageType.FLATPAK).Select(x => x.Id).ToList();
+
+            if (standard.Count > 0) await privilegedOperationService.InstallPackagesAsync(standard);
+            if (aur.Count > 0) await privilegedOperationService.InstallAurPackagesAsync(aur);
+            if (flatpak.Count > 0)
+            {
+                foreach (var pkg in flatpak)
+                {
+                    await unprivilegedOperationService.InstallFlatpakPackage(pkg);
+                }
+            }
         }
-
-        var standard = selected.Where(x => x.Package?.PackageType == PackageType.STANDARD).Select(x => x.Package!.Name).ToList();
-        var aur = selected.Where(x => x.Package?.PackageType == PackageType.AUR).Select(x => x.Package!.Name).ToList();
-        var flatpak = selected.Where(x => x.Package?.PackageType == PackageType.FLATPAK).Select(x => x.Package!.Id).ToList();
-
-        if (standard.Count > 0) await privilegedOperationService.InstallPackagesAsync(standard);
-        if (aur.Count > 0) await privilegedOperationService.InstallAurPackagesAsync(aur);
-        if (flatpak.Count > 0) await privilegedOperationService.InstallFlatpakPackagesAsync(flatpak);
-
-        await LoadDataAsync();*/
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to install packages: {e.Message}");
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
     }
 
     public void Dispose()
