@@ -18,6 +18,7 @@ public static class ServiceBuilder
         collection.AddSingleton<IAlpmEventService, AlpmEventService>();
         collection.AddSingleton<IConfigService, ConfigService>();
         collection.AddSingleton<ILockoutService, LockoutService>();
+        collection.AddScoped<IUpdateService, GitHubUpdateService>();
         collection.AddTransient<HomeWindow>();
         collection.AddTransient<FlatpakRemove>();
         collection.AddTransient<AurInstall>();
