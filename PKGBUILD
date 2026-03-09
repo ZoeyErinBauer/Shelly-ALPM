@@ -43,7 +43,7 @@ package() {
   cd "$srcdir/Shelly-ALPM-${pkgver}"
 
   # Install Shelly.Gtk binary
-  install -Dm755 out/Shelly.Gtk "$pkgdir/usr/bin/shelly-ui"
+  install -Dm755 out/shelly-ui "$pkgdir/usr/bin/shelly-ui"
 
   # Install Shelly-Notifications binary
   install -Dm755 out-notify/Shelly-Notifications "$pkgdir/usr/bin/shelly-notifications"

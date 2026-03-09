@@ -34,21 +34,21 @@ echo ""
 # Build Shelly-Notifications
 echo "Building Shelly-Notifications..."
 cd "$SCRIPT_DIR/Shelly-Notifications"
-dotnet publish -c $BUILD_CONFIG -r linux-x64 --self-contained true -o "$SCRIPT_DIR/publish/Shelly-Notifications" -p:InstructionSet=x86-64-v3
+dotnet publish -c $BUILD_CONFIG -r linux-x64 -o "$SCRIPT_DIR/publish/Shelly-Notifications" -p:InstructionSet=x86-64
 echo "Shelly-Notifications build complete."
 echo ""
 
 # Build Shelly.Gtk
 echo "Building Shelly.Gtk..."
 cd "$SCRIPT_DIR/Shelly.Gtk"
-dotnet publish -c $BUILD_CONFIG -r linux-x64 --self-contained true -o "$SCRIPT_DIR/publish/Shelly.Gtk" -p:InstructionSet=x86-64-v3
+dotnet publish -c $BUILD_CONFIG -r linux-x64 -o "$SCRIPT_DIR/publish/Shelly.Gtk" -p:InstructionSet=x86-64
 echo "Shelly.Gtk build complete."
 echo ""
 
 # Build Shelly-CLI
 echo "Building Shelly-CLI..."
 cd "$SCRIPT_DIR/Shelly-CLI"
-dotnet publish -c $BUILD_CONFIG -r linux-x64 --self-contained true -o "$SCRIPT_DIR/publish/Shelly-CLI" -p:InstructionSet=x86-64-v3
+dotnet publish -c $BUILD_CONFIG -r linux-x64 -o "$SCRIPT_DIR/publish/Shelly-CLI" -p:InstructionSet=x86-64
 echo "Shelly-CLI build complete."
 echo ""
 
@@ -60,7 +60,7 @@ mkdir -p "$INSTALL_DIR"
 echo "Copying Shelly-Notifications files to $INSTALL_DIR"
 cp -r "$SCRIPT_DIR/publish/Shelly-Notifications/"* "$INSTALL_DIR/"
 
-# Copy Shelly.Gtk files
+# Copy Shelly.Gtk files (binary is named 'shelly-ui' due to AssemblyName)
 echo "Copying Shelly.Gtk files to $INSTALL_DIR"
 cp -r "$SCRIPT_DIR/publish/Shelly.Gtk/"* "$INSTALL_DIR/"
 
@@ -72,6 +72,11 @@ cp "$SCRIPT_DIR/publish/Shelly-CLI/shelly" "$INSTALL_DIR/shelly"
 echo "Copying logo..."
 cp "$SCRIPT_DIR/Shelly.Gtk/Assets/shellylogo.png" "$INSTALL_DIR/"
 
+# Create symlinks in /usr/bin so commands are available on PATH
+echo "Creating symlinks in /usr/bin..."
+ln -sf "$INSTALL_DIR/shelly-ui" /usr/bin/shelly-ui
+ln -sf "$INSTALL_DIR/shelly" /usr/bin/shelly
+ln -sf "$INSTALL_DIR/shelly-notifications" /usr/bin/shelly-notifications
 
 # Install icon to standard location
 echo "Installing icon to standard location..."
@@ -84,7 +89,7 @@ cat <<EOF > /usr/share/applications/shelly.desktop
 [Desktop Entry]
 Name=Shelly
 Comment=A Modern Arch Package Manager
-Exec=/opt/bin/shelly-ui
+Exec=/usr/bin/shelly-ui
 Icon=shelly
 Type=Application
 Categories=System;Utility;
@@ -92,10 +97,10 @@ Terminal=false
 EOF
 
 echo "Creating notifications entry"
-cat <<EOF > /usr/share/applications/shelly.desktop
+cat <<EOF > /usr/share/applications/shelly-notifications.desktop
 [Desktop Entry]
 Name=Shelly-Notifications
-Exec=/opt/bin/shelly-notifications
+Exec=/usr/bin/shelly-notifications
 Icon=shelly
 Type=Application
 Categories=System;Utility;
@@ -113,8 +118,8 @@ echo "Installation complete!"
 echo "=========================================="
 echo ""
 echo "You can now:"
-echo "  - Run the GUI: shelly-ui (or $INSTALL_DIR/Shelly.Gtk)"
-echo "  - Run the CLI: shelly (or $INSTALL_DIR/shelly)"
-echo "  - Notification Service added: or $INSTALL_DIR/Shelly-Notifications"
+echo "  - Run the GUI: shelly-ui"
+echo "  - Run the CLI: shelly"
+echo "  - Notification Service: shelly-notifications"
 echo "  - Find Shelly in your application menu"
 echo ""

@@ -6,10 +6,7 @@
   <img src="demo_part1.gif" width="32%">
   <img src="demo_part2.gif" width="32%">
   <img src="demo_part3.gif" width="32%">
-  <img width="1675" height="1127" alt="image" src="https://github.com/user-attachments/assets/195b4f02-33af-4a33-813d-5e0e25b276bb" />
 </p>
-
-### We are currently migrating from avalonia to GTK for native wayland support!
 
 ### About
 
@@ -22,15 +19,9 @@ interacts with their Arch Linux system, providing a more streamlined and intuiti
 
 ## Quick Install
 
-Recommended install for Shelly with a single command:
+Recommended install for Shelly is for CachyOS or using CachyOS packages
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
-```
-
-Or if on CachyOS or using CachyOS packages
-
-```
 sudo pacman -S shelly
 ```
 
@@ -280,12 +271,11 @@ shelly upgrade --no-confirm
 
 Shelly is structured into several components:
 
-- **Shelly-UI**: The main Avalonia-based desktop application.
+- **Shelly.Gtk**: The main GUI desktop application.
 - **Shelly-CLI**: Command-line interface for terminal-based package management.
 - **Shelly-Notifications**: Tray service to manage notifactions the Shelly-UI.
 - **PackageManager**: The core logic library providing bindings and abstractions for `libalpm`.
 - **PackageManager.Tests**: Comprehensive tests for the package management logic.
-- **Shelly-UI.Tests**: Unit tests for the Avalonia UI components.
 
 ### Building for Development
 
@@ -303,11 +293,4 @@ dotnet test
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
-## Disclaimer
 
-Shelly is in active development. It comes with no guarantees and may contain bugs, however if you experience issues
-please report them by opening an issue on this page and we will do our best to resolve the issues.
-
-## Inspirations
-
-- Some UI controls were inspired by [Aura.UI](https://github.com/PieroCastillo/Aura.UI)
