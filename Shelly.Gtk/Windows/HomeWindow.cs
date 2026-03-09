@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Gtk;
@@ -79,8 +80,23 @@ public class HomeWindow(
             filters.Append(filter);
             dialog.SetFilters(filters);
 
+            var file = await dialog.SaveAsync((Window)_box.GetRoot()!);
 
-            await dialog.SaveAsync((Window)_box.GetRoot()!);
+            if (file is not null)
+            {
+                var path = file.GetPath()!;
+
+                // Generate whatever content you want to save
+                var packages = await privilegedOperationService.GetInstalledPackagesAsync();
+                var stringBuilder = new StringBuilder();
+                foreach (var pkg in packages)
+                {
+                    stringBuilder.AppendLine(
+                        $"{pkg.Name} - {pkg.Version} : Depends: {pkg.Depends} OptDepends {pkg.OptDepends}");
+                }
+
+                await System.IO.File.WriteAllTextAsync(path, stringBuilder.ToString());
+            }
         }
         catch (Exception e)
         {
@@ -434,6 +450,7 @@ public class HomeWindow(
                     item.Dispose();
                 }
             }
+
             _store.RemoveAll();
         }
 
