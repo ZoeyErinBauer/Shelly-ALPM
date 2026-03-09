@@ -18,7 +18,8 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
     private Dictionary<ListItem, EventHandler> _checkBinding = [];
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
-    private SignalListItemFactory _sizeFactory = null!;
+    private SignalListItemFactory _oldVersionFactory = null!;
+    private SignalListItemFactory _sizeDiffFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
 
     public Widget CreateWindow()
@@ -30,8 +31,9 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
 
         var checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
         var nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
-        var sizeColumn = (ColumnViewColumn)builder.GetObject("size_column")!;
+        var oldColumn = (ColumnViewColumn)builder.GetObject("old_column")!;
         var versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
+        var sizeDiffColumn = (ColumnViewColumn)builder.GetObject("size_diff_column")!;
         var refreshButton = (Button)builder.GetObject("sync_button")!;
         var updateButton = (Button)builder.GetObject("update_button")!;
 
@@ -42,10 +44,11 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
 
-        SetupColumns(checkColumn, nameColumn, sizeColumn, versionColumn);
+        SetupColumns(checkColumn, nameColumn, sizeDiffColumn, oldColumn, versionColumn);
 
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
         _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(); };
         _columnView.OnActivate += (_, _) =>
@@ -67,7 +70,7 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
         return _box;
     }
 
-    private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn, ColumnViewColumn sizeColumn, ColumnViewColumn versionColumn)
+    private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn, ColumnViewColumn sizeDiffColumn, ColumnViewColumn oldColumn, ColumnViewColumn versionColumn)
     {
         _checkFactory = SignalListItemFactory.New();
         _checkFactory.OnSetup += (_, args) =>
@@ -132,14 +135,31 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
         };
         nameColumn.SetFactory(_nameFactory);
         
-        _sizeFactory = SignalListItemFactory.New();
-        _sizeFactory.OnSetup += (_, args) =>
+        _sizeDiffFactory = SignalListItemFactory.New();
+        _sizeDiffFactory.OnSetup += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
             var label = Label.New(string.Empty);
             listItem.SetChild(label);
         };
-        _sizeFactory.OnBind += (_, args) =>
+        _sizeDiffFactory.OnBind += (_, args) =>
+        {
+            var listItem = (ListItem)args.Object;
+            if (listItem.GetItem() is not AlpmUpdateGObject { Package: { } pkg } ||
+                listItem.GetChild() is not Label label) return;
+            label.SetText(SizeHelpers.FormatSize(pkg.SizeDifference));
+            label.Halign = Align.End;
+        };
+        sizeDiffColumn.SetFactory(_sizeDiffFactory);
+        
+        _oldVersionFactory = SignalListItemFactory.New();
+        _oldVersionFactory.OnSetup += (_, args) =>
+        {
+            var listItem = (ListItem)args.Object;
+            var label = Label.New(string.Empty);
+            listItem.SetChild(label);
+        };
+        _oldVersionFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
             if (listItem.GetItem() is not AlpmUpdateGObject { Package: { } pkg } ||
@@ -147,7 +167,7 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
             label.SetText(pkg.NewVersion);
             label.Halign = Align.End;
         };
-        sizeColumn.SetFactory(_sizeFactory);
+        oldColumn.SetFactory(_oldVersionFactory);
         
         _versionFactory = SignalListItemFactory.New();
         _versionFactory.OnSetup += (_, args) =>
@@ -216,6 +236,19 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
             }
         }
 
+        if (selectedPackages.Count != _listStore.GetNItems())
+        {
+            var args = new GenericQuestionEventArgs(
+                "Update Packages?", "It is unadvised to not update all packages at once. Are you sure you want to continue?"
+            );
+            
+            genericQuestionService.RaiseQuestion(args);
+            if (!await args.ResponseTask)
+            {
+                return;
+            }
+        }
+        
         if (selectedPackages.Count != 0)
         {
             if (!configService.LoadConfig().NoConfirm)
@@ -281,7 +314,8 @@ public class PackageUpdate(IPrivilegedOperationService privilegedOperationServic
         
         _checkFactory.Dispose();
         _nameFactory.Dispose();
-        _sizeFactory.Dispose();
+        _oldVersionFactory.Dispose();
+        _sizeDiffFactory.Dispose();
         _versionFactory.Dispose();
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);

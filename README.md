@@ -40,10 +40,6 @@ or
 ```bash
 paru -S shelly
 ```
-
-**Note:** -bin packages will be made available soon and will allow you to install without needing to run makepkg every
-update.
-
 ## Uninstall
 
 To uninstall the quick installer version is you wish to switch to the AUR managed version:
@@ -68,8 +64,6 @@ Upcoming features and development targets:
 
 - **Repository Modification**: Allow modification of supported repositories (In progress).
 - **Package Grouping**: Group related packages for easier management. (In progress)
-- **Desktop Integration**: Enhance integration with the desktop environment for seamless experience. Targeting KDE
-  Plasma and Gnome initially. (In progress)
 - **Shelly Sync**: Multi-system sync lists that keep packages together across computers (In progress)
 
 ## Prerequisites
@@ -78,7 +72,6 @@ Upcoming features and development targets:
 - **.NET 10.0 Runtime** (for running only if installed from non *-bin aur package)
 - **.NET 10.0 SDK** (for building)
 - **libalpm** (provided by `pacman`)
-- **xwayland**
 
 ## Installation
 

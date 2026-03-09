@@ -409,11 +409,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<bool> IsPackageInstalledOnMachine(string packageName)
     {
-        var aurPackages = await GetAurInstalledPackagesAsync();
+        //var aurPackages = await GetAurInstalledPackagesAsync();
 
         //Enable below statement if moved to standard package.
-        //var standardPackages = await GetInstalledPackagesAsync();
-        return aurPackages.Any(x => x.Name.Contains(packageName));
+        var standardPackages = await GetInstalledPackagesAsync();
+        return standardPackages.Any(x => x.Name.Contains(packageName));
     }
 
     private async Task<OperationResult> ExecuteCommandAsync(params string[] args)

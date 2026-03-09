@@ -8,14 +8,15 @@ public class AlpmPackageUpdate(AlpmPackage installedPackage, AlpmPackage newPack
     public string CurrentVersion => installedPackage.Version;
     public string NewVersion => newPackage.Version;
     public long DownloadSize => newPackage.Size;
-    public long SizeDifference => newPackage.Size - installedPackage.Size;
+    public long SizeDifference => newPackage.InstalledSize - installedPackage.InstalledSize;
 
     public AlpmPackageUpdateDto ToDto() => new AlpmPackageUpdateDto
     {
         Name = Name,
         CurrentVersion = CurrentVersion,
         NewVersion = NewVersion,
-        DownloadSize = DownloadSize
+        DownloadSize = DownloadSize,
+        SizeDifference = SizeDifference,
     };
 
     public override string ToString()

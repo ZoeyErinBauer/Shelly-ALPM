@@ -16,7 +16,7 @@ public class Settings(
 {
     private Box _box = null!;
     private ShellyConfig _config = null!;
-    
+
     public event Action? NavigationToHomeRequested;
 
     public Widget CreateWindow()
@@ -25,9 +25,9 @@ public class Settings(
         _box = (Box)builder.GetObject("SettingWindow")!;
 
         _config = configService.LoadConfig();
-        
+
         SetupAurSwitch("aur_switch", _config.AurEnabled, (v) => _config.AurEnabled = v, builder);
-        SetupSwitch("flatpak_switch", _config.FlatPackEnabled, (v) => _config.FlatPackEnabled = v, builder);
+        SetupFlatpakSwitch("flatpak_switch", _config.FlatPackEnabled, (v) => _config.FlatPackEnabled = v, builder);
         SetupTraySwitch("tray_switch", _config.TrayEnabled, (v) => _config.TrayEnabled = v, builder);
         SetupSwitch("no_confirm_switch", _config.NoConfirm, (v) => _config.NoConfirm = v, builder);
 
@@ -41,12 +41,13 @@ public class Settings(
 
         var syncButton = (Button)builder.GetObject("sync_button")!;
         syncButton.OnClicked += (s, e) => { _ = ForceSyncAsync(); };
-        
+
         var saveButton = (Button)builder.GetObject("save_button")!;
         saveButton.OnClicked += (s, e) => { NavigationToHomeRequested?.Invoke(); };
 
         var versionLabel = (Label)builder.GetObject("version_label")!;
-        versionLabel.SetLabel($"v{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "Unknown"}");
+        versionLabel.SetLabel(
+            $"v{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "Unknown"}");
 
         return _box;
     }
@@ -72,7 +73,7 @@ public class Settings(
             if (e.State && !_config.AurWarningConfirmed)
             {
                 _ = HandleAurConfirmationAsync(sw, updateAction);
-                return true; // We consume the signal and handle it asynchronously
+                return true;
             }
 
             updateAction(e.State);
@@ -80,7 +81,7 @@ public class Settings(
             return false;
         };
     }
-    
+
     private void SetupTraySwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
     {
         var sw = (Switch)builder.GetObject(id)!;
@@ -89,16 +90,26 @@ public class Settings(
         {
             if (e.State)
             {
-               TrayStartService.Start();
+                TrayStartService.Start();
             }
             else
             {
                 TrayStartService.End();
             }
-
-            updateAction(e.State);
-            SaveConfig();
+            
             return false;
+        };
+    }
+
+    private void SetupFlatpakSwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
+    {
+        var sw = (Switch)builder.GetObject(id)!;
+        sw.Active = initialValue;
+        sw.OnStateSet += (s, e) =>
+        {
+            if (!e.State) return false;
+            _ = HandleFlatpakMissingAsync(sw, updateAction);
+            return true;
         };
     }
 
@@ -114,16 +125,89 @@ public class Settings(
         genericQuestionService.RaiseQuestion(args);
         var confirmed = await args.ResponseTask;
 
-        if (confirmed)
+        GLib.Functions.IdleAdd(0, () =>
         {
-            _config.AurWarningConfirmed = true;
-            updateAction(true);
-            SaveConfig();
+            if (confirmed)
+            {
+                _config.AurWarningConfirmed = true;
+                updateAction(true);
+                SaveConfig();
+                sw.Active = true;
+                sw.State = true;
+            }
+            else
+            {
+                sw.Active = false;
+                sw.State = false;
+            }
+            return false;
+        });
+    }
+
+    private async Task HandleFlatpakMissingAsync(Switch sw, Action<bool> updateAction)
+    {
+        var result = await privilegedOperationService.IsPackageInstalledOnMachine("flatpak");
+
+        if (!result)
+        {
+            var args = new GenericQuestionEventArgs(
+                "Missing Flatpak",
+                "Would you like to install this this now?"
+            );
+
+            genericQuestionService.RaiseQuestion(args);
+            var confirmed = await args.ResponseTask;
+
+            if (confirmed)
+            {
+                try
+                {
+                    lockoutService.Show("Installing flatpak...");
+                    await privilegedOperationService.InstallPackagesAsync(["flatpak"]);
+                    GLib.Functions.IdleAdd(0, () =>
+                    {
+                        updateAction(true);
+                        SaveConfig();
+                        sw.Active = true;
+                        sw.State = true;
+                        return false;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error installing flatpak: {ex.Message}");
+                    GLib.Functions.IdleAdd(0, () =>
+                    {
+                        sw.Active = false;
+                        sw.State = false;
+                        return false;
+                    });
+                }
+                finally
+                {
+                    lockoutService.Hide();
+                }
+            }
+            else
+            {
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    sw.Active = false;
+                    sw.State = false;
+                    return false;
+                });
+            }
         }
         else
         {
-            // If they said no, reset the switch state to inactive
-            sw.SetActive(false);
+            GLib.Functions.IdleAdd(0, () =>
+            {
+                updateAction(true);
+                SaveConfig();
+                sw.Active = true;
+                sw.State = true;
+                return false;
+            });
         }
     }
 

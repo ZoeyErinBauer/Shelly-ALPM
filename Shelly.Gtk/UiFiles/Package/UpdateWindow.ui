@@ -54,8 +54,13 @@
               </object>
             </child>
             <child>
-              <object class="GtkColumnViewColumn" id="size_column">
-                <property name="title">Size</property>
+              <object class="GtkColumnViewColumn" id="size_diff_column">
+                <property name="title">Size Difference</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkColumnViewColumn" id="old_column">
+                <property name="title">Old Version</property>
               </object>
             </child>
             <child>

@@ -37,6 +37,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         var versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         var repositoryColumn = (ColumnViewColumn)builder.GetObject("repository_column")!;
         var installButton = (Button)builder.GetObject("install_button")!;
+        var localInstallButton = (Button)builder.GetObject("install_local_button")!;
         var searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
         _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
         _filter = CustomFilter.New(FilterPackage);
@@ -65,6 +66,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
             ApplyFilter();
         };
         installButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
+        localInstallButton.OnClicked += (_, _) => { _ = InstallLocalPackage(); };
 
         return _overlay;
     }
@@ -366,4 +368,46 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
             }
         }
     }
+    
+     private async Task InstallLocalPackage()
+    {
+        
+
+        try
+        {
+            var dialog = FileDialog.New();
+            dialog.SetTitle("Install Local Package");
+
+            var filter = FileFilter.New();
+            filter.SetName("Local package files (\"*.xz\", \"*.gz\", \"*.zst\")");
+            filter.AddPattern("*.xz");
+            filter.AddPattern("*.gz");
+            filter.AddPattern("*.zst");
+
+            var filters = Gio.ListStore.New(FileFilter.GetGType());
+            filters.Append(filter);
+            dialog.SetFilters(filters);
+
+            var file = await dialog.OpenAsync((Window)_overlay.GetRoot()!);
+
+            if (file is not null)
+            {
+                lockoutService.Show($"Installing local package...");
+                var result = await privilegedOperationService.InstallLocalPackageAsync(file.GetPath()!);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to install local package: {result.Error}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to install local package: {ex.Message}");
+        }
+        finally
+        {
+           lockoutService.Hide();
+        }
+    }
+
 }

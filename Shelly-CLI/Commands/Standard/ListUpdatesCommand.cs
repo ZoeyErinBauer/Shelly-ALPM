@@ -53,6 +53,7 @@ public class ListUpdatesCommand : Command<DefaultSettings>
         table.AddColumn("Current Version");
         table.AddColumn("New Version");
         table.AddColumn("Download Size");
+        table.AddColumn("Size Difference");
 
         foreach (var pkg in updates.OrderBy(p => p.Name))
         {
@@ -60,7 +61,8 @@ public class ListUpdatesCommand : Command<DefaultSettings>
                 pkg.Name,
                 pkg.CurrentVersion,
                 pkg.NewVersion,
-                FormatSize(pkg.DownloadSize)
+                FormatSize(pkg.DownloadSize),
+                FormatSize(pkg.SizeDifference)
             );
         }
 
