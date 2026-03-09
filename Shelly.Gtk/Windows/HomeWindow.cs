@@ -92,7 +92,7 @@ public class HomeWindow(
                 foreach (var pkg in packages)
                 {
                     stringBuilder.AppendLine(
-                        $"{pkg.Name} - {pkg.Version} : Depends: {pkg.Depends} OptDepends {pkg.OptDepends}");
+                        $"{pkg.Name} - {pkg.Version} : Depends: {string.Join(",",pkg.Depends)} OptDepends {string.Join(",",pkg.OptDepends)}");
                 }
 
                 await System.IO.File.WriteAllTextAsync(path, stringBuilder.ToString());
