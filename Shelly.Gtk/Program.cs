@@ -70,6 +70,24 @@ sealed class Program
             var aurMenuButton = (MenuButton)mainBuilder.GetObject("AurMenuButton")!;
             var flatpakMenuButton = (MenuButton)mainBuilder.GetObject("FlatpakMenuButton")!;
 
+            // Set icons with fallbacks for AUR and Flatpak buttons
+            var aurChild = aurMenuButton.GetChild();
+            if (aurChild != null)
+            {
+                var aurBox = (Box)aurChild;
+                var aurImage = (Image)aurBox.GetFirstChild()!;
+                //If your theme icon is missing at to the list of strings here without the file extension and it will pick it up
+                aurImage.IconName = ImageHelper.GetIconWithFallback("arch-symbolic", "distributor-logo-arch", "distributor-logo-archlinux");
+            }
+            var flatpakChild = flatpakMenuButton.GetChild();
+            if (flatpakChild != null)
+            {
+                var flatpakBox = (Box)flatpakChild;
+                var flatpakImage = (Image)flatpakBox.GetFirstChild()!;
+                //If your theme icon is missing at to the list of strings here without the file extension and it will pick it up
+                flatpakImage.IconName = ImageHelper.GetIconWithFallback("flatpak-symbolic", "flatpak", "flatpak-logo", "folder-flatpak-symbolic", "application-vnd.flatpak");
+            }
+
             var configService = serviceProvider.GetRequiredService<IConfigService>();
             var initialConfig = configService.LoadConfig();
 

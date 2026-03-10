@@ -12,7 +12,8 @@ namespace Shelly.Gtk.Windows;
 
 public class HomeWindow(
     IPrivilegedOperationService privilegedOperationService,
-    IUnprivilegedOperationService unprivilegedOperationService) : IShellyWindow
+    IUnprivilegedOperationService unprivilegedOperationService,
+    IConfigService configService) : IShellyWindow
 {
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
@@ -58,6 +59,24 @@ public class HomeWindow(
 
         var exportSyncButton = (Button)builder.GetObject("ExportSyncButton")!;
         exportSyncButton.OnClicked += (sender, args) => { _ = ExportSync(); };
+
+        var config = configService.LoadConfig();
+        var aurBox = (Box)builder.GetObject("AurBox")!;
+        var flatpakBox = (Box)builder.GetObject("FlatpakBox")!;
+        
+        aurBox.Visible = config.AurEnabled;
+        flatpakBox.Visible = config.FlatPackEnabled;
+
+        configService.ConfigSaved += (sender, updatedConfig) =>
+        {
+            GLib.Functions.IdleAdd(0, () =>
+            {
+                aurBox.Visible = updatedConfig.AurEnabled;
+                flatpakBox.Visible = updatedConfig.FlatPackEnabled;
+                return false;
+            });
+        };
+
         return _box;
     }
             

@@ -112,7 +112,7 @@
                     <property name="orientation">horizontal</property>
                     <property name="spacing">20</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="AurBox">
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkLabel">
@@ -180,7 +180,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="FlatpakBox">
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkLabel">
