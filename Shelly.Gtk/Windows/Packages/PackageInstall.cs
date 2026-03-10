@@ -7,7 +7,11 @@ using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 
 namespace Shelly.Gtk.Windows.Packages;
 
-public class PackageInstall(IPrivilegedOperationService privilegedOperationService, ILockoutService lockoutService, IConfigService configService, IGenericQuestionService genericQuestionService)
+public class PackageInstall(
+    IPrivilegedOperationService privilegedOperationService,
+    ILockoutService lockoutService,
+    IConfigService configService,
+    IGenericQuestionService genericQuestionService)
     : IShellyWindow
 {
     private Overlay _overlay = null!;
@@ -15,6 +19,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
+    private TreeListModel _treeListModel = null!;
     private FilterListModel _filterListModel = null!;
     private CustomFilter _filter = null!;
     private string _searchText = string.Empty;
@@ -25,6 +30,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
     private SignalListItemFactory _sizeFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
     private SignalListItemFactory _repositoryFactory = null!;
+
+    private readonly List<GObject.Object> _childModelRefs = [];
 
     public Widget CreateWindow()
     {
@@ -41,8 +48,9 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         var appImageButton = (Button)builder.GetObject("install_appimage_button")!;
         var searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
         _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
+        _treeListModel = TreeListModel.New(_listStore, false, false, CreateChildModel);
         _filter = CustomFilter.New(FilterPackage);
-        _filterListModel = FilterListModel.New(_listStore, _filter);
+        _filterListModel = FilterListModel.New(_treeListModel, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
@@ -56,9 +64,14 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _columnView.OnActivate += (_, _) =>
         {
             var item = _selectionModel.GetSelectedItem();
-            if (item is AlpmPackageGObject pkgObj)
+            if (item is TreeListRow row)
             {
-                pkgObj.ToggleSelection();
+                if (row.GetItem() is AlpmPackageGObject pkgObj)
+                {
+                    pkgObj.ToggleSelection();
+                }
+
+                row.SetExpanded(!row.GetExpanded());
             }
         };
         searchEntry.OnSearchChanged += (_, _) =>
@@ -85,7 +98,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
 
             check.OnToggled += (s, _) =>
             {
-                if (listItem.GetItem() is AlpmPackageGObject pkgObj)
+                if (listItem.GetItem() is TreeListRow row && row.GetItem() is AlpmPackageGObject pkgObj)
                 {
                     pkgObj.IsSelected = s.GetActive();
                 }
@@ -95,10 +108,12 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _checkFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
+            var row = listItem.GetItem() as TreeListRow;
+            if (row?.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
+            checkButton.Visible = true;
 
             pkgObj.OnSelectionToggled += OnExternalToggle;
             _checkBinding[listItem] = OnExternalToggle;
@@ -106,17 +121,15 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
 
             void OnExternalToggle(object? s, EventArgs e)
             {
-                if (listItem.GetItem() == pkgObj)
-                {
-                    checkButton.SetActive(pkgObj.IsSelected);
-                }
+                checkButton.SetActive(pkgObj.IsSelected);
             }
         };
 
         _checkFactory.OnUnbind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj) return;
+            var row = listItem.GetItem() as TreeListRow;
+            if (row?.GetItem() is not AlpmPackageGObject pkgObj) return;
             // Unsubscribe to break the reference chain
             if (_checkBinding.Remove(listItem, out var handler))
                 pkgObj.OnSelectionToggled -= handler;
@@ -128,28 +141,41 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _nameFactory.OnSetup += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
+            var expander = TreeExpander.New();
             var box = Box.New(Orientation.Horizontal, 6);
             var label = Label.New(string.Empty);
             var installedIcon = Image.NewFromIconName("object-select-symbolic");
-            
+
             box.Append(label);
             box.Append(installedIcon);
-            listItem.SetChild(box);
+            expander.SetChild(box);
+            listItem.SetChild(expander);
         };
         _nameFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj || pkgObj.Package == null ||
-                listItem.GetChild() is not Box box) return;
+            var row = listItem.GetItem() as TreeListRow;
+            if (row == null || listItem.GetChild() is not TreeExpander expander) return;
 
+            expander.SetListRow(row);
+            var box = (Box)expander.GetChild()!;
             var label = (Label)box.GetFirstChild()!;
             var installedIcon = (Image)label.GetNextSibling()!;
 
-            label.SetText(pkgObj.Package.Name);
-            label.Halign = Align.Start;
-            
-            installedIcon.Visible = pkgObj.IsInstalled;
-            installedIcon.TooltipText = "Installed";
+            var item = row.GetItem();
+            if (item is AlpmPackageGObject { Package: { } pkg })
+            {
+                label.SetText(pkg.Name);
+                label.Halign = Align.Start;
+                installedIcon.Visible = ((AlpmPackageGObject)item).IsInstalled;
+                installedIcon.TooltipText = "Installed";
+            }
+            else if (item is StringObject strObj)
+            {
+                label.SetText(strObj.GetString());
+                label.Halign = Align.Start;
+                installedIcon.Visible = false;
+            }
         };
         nameColumn.SetFactory(_nameFactory);
 
@@ -163,7 +189,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _sizeFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
+            var row = listItem.GetItem() as TreeListRow;
+            if (row?.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
             label.SetText(SizeHelpers.FormatSize(pkg.InstalledSize));
             label.Halign = Align.End;
@@ -180,7 +207,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _versionFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
+            var row = listItem.GetItem() as TreeListRow;
+            if (row?.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
             label.SetText(pkg.Version);
             label.Halign = Align.End;
@@ -198,7 +226,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _repositoryFactory.OnBind += (_, args) =>
         {
             var listItem = (ListItem)args.Object;
-            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
+            var row = listItem.GetItem() as TreeListRow;
+            if (row?.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
             label.SetText(pkg.Repository);
             label.Halign = Align.End;
@@ -230,21 +259,23 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         _selectionModel.Dispose();
         _filterListModel.Dispose();
         _filter.Dispose();
+        _treeListModel.Dispose();
         _listStore.Dispose();
-        
+
         _checkBinding.Clear();
         _checkBinding = null!;
-        
+
         _packages = null!;
-        
+
         _columnView = null!;
         _overlay = null!;
-        
+
         _checkFactory.Dispose();
         _nameFactory.Dispose();
         _sizeFactory.Dispose();
         _versionFactory.Dispose();
         _repositoryFactory.Dispose();
+        _childModelRefs.Clear();
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         GC.WaitForPendingFinalizers();
@@ -258,7 +289,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
             _packages = await privilegedOperationService.GetAvailablePackagesAsync();
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
             var installedNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
-            
+
             ct.ThrowIfCancellationRequested();
             var queue = new Queue<AlpmPackageDto>(_packages);
 
@@ -267,7 +298,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
                 _listStore.RemoveAll();
                 return false;
             });
-            
+
             GLib.Functions.IdleAdd(0, () =>
             {
                 _listStore.RemoveAll();
@@ -289,7 +320,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
                 while (queue.Count > 0 && count < batchSize)
                 {
                     var dequeued = queue.Dequeue();
-                    batch.Add(new AlpmPackageGObject() { Package = dequeued, IsInstalled = installedNames.Contains(dequeued.Name)});
+                    batch.Add(new AlpmPackageGObject()
+                        { Package = dequeued, IsInstalled = installedNames.Contains(dequeued.Name) });
                     count++;
                 }
 
@@ -315,20 +347,60 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null)
-            return false;
+        if (obj is TreeListRow row)
+        {
+            var item = row.GetItem();
+            if (item is AlpmPackageGObject pkgObj && pkgObj.Package != null)
+            {
+                if (string.IsNullOrWhiteSpace(_searchText))
+                    return true;
 
-        if (string.IsNullOrWhiteSpace(_searchText))
+                return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                       pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Always show detail (child) rows if their parent is visible
             return true;
+        }
 
-        return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return false;
+    }
+
+    private Gio.ListModel? CreateChildModel(GObject.Object item)
+    {
+        if (item is not AlpmPackageGObject { Package: { } pkg })
+            return null;
+
+        var details = Gio.ListStore.New(StringObject.GetGType());
+        _childModelRefs.Add(details);
+
+        void AddDetail(string text)
+        {
+            var so = StringObject.New(text);
+            _childModelRefs.Add(so); // prevent GC
+            details.Append(so);
+        }
+
+        AddDetail($"Description: {pkg.Description}");
+        if (pkg.Depends.Count > 0)
+            AddDetail($"Depends: {string.Join(", ", pkg.Depends)}");
+        if (pkg.Licenses.Count > 0)
+            AddDetail($"Licenses: {string.Join(", ", pkg.Licenses)}");
+        if (!string.IsNullOrEmpty(pkg.Url))
+            AddDetail($"URL: {pkg.Url}");
+        if (pkg.OptDepends.Count > 0)
+            AddDetail($"Optional Deps: {string.Join(", ", pkg.OptDepends)}");
+        if (pkg.Provides.Count > 0)
+            AddDetail($"Provides: {string.Join(", ", pkg.Provides)}");
+        if (pkg.Conflicts.Count > 0)
+            AddDetail($"Conflicts: {string.Join(", ", pkg.Conflicts)}");
+        if (pkg.Groups.Count > 0)
+            AddDetail($"Groups: {string.Join(", ", pkg.Groups)}");
+        return details;
     }
 
     private async Task InstallSelectedAsync()
     {
-       
-        
         var selectedPackages = new List<string>();
         for (uint i = 0; i < _listStore.GetNItems(); i++)
         {
@@ -338,7 +410,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
                 selectedPackages.Add(pkgObj.Package.Name);
             }
         }
-        
+
         if (selectedPackages.Count != 0)
         {
             try
@@ -355,7 +427,7 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
                         return;
                     }
                 }
-                
+
                 lockoutService.Show($"Installing...");
                 await privilegedOperationService.InstallPackagesAsync(selectedPackages);
                 await LoadDataAsync();
@@ -370,8 +442,8 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
             }
         }
     }
-    
-     private async Task InstallLocalPackage()
+
+    private async Task InstallLocalPackage()
     {
         try
         {
@@ -406,10 +478,10 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
         }
         finally
         {
-           lockoutService.Hide();
+            lockoutService.Hide();
         }
     }
-     
+
     private async Task InstallAppImage()
     {
         try
@@ -446,5 +518,4 @@ public class PackageInstall(IPrivilegedOperationService privilegedOperationServi
             lockoutService.Hide();
         }
     }
-
 }
