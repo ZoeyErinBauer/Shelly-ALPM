@@ -3,7 +3,9 @@ using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
+using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
+
 // ReSharper disable CollectionNeverQueried.Local
 
 namespace Shelly.Gtk.Windows.Packages;
@@ -22,7 +24,10 @@ public class PackageManagement(
     private FilterListModel _filterListModel = null!;
     private CustomFilter _filter = null!;
     private string _searchText = string.Empty;
-    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)> _checkBinding = [];
+
+    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
+        _checkBinding = [];
+
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _sizeFactory = null!;
@@ -33,6 +38,12 @@ public class PackageManagement(
     private Button _refreshButton = null!;
     private Button _removeButton = null!;
     private readonly List<AlpmPackageGObject> _packageGObjectRefs = [];
+    private List<AlpmPackageDto> _packages = [];
+    private List<string> _groups = [];
+    private StringList _groupsStringList = null!;
+    private DropDown _groupDropDown = null!;
+    private string _selectedGroup = "Any";
+
 
     public Widget CreateWindow()
     {
@@ -57,6 +68,8 @@ public class PackageManagement(
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
+        _groupDropDown = (DropDown)builder.GetObject("grouping_selection")!;
+
 
         SetupColumns(checkColumn, nameColumn, sizeColumn, versionColumn);
 
@@ -79,6 +92,16 @@ public class PackageManagement(
         };
         _removeButton.OnClicked += (_, _) => { _ = RemoveSelectedAsync(); };
         _refreshButton.OnClicked += (_, _) => { _ = LoadDataAsync(); };
+        _groupDropDown.OnNotify += (sender, args) =>
+        {
+            if (args.Pspec.GetName() == "selected")
+            {
+                var idx = _groupDropDown.GetSelected();
+                var item = (StringObject)_groupDropDown.GetModel()!.GetObject(idx)!;
+                _selectedGroup = item.GetString();
+                ApplyFilter();
+            }
+        };
 
         return _box;
     }
@@ -125,7 +148,8 @@ public class PackageManagement(
         _checkFactory.OnUnbind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj || listItem.GetChild() is not CheckButton checkButton) return;
+            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
+                listItem.GetChild() is not CheckButton checkButton) return;
             if (_checkBinding.Remove(listItem, out var handlers))
             {
                 pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
@@ -183,108 +207,122 @@ public class PackageManagement(
             label.SetText(pkg.Version);
             label.Halign = Align.End;
         };
+
         versionColumn.SetFactory(_versionFactory);
     }
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null)
-            return false;
+        if (obj is AlpmPackageGObject pkgObj && pkgObj.Package != null)
+        {
+            if (_selectedGroup != "Any" && !pkgObj.Package.Groups.Contains(_selectedGroup))
+            {
+                return false;
+            }
+            
+            if (string.IsNullOrWhiteSpace(_searchText))
+                return true;
 
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
+            return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                   pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        }
 
-        return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return false;
     }
 
     private async Task LoadDataAsync(CancellationToken ct = default)
-    {
-        try
         {
-            var packages = await privilegedOperationService.GetInstalledPackagesAsync();
-            ct.ThrowIfCancellationRequested();
-            GLib.Functions.IdleAdd(0, () =>
-            {
-                _listStore.RemoveAll();
-                _packageGObjectRefs.Clear();
-                foreach (var package in packages)
-                {
-                    var pkgObj = new AlpmPackageGObject { Package = package };
-                    _packageGObjectRefs.Add(pkgObj);
-                    _listStore.Append(pkgObj);
-                }
-
-                return false;
-            });
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Failed to load packages: {e.Message}");
-        }
-    }
-
-    private void ApplyFilter()
-    {
-        _filter.Changed(FilterChange.Different);
-    }
-
-    private async Task RemoveSelectedAsync()
-    {
-        var selectedPackages = new List<string>();
-        for (uint i = 0; i < _listStore.GetNItems(); i++)
-        {
-            var item = _listStore.GetObject(i);
-            if (item is AlpmPackageGObject { IsSelected: true, Package: not null } pkgObj)
-            {
-                selectedPackages.Add(pkgObj.Package.Name);
-            }
-        }
-
-        if (selectedPackages.Count != 0)
-        {
-            if (!configService.LoadConfig().NoConfirm)
-            {
-                var args = new GenericQuestionEventArgs(
-                    "Remove Packages?", string.Join("\n", selectedPackages)
-                );
-
-                genericQuestionService.RaiseQuestion(args);
-                if (!await args.ResponseTask)
-                {
-                    return;
-                }
-            }
-
             try
             {
-                lockoutService.Show($"Removing...");
-                await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active, _removeConfigsCheck.Active);
-                await LoadDataAsync();
+                _packages = await privilegedOperationService.GetInstalledPackagesAsync();
+                _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
+                _groups.Insert(0, "Any");
+                _groupsStringList = StringList.New(_groups.ToArray());
+                _groupDropDown.SetModel(_groupsStringList);
+                ct.ThrowIfCancellationRequested();
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    _listStore.RemoveAll();
+                    _packageGObjectRefs.Clear();
+                    foreach (var package in _packages)
+                    {
+                        var pkgObj = new AlpmPackageGObject { Package = package };
+                        _packageGObjectRefs.Add(pkgObj);
+                        _listStore.Append(pkgObj);
+                    }
+
+                    return false;
+                });
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to install packages: {e.Message}");
-            }
-            finally
-            {
-                lockoutService.Hide();
-                
-                var args = new ToastMessageEventArgs(
-                    $"Removed {selectedPackages.Count} Package(s)"
-                );
-
-                genericQuestionService.RaiseToastMessage(args);
+                Console.WriteLine($"Failed to load packages: {e.Message}");
             }
         }
-    }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        _listStore.RemoveAll();
-        _packageGObjectRefs.Clear();
-        _checkBinding.Clear();
+        private void ApplyFilter()
+        {
+            _filter.Changed(FilterChange.Different);
+        }
+
+        private async Task RemoveSelectedAsync()
+        {
+            var selectedPackages = new List<string>();
+            for (uint i = 0; i < _listStore.GetNItems(); i++)
+            {
+                var item = _listStore.GetObject(i);
+                if (item is AlpmPackageGObject { IsSelected: true, Package: not null } pkgObj)
+                {
+                    selectedPackages.Add(pkgObj.Package.Name);
+                }
+            }
+
+            if (selectedPackages.Count != 0)
+            {
+                if (!configService.LoadConfig().NoConfirm)
+                {
+                    var args = new GenericQuestionEventArgs(
+                        "Remove Packages?", string.Join("\n", selectedPackages)
+                    );
+
+                    genericQuestionService.RaiseQuestion(args);
+                    if (!await args.ResponseTask)
+                    {
+                        return;
+                    }
+                }
+
+                try
+                {
+                    lockoutService.Show($"Removing...");
+                    await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
+                        _removeConfigsCheck.Active);
+                    await LoadDataAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to install packages: {e.Message}");
+                }
+                finally
+                {
+                    lockoutService.Hide();
+
+                    var args = new ToastMessageEventArgs(
+                        $"Removed {selectedPackages.Count} Package(s)"
+                    );
+
+                    genericQuestionService.RaiseToastMessage(args);
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+
+            _listStore.RemoveAll();
+            _packageGObjectRefs.Clear();
+            _checkBinding.Clear();
+        }
     }
-}

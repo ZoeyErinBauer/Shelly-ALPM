@@ -21,6 +21,11 @@
         </object>
       </child>
       <child>
+        <object class="GtkDropDown" id="grouping_selection">
+          <property name="tooltip-text">Group Filter</property>
+        </object>
+      </child> 
+      <child>
         <object class="GtkBox">
           <property name="hexpand">true</property>
         </object>
