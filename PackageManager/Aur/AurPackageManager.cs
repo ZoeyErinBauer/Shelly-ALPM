@@ -43,12 +43,14 @@ public enum PackageProgressStatus
 /// This is a manager for Arch universal repositories. It relies on <see cref="AlpmManager"/> to handle downloading and
 /// installation of packages from the Arch User Repository (AUR).
 /// </summary>
-public class AurPackageManager(string? configPath = null)
+public class AurPackageManager(string? configPath = null, bool verbose = false, bool uiMode = false)
     : IAurPackageManager
 {
     private AlpmManager _alpm;
     private AurSearchManager _aurSearchManager;
     private HttpClient _httpClient = new HttpClient();
+    private bool _verbose = verbose;
+    private bool _uiMode = uiMode;
 
     public event EventHandler<PackageProgressEventArgs>? PackageProgress;
     public event EventHandler<PkgbuildDiffRequestEventArgs>? PkgbuildDiffRequest;
@@ -57,7 +59,7 @@ public class AurPackageManager(string? configPath = null)
 
     public async Task Initialize(bool root = false, bool useTempPath = false, string tempPath = "")
     {
-        _alpm = configPath is null ? new AlpmManager() : new AlpmManager(configPath);
+        _alpm = configPath is null ? new AlpmManager() : new AlpmManager(_verbose, _uiMode, configPath);
         _alpm.Initialize(root, useTempPath, tempPath);
         _alpm.Question += (sender, args) => Question?.Invoke(this, args);
         _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
@@ -397,7 +399,6 @@ public class AurPackageManager(string? configPath = null)
                     if (!string.IsNullOrEmpty(e.Data))
                         Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
                 }
-                
             };
 
             buildProcess.ErrorDataReceived += (sender, e) =>

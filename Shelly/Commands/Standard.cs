@@ -18,12 +18,12 @@ internal class Standard
     public int Sync(ConsoleAppContext context, bool force = false)
     {
         var globals = (GlobalOptions)context.GlobalOptions!;
-        return globals.UiMode ? SyncUiMode(force) : SyncConsoleMode(force);
+        return globals.UiMode ? SyncUiMode(globals.Verbose, force) : SyncConsoleMode(globals.Verbose, force);
     }
 
-    private int SyncUiMode(bool force = false)
+    private int SyncUiMode(bool verbose = false, bool force = false)
     {
-        var manager = new AlpmManager(Configuration.GetConfigurationFile());
+        var manager = new AlpmManager(verbose, true,Configuration.GetConfigurationFile());
         Console.WriteLine("Synchronizing package databases...");
         manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
         manager.Sync(force);
@@ -31,9 +31,9 @@ internal class Standard
         return 0;
     }
 
-    private int SyncConsoleMode(bool force = false)
+    private int SyncConsoleMode(bool verbose = false, bool force = false)
     {
-        var manager = new AlpmManager(Configuration.GetConfigurationFile());
+        var manager = new AlpmManager(verbose, false,Configuration.GetConfigurationFile());
         Console.WriteLine("Synchronizing package databases...");
         if (force)
         {
@@ -41,8 +41,8 @@ internal class Standard
         }
 
         var rowIndex = new Dictionary<string, int>();
-        var rowCount = 0;
         object renderLock = new();
+        var baseTop = -1;
 
         manager.Progress += (sender, args) =>
         {
@@ -55,24 +55,23 @@ internal class Standard
 
                 var line = $"  {name,-30} {bar} {pct,3}%  {stage}";
 
-                if (!rowIndex.TryGetValue(name, out var idx))
+                if (!rowIndex.TryGetValue(name, out var row))
                 {
-                    rowIndex[name] = rowCount;
-                    rowCount++;
-                    Console.WriteLine(line);
+                    if (baseTop < 0) baseTop = Console.CursorTop;
+                    row = rowIndex.Count;
+                    rowIndex[name] = row;
                 }
-                else
-                {
-                    // Move cursor up to the correct row and overwrite
-                    var linesUp = rowCount - idx;
-                    Console.Write($"\x1b[{linesUp}A\r");
-                    Console.Write(line.PadRight(Console.WindowWidth - 1));
-                    Console.Write($"\x1b[{linesUp}B\r");
-                }
+
+                Console.SetCursorPosition(0, baseTop + row);
+                Console.Write("\x1b[2K");
+                Console.Write(line);
+                Console.Out.Flush();
             }
         };
 
         manager.Sync(force);
+        if (baseTop >= 0)
+            Console.SetCursorPosition(0, baseTop + rowIndex.Count);
         Console.WriteLine();
         Console.WriteLine("Package databases synchronization completed");
         return 0;

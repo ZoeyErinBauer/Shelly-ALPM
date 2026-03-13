@@ -21,7 +21,8 @@ namespace PackageManager.Alpm;
     Justification = "This class should be extra clear on the type definitions of the variables.")]
 [SuppressMessage("Compiler",
     "CS8618:Non-nullable field must contain a non-null value when exiting constructor. Consider adding the \'required\' modifier or declaring as nullable.")]
-public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, IAlpmManager
+public class AlpmManager(bool verbose = false, bool uiMode = false, string configPath = "/etc/pacman.conf")
+    : IDisposable, IAlpmManager
 {
     private string _configPath = configPath;
     private PacmanConf _config;
@@ -31,6 +32,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private AlpmEventCallback _eventCallback;
     private AlpmQuestionCallback _questionCallback;
     private AlpmProgressCallback? _progressCallback;
+    private bool _verbose = verbose;
+    private bool _uiMode = uiMode;
 
     public event EventHandler<AlpmProgressEventArgs>? Progress;
     public event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
@@ -185,7 +188,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             var effectiveSigLevel = repo.SigLevel is AlpmSigLevel.None or AlpmSigLevel.UseDefault
                 ? _config.SigLevel
                 : repo.SigLevel;
-            Console.Error.WriteLine($"[DEBUG] Registering {repo.Name} with SigLevel: {effectiveSigLevel}");
+            if (_verbose)
+            {
+                Console.Error.WriteLine($"[DEBUG] Registering {repo.Name} with SigLevel: {effectiveSigLevel}");
+            }
+
             IntPtr db = RegisterSyncDb(_handle, repo.Name, effectiveSigLevel);
             if (db == IntPtr.Zero)
             {
@@ -424,8 +431,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 }
             }
 
-            Console.Error.WriteLine(
-                $"[DEBUG_LOG] DownloadFile called with url='{url}', localpath='{localpathDir}', force={force}");
+            if (_verbose)
+            {
+                Console.Error.WriteLine(
+                    $"[DEBUG_LOG] DownloadFile called with url='{url}', localpath='{localpathDir}', force={force}");
+            }
 
             if (string.IsNullOrEmpty(url)) return -1;
 
@@ -460,7 +470,10 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 }
             }
 
-            Console.Error.WriteLine($"[DEBUG_LOG] Full destination path: {localpath}");
+            if (_verbose)
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG] Full destination path: {localpath}");
+            }
 
             if (string.IsNullOrEmpty(localpath)) return -1;
 
@@ -483,12 +496,19 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     {
         // Use a temporary file for atomic writes - prevents corruption if download is interrupted
         string tempPath = localpath + ".part";
-        Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
+        if (_verbose)
+        {
+            Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
+        }
+
         SocketsHttpHandler? handler = null;
         HttpClient? client = null;
         try
         {
-            Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
+            if (_verbose)
+            {
+                Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
+            }
 
             handler = new SocketsHttpHandler
             {
@@ -507,7 +527,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: {response.StatusCode}");
+                if (_verbose)
+                {
+                    Console.Error.WriteLine($"[DEBUG_LOG] Failed to download {fullUrl}: {response.StatusCode}");
+                }
+
                 return -1;
             }
 
@@ -518,7 +542,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var stream = response.Content.ReadAsStream())
             {
-                Console.Error.WriteLine($"[DEBUG_LOG] Reading content stream");
+                if (_verbose)
+                {
+                    Console.Error.WriteLine($"[DEBUG_LOG] Reading content stream");
+                }
+
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 long totalRead = 0;
@@ -534,7 +562,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         int percent = (int)((totalRead * 100) / totalBytes.Value);
                         if (percent != lastPercent)
                         {
-                            PercentLoggerHandler("Downloading", fileName, percent, totalRead, totalBytes.Value);
+                            if (_verbose)
+                            {
+                                PercentLoggerHandler("Downloading", fileName, percent, totalRead, totalBytes.Value);
+                            }
+
                             lastPercent = percent;
                             Progress?.Invoke(this, new AlpmProgressEventArgs(
                                 AlpmProgressType.PackageDownload,
@@ -550,7 +582,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 // Ensure 100% is sent
                 if (lastPercent != 100)
                 {
-                    PercentLoggerHandler("Downloading", fileName, 100, totalBytes.Value, totalBytes.Value);
+                    if (_verbose)
+                    {
+                        PercentLoggerHandler("Downloading", fileName, 100, totalBytes.Value, totalBytes.Value);
+                    }
+
                     Progress?.Invoke(this, new AlpmProgressEventArgs(
                         AlpmProgressType.PackageDownload,
                         fileName,
@@ -594,8 +630,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
             // If we just downloaded a .db file, also download the corresponding .db.sig file
             // This ensures database and signature files stay in sync, preventing "signature invalid" errors
-            Console.Error.WriteLine($"[DEBUG_LOG] Downloading corresponding signature file: {fullUrl}.sig");
-            Console.Error.WriteLine($"[DEBUG_LOG] Destination: {localpath}.sig");
+            if (_verbose || _uiMode)
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG] Downloading corresponding signature file: {fullUrl}.sig");
+                Console.Error.WriteLine($"[DEBUG_LOG] Destination: {localpath}.sig");
+            }
+
             if (fullUrl.EndsWith(".db") && !fullUrl.EndsWith(".db.sig"))
             {
                 var sigUrl = fullUrl + ".sig";
@@ -1577,7 +1617,10 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             string? pkgName = pkgNamePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(pkgNamePtr) : null;
-            PercentLoggerHandler(progress.ToString(), pkgName, percent);
+            if (_verbose)
+            {
+                PercentLoggerHandler(progress.ToString(), pkgName, percent);
+            }
 
             Progress?.Invoke(this, new AlpmProgressEventArgs(
                 progress,
@@ -1645,141 +1688,438 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             switch (type)
             {
                 case AlpmEventType.CheckDepsStart:
-                    Console.Error.WriteLine("[ALPM] Checking dependencies...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking dependencies...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking dependencies...");
+                    }
+
                     break;
                 case AlpmEventType.CheckDepsDone:
-                    Console.Error.WriteLine("[ALPM] Dependency check finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Dependency check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Dependency check finished.");
+                    }
+
                     break;
                 case AlpmEventType.FileConflictsStart:
-                    Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking for file conflicts...");
+                    }
+
                     break;
                 case AlpmEventType.FileConflictsDone:
-                    Console.Error.WriteLine("[ALPM] File conflict check finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] File conflict check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("File conflict check finished");
+                    }
+
                     break;
                 case AlpmEventType.ResolveDepsStart:
-                    Console.Error.WriteLine("[ALPM] Resolving dependencies...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Resolving dependencies...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Resolving dependencies...");
+                    }
+
                     break;
                 case AlpmEventType.ResolveDepsDone:
-                    Console.Error.WriteLine("[ALPM] Dependency resolution finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Dependency resolution finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Dependency resolution finished.");
+                    }
+
                     break;
                 case AlpmEventType.InterConflictsStart:
-                    Console.Error.WriteLine("[ALPM] Checking for inter-conflicts...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking for inter-conflicts...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking for inter-conflicts...");
+                    }
+
                     break;
                 case AlpmEventType.InterConflictsDone:
-                    Console.Error.WriteLine("[ALPM] Inter-conflict check finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Inter-conflict check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Inter-conflict check finished.");
+                    }
+
                     break;
                 case AlpmEventType.TransactionStart:
-                    Console.Error.WriteLine("[ALPM] Starting transaction...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Starting transaction...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Starting transaction...");
+                    }
+
                     PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
                     break;
                 case AlpmEventType.TransactionDone:
-                    Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Transaction successfully finished.");
+                    }
+
                     PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
                     break;
                 case AlpmEventType.IntegrityStart:
-                    Console.Error.WriteLine("[ALPM] Checking package integrity...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking package integrity...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking package integrity...");
+                    }
+
                     break;
                 case AlpmEventType.IntegrityDone:
-                    Console.Error.WriteLine("[ALPM] Integrity check finished.");
+                    if (_uiMode || _verbose)
+                    {
+                        Console.Error.WriteLine("[ALPM] Integrity check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Integrity check finished.");
+                    }
+
                     break;
                 case AlpmEventType.LoadStart:
-                    Console.Error.WriteLine("[ALPM] Loading packages...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Loading packages...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Loading packages...");
+                    }
+
                     break;
                 case AlpmEventType.LoadDone:
-                    Console.Error.WriteLine("[ALPM] Packages loaded.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Packages loaded.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Packages loaded.");
+                    }
+
                     break;
                 case AlpmEventType.DiskspaceStart:
-                    Console.Error.WriteLine("[ALPM] Checking available disk space...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking available disk space...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking available disk space...");
+                    }
+
                     break;
                 case AlpmEventType.DiskspaceDone:
-                    Console.Error.WriteLine("[ALPM] Disk space check finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Disk space check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Disk space check finished.");
+                    }
+
                     break;
 
                 case AlpmEventType.PackageOperationStart:
                 {
-                    Console.Error.WriteLine("[ALPM] Starting package operation...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Starting package operation...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Starting package operation...");
+                    }
+
                     break;
                 }
 
                 case AlpmEventType.PackageOperationDone:
                 {
-                    Console.Error.WriteLine("[ALPM] Package operation finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Package operation finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Package operation finished.");
+                    }
+
                     break;
                 }
 
                 case AlpmEventType.ScriptletInfo:
                 {
-                    Console.Error.WriteLine("[ALPM] Running scriptlet...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Running scriptlet...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Running scriptlet...");
+                    }
+
                     break;
                 }
 
                 case AlpmEventType.HookStart:
-                    Console.Error.WriteLine("[ALPM] Running hooks...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Starting hooks...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Starting hooks...");
+                    }
+
                     break;
                 case AlpmEventType.HookDone:
-                    Console.Error.WriteLine("[ALPM] Hooks finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Hooks finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Hooks finished.");
+                    }
+
                     break;
 
                 case AlpmEventType.HookRunStart:
                 {
-                    Console.Error.WriteLine("[ALPM] Running hook...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Running hook...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Running hook...");
+                    }
+
                     break;
                 }
                 case AlpmEventType.HookRunDone:
-                    Console.Error.WriteLine("[ALPM] Hook finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Hook finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Hook run finished.");
+                    }
+
                     break;
 
                 // Database retrieval events (for sync operations)
                 case AlpmEventType.DbRetrieveStart:
-                    Console.Error.WriteLine("[ALPM] Retrieving database...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Retrieving database...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Retrieving databases...");
+                    }
+
                     break;
                 case AlpmEventType.DbRetrieveDone:
-                    Console.Error.WriteLine("[ALPM] Database retrieved.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Database retrieved.");
+                    }
+                    else
+                    {
+                        Console.WriteLine();
+                        Console.Error.WriteLine("Databases retrieved.");
+                    }
+
                     break;
                 case AlpmEventType.DbRetrieveFailed:
-                    Console.Error.WriteLine("[ALPM] Database retrieval failed.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Database retrieval failed.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Database retrieval failed.");
+                    }
+
                     break;
 
                 // Package retrieval events
                 case AlpmEventType.PkgRetrieveStart:
-                    Console.Error.WriteLine("[ALPM] Retrieving packages...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Retrieving packages...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Retrieving packages...");
+                    }
+
                     break;
                 case AlpmEventType.PkgRetrieveDone:
-                    Console.Error.WriteLine("[ALPM] Packages retrieved.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Packages retrieved.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Packages retrieved.");
+                    }
+
                     break;
                 case AlpmEventType.PkgRetrieveFailed:
-                    Console.Error.WriteLine("[ALPM] Package retrieval failed.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Package retrieval failed.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Package retrieval failed.");
+                    }
+
                     break;
 
                 case AlpmEventType.DatabaseMissing:
                 {
-                    Console.Error.WriteLine(
-                        "[ALPM] Database missing. Please run 'pacman-key --init' to initialize it.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine(
+                            "[ALPM] Database missing. Please run 'pacman-key --init' to initialize it.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Database missing. Please run `pacman-key --init` to initialize it.");
+                    }
+
                     break;
                 }
 
                 case AlpmEventType.OptdepRemoval:
-                    Console.Error.WriteLine("[ALPM] Optional dependency being removed.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Optional dependency being removed.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Optional dependency being removed.");
+                    }
+
                     break;
 
                 case AlpmEventType.KeyringStart:
-                    Console.Error.WriteLine("[ALPM] Checking keyring...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Checking keyring...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Checking keyring...");
+                    }
+
                     break;
                 case AlpmEventType.KeyringDone:
-                    Console.Error.WriteLine("[ALPM] Keyring check finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Keyring check finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Keyring check finished.");
+                    }
+
                     break;
                 case AlpmEventType.KeyDownloadStart:
-                    Console.Error.WriteLine("[ALPM] Downloading keys...");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Downloading keys...");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Downloading keys...");
+                    }
+
                     break;
                 case AlpmEventType.KeyDownloadDone:
-                    Console.Error.WriteLine("[ALPM] Key download finished.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] Key download finished.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Key download finished.");
+                    }
+
                     break;
 
                 case AlpmEventType.PacnewCreated:
-                    Console.Error.WriteLine("[ALPM] .pacnew file created.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] .pacnew file created.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine(".pacnew file created.");
+                    }
+
                     break;
                 case AlpmEventType.PacsaveCreated:
-                    Console.Error.WriteLine("[ALPM] .pacsave file created.");
+                    if (_verbose || _uiMode)
+                    {
+                        Console.Error.WriteLine("[ALPM] .pacsave file created.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine(".pacsave file created.");
+                    }
+
                     break;
 
                 default:

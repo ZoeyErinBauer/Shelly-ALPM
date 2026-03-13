@@ -7,7 +7,7 @@ namespace PackageManager.Aur;
 
 public interface IAurPackageManager : IDisposable
 {
-    Task Initialize(bool root = false, bool useTempPath = false, string tempPath = "");
+    Task Initialize(bool root = false, bool useTempPath = false,string tempPath = "");
 
     Task<List<AurPackageDto>> GetInstalledPackages();
     Task<List<AurPackageDto>> SearchPackages(string query);

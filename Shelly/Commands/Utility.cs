@@ -43,7 +43,7 @@ internal class Utility
             : Path.GetFullPath(destination);
 
         //Standard
-        var manager = new AlpmManager(Configuration.GetConfigurationFile());
+        var manager = new AlpmManager(globals.Verbose,globals.UiMode,Configuration.GetConfigurationFile());
         var packages = manager.GetInstalledPackages();
         manager.Dispose();
 

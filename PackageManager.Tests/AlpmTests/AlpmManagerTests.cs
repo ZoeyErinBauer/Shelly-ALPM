@@ -49,7 +49,7 @@ public class AlpmManagerTests
             $"Include = /etc/pacman.d/mirrorlist\n\n\n" +
             $"[extra]\n" +
             $"Include = /etc/pacman.d/mirrorlist\n\n");
-        _manager = new AlpmManager(_testConfigPath);
+        _manager = new AlpmManager(false,false,_testConfigPath);
     }
 
     [TearDown]
