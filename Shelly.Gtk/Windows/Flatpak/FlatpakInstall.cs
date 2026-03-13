@@ -23,7 +23,7 @@ public class FlatpakInstall(
     private ListBox? _categoryListBox;
     private List<AppstreamApp> _allPackages = [];
     private string _searchText = string.Empty;
-    private FlatpakCategories _selectedCategory = FlatpakCategories.None;
+    private FlatpakCategories _selectedCategory = FlatpakCategories.AllApplications;
     private SignalListItemFactory? _factory;
     private Box? _overlay;
     private Button _overlayCloseButton = null!;
@@ -67,6 +67,7 @@ public class FlatpakInstall(
         {
             var label = new Label();
             label.SetText(category);
+            label.Halign = Align.Start;
             _categoryListBox.Append(label);
         }
 
@@ -305,7 +306,7 @@ public class FlatpakInstall(
                 p.Id.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (_selectedCategory != FlatpakCategories.None)
+        if (_selectedCategory != FlatpakCategories.AllApplications)
         {
             var categoryName = _selectedCategory.ToString();
             filtered = filtered.Where(p => p.Categories.Contains(categoryName, StringComparer.OrdinalIgnoreCase));
