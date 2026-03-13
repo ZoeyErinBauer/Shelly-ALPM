@@ -16,4 +16,8 @@
       </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\PackageManager\PackageManager.csproj" />
+    </ItemGroup>
+
 </Project>
