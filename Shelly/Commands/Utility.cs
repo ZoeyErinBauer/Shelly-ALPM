@@ -60,4 +60,5 @@ public class Utility
         await File.WriteAllTextAsync(path, json);
         Console.WriteLine($"Sync file exported to: {path}");
     }
+    
 }
