@@ -338,8 +338,24 @@ public class PackageUpdate(
             return string.Empty;
         }
 
+        const int maxPackageColumnWidth = 28;
+        var packageColumnWidth = Math.Min(
+            maxPackageColumnWidth,
+            packages.Max(package => package.Name.Length));
+
         return string.Join(Environment.NewLine, packages.Select(package =>
-            $"{package.Name}  {package.CurrentVersion} -> {package.NewVersion}"));
+            $"{FormatPackageName(package.Name, packageColumnWidth)}  {package.CurrentVersion} -> {package.NewVersion}"));
+    }
+
+    private static string FormatPackageName(string packageName, int width)
+    {
+        if (packageName.Length > width)
+        {
+            var truncatedWidth = Math.Max(1, width - 1);
+            packageName = packageName[..truncatedWidth] + "…";
+        }
+
+        return packageName.PadRight(width);
     }
 
     public void Dispose()
