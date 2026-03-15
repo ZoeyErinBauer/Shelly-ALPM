@@ -24,6 +24,9 @@ public class AurRemove(IPrivilegedOperationService privilegedOperationService, I
     private SignalListItemFactory _versionFactory = null!;
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)> _checkBinding = [];
     private readonly List<AurPackageGObject> _packageGObjectRefs = [];
+    private ColumnViewColumn _checkColumn = null!;
+    private ColumnViewColumn _nameColumn = null!;
+    private ColumnViewColumn _versionColumn = null!;
    
 
     public Widget CreateWindow()
@@ -33,9 +36,9 @@ public class AurRemove(IPrivilegedOperationService privilegedOperationService, I
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
         var searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
 
-        var checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
-        var nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
-        var versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
+        _checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
+        _nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
+        _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         var removeButton = (Button)builder.GetObject("remove_button")!;
 
         _listStore = Gio.ListStore.New(AurPackageGObject.GetGType());
@@ -45,7 +48,7 @@ public class AurRemove(IPrivilegedOperationService privilegedOperationService, I
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
 
-        SetupColumns(checkColumn, nameColumn, versionColumn);
+        SetupColumns(_checkColumn, _nameColumn, _versionColumn);
 
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
         

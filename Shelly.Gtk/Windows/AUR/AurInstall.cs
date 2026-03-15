@@ -28,8 +28,16 @@ public class AurInstall(
     private SignalListItemFactory _votesFactory = null!;
     private SignalListItemFactory _popFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
-    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)> _checkBinding = [];
+
+    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
+        _checkBinding = [];
+
     private readonly List<AurPackageGObject> _packageGObjectRefs = [];
+    private ColumnViewColumn _checkColumn = null!;
+    private ColumnViewColumn _nameColumn = null!;
+    private ColumnViewColumn _votesColumn = null!;
+    private ColumnViewColumn _popColumn = null!;
+    private ColumnViewColumn _versionColumn = null!;
 
     public Widget CreateWindow()
     {
@@ -38,11 +46,20 @@ public class AurInstall(
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
         _searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
 
-        var checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
-        var nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
-        var votesColumn = (ColumnViewColumn)builder.GetObject("votes_column")!;
-        var popColumn = (ColumnViewColumn)builder.GetObject("popularity_column")!;
-        var versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
+        _checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
+        _checkColumn.Resizable = true;
+
+        _nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
+        _nameColumn.Resizable = true;
+
+        _votesColumn = (ColumnViewColumn)builder.GetObject("votes_column")!;
+        _votesColumn.Resizable = true;
+
+        _popColumn = (ColumnViewColumn)builder.GetObject("popularity_column")!;
+        _popColumn.Resizable = true;
+
+        _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
+        _versionColumn.Resizable = true;
         var installButton = (Button)builder.GetObject("install_button")!;
 
         _listStore = Gio.ListStore.New(AurPackageGObject.GetGType());
@@ -50,7 +67,7 @@ public class AurInstall(
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
 
-        SetupColumns(checkColumn, nameColumn, votesColumn, popColumn, versionColumn);
+        SetupColumns(_checkColumn, _nameColumn, _votesColumn, _popColumn, _versionColumn);
 
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
@@ -91,7 +108,7 @@ public class AurInstall(
             checkButton.OnToggled += OnToggled;
 
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled,OnExternalToggle);
+            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
 
             return;
 
@@ -112,7 +129,8 @@ public class AurInstall(
         checkFactory.OnUnbind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AurPackageGObject pkgObj  || listItem.GetChild() is not CheckButton checkButton) return;
+            if (listItem.GetItem() is not AurPackageGObject pkgObj ||
+                listItem.GetChild() is not CheckButton checkButton) return;
             if (_checkBinding.Remove(listItem, out var handlers))
             {
                 pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
@@ -221,6 +239,7 @@ public class AurInstall(
             });
         }
     }
+
     private async Task InstallSelectedAsync()
     {
         var selectedPackages = new List<string>();
@@ -283,7 +302,7 @@ public class AurInstall(
             finally
             {
                 lockoutService.Hide();
-                
+
                 var args = new ToastMessageEventArgs(
                     $"Installed {selectedPackages.Count} Package(s)"
                 );

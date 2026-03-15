@@ -63,10 +63,15 @@ public class PackageInstall(
         _overlay = (Overlay)_builder.GetObject("PackageWindow")!;
         _columnView = (ColumnView)_builder.GetObject("package_column_view")!;
         _checkColumn = (ColumnViewColumn)_builder.GetObject("check_column")!;
+        _checkColumn.Resizable = true;
         _nameColumn = (ColumnViewColumn)_builder.GetObject("name_column")!;
+        _nameColumn.Resizable = true;
         _sizeColumn = (ColumnViewColumn)_builder.GetObject("size_column")!;
+        _sizeColumn.Resizable = true;
         _versionColumn = (ColumnViewColumn)_builder.GetObject("version_column")!;
+        _versionColumn.Resizable = true;
         _repositoryColumn = (ColumnViewColumn)_builder.GetObject("repository_column")!;
+        _repositoryColumn.Resizable = true;
         _installButton = (Button)_builder.GetObject("install_button")!;
         _localInstallButton = (Button)_builder.GetObject("install_local_button")!;
         _appImageButton = (Button)_builder.GetObject("install_appimage_button")!;
