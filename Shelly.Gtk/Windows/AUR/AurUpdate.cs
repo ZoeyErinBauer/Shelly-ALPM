@@ -57,6 +57,8 @@ public class AurUpdate(
         _noPackagesLabel = (Label)builder.GetObject("no_packages_label")!;
         _noPackagesLabel.Label_ = "<span size='large'>AUR packages are up to date</span>";
         _noPackagesLabel.Visible = false;
+        _updateButton.SetSensitive(false);
+
         _listStore = Gio.ListStore.New(AurUpdateGObject.GetGType());
         _filter = CustomFilter.New(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
@@ -127,6 +129,7 @@ public class AurUpdate(
             void OnToggled(CheckButton s, EventArgs e)
             {
                 pkgObj.IsSelected = s.GetActive();
+                _updateButton.SetSensitive(AnySelected());
             }
 
             void OnExternalToggle(object? s, EventArgs e)
@@ -298,6 +301,18 @@ public class AurUpdate(
                 Console.WriteLine($"Failed to remove packages: {e.Message}");
             }
         }
+    }
+
+    private bool AnySelected()
+    {
+        for (uint i = 0; i < _listStore.GetNItems(); i++)
+        {
+            var item = _listStore.GetObject(i);
+            if (item is AurUpdateGObject { IsSelected: true })
+                return true;
+        }
+
+        return false;
     }
 
     public void Dispose()
