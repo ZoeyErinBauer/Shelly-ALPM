@@ -40,11 +40,12 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
-    public void IntializeWithSync()
+    public void InitializeWithSync()
     {
         Initialize(true);
         Sync();
     }
+    
 
     public void Initialize(bool root = false, bool useTempPath = false, string tempPath = "")
     {

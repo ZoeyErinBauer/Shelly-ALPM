@@ -46,7 +46,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         AnsiConsole.MarkupLine("[yellow]Checking for system updates...[/]");
         AnsiConsole.MarkupLine("[yellow] Initializing and syncing repositories...[/]");
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
         var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
         if (packagesNeedingUpdate.Count == 0)
         {
@@ -166,7 +166,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
 
         Console.Error.WriteLine("Checking for system updates...");
         Console.Error.WriteLine(" Initializing and syncing repositories...");
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
         var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
         if (packagesNeedingUpdate.Count == 0)
         {

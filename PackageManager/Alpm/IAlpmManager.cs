@@ -10,7 +10,7 @@ public interface IAlpmManager
     event EventHandler<AlpmQuestionEventArgs>? Question;
     event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
-    void IntializeWithSync();
+    void InitializeWithSync();
     void Initialize(bool root = false, bool useTempPath = false, string tempPath = "");
     void Sync(bool force = false);
     List<AlpmPackageDto> GetInstalledPackages();

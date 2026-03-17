@@ -22,5 +22,18 @@ internal class Standard
         return globals.UiMode ? SyncCommands.SyncUiMode(globals.Verbose, force) : SyncCommands.SyncConsoleMode(globals.Verbose, force);
     }
 
+    /// <summary>
+    /// Upgrades all system packages
+    /// </summary>
+    /// <param name="force">-f,force the sync of the package databases </param>
+    /// <returns></returns>
+    public int Upgrade(ConsoleAppContext context, bool force = false)
+    {
+        var globals = (GlobalOptions)context.GlobalOptions!;
+        return globals.UiMode
+            ? UpgradeCommands.UpgradeUiMode(globals.Verbose, force)
+            : UpgradeCommands.UpgradeConsole(globals.Verbose, force);
+    }
+
    
 }

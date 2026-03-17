@@ -22,11 +22,11 @@ public class ListUpdatesCommand : Command<DefaultSettings>
         {
             AnsiConsole.Status()
                 .Spinner(Spinner.Known.Dots)
-                .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+                .Start("Initializing and syncing ALPM...", ctx => { manager.InitializeWithSync(); });
         }
         else
         {
-            manager.IntializeWithSync();
+            manager.InitializeWithSync();
         }
 
         var updates = manager.GetPackagesNeedingUpdate();
@@ -88,7 +88,7 @@ public class ListUpdatesCommand : Command<DefaultSettings>
     private static int HandleUiModeListUpdates(DefaultSettings settings)
     {
         using var manager = new AlpmManager();
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
 
         var updates = manager.GetPackagesNeedingUpdate();
 

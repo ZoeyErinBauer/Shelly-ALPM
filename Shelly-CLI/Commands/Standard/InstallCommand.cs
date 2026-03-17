@@ -47,7 +47,7 @@ public class InstallCommand : Command<InstallPackageSettings>
         };
 
         AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
 
         if (settings.BuildDepsOn)
         {
@@ -139,7 +139,7 @@ public class InstallCommand : Command<InstallPackageSettings>
         var manager = new AlpmManager();
         manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
         Console.Error.WriteLine("Initializing and syncing ALPM...");
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
         if (settings.BuildDepsOn)
         {
             if (settings.Packages.Length > 1)

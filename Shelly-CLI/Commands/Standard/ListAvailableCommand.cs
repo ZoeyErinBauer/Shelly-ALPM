@@ -27,7 +27,7 @@ public class ListAvailableCommand : Command<ListSettings>
                 {
                     AnsiConsole.Status()
                         .Spinner(Spinner.Known.Dots)
-                        .Start("Initializing and syncing ALPM...", ctx => { manager.IntializeWithSync(); });
+                        .Start("Initializing and syncing ALPM...", ctx => { manager.InitializeWithSync(); });
                 }
                 else
                 {
@@ -38,7 +38,7 @@ public class ListAvailableCommand : Command<ListSettings>
             }
             else if (settings.Sync)
             {
-                manager.IntializeWithSync();
+                manager.InitializeWithSync();
             }
             else
             {
@@ -120,7 +120,7 @@ public class ListAvailableCommand : Command<ListSettings>
 
             if (settings.Sync)
             {
-                manager.IntializeWithSync();
+                manager.InitializeWithSync();
             }
             else
             {

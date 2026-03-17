@@ -43,12 +43,12 @@ internal class Utility
             : Path.GetFullPath(destination);
 
         //Standard
-        var manager = new AlpmManager(globals.Verbose,globals.UiMode,Configuration.GetConfigurationFile());
+        var manager = new AlpmManager(globals.Verbose,globals.UiMode,Configuration.GetConfigurationFilePath());
         var packages = manager.GetInstalledPackages();
         manager.Dispose();
 
         //Aur
-        var aurManager = new AurPackageManager(Configuration.GetConfigurationFile());
+        var aurManager = new AurPackageManager(Configuration.GetConfigurationFilePath());
         await aurManager.Initialize();
         var aurPackages = await aurManager.GetInstalledPackages();
         aurManager.Dispose();

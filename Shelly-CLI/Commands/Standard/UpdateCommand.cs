@@ -45,7 +45,7 @@ public class UpdateCommand : Command<PackageSettings>
         };
 
         AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
-        manager.IntializeWithSync();
+        manager.InitializeWithSync();
 
         AnsiConsole.MarkupLine("[yellow]Updating packages...[/]");
         var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
