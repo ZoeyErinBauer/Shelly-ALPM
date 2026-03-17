@@ -30,7 +30,6 @@ internal sealed class ConsoleProgressRenderer
             {
                 case AlpmRetrieveStatus.Start:
                     FinishTableBorder();
-                    Console.WriteLine();
                     Console.WriteLine(args.RetrieveType == AlpmRetrieveType.DatabaseRetrieve
                         ? ":: Synchronizing package databases..."
                         : ":: Retrieving packages...");
@@ -39,11 +38,9 @@ internal sealed class ConsoleProgressRenderer
                     break;
                 case AlpmRetrieveStatus.Done:
                     FinishTableBorder();
-                    Console.WriteLine();
                     break;
                 case AlpmRetrieveStatus.Failed:
                     FinishTableBorder();
-                    Console.WriteLine();
                     Console.WriteLine(args.RetrieveType == AlpmRetrieveType.DatabaseRetrieve
                         ? "error: failed to synchronize all databases"
                         : "error: failed to retrieve some files");
