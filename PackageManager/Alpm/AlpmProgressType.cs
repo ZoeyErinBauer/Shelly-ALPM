@@ -12,5 +12,6 @@ public enum AlpmProgressType
     IntegrityStart,
     LoadStart,
     KeyringStart,
-    PackageDownload = 100
+    PackageDownload = 100,
+    DatabaseDownload = 101
 }

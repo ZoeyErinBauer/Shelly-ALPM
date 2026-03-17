@@ -40,6 +40,7 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmReplacesEventArgs>? Replaces;
     public event EventHandler<AlpmRetrieveEventArgs>? Retrieve;
+    private AlpmProgressType _currentDownloadType = AlpmProgressType.PackageDownload;
 
 
     public void InitializeWithSync()
@@ -572,7 +573,7 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
 
                             lastPercent = percent;
                             Progress?.Invoke(this, new AlpmProgressEventArgs(
-                                AlpmProgressType.PackageDownload,
+                                _currentDownloadType,
                                 fileName,
                                 percent,
                                 (ulong)totalBytes.Value,
@@ -591,7 +592,7 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
                     }
 
                     Progress?.Invoke(this, new AlpmProgressEventArgs(
-                        AlpmProgressType.PackageDownload,
+                        _currentDownloadType,
                         fileName,
                         100,
                         (ulong)(totalBytes ?? (long)totalRead),
@@ -1995,6 +1996,7 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
                         Console.Error.WriteLine("Retrieving databases...");
                     }
 
+                    _currentDownloadType = AlpmProgressType.DatabaseDownload;
                     Retrieve?.Invoke(this,
                         new AlpmRetrieveEventArgs(AlpmRetrieveType.DatabaseRetrieve, AlpmRetrieveStatus.Start));
                     break;
@@ -2037,6 +2039,7 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
                         Console.Error.WriteLine("Retrieving packages...");
                     }
 
+                    _currentDownloadType = AlpmProgressType.PackageDownload;
                     Retrieve?.Invoke(this,
                         new AlpmRetrieveEventArgs(AlpmRetrieveType.PackageRetrieve, AlpmRetrieveStatus.Start));
                     break;
