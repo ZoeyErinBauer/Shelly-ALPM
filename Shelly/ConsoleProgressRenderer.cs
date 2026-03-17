@@ -78,9 +78,12 @@ internal sealed class ConsoleProgressRenderer
 
                 var row = _rowIndex.Count;
                 _rowIndex[key] = row;
-                
+
                 Console.SetCursorPosition(0, _baseTop + row);
-                Console.WriteLine();
+                if (row >= 1)
+                {
+                    Console.WriteLine();
+                }
 
                 Console.SetCursorPosition(0, _baseTop + row);
                 WriteDataRow(displayName, bar, pct, status);
@@ -175,7 +178,7 @@ internal sealed class ConsoleProgressRenderer
     private static void PrintHeaderRow()
     {
         Console.WriteLine(
-            $"\u2502 {"Name".PadRight(NameWidth)} \u2502 {"Progress".PadRight(BarWidth)} \u2502 {"%" .PadRight(PctWidth)} \u2502 {"Status".PadRight(StatusWidth)} \u2502");
+            $"\u2502 {"Name".PadRight(NameWidth)} \u2502 {"Progress".PadRight(BarWidth)} \u2502 {"%".PadRight(PctWidth)} \u2502 {"Status".PadRight(StatusWidth)} \u2502");
     }
 
     private static void PrintSeparator()
