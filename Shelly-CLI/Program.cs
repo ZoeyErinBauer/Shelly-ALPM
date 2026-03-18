@@ -338,7 +338,8 @@ public class Program
 
                 flatpak.AddCommand<FlatpakRemoveRemote>("remove-remotes").WithDescription("Removes a flatpak remote");
                 
-
+                flatpak.AddCommand<FlatpakInstallFromRefFile>("install-ref-file").WithDescription("Installs flatpak app from ref file");
+                
                 flatpak.AddCommand<GetAppRemoteInfo>("app-remote-info").WithDescription("Get app remote info");
             });
 

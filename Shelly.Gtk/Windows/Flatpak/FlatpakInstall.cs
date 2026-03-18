@@ -60,7 +60,11 @@ public class FlatpakInstall(
     private Gio.ListStore? _remoteListStore;
     private SingleSelection? _remoteSelectionModel;
     private SignalListItemFactory? _remoteFactory;
-
+    
+    private Button _installFromFlatpakRef = null!;
+    private DropDown _installFromFlatpakRefDropDown = null!;
+     private string _selectedRefScope = "system";
+    
     public Widget CreateWindow()
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/Flatpak/FlatpakInstallWindow.ui"), -1);
@@ -96,10 +100,22 @@ public class FlatpakInstall(
         _addRemoteUrlEntry = (Entry)builder.GetObject("overlay_add_remote_url_entry")!;
         _addRemoteScopeDropDown = (DropDown)builder.GetObject("overlay_add_remote_scope_dropdown")!;
         _deleteRemoteButton = (Button)builder.GetObject("overlay_delete_remote_button")!;
+        
+        _installFromFlatpakRef = (Button)builder.GetObject("install_from_flatpak_ref_button")!;
+        _installFromFlatpakRefDropDown = (DropDown)builder.GetObject("install_from_flatpak_ref_dropdown")!;
 
         _overlayInstallButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
         _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(builder); };
         _remoteRefBackButton.OnClicked += (_, _) => { _remoteRefOverlay.Hide(); };
+        _installFromFlatpakRef.OnClicked += (_, _) => { _ = InstallFromFlatpakRef(); };
+
+        _installFromFlatpakRefDropDown.OnNotify += (sender, args) =>
+        {
+            if (args.Pspec.GetName() != "selected") return;
+            var selectedIndex = _installFromFlatpakRefDropDown.GetSelected();
+            _selectedRefScope = selectedIndex == 0 ? "system" : "user";
+        };
+        
 
         _addRemoteButton.OnClicked += (_, _) =>
         {
@@ -148,8 +164,7 @@ public class FlatpakInstall(
 
         _deleteRemoteButton.OnClicked += (_, _) =>
         {
-            if (_remoteSelectionModel == null) return;
-            var selectedModel = _remoteSelectionModel.GetSelectedItem();
+            var selectedModel = _remoteSelectionModel?.GetSelectedItem();
             if (selectedModel is not FlatpakRemoteGObject remote) return;
             var result = unprivilegedOperationService
                 .FlatpakRemoveRemote(remote.Remote!.Name, remote.Remote.Scope)
@@ -516,6 +531,55 @@ public class FlatpakInstall(
             var gObj = new FlatpakGObject();
             gObj.Package = package;
             _listStore.Append(gObj);
+        }
+    }
+
+    private async Task InstallFromFlatpakRef()
+    {
+        try
+        {
+            var dialog = FileDialog.New();
+            dialog.SetTitle("Install Flatpak Ref");
+
+            var filter = FileFilter.New();
+            filter.SetName("Local FlatpakRef files (\"*.FlatpakRef\"");
+            filter.AddPattern("*.FlatpakRef");
+
+            var filters = Gio.ListStore.New(FileFilter.GetGType());
+            filters.Append(filter);
+            dialog.SetFilters(filters);
+
+            var file = await dialog.OpenAsync((Window)_overlay!.GetRoot()!);
+
+            if (file is not null)
+            {
+                lockoutService.Show($"Installing selected ref...");
+                var result = await unprivilegedOperationService.FlatpakInsallFromRef(file.GetPath()!, _selectedRefScope);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"Failed to install local package: {result.Error}");
+                }
+                
+                if (!result.Success)
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Installing Flatpak failed"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                    Console.WriteLine($"Failed to install package {_selectedPackage.Id}: {result.Error}");
+                }
+                else
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Installed Flatpak"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                }
+            }
+        }
+        finally
+        {
+            lockoutService.Hide();
         }
     }
 

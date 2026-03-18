@@ -275,6 +275,126 @@ public class FlatpakManager : IDisposable
 
         return instances;
     }
+    
+    /// <summary>
+    /// Installs a flatpak package from a remote repository.
+    /// <param name="refLocation">Path to location of ref to install</param>
+    /// <param name="isSystem">Whether to install to user installation (true) or system installation (false)</param>
+    /// <returns>A result message indicating success or failure</returns>
+    public static string InstallAppFromRef(string refLocation, bool isSystem = false)
+    {
+        IntPtr installationPtr;
+        var installationsPtr = IntPtr.Zero;
+
+        if (!isSystem)
+        {
+            installationPtr = FlatpakReference.InstallationNewUser(IntPtr.Zero, out IntPtr userError);
+            if (userError != IntPtr.Zero || installationPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GErrorFree(userError);
+                return "Failed to get user installation.";
+            }
+        }
+        else
+        {
+            installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+
+            if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GErrorFree(error);
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "Failed to get system installations.";
+            }
+
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+
+            if (length == 0)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "No flatpak installations found.";
+            }
+
+            installationPtr = Marshal.ReadIntPtr(dataPtr);
+            if (installationPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "Installation pointer is invalid.";
+            }
+        }
+
+        try
+        {
+            var refData = File.ReadAllBytes(refLocation);
+            
+            var bytePtr = FlatpakReference.GBytesNew(refData, (nuint)refData.Length);
+
+            if (bytePtr == IntPtr.Zero)
+            {
+                return "Failed to create GBytes from ref file.";
+            }
+            
+            var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                installationPtr, IntPtr.Zero, out IntPtr transactionError);
+            
+            
+            if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+            {
+                return "Failed to create installation transaction.";
+            }
+
+            try
+            {
+                var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                    IntPtr.Zero, IntPtr.Zero, 0);
+
+                var addSuccess = FlatpakReference.TransactionAddInstallFlatpakref(
+                    transactionPtr,bytePtr, out var addError);
+
+                if (!addSuccess || addError != IntPtr.Zero)
+                {
+                    var errorMsg = FlatpakReference.GetErrorMessage(addError);
+                    FlatpakReference.GErrorFree(addError);
+                    return $"Failed to add Flatpak ref to installation queue: {errorMsg}";
+                }
+
+                var runSuccess = FlatpakReference.TransactionRun(
+                    transactionPtr, IntPtr.Zero, out IntPtr runError);
+
+                if (!runSuccess || runError != IntPtr.Zero)
+                {
+                    var errorMsg = FlatpakReference.GetErrorMessage(runError);
+                    FlatpakReference.GErrorFree(runError);
+                    return $"Installation of Flatpak failed: {errorMsg}";
+                }
+
+                if (bytePtr != IntPtr.Zero)
+                {
+                    FlatpakReference.GBytesUnref(bytePtr);
+                }
+
+                var scope = isSystem ? "system" : "user";
+                return $"Successfully installed Flatpak to {scope}.";
+            }
+            finally
+            {
+                FlatpakReference.GObjectUnref(transactionPtr);
+            }
+        }
+        finally
+        {
+            if (isSystem)
+            {
+                FlatpakReference.GObjectUnref(installationPtr);
+            }
+            else if (installationsPtr != IntPtr.Zero)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+            }
+        }
+    }
 
     /// <summary>
     /// Installs a flatpak package from a remote repository.
@@ -658,87 +778,6 @@ public class FlatpakManager : IDisposable
             FlatpakReference.GPtrArrayUnref(unusedRefsPtr);
         }
     }
-
-    /*
-    /// <summary>
-    /// Uninstalls a flatpak application by its app ID or friendly name.
-    /// </summary>
-    /// <param name="nameOrId">The application ID (e.g., "org.mozilla.firefox") or friendly name</param>
-    /// <returns>A result message indicating success or failure</returns>
-    public string UninstallApp(string nameOrId)
-    {
-        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
-
-        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
-        {
-            FlatpakReference.GErrorFree(error);
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
-            return "Failed to get system installations.";
-        }
-
-        try
-        {
-            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
-
-            for (var i = 0; i < length; i++)
-            {
-                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
-                if (installationPtr == IntPtr.Zero) continue;
-
-                var match = FindInstalledApp(installationPtr, nameOrId);
-
-                if (match == null) continue;
-                var refString = $"app/{match.Id}/{match.Arch}/{match.Branch}";
-
-                var transactionPtr = FlatpakReference.TransactionNewForInstallation(
-                    installationPtr, IntPtr.Zero, out IntPtr transactionError);
-
-                if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
-                {
-                    return "Failed to create uninstallation transaction.";
-                }
-
-                try
-                {
-                    // Connect to new-operation signal to hook progress callbacks
-                    var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
-                    var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
-                    FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
-                        IntPtr.Zero, IntPtr.Zero, 0);
-
-                    var addSuccess = FlatpakReference.TransactionAddUninstall(
-                        transactionPtr, refString, out IntPtr addError);
-
-                    if (!addSuccess || addError != IntPtr.Zero)
-                    {
-                        return $"Failed to add {nameOrId} to uninstallation queue.";
-                    }
-
-                    var runSuccess = FlatpakReference.TransactionRun(
-                        transactionPtr, IntPtr.Zero, out IntPtr runError);
-
-                    if (!runSuccess || runError != IntPtr.Zero)
-                    {
-                        return $"Uninstallation of {nameOrId} failed. You may need elevated permissions.";
-                    }
-
-                    return $"Successfully uninstalled {match.Name} ({match.Id}).";
-                }
-                finally
-                {
-                    FlatpakReference.GObjectUnref(transactionPtr);
-                }
-            }
-        }
-        finally
-        {
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
-        }
-
-        return $"Could not find installed app matching '{nameOrId}'.";
-    }
-    */
 
     /// <summary>
     /// Updates a flatpak application by its app ID or friendly name.
