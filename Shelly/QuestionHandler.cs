@@ -81,7 +81,6 @@ public class QuestionHandler
                     Console.BackgroundColor = ConsoleColor.Cyan;
                     Console.Write($" > {i + 1}) {choices[i]}");
                     Console.ResetColor();
-                    // Clear rest of line
                     Console.Write(new string(' ', Math.Max(0, Console.WindowWidth - Console.CursorLeft)));
                     Console.WriteLine();
                 }
