@@ -60,7 +60,7 @@ internal sealed class ConsoleProgressRenderer
             var key = args.PackageName ?? "unknown";
             var displayName = key.Length > NameWidth ? key[..NameWidth] : key;
             var pct = args.Percent ?? 0;
-            var bar = new string('\uFFED', pct / 5) + new string('\uFFED', BarWidth - pct / 5);
+            var bar = new string('\uFFED', pct / 5) + new string('\uFF65', BarWidth - pct / 5);
             var status = pct >= 100 ? "Done" : "Downloading";
 
             var isNew = !_rowIndex.ContainsKey(key);
@@ -82,15 +82,30 @@ internal sealed class ConsoleProgressRenderer
 
                 // Move to where the bottom border currently sits (or where row 0 will go)
                 // and use WriteLine to ensure the terminal buffer extends by one line.
+                //Console.SetCursorPosition(0, _baseTop + row);
+                //Console.WriteLine(); // THIS creates the new line in the terminal buffer
+                
+                /// Extend buffer for the new data row
+                var cursorBefore = Console.CursorTop;
                 Console.SetCursorPosition(0, _baseTop + row);
-                Console.WriteLine(); // THIS creates the new line in the terminal buffer
+                Console.WriteLine();
+                var cursorAfter = Console.CursorTop;
+                if (cursorAfter == cursorBefore && _baseTop + row + 1 > cursorAfter)
+                    _baseTop--;
 
-                // Now go back and write the data row at its position
+// Extend buffer for the bottom border line
+                cursorBefore = Console.CursorTop;
+                Console.SetCursorPosition(0, _baseTop + row + 1);
+                Console.WriteLine();
+                cursorAfter = Console.CursorTop;
+                if (cursorAfter == cursorBefore && _baseTop + row + 2 > cursorAfter)
+                    _baseTop--;
+
+// Now write the data row at its correct position
                 Console.SetCursorPosition(0, _baseTop + row);
                 WriteDataRow(displayName, bar, pct, status);
 
-                // Move to the line below and draw the bottom border
-                // This line now EXISTS because of the WriteLine() above
+// Write the bottom border one line below
                 Console.SetCursorPosition(0, _baseTop + row + 1);
                 Console.Write("\x1b[2K");
                 PrintBottomBorder();
@@ -188,7 +203,7 @@ internal sealed class ConsoleProgressRenderer
 
     private static void PrintSeparator()
     {
-        Console.Write(
+        Console.WriteLine(
             $"\u251c\u2500{new string('\u2500', NameWidth)}\u2500\u253c\u2500{new string('\u2500', BarWidth)}\u2500\u253c\u2500{new string('\u2500', PctWidth)}\u2500\u253c\u2500{new string('\u2500', StatusWidth)}\u2500\u2524");
     }
 
