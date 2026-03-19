@@ -12,6 +12,7 @@ internal sealed class ConsoleProgressRenderer
     private readonly Dictionary<string, int> _rowIndex = new();
     private readonly object _renderLock = new();
     private int _baseTop = -1;
+    private AlpmRetrieveType? _retrieveType = null;
 
 
     private const int NameWidth = 30;
@@ -33,9 +34,12 @@ internal sealed class ConsoleProgressRenderer
                     Console.WriteLine(args.RetrieveType == AlpmRetrieveType.DatabaseRetrieve
                         ? "Synchronizing package databases..."
                         : "Retrieving packages...");
+                    if (_retrieveType is not null && _retrieveType == args.RetrieveType) break;
+                    _retrieveType = args.RetrieveType;
                     _rowIndex.Clear();
                     _baseTop = -1;
                     break;
+
                 case AlpmRetrieveStatus.Done:
                     FinishTableBorder();
                     break;
@@ -58,6 +62,7 @@ internal sealed class ConsoleProgressRenderer
         lock (_renderLock)
         {
             var key = args.PackageName ?? "unknown";
+            if (key.EndsWith(".sig")) return;
             var displayName = key.Length > NameWidth ? key[..NameWidth] : key;
             var pct = args.Percent ?? 0;
             var bar = new string('\uFFED', pct / 5) + new string('\uFF65', BarWidth - pct / 5);
@@ -77,7 +82,7 @@ internal sealed class ConsoleProgressRenderer
 
                 var row = _rowIndex.Count;
                 _rowIndex[key] = row;
-                
+
 
                 var cursorBefore = Console.CursorTop;
                 Console.SetCursorPosition(0, _baseTop + row);
