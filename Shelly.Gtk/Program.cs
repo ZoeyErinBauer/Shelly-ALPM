@@ -292,7 +292,7 @@ sealed class Program
                 while (contentArea.GetFirstChild() is { } child)
                 {
                     contentArea.Remove(child);
-                    child.Unref();
+                    child.Unparent();
                 }
                 
 

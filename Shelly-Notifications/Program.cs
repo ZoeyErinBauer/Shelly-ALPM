@@ -79,7 +79,6 @@ try
         var time = DateTime.Now;
         while (!token.IsCancellationRequested)
         {
-           
             try
             {
                 if (time.AddSeconds(30) < DateTime.Now)
@@ -89,10 +88,9 @@ try
                     {
                         _ = new NotificationHandler().SendNotif(connection, $"Updates available: {update}");
                     }
+
                     time = DateTime.Now;
                 }
-
-                
             }
             catch (Exception)
             {
@@ -105,7 +103,18 @@ try
 
             try
             {
-                var checkInterval = TimeSpan.FromHours(configReader.LoadConfig().TrayCheckIntervalHours);
+                TimeSpan checkInterval;
+                if (configReader.LoadConfig().UseWeeklySchedule)
+                {
+                    checkInterval = NextNotification.GetNextNotificationTime(configReader.LoadConfig().DaysOfWeek,
+                        configReader.LoadConfig().Time,
+                        TimeSpan.FromHours(configReader.LoadConfig().TrayCheckIntervalHours));
+                }
+                else
+                {
+                    checkInterval = TimeSpan.FromHours(configReader.LoadConfig().TrayCheckIntervalHours);
+                }
+
                 delayCts = CancellationTokenSource.CreateLinkedTokenSource(token);
                 await Task.Delay(checkInterval, delayCts.Token);
             }
@@ -130,6 +139,7 @@ catch (Exception ex)
 {
     Console.WriteLine($"[Error] Shelly Notifications failed to start: {ex.Message}");
 }
+
 async Task TryRegisterTrayIconAsync(Connection connection, string serviceName)
 {
     var watchers = new[]
@@ -159,7 +169,7 @@ async Task TryRegisterTrayIconAsync(Connection connection, string serviceName)
             break;
         }
         catch (DBusErrorReplyException ex) when (ex.ErrorName is "org.freedesktop.DBus.Error.ServiceUnknown"
-                                           or "org.freedesktop.DBus.Error.NameHasNoOwner")
+                                                     or "org.freedesktop.DBus.Error.NameHasNoOwner")
         {
             // Try the next one
         }
