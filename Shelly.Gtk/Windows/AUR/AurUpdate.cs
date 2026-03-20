@@ -35,6 +35,7 @@ public class AurUpdate(
     private ColumnViewColumn _nameColumn = null!;
     private ColumnViewColumn _versionColumn = null!;
     private Button _updateButton = null!;
+    private Label _noPackagesLabel = null!;
 
     public Widget CreateWindow()
     {
@@ -53,6 +54,9 @@ public class AurUpdate(
         _versionColumn.Resizable = true;
 
         _updateButton = (Button)builder.GetObject("update_button")!;
+        _noPackagesLabel = (Label)builder.GetObject("no_packages_label")!;
+        _noPackagesLabel.Label_ = "<span size='large'>AUR packages are up to date</span>";
+        _noPackagesLabel.Visible = false;
         _updateButton.SetSensitive(false);
 
         _listStore = Gio.ListStore.New(AurUpdateGObject.GetGType());
@@ -60,7 +64,6 @@ public class AurUpdate(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
-        _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
 
@@ -195,8 +198,10 @@ public class AurUpdate(
             ct.ThrowIfCancellationRequested();
             Console.WriteLine($@"[DEBUG_LOG] {packages.Count} AUR packages for update.");
 
+
             GLib.Functions.IdleAdd(0, () =>
             {
+                _noPackagesLabel.Visible = packages.Count == 0;
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
                 foreach (var gobject in packages.Select(dto => new AurUpdateGObject()
@@ -209,6 +214,8 @@ public class AurUpdate(
                     _listStore.Append(gobject);
                 }
 
+                _noPackagesLabel.Visible = packages.Count == 0;
+                
                 return false;
             });
         }
