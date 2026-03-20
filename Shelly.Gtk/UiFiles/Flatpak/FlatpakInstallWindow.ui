@@ -459,15 +459,18 @@
                         <child>
                             <object class="GtkBox">
                                 <property name="orientation">horizontal</property>
+                                <property name="hexpand">false</property>
+                                <property name="spacing">5</property>
                                 <child>
                                     <object class="GtkSearchEntry" id="search_entry">
-                                        <property name="width-request">160</property>
+                                        <property name="hexpand">true</property>
                                         <property name="placeholder-text">Search packages...</property>
                                     </object>
                                 </child>
                                 <child>
                                     <object class="GtkButton" id="reload_button">
                                         <property name="icon-name">view-refresh-symbolic</property>
+                                        <property name="hexpand">false</property>
                                         <property name="tooltip-text">Reload</property>
                                     </object>
                                 </child>

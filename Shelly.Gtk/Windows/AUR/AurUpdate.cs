@@ -201,7 +201,6 @@ public class AurUpdate(
 
             GLib.Functions.IdleAdd(0, () =>
             {
-                _noPackagesLabel.Visible = packages.Count == 0;
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
                 foreach (var gobject in packages.Select(dto => new AurUpdateGObject()
