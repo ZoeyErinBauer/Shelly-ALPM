@@ -1721,166 +1721,100 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
                     {
                         Console.Error.WriteLine("[ALPM] Checking dependencies...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Checking dependencies...");
-                    }
 
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Checking dependencies..."));
                     break;
                 case AlpmEventType.CheckDepsDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Dependency check finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Dependency check finished.");
-                    }
 
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Dependency check finished."));
                     break;
                 case AlpmEventType.FileConflictsStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Checking for file conflicts...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Checking for file conflicts...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Checking for file conflicts..."));
                     break;
                 case AlpmEventType.FileConflictsDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] File conflict check finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("File conflict check finished");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "File conflict check finished."));
                     break;
                 case AlpmEventType.ResolveDepsStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Resolving dependencies...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Resolving dependencies...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Resolving dependencies..."));
                     break;
                 case AlpmEventType.ResolveDepsDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Dependency resolution finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Dependency resolution finished.");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Dependency resolution finished."));
                     break;
                 case AlpmEventType.InterConflictsStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Checking for inter-conflicts...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Checking for inter-conflicts...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Checking for inter-conflicts..."));
                     break;
                 case AlpmEventType.InterConflictsDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Inter-conflict check finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Inter-conflict check finished.");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Inter-conflict check finished."));
                     break;
                 case AlpmEventType.TransactionStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Starting transaction...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Starting transaction...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Starting transaction..."));
                     break;
                 case AlpmEventType.TransactionDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Transaction successfully finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Transaction successfully finished.");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Transaction successfully finished."));
                     break;
                 case AlpmEventType.IntegrityStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Checking package integrity...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Checking package integrity...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Checking package integrity..."));
                     break;
                 case AlpmEventType.IntegrityDone:
                     if (_uiMode || _verbose)
                     {
                         Console.Error.WriteLine("[ALPM] Integrity check finished.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Integrity check finished.");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Integrity check finished."));
                     break;
                 case AlpmEventType.LoadStart:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Loading packages...");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Loading packages...");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Loading packages..."));
                     break;
                 case AlpmEventType.LoadDone:
                     if (_verbose || _uiMode)
                     {
                         Console.Error.WriteLine("[ALPM] Packages loaded.");
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("Packages loaded.");
-                    }
-
-                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, null));
+                    PackageOperation?.Invoke(this, new AlpmPackageOperationEventArgs(type, "Packages loaded."));
                     break;
                 case AlpmEventType.DiskspaceStart:
                     if (_verbose || _uiMode)

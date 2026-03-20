@@ -83,14 +83,17 @@ internal static class UpgradeCommands
 
         manager.Retrieve += renderer.HandleRetrieve;
         manager.Progress += renderer.HandleProgress;
-        manager.PackageOperation += (_, args) =>
+        EventHandler<AlpmPackageOperationEventArgs> packageOperationHandler = (_, args) =>
         {
             lock (renderer.RenderLock)
             {
                 renderer.ClearBottomBorder();
                 Console.WriteLine();
+                if (!string.IsNullOrEmpty(args.PackageName))
+                    Console.WriteLine(args.PackageName);
             }
         };
+        manager.PackageOperation += packageOperationHandler;
 
         Console.WriteLine("Checking for system updates...");
         Console.WriteLine("Initializing and syncing repositories...");
@@ -128,6 +131,7 @@ internal static class UpgradeCommands
         manager.Progress -= renderer.HandleProgress;
         manager.Replaces -= replacesHandler;
         manager.Question -= questionHandler;
+        manager.PackageOperation -= packageOperationHandler;
         manager.Retrieve += freshRenderer.HandleRetrieve;
         manager.Progress += freshRenderer.HandleProgress;
         manager.PackageOperation += (_, args) =>
@@ -136,6 +140,8 @@ internal static class UpgradeCommands
             {
                 freshRenderer.ClearBottomBorder();
                 Console.WriteLine();
+                if (!string.IsNullOrEmpty(args.PackageName))
+                    Console.WriteLine(args.PackageName);
             }
         };
         manager.Replaces += (_, args) =>
