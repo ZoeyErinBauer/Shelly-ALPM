@@ -63,6 +63,7 @@ internal static class UpgradeCommands
         {
             lock (renderer.RenderLock)
             {
+                renderer.ClearBottomBorder();
                 Console.WriteLine();
                 QuestionHandler.HandleReplacePkg(args, false, noConfirm);
             }
@@ -73,6 +74,7 @@ internal static class UpgradeCommands
         {
             lock (renderer.RenderLock)
             {
+                renderer.ClearBottomBorder();
                 Console.WriteLine();
                 QuestionHandler.HandleQuestion(args, false, noConfirm);
             }
@@ -122,6 +124,7 @@ internal static class UpgradeCommands
         {
             lock (freshRenderer.RenderLock)
             {
+                freshRenderer.ClearBottomBorder();
                 Console.WriteLine();
                 QuestionHandler.HandleReplacePkg(args, false, noConfirm);
             }
@@ -130,6 +133,7 @@ internal static class UpgradeCommands
         {
             lock (freshRenderer.RenderLock)
             {
+                freshRenderer.ClearBottomBorder();
                 Console.WriteLine();
                 QuestionHandler.HandleQuestion(args, false, noConfirm);
             }

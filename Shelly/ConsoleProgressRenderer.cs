@@ -22,6 +22,20 @@ internal sealed class ConsoleProgressRenderer
 
     public object RenderLock => _renderLock;
 
+    public void ClearBottomBorder()
+    {
+        lock (_renderLock)
+        {
+            if (_baseTop >= 0)
+            {
+                Console.SetCursorPosition(0, _baseTop + _rowIndex.Count);
+                Console.Write("\x1b[2K");
+                _baseTop = -1;
+                _rowIndex.Clear();
+            }
+        }
+    }
+
 
     public void HandleRetrieve(object? sender, AlpmRetrieveEventArgs args)
     {
@@ -83,26 +97,30 @@ internal sealed class ConsoleProgressRenderer
                 var row = _rowIndex.Count;
                 _rowIndex[key] = row;
 
+                // Ensure buffer has enough lines by writing sequentially from the end
+                var targetRow = _baseTop + row;
+                var targetBorder = targetRow + 1;
+                var bufferEnd = Console.CursorTop;
 
-                var cursorBefore = Console.CursorTop;
-                Console.SetCursorPosition(0, _baseTop + row);
-                Console.WriteLine();
-                var cursorAfter = Console.CursorTop;
-                if (cursorAfter == cursorBefore && _baseTop + row + 1 > cursorAfter)
-                    _baseTop--;
-
-
-                cursorBefore = Console.CursorTop;
-                Console.SetCursorPosition(0, _baseTop + row + 1);
-                Console.WriteLine();
-                cursorAfter = Console.CursorTop;
-                if (cursorAfter == cursorBefore && _baseTop + row + 2 > cursorAfter)
-                    _baseTop--;
-
+                // Extend buffer downward if needed, tracking scroll
+                while (bufferEnd <= targetBorder)
+                {
+                    Console.SetCursorPosition(0, bufferEnd);
+                    var before = Console.CursorTop;
+                    Console.WriteLine();
+                    var after = Console.CursorTop;
+                    if (after == before)
+                    {
+                        // Terminal scrolled — adjust base
+                        _baseTop--;
+                        targetRow = _baseTop + row;
+                        targetBorder = targetRow + 1;
+                    }
+                    bufferEnd = Console.CursorTop;
+                }
 
                 Console.SetCursorPosition(0, _baseTop + row);
                 WriteDataRow(displayName, bar, pct, status);
-
 
                 Console.SetCursorPosition(0, _baseTop + row + 1);
                 Console.Write("\x1b[2K");
