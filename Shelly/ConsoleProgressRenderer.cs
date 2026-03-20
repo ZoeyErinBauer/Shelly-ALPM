@@ -12,6 +12,7 @@ internal sealed class ConsoleProgressRenderer
     private readonly Dictionary<string, int> _rowIndex = new();
     private readonly object _renderLock = new();
     private int _baseTop = -1;
+    private int _currentTop = -1;
     private AlpmRetrieveType? _retrieveType = null;
 
 
@@ -49,6 +50,7 @@ internal sealed class ConsoleProgressRenderer
                 }
 
                 _baseTop = -1;
+                _currentTop = -1;
                 _rowIndex.Clear();
             }
         }
@@ -70,6 +72,7 @@ internal sealed class ConsoleProgressRenderer
                     _retrieveType = args.RetrieveType;
                     _rowIndex.Clear();
                     _baseTop = -1;
+                    _currentTop = -1;
                     break;
 
                 case AlpmRetrieveStatus.Done:
@@ -116,33 +119,37 @@ internal sealed class ConsoleProgressRenderer
                     PrintTopBorder();
                     PrintHeaderRow();
                     PrintSeparator();
-                    _baseTop = Console.CursorTop;
+                    _baseTop = Console.CursorTop; // Only CursorTop query
+                    _currentTop = _baseTop;
                 }
 
                 var row = _rowIndex.Count;
                 _rowIndex[key] = row;
 
-                // Ensure buffer has enough lines by writing sequentially from the end
+                // Move to end of current content and extend buffer
                 var targetRow = _baseTop + row;
                 var targetBorder = targetRow + 1;
-                var bufferEnd = Console.CursorTop;
+                int terminalHeight;
+                try { terminalHeight = Console.WindowHeight; }
+                catch { terminalHeight = 24; }
 
                 // Extend buffer downward if needed, tracking scroll
-                while (bufferEnd <= targetBorder)
+                while (_currentTop <= targetBorder)
                 {
-                    Console.SetCursorPosition(0, bufferEnd);
-                    var before = Console.CursorTop;
+                    Console.SetCursorPosition(0, _currentTop);
                     Console.WriteLine();
-                    var after = Console.CursorTop;
-                    if (after == before)
+                    if (_currentTop + 1 >= terminalHeight)
                     {
                         // Terminal scrolled — adjust base
                         _baseTop--;
                         targetRow = _baseTop + row;
                         targetBorder = targetRow + 1;
+                        // _currentTop stays the same (pinned at bottom)
                     }
-
-                    bufferEnd = Console.CursorTop;
+                    else
+                    {
+                        _currentTop++;
+                    }
                 }
 
                 Console.SetCursorPosition(0, _baseTop + row);
@@ -189,6 +196,7 @@ internal sealed class ConsoleProgressRenderer
             if (!IsInteractiveTerminal())
             {
                 _baseTop = -1;
+                _currentTop = -1;
                 _rowIndex.Clear();
                 return;
             }
@@ -296,6 +304,7 @@ internal sealed class ConsoleProgressRenderer
             PrintBottomBorder();
             Console.WriteLine();
             _baseTop = -1;
+            _currentTop = -1;
             _rowIndex.Clear();
         }
     }
