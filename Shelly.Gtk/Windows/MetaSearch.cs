@@ -259,9 +259,8 @@ public class MetaSearch(
         {
             _listStore.RemoveAll();
             _packageGObjectRefs.Clear();
-            foreach (var model in models)
+            foreach (var pkgObj in models.Select(model => new MetaPackageGObject { Package = model }))
             {
-                var pkgObj = new MetaPackageGObject { Package = model };
                 _packageGObjectRefs.Add(pkgObj);
                 _listStore.Append(pkgObj);
             }
@@ -313,7 +312,7 @@ public class MetaSearch(
             lockoutService.Hide();
 
             var args = new ToastMessageEventArgs(
-                $"Updated {selected.Count} Package(s)"
+                $"Installed {selected.Count} Package(s)"
             );
             genericQuestionService.RaiseToastMessage(args);
         }

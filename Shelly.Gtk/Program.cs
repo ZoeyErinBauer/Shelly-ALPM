@@ -71,7 +71,6 @@ sealed class Program
             var mainBox = (Box)mainBuilder.GetObject("MainBox")!;
             var homeButton = (Button)mainBuilder.GetObject("HomeButton")!;
             var settingsButton = (Button)mainBuilder.GetObject("SettingsButton")!;
-            var mainSearchEntry = (SearchEntry)mainBuilder.GetObject("MainSearchEntry")!;
             var aurMenuButton = (MenuButton)mainBuilder.GetObject("AurMenuButton")!;
             var flatpakMenuButton = (MenuButton)mainBuilder.GetObject("FlatpakMenuButton")!;
 
@@ -135,15 +134,6 @@ sealed class Program
 
             homeButton.OnClicked += (_, _) => NavigateTo<HomeWindow>();
             settingsButton.OnClicked += (_, _) => NavigateTo<Settings>();
-
-            mainSearchEntry.OnActivate += (_, _) =>
-            {
-                var query = mainSearchEntry.GetText();
-                if (string.IsNullOrWhiteSpace(query)) return;
-
-                NavigateWithQuery<MetaSearch>(query);
-                mainSearchEntry.SetText(string.Empty);
-            };
 
             AddAction("install-packages", NavigateTo<PackageInstall>);
             AddAction("update-packages", NavigateTo<PackageUpdate>); // Placeholder

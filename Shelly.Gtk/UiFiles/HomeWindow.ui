@@ -15,28 +15,67 @@
       <object class="GtkBox">
         <property name="hexpand">true</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">5</property>
+        <property name="spacing">10</property>
         <child>
-          <object class="GtkLabel">
-            <property name="label">Arch News</property>
-            <property name="xalign">0</property>
-            <style>
-              <class name="title-2"/>
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkScrolledWindow">
-            <property name="overlay-scrolling">false</property>
-            <property name="has-frame">true</property>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">5</property>
             <property name="vexpand">true</property>
-            <property name="hscrollbar-policy">never</property>
-            <style>
-              <class name="rounded-card"/>
-            </style>
             <child>
-              <object class="GtkListBox" id="NewsListBox">
-                <property name="selection-mode">none</property>
+              <object class="GtkLabel">
+                <property name="label">Package Search</property>
+                <property name="xalign">0</property>
+                <style>
+                  <class name="title-2"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSearchEntry" id="HomeSearchEntry">
+                <property name="placeholder-text">Search all sources...</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkOverlay" id="MetaSearchOverlay">
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="GtkFrame">
+                    <property name="vexpand">true</property>
+                    <style>
+                      <class name="rounded-card"/>
+                    </style>
+                    <child>
+                      <object class="GtkBox" id="MetaSearchContainer">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">5</property>
+                        <property name="vexpand">true</property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+                <child type="overlay">
+                  <object class="GtkBox" id="SearchPromptOverlay">
+                    <property name="visible">true</property>
+                    <property name="hexpand">true</property>
+                    <property name="vexpand">true</property>
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">Search above to query all avaliable sources that you have enabled</property>
+                        <property name="wrap">true</property>
+                        <property name="justify">center</property>
+                        <style>
+                          <class name="dim-label"/>
+                          <class name="title-4"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
@@ -50,12 +89,13 @@
         <property name="spacing">10</property>
         <child>
           <object class="GtkBox">
+            <property name="hexpand">true</property>
             <property name="orientation">vertical</property>
             <property name="spacing">5</property>
             <property name="vexpand">true</property>
             <child>
               <object class="GtkLabel">
-                <property name="label">Installed Packages</property>
+                <property name="label">Arch News</property>
                 <property name="xalign">0</property>
                 <style>
                   <class name="title-2"/>
@@ -63,20 +103,20 @@
               </object>
             </child>
             <child>
-             <object class="GtkScrolledWindow">
-               <property name="overlay-scrolling">false</property>
-               <property name="has-frame">true</property>
-               <property name="vexpand">true</property>
-               <property name="hscrollbar-policy">never</property>
-               <style>
-                 <class name="rounded-card"/>
-               </style>
-               <child>
-                 <object class="GtkListView" id="InstalledPackagesView">
-                   <property name="show-separators">true</property>
-                 </object>
-               </child>
-             </object>
+              <object class="GtkScrolledWindow">
+                <property name="overlay-scrolling">false</property>
+                <property name="has-frame">true</property>
+                <property name="vexpand">true</property>
+                <property name="hscrollbar-policy">never</property>
+                <style>
+                  <class name="rounded-card"/>
+                </style>
+                <child>
+                  <object class="GtkListBox" id="NewsListBox">
+                    <property name="selection-mode">none</property>
+                  </object>
+                </child>
+              </object>
             </child>
           </object>
         </child>

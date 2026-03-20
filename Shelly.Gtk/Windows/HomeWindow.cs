@@ -15,16 +15,12 @@ namespace Shelly.Gtk.Windows;
 public class HomeWindow(
     IPrivilegedOperationService privilegedOperationService,
     IUnprivilegedOperationService unprivilegedOperationService,
-    IConfigService configService) : IShellyWindow
+    IConfigService configService,
+    MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
-    private Gio.ListStore? _store;
-    private NoSelection? _selectionModel;
-    private SignalListItemFactory? _factory;
-    private ListView? _listView;
     private ListBox? _listBox;
-    private readonly List<AlpmPackageGObject> _packageGObjectRefs = [];
 
     public Widget CreateWindow()
     {
@@ -35,9 +31,24 @@ public class HomeWindow(
         _listBox = listBox;
         listBox.OnRealize += (sender, args) => { _ = LoadFeedAsync(listBox, _cts.Token); };
 
-        var listView = (ListView)builder.GetObject("InstalledPackagesView")!;
-        _listView = listView;
-        listView.OnRealize += (sender, args) => { _ = LoadPackagesAsync(listView, _cts.Token); };
+        var homeSearchEntry = (SearchEntry)builder.GetObject("HomeSearchEntry")!;
+        var metaSearchContainer = (Box)builder.GetObject("MetaSearchContainer")!;
+        var searchPromptOverlay = (Box)builder.GetObject("SearchPromptOverlay")!;
+
+        homeSearchEntry.OnActivate += (_, _) =>
+        {
+            var query = homeSearchEntry.GetText();
+            if (string.IsNullOrWhiteSpace(query)) return;
+            
+            searchPromptOverlay.SetVisible(false);
+            
+            while (metaSearchContainer.GetFirstChild() is { } child)
+                metaSearchContainer.Remove(child);
+
+            var metaSearchWidget = metaSearch.CreateWindow(query);
+            metaSearchContainer.Append(metaSearchWidget);
+            homeSearchEntry.SetText(string.Empty);
+        };
 
         var totalAurLabel = (Label)builder.GetObject("TotalAurLabel")!;
         totalAurLabel.OnRealize += (sender, args) => { _ = LoadAurTotalData(totalAurLabel, _cts.Token); };
@@ -278,118 +289,6 @@ public class HomeWindow(
         label.SetText(packages.Count.ToString());
     }
 
-    private async Task LoadPackagesAsync(ListView listView, CancellationToken ct)
-    {
-        var packages = await privilegedOperationService.GetInstalledPackagesAsync();
-        ct.ThrowIfCancellationRequested();
-        try
-        {
-            GLib.Functions.IdleAdd(0, () =>
-            {
-                PopulateInstalledPackages(listView, packages);
-                return false;
-            });
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-    }
-
-    private void PopulateInstalledPackages(ListView listView, List<AlpmPackageDto> packages)
-    {
-        var store = Gio.ListStore.New(AlpmPackageGObject.GetGType());
-        _packageGObjectRefs.Clear();
-        foreach (var pkg in packages)
-        {
-            var pkgObj = new AlpmPackageGObject() { Package = pkg };
-            _packageGObjectRefs.Add(pkgObj);
-            store.Append(pkgObj);
-        }
-
-        var factory = SignalListItemFactory.New();
-        _store = store;
-        _factory = factory;
-
-        factory.OnSetup += (_, args) =>
-        {
-            var listItem = (ListItem)args.Object;
-            listItem.SetChild(BuildRow());
-        };
-
-        factory.OnBind += (_, args) =>
-        {
-            var listItem = (ListItem)args.Object;
-            var pkg = ((AlpmPackageGObject)listItem.GetItem()!).Package!;
-            var grid = (Grid)listItem.GetChild()!;
-
-            FindLabel(grid, "name").SetMarkup($"<b>{GLib.Markup.EscapeText(pkg.Name)}</b>");
-            FindLabel(grid, "version").SetText(pkg.Version);
-            FindLabel(grid, "size").SetText(SizeHelpers.FormatSize(pkg.InstalledSize));
-            FindLabel(grid, "reason").SetText(pkg.InstallReason);
-            FindLabel(grid, "date").SetText(pkg.InstallDate.ToString() ?? string.Empty);
-        };
-
-        _selectionModel = NoSelection.New(store);
-        listView.SetModel(_selectionModel);
-        listView.SetFactory(factory);
-    }
-
-    private static Label FindLabel(Grid grid, string name)
-    {
-        var child = grid.GetFirstChild();
-        while (child != null)
-        {
-            if (child is Label label && label.Name == name)
-                return label;
-            child = child.GetNextSibling();
-        }
-
-        throw new Exception($"Label '{name}' not found");
-    }
-
-    private static Grid BuildRow()
-    {
-        var grid = Grid.New();
-        grid.MarginStart = 6;
-        grid.MarginEnd = 8;
-        grid.MarginTop = 2;
-        grid.MarginBottom = 2;
-
-        var name = Label.New("");
-        name.Name = "name";
-        name.Halign = Align.Start;
-        name.Hexpand = true;
-        name.Wrap = true;
-
-        var version = Label.New("");
-        version.Name = "version";
-        version.Halign = Align.Start;
-        version.AddCssClass("dim-label");
-
-        var size = Label.New("");
-        size.Name = "size";
-        size.Halign = Align.Start;
-        size.AddCssClass("dim-label");
-
-        var reason = Label.New("");
-        reason.Name = "reason";
-        reason.Halign = Align.End;
-        reason.AddCssClass("dim-label");
-
-        var date = Label.New("");
-        date.Name = "date";
-        date.Halign = Align.End;
-        date.AddCssClass("dim-label");
-
-        grid.Attach(name, 0, 0, 2, 1);
-        grid.Attach(reason, 1, 1, 1, 1);
-        grid.Attach(version, 0, 1, 1, 1);
-        grid.Attach(date, 1, 2, 1, 1);
-        grid.Attach(size, 0, 2, 1, 1);
-
-        return grid;
-    }
 
     private static async Task LoadFeedAsync(ListBox listBox, CancellationToken ct)
     {
@@ -478,7 +377,5 @@ public class HomeWindow(
     {
         _cts.Cancel();
         _cts.Dispose();
-        _store?.RemoveAll();
-        _packageGObjectRefs.Clear();
     }
 }
