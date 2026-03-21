@@ -88,3 +88,13 @@ public class FlatpakListRemoteAppStreamSettings : CommandSettings
     public string AppStreamName { get; init; } = string.Empty;
 }
 
+public class FlatpakRemoteRefFileInstallSettings : CommandSettings
+{
+    [CommandArgument(0, "<RefFilePath>")]
+    [Description("Path to the ref file")]
+    public string RefFilePath { get; init; } = string.Empty;
+    
+    [CommandOption("-s|--system <true|false>")]
+    public bool SystemWide { get; set; } = true;
+}
+

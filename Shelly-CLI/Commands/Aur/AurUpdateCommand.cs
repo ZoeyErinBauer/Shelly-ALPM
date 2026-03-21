@@ -23,6 +23,7 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             return 1;
         }
 
+        RootElevator.EnsureRootExectuion();
         AurPackageManager? manager = null;
         try
         {

@@ -37,6 +37,7 @@ public class AppImageInstallCommand : AsyncCommand<AppImageInstallSettings>
             return 1;
         }
 
+        RootElevator.EnsureRootExectuion();
         if (await IsAppImage(settings.PackageLocation))
         {
             return await InstallAppImage(settings);

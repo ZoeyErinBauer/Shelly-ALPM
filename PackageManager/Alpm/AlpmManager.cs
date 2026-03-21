@@ -108,7 +108,12 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
             _handle = IntPtr.Zero;
             throw new Exception($"Error initializing alpm library: {error}");
         }
-
+        
+        foreach (var ignorePkg in _config.IgnorePkg)
+        {
+            AddIgnorePkg(_handle,ignorePkg);
+        }
+        
         if (!string.IsNullOrEmpty(_config.GpgDir) && root)
         {
             SetGpgDir(_handle, _config.GpgDir);
@@ -915,10 +920,12 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
                 updates.Add(update.ToDto());
             }
         }
-
+        
+        updates.RemoveAll(p => _config.IgnorePkg.Contains(p.Name));
+        
         return updates;
     }
-
+    
     private string GetErrorMessage(AlpmErrno error)
     {
         return Marshal.PtrToStringUTF8(StrError(error)) ?? $"Unknown error ({error})";
@@ -1094,6 +1101,30 @@ public class AlpmManager(bool verbose = false, bool uiMode = false, string confi
     public void RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None)
     {
+
+        var heldPackagesBeingRemove = packageNames.Intersect(_config.HoldPkg).ToList();
+        if (heldPackagesBeingRemove.Count > 0)
+        {
+            var args = new AlpmQuestionEventArgs(
+                AlpmQuestionType.RemovePkgs,
+                $"Are you sure you want to remove the following package held pkg: {string.Join(", ", heldPackagesBeingRemove)}",
+                null,
+                null);
+            
+            args.Response = 0;
+
+            Question?.Invoke(this, args);
+
+            // Block until the GUI user responds
+            args.WaitForResponse();
+            
+            if (args.Response == 0)
+            {
+                Console.Error.WriteLine("[ALPM_ERROR] Held Package removal cancelled.");
+                return;
+            }
+        }
+        
         if (_handle == IntPtr.Zero) Initialize();
 
         List<IntPtr> pkgPtrs = new List<IntPtr>();

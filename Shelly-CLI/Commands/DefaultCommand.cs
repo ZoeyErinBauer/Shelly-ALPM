@@ -11,7 +11,7 @@ public class DefaultCommand : AsyncCommand
 {
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var username = Environment.GetEnvironmentVariable("SUDO_USER");
+        var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;;
         var configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
         Console.WriteLine(configPath);
         if (!File.Exists(configPath))

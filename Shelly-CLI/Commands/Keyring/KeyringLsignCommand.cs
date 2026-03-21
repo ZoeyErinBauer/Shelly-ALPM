@@ -14,6 +14,7 @@ public class KeyringLsignCommand : Command<KeyringSettings>
             return HandleUiModeLsign(settings);
         }
 
+        RootElevator.EnsureRootExectuion();
         if (settings.Keys == null || settings.Keys.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");

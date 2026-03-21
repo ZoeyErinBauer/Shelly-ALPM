@@ -1,9 +1,9 @@
 using Gtk;
+using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
-using Shelly.Gtk.Windows.Dialog;
 
 namespace Shelly.Gtk.Windows;
 
@@ -29,6 +29,7 @@ public class Settings(
         SetupAurSwitch("aur_switch", _config.AurEnabled, (v) => _config.AurEnabled = v, builder);
         SetupFlatpakSwitch("flatpak_switch", _config.FlatPackEnabled, (v) => _config.FlatPackEnabled = v, builder);
         SetupTraySwitch("tray_switch", _config.TrayEnabled, (v) => _config.TrayEnabled = v, builder);
+        SetupWeeklyScheduleSwitch("daily_schedule", _config.UseWeeklySchedule, (v) => _config.UseWeeklySchedule = v, builder);
         SetupSwitch("no_confirm_switch", _config.NoConfirm, (v) => _config.NoConfirm = v, builder);
 
         var traySpin = (SpinButton)builder.GetObject("tray_interval_spin")!;
@@ -36,6 +37,36 @@ public class Settings(
         traySpin.OnValueChanged += (s, e) =>
         {
             _config.TrayCheckIntervalHours = (int)traySpin.Value;
+            SaveConfig();
+        };
+
+        SetupDayCheckbox("day_sun_check", DayOfWeek.Sunday, builder);
+        SetupDayCheckbox("day_mon_check", DayOfWeek.Monday, builder);
+        SetupDayCheckbox("day_tue_check", DayOfWeek.Tuesday, builder);
+        SetupDayCheckbox("day_wed_check", DayOfWeek.Wednesday, builder);
+        SetupDayCheckbox("day_thu_check", DayOfWeek.Thursday, builder);
+        SetupDayCheckbox("day_fri_check", DayOfWeek.Friday, builder);
+        SetupDayCheckbox("day_sat_check", DayOfWeek.Saturday, builder);
+
+        // Setup time spinners
+        var hourSpin = (SpinButton)builder.GetObject("update_hour_spin")!;
+        var minuteSpin = (SpinButton)builder.GetObject("update_minute_spin")!;
+
+        if (_config.Time.HasValue)
+        {
+            hourSpin.Value = _config.Time.Value.Hour;
+            minuteSpin.Value = _config.Time.Value.Minute;
+        }
+
+        hourSpin.OnValueChanged += (s, e) =>
+        {
+            _config.Time = new TimeOnly((int)hourSpin.Value, (int)minuteSpin.Value);
+            SaveConfig();
+        };
+
+        minuteSpin.OnValueChanged += (s, e) =>
+        {
+            _config.Time = new TimeOnly((int)hourSpin.Value, (int)minuteSpin.Value);
             SaveConfig();
         };
 
@@ -88,7 +119,18 @@ public class Settings(
     private void SetupTraySwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
     {
         var sw = (Switch)builder.GetObject(id)!;
+        var trayIntervalBox = (Box)builder.GetObject("tray_interval_box")!;
+        var weeklyScheduleSwitchBox = (Box)builder.GetObject("weekly_schedule_switch_box")!;
+        var weeklyScheduleBox = (Box)builder.GetObject("weekly_schedule_box")!;
+        var weeklyScheduleSwitch = (Switch)builder.GetObject("daily_schedule")!;
+
         sw.Active = initialValue;
+
+        // Set initial visibility - tray interval is visible only if tray enabled AND weekly schedule disabled
+        weeklyScheduleSwitchBox.Visible = initialValue;
+        trayIntervalBox.Visible = initialValue && !weeklyScheduleSwitch.Active;
+        weeklyScheduleBox.Visible = initialValue && weeklyScheduleSwitch.Active;
+
         sw.OnStateSet += (s, e) =>
         {
             if (e.State)
@@ -100,7 +142,67 @@ public class Settings(
                 TrayStartService.End();
             }
             
+            weeklyScheduleSwitchBox.Visible = e.State;
+            trayIntervalBox.Visible = e.State && !weeklyScheduleSwitch.Active;
+            weeklyScheduleBox.Visible = e.State && weeklyScheduleSwitch.Active;
+
+            updateAction(e.State);
+            SaveConfig();
+
             return false;
+        };
+    }
+
+    private void SetupWeeklyScheduleSwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
+    {
+        var sw = (Switch)builder.GetObject(id)!;
+        var trayIntervalBox = (Box)builder.GetObject("tray_interval_box")!;
+        var weeklyScheduleBox = (Box)builder.GetObject("weekly_schedule_box")!;
+        var traySwitch = (Switch)builder.GetObject("tray_switch")!;
+
+        sw.Active = initialValue;
+        
+        if (traySwitch.Active)
+        {
+            trayIntervalBox.Visible = !initialValue;
+            weeklyScheduleBox.Visible = initialValue;
+        }
+
+        sw.OnStateSet += (s, e) =>
+        {
+            if (traySwitch.Active)
+            {
+                trayIntervalBox.Visible = !e.State;
+                weeklyScheduleBox.Visible = e.State;
+            }
+
+            updateAction(e.State);
+            SaveConfig();
+
+            return false;
+        };
+    }
+
+    private void SetupDayCheckbox(string id, DayOfWeek day, Builder builder)
+    {
+        var checkbox = (CheckButton)builder.GetObject(id)!;
+        checkbox.Active = _config.DaysOfWeek.Contains(day);
+
+        checkbox.OnToggled += (s, e) =>
+        {
+            if (checkbox.Active)
+            {
+                if (!_config.DaysOfWeek.Contains(day))
+                {
+                    _config.DaysOfWeek.Add(day);
+                }
+            }
+            else
+            {
+                _config.DaysOfWeek.Remove(day);
+            }
+
+            SaveConfig();
         };
     }
 

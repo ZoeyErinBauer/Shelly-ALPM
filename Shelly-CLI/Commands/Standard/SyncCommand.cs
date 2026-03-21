@@ -15,6 +15,7 @@ public class SyncCommand : Command<SyncSettings>
             return HandleUiMode(settings);
         }
 
+        RootElevator.EnsureRootExectuion();
         using var manager = new AlpmManager();
         object renderLock = new();
 

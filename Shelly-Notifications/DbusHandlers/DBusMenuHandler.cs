@@ -197,8 +197,10 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
             switch (action)
             {
                 case MenuEnum.CheckForUpdates:
+                    var updates = await new UpdateService(this).CheckForUpdates();
                     new NotificationHandler().SendNotif(connection,
-                        $"Updates available: {await new UpdateService(this).CheckForUpdates()}");
+                        updates > 0 ? $"Updates available: {updates}" : $"No updates available.");
+
                     break;
                 case MenuEnum.OpenShelly:
                     AppRunner.LaunchAppIfNotRunning("");
@@ -306,9 +308,10 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         try
         {
             //Remove the current index's so we can reinsert them if they exist now...
-            var existingParents = Items.Where(kvp => kvp.Value.action is MenuEnum.FlatpakUpdate or MenuEnum.AurUpdate or MenuEnum.StandardUpdate)
-                                       .Select(kvp => kvp.Key)
-                                       .ToList();
+            var existingParents = Items.Where(kvp =>
+                    kvp.Value.action is MenuEnum.FlatpakUpdate or MenuEnum.AurUpdate or MenuEnum.StandardUpdate)
+                .Select(kvp => kvp.Key)
+                .ToList();
             foreach (var key in existingParents)
                 Items.Remove(key);
 
@@ -333,7 +336,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
 
         var time = GetIndexByAction(MenuEnum.LastTime);
         Items[time!.Value] = ($"Last check: {DateTime.Now:HH:mm MM/dd}", "standard", false, "", "", MenuEnum.LastTime);
-        
+
         _revision++;
 
         using var writer = connection.GetMessageWriter();

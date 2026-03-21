@@ -459,15 +459,18 @@
                         <child>
                             <object class="GtkBox">
                                 <property name="orientation">horizontal</property>
+                                <property name="hexpand">false</property>
+                                <property name="spacing">5</property>
                                 <child>
                                     <object class="GtkSearchEntry" id="search_entry">
-                                        <property name="width-request">160</property>
+                                        <property name="hexpand">true</property>
                                         <property name="placeholder-text">Search packages...</property>
                                     </object>
                                 </child>
                                 <child>
                                     <object class="GtkButton" id="reload_button">
                                         <property name="icon-name">view-refresh-symbolic</property>
+                                        <property name="hexpand">false</property>
                                         <property name="tooltip-text">Reload</property>
                                     </object>
                                 </child>
@@ -492,8 +495,32 @@
                             </object>
                         </child>
                         <child>
+                            <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <property name="spacing">5</property>
+                                <child>
+                                    <object class="GtkButton" id="install_from_flatpak_ref_button">
+                                        <property name="label">Install from FlatpakRef</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkDropDown" id="install_from_flatpak_ref_dropdown">
+                                        <property name="enable-search">false</property>
+                                        <property name="hexpand">false</property>
+                                        <property name="model">
+                                            <object class="GtkStringList">
+                                                <items>
+                                                    <item>system</item>
+                                                    <item>user</item>
+                                                </items>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                        <child>
                             <object class="GtkButton" id="remote_ref_management">
-                                <property name="width-request">160</property>
                                 <property name="valign">end</property>
                                 <property name="label">Manage Remote References</property>
                             </object>

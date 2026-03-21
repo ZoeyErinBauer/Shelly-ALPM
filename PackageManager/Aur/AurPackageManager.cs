@@ -51,6 +51,8 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
     private HttpClient _httpClient = new HttpClient();
     private bool _verbose = verbose;
     private bool _uiMode = uiMode;
+    private List<string> _availablePackages = [];
+    private readonly HashSet<string> _currentlyInstallingAurDeps = new();
 
     public event EventHandler<PackageProgressEventArgs>? PackageProgress;
     public event EventHandler<PkgbuildDiffRequestEventArgs>? PkgbuildDiffRequest;
@@ -64,7 +66,7 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
         _alpm.Question += (sender, args) => Question?.Invoke(this, args);
         _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
-
+        _availablePackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
         // Import caches from other AUR helpers (paru, yay) for installed foreign packages
         await ImportOtherAurHelperCaches();
     }
@@ -246,27 +248,18 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
             Message = $"Installing dependencies: {string.Join(", ", depsToInstall)}"
         });
 
-        try
+        var alpmPackages = _availablePackages.Where(x => depsToInstall.Contains(x)).ToList();
+        var aurPackages = depsToInstall.Where(x => !alpmPackages.Contains(x)).ToList();
+        if (alpmPackages.Count > 0)
         {
-            _alpm.InstallPackages(depsToInstall);
+            _alpm.InstallPackages(alpmPackages);
         }
-        catch (Exception)
+
+        foreach (var pkg in aurPackages)
         {
-            // Fall back to installing one by one
-            foreach (var dep in depsToInstall)
-            {
-                try
-                {
-                    var pkgName = _alpm.GetPackageNameFromProvides(dep);
-                    if (!string.IsNullOrEmpty(pkgName))
-                        _alpm.InstallPackage(pkgName);
-                }
-                catch (Exception ex2)
-                {
-                    Console.Error.WriteLine($"[Shelly] Failed to install dependency {dep}: {ex2.Message}");
-                }
-            }
+            MakePkgAndInstallAurDependency(pkg);
         }
+
 
         PackageProgress?.Invoke(this, new PackageProgressEventArgs
         {
@@ -325,29 +318,17 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
             var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
             var allDeps = depends.Concat(makeDepends).Distinct().ToList();
             var depsToInstall = allDeps.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
-            if (depsToInstall.Count > 0)
+            Console.Error.WriteLine($"dependency count {depsToInstall.Count}");
+            var alpmPackages = _availablePackages.Where(x => depsToInstall.Contains(x)).ToList();
+            var aurPackages = depsToInstall.Where(x => !alpmPackages.Contains(x)).ToList();
+            if (alpmPackages.Count > 0)
             {
-                try
-                {
-                    _alpm.InstallPackages(depsToInstall);
-                }
-                catch (Exception)
-                {
-                    // Fall back to installing one by one
-                    foreach (var dep in depsToInstall)
-                    {
-                        try
-                        {
-                            var pkgName = _alpm.GetPackageNameFromProvides(dep);
-                            if (!string.IsNullOrEmpty(pkgName))
-                                _alpm.InstallPackage(pkgName);
-                        }
-                        catch (Exception ex2)
-                        {
-                            Console.Error.WriteLine($"[Shelly] Failed to install dependency {dep}: {ex2.Message}");
-                        }
-                    }
-                }
+                _alpm.InstallPackages(alpmPackages);
+            }
+
+            foreach (var pkg in aurPackages)
+            {
+                MakePkgAndInstallAurDependency(pkg);
             }
 
 
@@ -374,7 +355,7 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "sudo",
-                    Arguments = $"-u {user} makepkg -f --noconfirm",
+                    Arguments = $"-u {user} makepkg -f --noconfirm --skippgpcheck",
                     WorkingDirectory = tempPath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -559,26 +540,19 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
         var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
         var allDeps = depends.Concat(makeDepends).Distinct().ToList();
         var depsToInstall = allDeps.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
-
-        foreach (var dep in depsToInstall)
+        var availablePackages = _alpm.GetAvailablePackages();
+        var alpmPackages = availablePackages.Where(x => depsToInstall.Contains(x.Name)).Select(x => x.Name).ToList();
+        var aurPackages = depsToInstall.Where(x => !alpmPackages.Contains(x)).ToList();
+        if (alpmPackages.Count > 0)
         {
-            try
-            {
-                _alpm.InstallPackage(dep);
-            }
-            catch (Exception)
-            {
-                try
-                {
-                    var pkgName = _alpm.GetPackageNameFromProvides(dep);
-                    _alpm.InstallPackage(pkgName);
-                }
-                catch (Exception ex2)
-                {
-                    Console.Error.WriteLine("Failed to install dependency: " + ex2.Message);
-                }
-            }
+            _alpm.InstallPackages(alpmPackages);
         }
+
+        foreach (var pkg in aurPackages)
+        {
+            MakePkgAndInstallAurDependency(pkg);
+        }
+
 
         var buildProcess = new System.Diagnostics.Process
         {
@@ -961,6 +935,123 @@ public class AurPackageManager(string? configPath = null, bool verbose = false, 
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Warning: Failed to import from {sourceCachePath}: {ex.Message}");
+        }
+    }
+
+    private void MakePkgAndInstallAurDependency(string packageName)
+    {
+        if (!_currentlyInstallingAurDeps.Add(packageName))
+        {
+            Console.Error.WriteLine($"[Shelly] Skipping {packageName} - circular dependency detected");
+            return;
+        }
+
+        try
+        {
+            var success = DownloadPackage(packageName).Result;
+            if (!success)
+            {
+                PackageProgress?.Invoke(this, new PackageProgressEventArgs
+                {
+                    PackageName = packageName,
+                    CurrentIndex = 1,
+                    TotalCount = 1,
+                    Status = PackageProgressStatus.Failed,
+                    Message = "Failed to download package"
+                });
+                return;
+            }
+
+            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
+            var home = $"/home/{user}";
+            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+            PackageProgress?.Invoke(this, new PackageProgressEventArgs
+            {
+                PackageName = packageName,
+                CurrentIndex = 1,
+                TotalCount = 1,
+                Status = PackageProgressStatus.Building,
+                Message = "Building package with makepkg"
+            });
+            var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
+            var depends = pkgbuildInfo.Depends.Select(x => x.Trim()).ToList();
+            var makeDepends = pkgbuildInfo.MakeDepends.Select(x => x.Trim()).ToList();
+            var allDeps = depends.Concat(makeDepends).Distinct().ToList();
+            var depsToInstall = allDeps.Where(x => !_alpm.IsDependencySatisfiedByInstalled(x)).ToList();
+            var alpmPackages = _availablePackages.Where(x => depsToInstall.Contains(x)).ToList();
+            var aurPackages = depsToInstall.Where(x => !alpmPackages.Contains(x)).ToList();
+            if (alpmPackages.Count > 0)
+            {
+                _alpm.InstallPackages(alpmPackages);
+            }
+
+            foreach (var pkg in aurPackages)
+            {
+                MakePkgAndInstallAurDependency(pkg);
+            }
+
+            var buildProcess = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "sudo",
+                    Arguments = $"-u {user} makepkg -f --noconfirm --skippgpcheck",
+                    WorkingDirectory = tempPath,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+            buildProcess.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data?.Contains('%') == true)
+                {
+                    var match = Regex.Match(e.Data, @"\[\s*(?<percent>\d+)%\]\s+(?<message>.+)");
+
+                    if (!match.Success) return;
+                    var percent = match.Groups["percent"].Value;
+                    var message = match.Groups["message"].Value;
+                    if (!string.IsNullOrEmpty(e.Data))
+                        Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {percent}% Message: {message}");
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                        Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+                }
+            };
+
+            buildProcess.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+            };
+
+            buildProcess.Start();
+            buildProcess.BeginOutputReadLine();
+            buildProcess.BeginErrorReadLine();
+            buildProcess.WaitForExit();
+            if (buildProcess.ExitCode != 0)
+            {
+                Console.Error.WriteLine($"[Shelly] Failed to build AUR dependency: {packageName} (exit code {buildProcess.ExitCode})");
+                return;
+            }
+
+            var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
+            if (pkgFiles.Length == 0)
+            {
+                Console.Error.WriteLine($"[Shelly] No package file found after building: {packageName}");
+                return;
+            }
+            _alpm.InstallLocalPackage(pkgFiles[0]);
+            _alpm.Refresh();
+            alpmPackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
+        }
+        finally
+
+        {
+            _currentlyInstallingAurDeps.Remove(packageName);
         }
     }
 }

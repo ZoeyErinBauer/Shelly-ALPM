@@ -67,7 +67,22 @@
               </object>
             </child>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="weekly_schedule_switch_box">
+                <property name="orientation">horizontal</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Use weekly schedule</property>
+                    <property name="hexpand">true</property>
+                    <property name="halign">start</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSwitch" id="daily_schedule"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="tray_interval_box">
                 <property name="orientation">horizontal</property>
                 <property name="spacing">12</property>
                 <child>
@@ -87,6 +102,104 @@
                         <property name="value">12</property>
                       </object>
                     </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="weekly_schedule_box">
+                <property name="orientation">vertical</property>
+                <property name="spacing">8</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Weekly Schedule</property>
+                    <property name="halign">start</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">8</property>
+                   
+                    <child>
+                      <object class="GtkCheckButton" id="day_sun_check">
+                        <property name="label">Sun</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_mon_check">
+                        <property name="label">Mon</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_tue_check">
+                        <property name="label">Tue</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_wed_check">
+                        <property name="label">Wed</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_thu_check">
+                        <property name="label">Thu</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_fri_check">
+                        <property name="label">Fri</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="day_sat_check">
+                        <property name="label">Sat</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">12</property>
+                    <property name="margin-top">8</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">Update Time (24h):</property>
+                        <property name="halign">start</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="update_hour_spin">
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">23</property>
+                            <property name="step-increment">1</property>
+                            <property name="value">0</property>
+                          </object>
+                        </property>
+                        <property name="numeric">true</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">:</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="update_minute_spin">
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">59</property>
+                            <property name="step-increment">1</property>
+                            <property name="value">0</property>
+                          </object>
+                        </property>
+                        <property name="numeric">true</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

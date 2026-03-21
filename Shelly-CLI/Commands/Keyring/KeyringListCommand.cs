@@ -14,6 +14,7 @@ public class KeyringListCommand : Command
             return HandleUiModeList();
         }
 
+        RootElevator.EnsureRootExectuion();
         AnsiConsole.MarkupLine("[yellow]Listing keys in keyring...[/]");
         return PacmanKeyRunner.Run("--list-keys");
     }

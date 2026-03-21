@@ -31,6 +31,8 @@ public interface IUnprivilegedOperationService
     Task<UnprivilegedOperationResult> FlatpakRemoveRemote(string remoteName, string scope);
     
     Task<UnprivilegedOperationResult> FlatpakAddRemote(string remoteName, string scope, string url);
+    
+    Task<UnprivilegedOperationResult> FlatpakInsallFromRef(string path, string scope);
 
     Task<SyncModel> CheckForApplicationUpdates();
 

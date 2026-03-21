@@ -14,6 +14,7 @@ public class KeyringPopulateCommand : Command<KeyringSettings>
             return HandleUiModePopulate(settings);
         }
 
+        RootElevator.EnsureRootExectuion();
         var args = "--populate";
         if (settings.Keys?.Length > 0)
         {

@@ -22,6 +22,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
             return 1;
         }
+        RootElevator.EnsureRootExectuion();
 
         var packageList = settings.Packages.ToList();
 

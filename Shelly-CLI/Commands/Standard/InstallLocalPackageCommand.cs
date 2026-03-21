@@ -27,6 +27,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
             {
                 AnsiConsole.MarkupLine("[red]Error: No package specified[/]");
             }
+
             return 1;
         }
 
@@ -40,8 +41,11 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
             {
                 AnsiConsole.MarkupLine("[red]Error: Specified file does not exist.[/]");
             }
+
             return 1;
         }
+
+        RootElevator.EnsureRootExectuion();
 
         if (await IsArchPackage(settings.PackageLocation))
         {
@@ -49,6 +53,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
             {
                 return HandleUiModeInstall(settings);
             }
+
             InitializeAndInstallLocalAlpmPackage(settings);
             return 0;
         }
@@ -147,7 +152,7 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         foreach (var binaryName in installedBinaries)
         {
             var iconName = "application-x-executable";
-            
+
             if (packageName.Contains(binaryName, StringComparison.OrdinalIgnoreCase))
             {
                 if (foundIcons.Count > 0)
@@ -282,16 +287,10 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         try
         {
             // Handle questions
-            manager.Question += (sender, args) =>
-            {
-                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
-            };
+            manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
 
             // Handle progress events
-            manager.Progress += (sender, args) =>
-            {
-                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
-            };
+            manager.Progress += (sender, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
 
             Console.Error.WriteLine("Initializing ALPM...");
             manager.Initialize();

@@ -14,6 +14,7 @@ public class KeyringRecvCommand : Command<KeyringSettings>
             return HandleUiModeRecv(settings);
         }
 
+        RootElevator.EnsureRootExectuion();
         if (settings.Keys == null || settings.Keys.Length == 0)
         {
             AnsiConsole.MarkupLine("[red]Error: No key IDs specified[/]");

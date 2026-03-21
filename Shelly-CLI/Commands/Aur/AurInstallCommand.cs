@@ -12,13 +12,14 @@ namespace Shelly_CLI.Commands.Aur;
 
 public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 {
-    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurInstallSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context,
+        [NotNull] AurInstallSettings settings)
     {
         if (Program.IsUiMode)
         {
             return await HandleUiModeInstall(settings);
         }
-        
+
         AurPackageManager? manager = null;
         if (settings.Packages.Length == 0)
         {
@@ -41,6 +42,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 
         try
         {
+            RootElevator.EnsureRootExectuion();
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
             object renderLock = new();
@@ -71,10 +73,10 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                 {
                     AnsiConsole.WriteLine();
                     // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                    QuestionHandler.HandleQuestion(args,Program.IsUiMode,settings.NoConfirm);
+                    QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
                 }
             };
-            
+
 
             if (settings.BuildDepsOn)
             {
@@ -146,7 +148,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 
             AnsiConsole.MarkupLine("[green]Installation complete.[/]");
 
-           return 0;
+            return 0;
         }
         catch (Exception ex)
         {
@@ -179,20 +181,14 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
             manager.PackageProgress += (sender, args) =>
             {
                 Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
-                    (args.Message != null ? $" - {args.Message}" : ""));
+                                        (args.Message != null ? $" - {args.Message}" : ""));
             };
 
             // Handle progress events
-            manager.Progress += (sender, args) =>
-            {
-                Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%");
-            };
+            manager.Progress += (sender, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
 
             // Handle questions
-            manager.Question += (sender, args) =>
-            {
-                QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
-            };
+            manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
 
             // Handle build dependencies only mode
             if (settings.BuildDepsOn)

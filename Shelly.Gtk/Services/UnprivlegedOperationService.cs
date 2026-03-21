@@ -219,6 +219,17 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak remove-remotes", remoteName, "--system",
             "true");
     }
+    
+    public async Task<UnprivilegedOperationResult> FlatpakInsallFromRef(string path, string scope)
+    {
+        if (scope == "user")
+        {
+            return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path);
+        }
+
+        return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path, "--system",
+            "true");
+    }
 
     public async Task<UnprivilegedOperationResult> FlatpakAddRemote(string remoteName, string scope, string url)
     {

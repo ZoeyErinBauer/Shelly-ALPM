@@ -35,6 +35,7 @@ public class AurUpdate(
     private ColumnViewColumn _nameColumn = null!;
     private ColumnViewColumn _versionColumn = null!;
     private Button _updateButton = null!;
+    private Label _noPackagesLabel = null!;
 
     public Widget CreateWindow()
     {
@@ -53,6 +54,9 @@ public class AurUpdate(
         _versionColumn.Resizable = true;
 
         _updateButton = (Button)builder.GetObject("update_button")!;
+        _noPackagesLabel = (Label)builder.GetObject("no_packages_label")!;
+        _noPackagesLabel.Label_ = "<span size='large'>AUR packages are up to date</span>";
+        _noPackagesLabel.Visible = false;
         _updateButton.SetSensitive(false);
 
         _listStore = Gio.ListStore.New(AurUpdateGObject.GetGType());
@@ -101,15 +105,15 @@ public class AurUpdate(
 
     private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn, ColumnViewColumn versionColumn)
     {
-        var checkFactory = _checkFactory = SignalListItemFactory.New();
-        checkFactory.OnSetup += (_, args) =>
+        _checkFactory = SignalListItemFactory.New();
+        _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
         };
 
-        checkFactory.OnBind += (_, args) =>
+        _checkFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AurUpdateGObject pkgObj ||
@@ -138,7 +142,7 @@ public class AurUpdate(
             }
         };
 
-        checkFactory.OnUnbind += (_, args) =>
+        _checkFactory.OnUnbind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AurUpdateGObject pkgObj ||
@@ -150,16 +154,16 @@ public class AurUpdate(
             }
         };
 
-        checkColumn.SetFactory(checkFactory);
+        checkColumn.SetFactory(_checkFactory);
 
-        var nameFactory = _nameFactory = SignalListItemFactory.New();
-        nameFactory.OnSetup += (_, args) =>
+        _nameFactory = SignalListItemFactory.New();
+        _nameFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var label = Label.New(string.Empty);
             listItem.SetChild(label);
         };
-        nameFactory.OnBind += (_, args) =>
+        _nameFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AurUpdateGObject { Package: { } pkg } ||
@@ -167,16 +171,16 @@ public class AurUpdate(
             label.SetText(pkg.Name);
             label.Halign = Align.Start;
         };
-        nameColumn.SetFactory(nameFactory);
+        nameColumn.SetFactory(_nameFactory);
 
-        var versionFactory = _versionFactory = SignalListItemFactory.New();
-        versionFactory.OnSetup += (_, args) =>
+        _versionFactory = SignalListItemFactory.New();
+        _versionFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var label = Label.New(string.Empty);
             listItem.SetChild(label);
         };
-        versionFactory.OnBind += (_, args) =>
+        _versionFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AurUpdateGObject { Package: { } pkg } ||
@@ -184,7 +188,7 @@ public class AurUpdate(
             label.SetText(pkg.Version);
             label.Halign = Align.End;
         };
-        versionColumn.SetFactory(versionFactory);
+        versionColumn.SetFactory(_versionFactory);
     }
 
     private async Task LoadDataAsync(CancellationToken ct = default)
@@ -208,6 +212,8 @@ public class AurUpdate(
                     _packageGObjectRefs.Add(gobject);
                     _listStore.Append(gobject);
                 }
+
+                _noPackagesLabel.Visible = packages.Count == 0;
 
                 return false;
             });

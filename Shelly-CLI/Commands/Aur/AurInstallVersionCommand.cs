@@ -15,6 +15,7 @@ public class AurInstallVersionCommand : AsyncCommand<AurInstallVersionSettings>
             return await HandleUiModeInstallVersion(settings);
         }
 
+        RootElevator.EnsureRootExectuion();
         AurPackageManager? manager = null;
         if (string.IsNullOrWhiteSpace(settings.Package))
         {

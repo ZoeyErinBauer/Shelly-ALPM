@@ -14,6 +14,7 @@ public class KeyringInitCommand : Command
             return HandleUiModeInit();
         }
 
+        RootElevator.EnsureRootExectuion();
         AnsiConsole.MarkupLine("[yellow]Initializing pacman keyring...[/]");
         var result = PacmanKeyRunner.Run("--init");
         if (result == 0)

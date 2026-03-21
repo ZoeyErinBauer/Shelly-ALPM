@@ -23,7 +23,7 @@ public class RemoveCommand : Command<RemovePackageSettings>
             AnsiConsole.MarkupLine("[red]Error: No packages specified[/]");
             return 1;
         }
-
+        RootElevator.EnsureRootExectuion();
         var packageList = settings.Packages.ToList();
 
         AnsiConsole.MarkupLine($"[yellow]Packages to remove:[/] {string.Join(", ", packageList)}");

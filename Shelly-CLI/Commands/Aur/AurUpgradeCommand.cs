@@ -18,6 +18,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
         AurPackageManager? manager = null;
         try
         {
+            RootElevator.EnsureRootExectuion();
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
 

@@ -23,8 +23,6 @@ public class ShellyConfig
     
     public double WindowHeight { get; set; } = 600;
     
-    //public WindowState WindowState { get; set; } = WindowState.Normal;
-    
     public DefaultViewEnum DefaultView  { get; set; }
     
     public bool UseKdeTheme { get; set; } = false;
@@ -41,4 +39,9 @@ public class ShellyConfig
     
     public Version CurrentVersion { get; set; } = new Version(0,0,0);
 
+    public bool UseWeeklySchedule { get; set; } = false;
+    
+    public List<DayOfWeek> DaysOfWeek { get; set; } = [];
+    
+    public TimeOnly? Time { get; set; } = null;
 }

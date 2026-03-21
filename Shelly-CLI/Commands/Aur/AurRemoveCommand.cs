@@ -28,7 +28,7 @@ public class AurRemoveCommand : AsyncCommand<AurPackageSettings>
 
         try
         {
-            
+            RootElevator.EnsureRootExectuion();
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
             object renderLock = new();

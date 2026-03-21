@@ -26,6 +26,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
             return 1;
         }
 
+        RootElevator.EnsureRootExectuion();
         var package = settings.Packages[0];
         AnsiConsole.MarkupLine($"[yellow]Looking for downgrade options for:[/]: {package}");
 

@@ -23,7 +23,7 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_new_user",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr InstallationNewUser(IntPtr cancellable, out IntPtr error);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_list_installed_refs",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr InstallationListInstalledRefs(IntPtr installation, IntPtr cancellable,
@@ -36,39 +36,40 @@ internal static partial class FlatpakReference
 
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_fetch_remote_ref_sync",
         StringMarshalling = StringMarshalling.Utf8)]
-    public static partial IntPtr InstallationFetchRemoteRefsSync(IntPtr installation, string remoteName, int kind, string name,
+    public static partial IntPtr InstallationFetchRemoteRefsSync(IntPtr installation, string remoteName, int kind,
+        string name,
         string arch, string branch, IntPtr cancellable,
         out IntPtr error);
-        
+
     [LibraryImport(LibName, EntryPoint = "flatpak_remote_ref_get_installed_size",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial ulong RemoteRefGetInstalledSize(IntPtr installation);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_remote_ref_get_download_size",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial ulong RemoteRefGetDownloadSize(IntPtr installation);
-  
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_new_system",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr FlatpakInstallationNewSystem(IntPtr cancellable, out IntPtr error);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_list_unused_refs",
         StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr InstallationListUnusedRefs(IntPtr installation, string? arch,
         IntPtr cancellable, out IntPtr error);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_update_remote_sync",
         StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool InstallationUpdateRemoteSync(IntPtr installation, string remoteName,
         IntPtr cancellable, out IntPtr error);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_modify_remote",
         StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool FlatpakInstallationModifyRemote(IntPtr installation, IntPtr remote,
         IntPtr cancellable, out IntPtr error);
-    
+
     #endregion
 
     #region Refs
@@ -146,6 +147,12 @@ internal static partial class FlatpakReference
 
     [LibraryImport(GLibName, EntryPoint = "g_error_free")]
     public static partial void GErrorFree(IntPtr error);
+    
+    [LibraryImport(GLibName, EntryPoint = "g_bytes_new")]
+    public static partial IntPtr GBytesNew([In] byte[] data, nuint size);
+    
+    [LibraryImport(GLibName, EntryPoint = "g_bytes_unref")]
+    public static partial void GBytesUnref(IntPtr bytes);
 
     [LibraryImport("gio-2.0", EntryPoint = "g_file_get_path", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr GFileGetPath(IntPtr file);
@@ -163,7 +170,7 @@ internal static partial class FlatpakReference
 
     [LibraryImport(LibName, EntryPoint = "flatpak_remote_get_name", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr RemoteGetName(IntPtr remote);
-    
+
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_update_appstream_sync",
         StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -173,7 +180,8 @@ internal static partial class FlatpakReference
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_add_remote",
         StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool InstallationAddRemote(IntPtr installation, IntPtr remote, [MarshalAs(UnmanagedType.Bool)] bool ifNeeded,
+    public static partial bool InstallationAddRemote(IntPtr installation, IntPtr remote,
+        [MarshalAs(UnmanagedType.Bool)] bool ifNeeded,
         IntPtr cancellable, out IntPtr error);
 
     [LibraryImport(LibName, EntryPoint = "flatpak_installation_remove_remote",
@@ -228,6 +236,11 @@ internal static partial class FlatpakReference
     public static partial bool TransactionAddUpdate(IntPtr transaction, string @ref, IntPtr subpaths, string? commit,
         out IntPtr error);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_install_flatpakref",
+        StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TransactionAddInstallFlatpakref(IntPtr transaction, IntPtr remote, out IntPtr error);
+
 
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_run", StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -249,6 +262,7 @@ internal static partial class FlatpakReference
 
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_progress_set_update_frequency")]
     public static partial void TransactionProgressSetUpdateFrequency(IntPtr progress, uint updateInterval);
+
     #endregion
 
     #region GObject Signals
@@ -257,7 +271,8 @@ internal static partial class FlatpakReference
     public delegate void TransactionProgressCallback(IntPtr transaction, IntPtr progress, IntPtr userData);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void TransactionNewOperationCallback(IntPtr transaction, IntPtr operation, IntPtr progress, IntPtr userData);
+    public delegate void TransactionNewOperationCallback(IntPtr transaction, IntPtr operation, IntPtr progress,
+        IntPtr userData);
 
     [LibraryImport(GObjectName, EntryPoint = "g_signal_connect_data", StringMarshalling = StringMarshalling.Utf8)]
     public static partial ulong GSignalConnectData(IntPtr instance, string detailedSignal, IntPtr handler,

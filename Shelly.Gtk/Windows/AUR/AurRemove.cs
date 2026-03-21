@@ -277,7 +277,7 @@ public class AurRemove(
         for (uint i = 0; i < _listStore.GetNItems(); i++)
         {
             var item = _listStore.GetObject(i);
-            if (item is AurUpdateGObject { IsSelected: true })
+            if (item is AurPackageGObject { IsSelected: true })
                 return true;
         }
 
