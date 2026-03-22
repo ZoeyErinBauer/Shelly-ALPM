@@ -166,6 +166,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedWithNoConfirmCheck("Upgrade system", "upgrade");
     }
 
+    public async Task<OperationResult> UpgradeAllAsync()
+    {
+        return await ExecutePrivilegedWithNoConfirmCheck("Upgrade all", "upgrade", "-a");
+    }
+
     public async Task<OperationResult> ForceSyncDatabaseAsync()
     {
         return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");

@@ -255,10 +255,21 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkButton" id="ExportSyncButton">
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
                     <property name="halign">center</property>
-                    <property name="label">Export Sync file</property>
+                    <property name="spacing">10</property>
                     <property name="margin-top">10</property>
+                    <child>
+                      <object class="GtkButton" id="ExportSyncButton">
+                        <property name="label">Export Sync file</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="UpgradeAllButton">
+                        <property name="label">Upgrade All</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

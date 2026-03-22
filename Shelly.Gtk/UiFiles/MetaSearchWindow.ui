@@ -31,6 +31,10 @@
         <child>
           <object class="GtkColumnView" id="package_grid">
             <child>
+              <object class="GtkColumnViewColumn" id="check_column">
+              </object>
+            </child>
+            <child>
               <object class="GtkColumnViewColumn" id="name_column">
                 <property name="expand">true</property>
                 <property name="title">Name</property>
@@ -49,10 +53,6 @@
             <child>
               <object class="GtkColumnViewColumn" id="repo_column">
                 <property name="title">Repository</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkColumnViewColumn" id="check_column">
               </object>
             </child>
           </object>

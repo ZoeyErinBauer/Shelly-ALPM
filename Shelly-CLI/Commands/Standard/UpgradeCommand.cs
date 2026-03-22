@@ -15,7 +15,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
     {
         if (Program.IsUiMode)
         {
-            return HandleUiModeUpgrade(settings);
+            return HandleUiModeUpgrade(context, settings);
         }
 
         RootElevator.EnsureRootExectuion();
@@ -140,7 +140,7 @@ public class UpgradeCommand : Command<UpgradeSettings>
         return 0;
     }
 
-    private static int HandleUiModeUpgrade(UpgradeSettings settings)
+    private static int HandleUiModeUpgrade(CommandContext context, UpgradeSettings settings)
     {
         Console.Error.WriteLine("Performing full system upgrade...");
 
@@ -196,6 +196,22 @@ public class UpgradeCommand : Command<UpgradeSettings>
         };
 
         manager.SyncSystemUpdate();
+        manager.Dispose();
+        if (settings.Aur || settings.All)
+        {
+            var aurCommand = new AurUpgradeCommand();
+            var aurSettings = new AurUpgradeSettings()
+            {
+                NoConfirm = settings.NoConfirm,
+            };
+            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+        }
+
+        if (settings.Flatpak || settings.All)
+        {
+            var flatpakCommand = new FlatpakUpgrade();
+            flatpakCommand.Execute(context);
+        }
 
         Console.Error.WriteLine("System upgraded successfully!");
         manager.Dispose();

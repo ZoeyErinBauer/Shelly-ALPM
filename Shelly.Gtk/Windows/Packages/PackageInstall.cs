@@ -115,6 +115,7 @@ public class PackageInstall(
             else
             {
                 _detailRevealer.SetRevealChild(false);
+                _detailRevealer.SetVisible(false);
                 _currentDetailPkg = null;
             }
         };
@@ -151,6 +152,20 @@ public class PackageInstall(
         {
             _detailBox.Remove(child);
         }
+
+        var backButton = Button.New();
+        backButton.SetIconName("go-previous-symbolic");
+        backButton.Halign = Align.Start;
+        backButton.AddCssClass("flat");
+        backButton.TooltipText = "Close details";
+        backButton.OnClicked += (_, _) =>
+        {
+            _currentDetailPkg = null;
+            _selectionModel.UnselectItem(_selectionModel.GetSelected());
+            _detailRevealer.SetRevealChild(false);
+            _detailRevealer.SetVisible(false);
+        };
+        _detailBox.Append(backButton);
 
         void AddDetail(string label, string value)
         {
@@ -216,9 +231,35 @@ public class PackageInstall(
         }
 
         if (pkg.Depends.Count > 0)
-            AddDetail("Depends", string.Join(", ", pkg.Depends));
+        {
+            var expander = new Expander { Label = $"Depends ({pkg.Depends.Count})" };
+            expander.AddCssClass("dim-label");
+            var depBox = Box.New(Orientation.Vertical, 2);
+            depBox.MarginStart = 12;
+            foreach (var depLabel in pkg.Depends.Select(dep => Label.New(dep)))
+            {
+                depLabel.Halign = Align.Start;
+                depLabel.Xalign = 0;
+                depBox.Append(depLabel);
+            }
+            expander.SetChild(depBox);
+            _detailBox.Append(expander);
+        }
         if (pkg.OptDepends.Count > 0)
-            AddDetail("Optional Deps", string.Join(", ", pkg.OptDepends));
+        {
+            var optExpander = new Expander { Label = $"Optional Deps ({pkg.OptDepends.Count})" };
+            optExpander.AddCssClass("dim-label");
+            var optDepBox = Box.New(Orientation.Vertical, 2);
+            optDepBox.MarginStart = 12;
+            foreach (var depLabel in pkg.OptDepends.Select(dep => Label.New(dep)))
+            {
+                depLabel.Halign = Align.Start;
+                depLabel.Xalign = 0;
+                optDepBox.Append(depLabel);
+            }
+            optExpander.SetChild(optDepBox);
+            _detailBox.Append(optExpander);
+        }
         if (pkg.Licenses.Count > 0)
             AddDetail("Licenses", string.Join(", ", pkg.Licenses));
         if (pkg.Provides.Count > 0)
@@ -228,6 +269,29 @@ public class PackageInstall(
         if (pkg.Groups.Count > 0)
             AddDetail("Groups", string.Join(", ", pkg.Groups));
 
+        if (configService.LoadConfig().WebViewEnabled)
+        {
+            if (pkg.Depends.Count > 0)
+            {
+                var dictionary = new Dictionary<string, List<string>> { { pkg.Name, pkg.Depends } };
+
+                foreach (var dep in pkg.Depends)
+                {
+                    for (uint i = 0; i < _listStore.GetNItems(); i++)
+                    {
+                        var obj = _listStore.GetObject(i);
+                        if (obj is not AlpmPackageGObject depObj || depObj.Package == null) continue;
+                        if (depObj.Package.Name.Contains(dep))
+                            dictionary.TryAdd(depObj.Package.Name, depObj.Package.Depends);
+                    }
+                }
+
+                var window = new WebWindow(pkg.Name, dictionary);
+                _detailBox.Append(window.CreateWindow());
+            }
+        }
+
+        _detailRevealer.SetVisible(true);
         _detailRevealer.SetRevealChild(true);
     }
 
@@ -609,7 +673,7 @@ public class PackageInstall(
 
         return false;
     }
-    
+
     public void Dispose()
     {
         _cts.Cancel();

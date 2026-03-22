@@ -16,11 +16,19 @@ public class HomeWindow(
     IPrivilegedOperationService privilegedOperationService,
     IUnprivilegedOperationService unprivilegedOperationService,
     IConfigService configService,
+    ILockoutService lockoutService,
+    IGenericQuestionService genericQuestionService,
     MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
     private ListBox? _listBox;
+    private Label? _totalAurLabel;
+    private Label? _percentAurLabel;
+    private Label? _totalPackageLabel;
+    private Label? _packagePercentLabel;
+    private Label? _totalFlatpakLabel;
+    private Label? _flatpakPercentLabel;
 
     public Widget CreateWindow()
     {
@@ -50,29 +58,32 @@ public class HomeWindow(
             homeSearchEntry.SetText(string.Empty);
         };
 
-        var totalAurLabel = (Label)builder.GetObject("TotalAurLabel")!;
-        totalAurLabel.OnRealize += (sender, args) => { _ = LoadAurTotalData(totalAurLabel, _cts.Token); };
+        _totalAurLabel = (Label)builder.GetObject("TotalAurLabel")!;
+        _totalAurLabel.OnRealize += (sender, args) => { _ = LoadAurTotalData(_totalAurLabel, _cts.Token); };
 
-        var percentAurLabel = (Label)builder.GetObject("AurPercentLabel")!;
-        percentAurLabel.OnRealize += (sender, args) => { _ = LoadAurPercentData(percentAurLabel, _cts.Token); };
+        _percentAurLabel = (Label)builder.GetObject("AurPercentLabel")!;
+        _percentAurLabel.OnRealize += (sender, args) => { _ = LoadAurPercentData(_percentAurLabel, _cts.Token); };
 
-        var totalPackageLabel = (Label)builder.GetObject("TotalPackagesLabel")!;
-        totalPackageLabel.OnRealize += (sender, args) => { _ = LoadTotalPackageData(totalPackageLabel, _cts.Token); };
+        _totalPackageLabel = (Label)builder.GetObject("TotalPackagesLabel")!;
+        _totalPackageLabel.OnRealize += (sender, args) => { _ = LoadTotalPackageData(_totalPackageLabel, _cts.Token); };
 
-        var packagePercentLabel = (Label)builder.GetObject("StandardPercent")!;
-        packagePercentLabel.OnRealize += (sender, args) =>
+        _packagePercentLabel = (Label)builder.GetObject("StandardPercent")!;
+        _packagePercentLabel.OnRealize += (sender, args) =>
         {
-            _ = LoadTotalPackagePercentData(packagePercentLabel, _cts.Token);
+            _ = LoadTotalPackagePercentData(_packagePercentLabel, _cts.Token);
         };
 
-        var totalFlatpakLabel = (Label)builder.GetObject("TotalFlatpakLabel")!;
-        totalFlatpakLabel.OnRealize += (sender, args) => { _ = LoadTotalFlatpak(totalFlatpakLabel, _cts.Token); };
+        _totalFlatpakLabel = (Label)builder.GetObject("TotalFlatpakLabel")!;
+        _totalFlatpakLabel.OnRealize += (sender, args) => { _ = LoadTotalFlatpak(_totalFlatpakLabel, _cts.Token); };
 
-        var flatpakPercentLabel = (Label)builder.GetObject("FlatpakPercent")!;
-        flatpakPercentLabel.OnRealize += (sender, args) => { _ = LoadPercentFlatpak(flatpakPercentLabel, _cts.Token); };
+        _flatpakPercentLabel = (Label)builder.GetObject("FlatpakPercent")!;
+        _flatpakPercentLabel.OnRealize += (sender, args) => { _ = LoadPercentFlatpak(_flatpakPercentLabel, _cts.Token); };
 
         var exportSyncButton = (Button)builder.GetObject("ExportSyncButton")!;
         exportSyncButton.OnClicked += (sender, args) => { _ = ExportSync(); };
+
+        var upgradeAllButton = (Button)builder.GetObject("UpgradeAllButton")!;
+        upgradeAllButton.OnClicked += (sender, args) => { _ = UpgradeAll(); };
 
         var config = configService.LoadConfig();
         var aurBox = (Box)builder.GetObject("AurBox")!;
@@ -92,6 +103,119 @@ public class HomeWindow(
         };
 
         return _box;
+    }
+
+    private async Task UpgradeAll()
+    {
+        try
+        {
+            var packagesNeedingUpdate = await privilegedOperationService.GetPackagesNeedingUpdateAsync();
+            if (packagesNeedingUpdate.Count == 0)
+            {
+                var toastArgs = new ToastMessageEventArgs("System is already up to date");
+                genericQuestionService.RaiseToastMessage(toastArgs);
+                return;
+            }
+
+            if (!configService.LoadConfig().NoConfirm)
+            {
+                var confirmArgs = new GenericQuestionEventArgs(
+                    "Upgrade All Packages?",
+                    BuildUpgradeConfirmationMessage(packagesNeedingUpdate),
+                    true
+                );
+
+                genericQuestionService.RaiseQuestion(confirmArgs);
+                if (!await confirmArgs.ResponseTask)
+                {
+                    return;
+                }
+            }
+
+            lockoutService.Show("Upgrading all packages...");
+
+            var aurUpdates = await privilegedOperationService.GetAurUpdatePackagesAsync();
+            if (aurUpdates.Count != 0)
+            {
+                var aurPackageNames = aurUpdates.Select(p => p.Name).ToList();
+                var packageBuilds = await privilegedOperationService.GetAurPackageBuild(aurPackageNames);
+
+                foreach (var pkgbuild in packageBuilds)
+                {
+                    if (pkgbuild.PkgBuild == null) continue;
+
+                    var buildArgs = new PackageBuildEventArgs($"Displaying Package Build {pkgbuild.Name}",
+                        pkgbuild.PkgBuild);
+                    genericQuestionService.RaisePackageBuild(buildArgs);
+
+                    if (!await buildArgs.ResponseTask)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            await privilegedOperationService.UpgradeAllAsync();
+            await ReloadHomePageData();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
+    }
+
+    private async Task ReloadHomePageData()
+    {
+        var tasks = new List<Task>();
+
+        if (_totalAurLabel is not null)
+            tasks.Add(LoadAurTotalData(_totalAurLabel, _cts.Token));
+        if (_percentAurLabel is not null)
+            tasks.Add(LoadAurPercentData(_percentAurLabel, _cts.Token));
+        if (_totalPackageLabel is not null)
+            tasks.Add(LoadTotalPackageData(_totalPackageLabel, _cts.Token));
+        if (_packagePercentLabel is not null)
+            tasks.Add(LoadTotalPackagePercentData(_packagePercentLabel, _cts.Token));
+        if (_totalFlatpakLabel is not null)
+            tasks.Add(LoadTotalFlatpak(_totalFlatpakLabel, _cts.Token));
+        if (_flatpakPercentLabel is not null)
+            tasks.Add(LoadPercentFlatpak(_flatpakPercentLabel, _cts.Token));
+        if (_listBox is not null)
+            tasks.Add(LoadFeedAsync(_listBox, _cts.Token));
+
+        await Task.WhenAll(tasks);
+    }
+
+    private static string BuildUpgradeConfirmationMessage(IEnumerable<AlpmPackageUpdateDto> packages)
+    {
+        var packageList = packages.ToList();
+        if (packageList.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        const int maxPackageColumnWidth = 28;
+        var packageColumnWidth = Math.Min(
+            maxPackageColumnWidth,
+            packageList.Max(package => package.Name.Length));
+
+        return string.Join(Environment.NewLine, packageList.Select(package =>
+            $"{FormatPackageName(package.Name, packageColumnWidth)}  {package.CurrentVersion} -> {package.NewVersion}"));
+    }
+
+    private static string FormatPackageName(string packageName, int width)
+    {
+        if (packageName.Length > width)
+        {
+            var truncatedWidth = Math.Max(1, width - 1);
+            packageName = packageName[..truncatedWidth] + "…";
+        }
+
+        return packageName.PadRight(width);
     }
 
     private async Task ExportSync()

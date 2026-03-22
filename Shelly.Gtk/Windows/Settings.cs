@@ -1,5 +1,4 @@
 using Gtk;
-using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.TrayServices;
@@ -10,7 +9,6 @@ namespace Shelly.Gtk.Windows;
 public class Settings(
     IConfigService configService,
     IPrivilegedOperationService privilegedOperationService,
-    IUnprivilegedOperationService unprivilegedOperationService,
     ILockoutService lockoutService,
     IGenericQuestionService genericQuestionService) : IShellyWindow
 {
@@ -31,6 +29,7 @@ public class Settings(
         SetupTraySwitch("tray_switch", _config.TrayEnabled, (v) => _config.TrayEnabled = v, builder);
         SetupWeeklyScheduleSwitch("daily_schedule", _config.UseWeeklySchedule, (v) => _config.UseWeeklySchedule = v, builder);
         SetupSwitch("no_confirm_switch", _config.NoConfirm, (v) => _config.NoConfirm = v, builder);
+        SetupSwitch("webview_switch", _config.WebViewEnabled, (v) => _config.WebViewEnabled = v, builder);
 
         var traySpin = (SpinButton)builder.GetObject("tray_interval_spin")!;
         traySpin.Value = _config.TrayCheckIntervalHours;
@@ -47,8 +46,7 @@ public class Settings(
         SetupDayCheckbox("day_thu_check", DayOfWeek.Thursday, builder);
         SetupDayCheckbox("day_fri_check", DayOfWeek.Friday, builder);
         SetupDayCheckbox("day_sat_check", DayOfWeek.Saturday, builder);
-
-        // Setup time spinners
+        
         var hourSpin = (SpinButton)builder.GetObject("update_hour_spin")!;
         var minuteSpin = (SpinButton)builder.GetObject("update_minute_spin")!;
 

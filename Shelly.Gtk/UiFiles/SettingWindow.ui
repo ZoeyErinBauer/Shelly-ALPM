@@ -220,6 +220,21 @@
               </object>
             </child>
             <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Enable Webview Visualization (experimental)</property>
+                    <property name="hexpand">true</property>
+                    <property name="halign">start</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkSwitch" id="webview_switch"/>
+                </child>
+              </object>
+            </child>
+            <child>
               <object class="GtkButton" id="sync_button">
                 <property name="label">Force Database Update</property>
                 <property name="margin-top">10</property>

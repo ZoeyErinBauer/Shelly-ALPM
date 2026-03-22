@@ -44,4 +44,6 @@ public class ShellyConfig
     public List<DayOfWeek> DaysOfWeek { get; set; } = [];
     
     public TimeOnly? Time { get; set; } = null;
+    
+    public bool WebViewEnabled { get; set; } = false;
 }

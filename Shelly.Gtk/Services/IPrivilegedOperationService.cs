@@ -15,6 +15,7 @@ public interface IPrivilegedOperationService
     Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages, bool isCascade, bool isCleanup);
     Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages);
     Task<OperationResult> UpgradeSystemAsync();
+    Task<OperationResult> UpgradeAllAsync();
     Task<OperationResult> ForceSyncDatabaseAsync();
     Task<OperationResult> RemoveDbLockAsync();
     Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages);
