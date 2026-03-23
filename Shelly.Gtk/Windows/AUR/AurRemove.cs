@@ -246,17 +246,12 @@ public class AurRemove(
 
                 var result = await privilegedOperationService.RemoveAurPackagesAsync(selectedPackages);
 
-                if (!result.Success)
-                {
-                    Console.WriteLine($"Failed to remove packages: {result.Error}");
-                }
-                else
-                {
-                    var args = new ToastMessageEventArgs(
+                if (result.Success)
+                    genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs(
                         $"Updated {selectedPackages.Count} Package(s)"
-                    );
-                    genericQuestionService.RaiseToastMessage(args);
-                }
+                    ));
+                else
+                    Console.WriteLine($"Failed to remove packages: {result.Error}");
 
                 await LoadDataAsync();
             }
