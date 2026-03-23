@@ -1,176 +1,119 @@
-# Shelly User Guide
+# Why Shelly?
 
-Shelly is a visual package manager for Arch Linux that makes installing, updating, and removing packages simple and intuitive.
+### Shelly is a user centric experience made to streamline the user experience of managing their programs in Arch Linux. It offers a comprehensive user experience to find, install, update, track, and remove software on Linux.
 
-## Installation
+## Installing Shelly
 
-### Quick Install (Recommended)
-
-Install Shelly with a single command:
+If you have the cachyOS repos or Chaotic AUR repos you can do:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ZoeyErinBauer/Shelly-ALPM/master/web-install.sh | sudo bash
+sudo pacman -S shelly
 ```
 
-### Manual Installation
 
-1. Download the latest release `.tar.gz` from the [Releases page](https://github.com/ZoeyErinBauer/Shelly-ALPM/releases)
-2. Extract the archive and navigate to the directory
-3. Run the installer:
+You can use a AUR helper:
 
 ```bash
-chmod +x install.sh
-sudo bash install.sh
+yay -S shelly
 ```
 
-Shelly will now be available in your application menu.
+or
 
----
+```bash
+paru -S shelly
+```
 
-## Using Shelly UI
+## Using Shelly
 
-### Home Page
+## Home Page
 
-The home page displays important Arch Linux news. Always check this before updating your system, as some updates may require manual intervention.
+When you Open shelly you will start on the home page. This Page has three major screens to reference.
 
-> **Tip:** We display the 10 most recent news items. For more details, visit https://archlinux.org/news/
+Arch News - Sharing the ten most recent articles from https://archlinux.org/news/ allowing you to stay up to date on Arch updates.
+Meta Search - Search all enabled sources (Flatpak, Aur and Packages) in 1 place.
+Package Dashboard - A listing of all installs in 3 standard supported formats: AUR, Packages, and Flatpak. Underneath it has the percentage of installs currently up to date.
 
-### Installing Packages
+You can return to the home page at any time by clicking the house in the top left. Finally the search function here will search all sources rather than specifically Packages, AUR, or Flatpak.
 
-1. Click on the **Packages** icon in the navigation menu
-2. Select **Install Packages** from the dropdown
-
-![HomePagePackagesHighlighted.png](HomePagePackagesHighlighted.png)
-![InstallPackagesHighlighted.png](InstallPackagesHighlighted.png)
-
-3. Search for the packages you want to install
-4. Check the boxes next to the packages you want
-5. Click the **download arrow** in the bottom right to install
-
-![InstallGuide.png](InstallGuide.png)
-
-> **Tip:** Right-click on any package to view more information, including the package's website.
-
-### Updating Packages
-
-1. Click the **Update** icon to open the update page
-
-![UpdateHighlighted.png](UpdateHighlighted.png)
-
-**Update specific packages:**
-- Check the boxes next to the packages you want to update
-- Click the **update arrow** in the bottom right
-
-![UpdateOne.png](UpdateOne.png)
-
-**Update all packages:**
-- Click **Toggle all** to select all packages
-- Click the **update arrow** in the bottom right
-
-![UpdateMany.png](UpdateMany.png)
-
-### Removing Packages
-
-1. Click the **Remove** icon to open the remove page
-
-![Remove.png](Remove.png)
-
-2. Search for packages you want to remove
-3. Check the boxes next to the packages (you can select multiple)
-4. Click the **trashcan icon** in the bottom right to remove
-
-![RemoveOne.png](RemoveOne.png)
-
----
-
-## AUR (Arch User Repository) Support
-
-Shelly supports installing, updating, and removing packages from the AUR.
-
-### Installing AUR Packages
-
-1. Click on the **Packages** icon in the navigation menu
-2. Select **AUR Packages** from the dropdown
-3. Search for the AUR package you want
-4. Select the package and click the download icon to install
-
-> **Note:** AUR packages are built from source and may take longer to install than official repository packages.
-
-### Updating AUR Packages
-
-1. Navigate to **Update** → **AUR Updates**
-2. Select the packages you want to update or use **Toggle all**
-3. Click the update arrow to begin updating
-
-### Removing AUR Packages
-
-1. Navigate to **Remove** → **AUR Packages**
-2. Search for and select the AUR packages to remove
-3. Click the trashcan icon to remove
-
----
+![Screenshot_20260323_124607.png](Screenshot_20260323_124607.png)
 
 ## Settings
+At the Top right of the screen select the gear to enter into settings, here you can enable several features of Shelly.
 
-Access settings by clicking the **gear icon**. Available options include:
+Enable AUR - Allows access to the AUR download features, these packages are managed by individual users so access at your own risk
 
-- Theme customization
-- Default view preferences
-- Other display settings
+Enable Flatpack - Turns on Shelly's flatpak management
 
----
+Enable Tray Icons sets an icon on your taskbar to allow you to open shelly without using the terminal and keeps shelly open
 
-## Command Line Interface (CLI)
+Tray Check Interval or Day / Week schedule - This will set a time for shelly to check for updates and prompt you with a notice of update's currently avalible. Example if set to 24 hours once a day shelly inform you how many updates are pending.
 
-Shelly also includes `shelly-cli` for terminal-based package management.
+No confirmation - Shelly will accept all requests for packages and will not ask you to confirm any choices or inputs that you make
 
-### Basic Commands
+Force Database Update - Forces shelly to sync with all of your databases and will grab a fresh list of all available packages
 
-| Command | Description |
-|---------|-------------|
-| `shelly-cli sync` | Synchronize package databases |
-| `shelly-cli list-installed` | List all installed packages |
-| `shelly-cli list-available` | List all available packages |
-| `shelly-cli list-updates` | List packages with available updates |
-| `shelly-cli install <pkg>` | Install a package |
-| `shelly-cli remove <pkg>` | Remove a package |
-| `shelly-cli update <pkg>` | Update a specific package |
-| `shelly-cli upgrade` | Upgrade all packages |
+Remove db.lock - If a transaction fails and you are locked from doing more installs clicking remove db.lock it will bypass the failure allowing you to proceed
 
-### Examples
+Once you have made your selections click save in the bottom left to lock all choices.
 
-```bash
-# Sync databases and upgrade all packages
-shelly-cli sync
-shelly-cli upgrade
+Sometimes experimental settings may be added, they are not guaranteed to work and may be removed at any time. They will be marked with (experimental)
 
-# Install multiple packages
-shelly-cli install firefox vlc
+![Screenshot_20260323_124717.png](Screenshot_20260323_124717.png)
 
-# Remove a package (skip confirmation)
-shelly-cli remove -y package-name
-```
+## Packages
 
----
+At the top of the screen you can select Packages, this will create a dropdown with three options.
 
-## Troubleshooting
+Install Packages - Search and install packages, select which packages to install by selecting the checkbox on the right side and select install selected in top left to install.
 
-### Common Issues
+Next to install selected there are several unique options to packages
 
-**Shelly won't start:**
-- Ensure you have the .NET 10.0 Runtime installed
-- Check that `libalpm` is available (provided by `pacman`)
+Any - Listing all groups created in the repository you are using, you can select these groups to get more targeted packages
 
-**Package database out of sync:**
-- Click the sync button or run `shelly-cli sync`
+Install Local - Select a file on your computer and install it, will create sim links/opt allowing you to access the files via your terminal while not putting them in the bin.
 
-**Permission errors:**
-- Shelly requires root privileges for package operations
-- Enter your password when prompted
+Install AppImage - Same as Install except down with AppImage file rather than local file.
 
----
+Update Packages - List of all packages with updates available, screen starts with all selected, you can uncheck packages to not include in update, when satisfied select update selected in top left to update all selected packages.
 
-## Getting Help
+Manage Packages - List of all current installed packages, their size and version. Any packages you select the check box on can be uninstalled by clicking the Remove Selected in the top left.
 
-- **GitHub Issues:** [Report bugs or request features](https://github.com/ZoeyErinBauer/Shelly-ALPM/issues)
-- **Wiki:** Check the [Home page](Home.md) for more information
+![Screenshot_20260323_124935.png](Screenshot_20260323_124935.png)
+![Screenshot_20260323_125351-1.png](Screenshot_20260323_125351-1.png)
+![Screenshot_20260323_125432.png](Screenshot_20260323_125432.png)
+
+## AUR
+Next to packages you will see AUR (If you turned on AUR in settings, if you have no reference the settings for how to turn on AUR). Like Packages there are three options in the dropdown with similar functions. AUR are managed by single users, download at your own discretion.
+
+Install AUR - Search and install AUR , this will search all AUR from the repository. There is no listing to search so you will need to know the files you are looking for. There is an upcoming feature with a trust rating, this will not be a guarantee but should be some level of warning regarding files.
+
+Update AUR - List of all AUR with updates available, screen starts with all selected, you can uncheck AUR to not include in update, when satisfied select Update AUR Packages in top left to update all selected packages.
+
+Remove AUR - List of all current installed AUR and versions. Any AUR you select the check box on the right can be uninstalled by clicking the Remove AUR Packages in the top left.
+
+![Screenshot_20260323_125532.png](Screenshot_20260323_125532.png)
+
+## Flatpak
+Next to either packages or AUR depending on what you have activated you should see Flatpak (if you do not go to the settings section to reference how to turn on Flatpak). Like Packages and AUR there are 3 sections.
+
+Install Flatpak - Search and install Flatpak , this will search all Flatpak hosted by Flatpak from the repository. On the right side is a category search, you can select a category or type in a name to find the flatpak you wish to install. Double click the flatpak to see a small preview then on the top right of the screen you can select install.
+
+Unique to this page there is a Manage Remote References in the bottom right, this allows you to add other Flatpak repositories. Click into Manage Remote references and there is an option to delete any you wish to remove with Delete Selected Remote on the top right. Next to it is Add Remote allowing you to add a repository, all you need to provide is a name and a URL.
+
+Update Flatpak - List of all Flatpak with updates available. You can only update all flatpaks or none, there is no ability to select multiple. Click Update All in the top left to update all Flatpak’s
+
+Remove Flatpak - List of all current installed packages and versions. Flatpaks must be uninstalled individually, select a flatpak and then click Remove Selected in the top left to uninstall, repeat until all flatpaks you wish to are uninstalled. 
+
+![Screenshot_20260323_125640-1.png](Screenshot_20260323_125640-1.png)
+![Screenshot_20260323_125615.png](Screenshot_20260323_125615.png)
+![Screenshot_20260323_125736.png](Screenshot_20260323_125736.png)
+
+### Advanced Features (Disabled by default)
+
+Webview visualization of depdencessy tree
+
+![Screenshot_20260323_125905.png](Screenshot_20260323_125905.png)
+
+This is still a wip feature check in for future updates. 
+
+You can install the AUR package shelly-git to get the latest features. This will match what is currently in the master branch. This is not recommended for regular use as it could have unstable features.
