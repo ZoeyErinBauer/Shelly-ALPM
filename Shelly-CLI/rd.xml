@@ -76,6 +76,10 @@
             <Type Name="Shelly_CLI.Commands.Utility.CheckPackageUpdatesNonRootSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Utility.Export" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Utility.ExportSettings" Dynamic="Required All"/>
+            <!-- Configuration Commands-->
+            <Type Name="Shelly_CLI.Commands.Config.Restore" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Config.SetParallelDownloads" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Config.SetParallelDownloadsSettings" Dynamic="Required All"/>
         </Assembly>
     </Application>
 </Directives>
