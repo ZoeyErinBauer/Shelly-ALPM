@@ -101,12 +101,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             _handle = IntPtr.Zero;
             throw new Exception($"Error initializing alpm library: {error}");
         }
-        
+
         foreach (var ignorePkg in _config.IgnorePkg)
         {
-            AddIgnorePkg(_handle,ignorePkg);
+            AddIgnorePkg(_handle, ignorePkg);
         }
-        
+
         if (!string.IsNullOrEmpty(_config.GpgDir) && root)
         {
             SetGpgDir(_handle, _config.GpgDir);
@@ -500,7 +500,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2),
                 AutomaticDecompression = System.Net.DecompressionMethods.All,
                 AllowAutoRedirect = true,
-                MaxAutomaticRedirections = 10
+                MaxAutomaticRedirections = 10,
+                UseProxy = true,
             };
             client = new HttpClient(handler);
             client.Timeout = TimeSpan.FromMinutes(30);
@@ -858,12 +859,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 updates.Add(update.ToDto());
             }
         }
-        
+
         updates.RemoveAll(p => _config.IgnorePkg.Contains(p.Name));
-        
+
         return updates;
     }
-    
+
     private string GetErrorMessage(AlpmErrno error)
     {
         return Marshal.PtrToStringUTF8(StrError(error)) ?? $"Unknown error ({error})";
@@ -1039,7 +1040,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     public void RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None)
     {
-
         var heldPackagesBeingRemove = packageNames.Intersect(_config.HoldPkg).ToList();
         if (heldPackagesBeingRemove.Count > 0)
         {
@@ -1048,21 +1048,21 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 $"Are you sure you want to remove the following package held pkg: {string.Join(", ", heldPackagesBeingRemove)}",
                 null,
                 null);
-            
+
             args.Response = 0;
 
             Question?.Invoke(this, args);
 
             // Block until the GUI user responds
             args.WaitForResponse();
-            
+
             if (args.Response == 0)
             {
                 Console.Error.WriteLine("[ALPM_ERROR] Held Package removal cancelled.");
                 return;
             }
         }
-        
+
         if (_handle == IntPtr.Zero) Initialize();
 
         List<IntPtr> pkgPtrs = new List<IntPtr>();
