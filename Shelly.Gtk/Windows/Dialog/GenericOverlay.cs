@@ -7,7 +7,6 @@ public static class GenericOverlay
 {
     public static void ShowGenericOverlay(Overlay parentOverlay, Widget content, GenericDialogEventArgs e)
     {
-        var dismissed = false;
         var backdrop = new Box();
         backdrop.SetOrientation(Orientation.Horizontal);
         backdrop.Hexpand = true;
@@ -74,14 +73,20 @@ public static class GenericOverlay
 
         void Dismiss()
         {
-            if (dismissed)
+            if (e.ResponseTask.IsCompleted)
             {
+                if (backdrop.Parent != null)
+                {
+                    parentOverlay.RemoveOverlay(backdrop);
+                }
                 return;
             }
 
-            dismissed = true;
             e.SetResponse(false);
-            parentOverlay.RemoveOverlay(backdrop);
+            if (backdrop.Parent != null)
+            {
+                parentOverlay.RemoveOverlay(backdrop);
+            }
         }
     }
 }

@@ -52,6 +52,21 @@ public class FlatpakPackageSettings : CommandSettings
     public bool RemoveUnused { get; set; } = false;
 }
 
+public class FlatpakRemoveSettings : CommandSettings
+{
+    [CommandArgument(0, "<package>")]
+    [Description("Flatpak application ID (e.g., com.spotify.Client)")]
+    public string Packages { get; set; } = string.Empty;
+
+    [CommandOption("-r|--remove-unused")]
+    [Description("Remove unused dependencies after uninstalling")]
+    public bool RemoveUnused { get; set; } = false;
+    
+    [CommandOption("-c|--config")]
+    [Description("Removes flatpak configuration for removed app")]
+    public bool RemoveConfig { get; set; } = false;
+}
+
 public class FlatpakRemoteSettings : CommandSettings
 {
     [CommandArgument(0, "<remote>")]

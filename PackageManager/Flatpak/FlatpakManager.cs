@@ -153,6 +153,38 @@ public class FlatpakManager : IDisposable
         return false;
     }
 
+    public FlatpakPackageDto FindAppByNameOrId(string nameOrId)
+    {
+        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+
+        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+        {
+            return new FlatpakPackageDto();
+        }
+
+        try
+        {
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+
+            for (var i = 0; i < length; i++)
+            {
+                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                if (installationPtr == IntPtr.Zero) continue;
+
+                var match = FindInstalledApp(installationPtr, nameOrId);
+
+                return match ?? new FlatpakPackageDto();
+            }
+        }
+        finally
+        {
+            FlatpakReference.GPtrArrayUnref(installationsPtr);
+        }
+
+        return new FlatpakPackageDto();
+    }
+
     /// <summary>
     /// Finds an installed app by ID or friendly name within an installation.
     /// </summary>

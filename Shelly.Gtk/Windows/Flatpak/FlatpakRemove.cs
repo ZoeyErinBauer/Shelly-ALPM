@@ -1,13 +1,19 @@
 using Gtk;
+using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
+
 // ReSharper disable CollectionNeverQueried.Local
 
 namespace Shelly.Gtk.Windows.Flatpak;
 
-public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationService, ILockoutService lockoutService, IConfigService configService, IGenericQuestionService genericQuestionService) : IShellyWindow
+public class FlatpakRemove(
+    IUnprivilegedOperationService unprivilegedOperationService,
+    ILockoutService lockoutService,
+    IConfigService configService,
+    IGenericQuestionService genericQuestionService) : IShellyWindow
 {
     private ListView? _listView;
     private readonly CancellationTokenSource _cts = new();
@@ -22,7 +28,7 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/Flatpak/FlatpakRemoveWindow.ui"), -1);
         var box = (Box)builder.GetObject("FlatpakRemoveWindow")!;
-        
+
         _listView = (ListView)builder.GetObject("installed_flatpaks")!;
         var removeButton = (Button)builder.GetObject("remove_button")!;
         var reloadButton = (Button)builder.GetObject("reload_button")!;
@@ -97,7 +103,7 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
         var nameLabel = (Label)vbox.GetFirstChild()!;
         var idLabel = (Label)nameLabel.GetNextSibling()!;
         var versionLabel = (Label)vbox.GetNextSibling()!;
-        
+
         if (!string.IsNullOrEmpty(package.IconPath) && File.Exists(package.IconPath))
         {
             icon.SetFromFile(package.IconPath);
@@ -112,13 +118,14 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
         idLabel.SetText(package.Id);
         versionLabel.SetText(package.Version);
     }
+
     private async Task LoadDataAsync(CancellationToken ct = default)
     {
         try
         {
             _allPackages = await unprivilegedOperationService.ListFlatpakPackages();
             ct.ThrowIfCancellationRequested();
-            
+
             GLib.Functions.IdleAdd(0, () =>
             {
                 ApplyFilter();
@@ -134,7 +141,7 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
     private void ApplyFilter()
     {
         if (_listStore == null) return;
-        
+
         var filtered = string.IsNullOrWhiteSpace(_searchText)
             ? _allPackages
             : _allPackages.Where(p =>
@@ -152,31 +159,131 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
         }
     }
 
+    private static GenericDialogEventArgs<FlatpakRemoveEnum> BuildRemoveDialog()
+    {
+        var keepRadio = CheckButton.New();
+        var deleteRadio = CheckButton.New();
+        deleteRadio.SetGroup(keepRadio);
+        keepRadio.Active = true;
+        
+        var listBox = ListBox.New();
+        listBox.SelectionMode = SelectionMode.None;
+        listBox.AddCssClass("boxed-list");
+        
+        var firstRadio = MakeRow(keepRadio, "Keep Config", "Keep user data and configuration");
+        var secondRadio = MakeRow(deleteRadio, "Delete Config", "Delete user data and configuration");
+        listBox.Append(firstRadio);
+        listBox.Append(secondRadio);
+        
+        var gestureKeep = GestureClick.New();
+        gestureKeep.OnReleased += (_, _) => keepRadio.Active = true;
+        firstRadio.AddController(gestureKeep);
+        
+        var gestureRemove = GestureClick.New();
+        gestureRemove.OnReleased += (_, _) => deleteRadio.Active = true;
+        secondRadio.AddController(gestureRemove);
+        
+        var keepLabel = Label.New("Keep Config?");
+        keepLabel.AddCssClass("heading");
+
+        var box = Box.New(Orientation.Vertical, 12);
+        box.Append(keepLabel);
+        box.Append(listBox);
+
+        var buttonBox = Box.New(Orientation.Horizontal, 0);
+
+        var dialogArgs = new GenericDialogEventArgs<FlatpakRemoveEnum>(box);
+
+        var closeButton = Button.NewWithLabel("Close");
+        closeButton.OnClicked += (_, _) => dialogArgs.SetResponse(FlatpakRemoveEnum.Cancel);
+
+        var removeButton = Button.NewWithLabel("Confirm");
+        removeButton.AddCssClass("suggested-action");
+        removeButton.OnClicked += (_, _) =>
+        {
+            dialogArgs.SetResponse(keepRadio.Active
+                ? FlatpakRemoveEnum.KeepConfig
+                : FlatpakRemoveEnum.RemoveConfig);
+        };
+        
+        closeButton.Hexpand = false;
+        removeButton.Hexpand = false;
+
+        buttonBox.Halign = Align.Fill;
+        buttonBox.Hexpand = true;
+        buttonBox.Homogeneous = true;
+        buttonBox.Spacing= 5;
+        buttonBox.Append(removeButton);
+        buttonBox.Append(closeButton);
+        box.Append(buttonBox);
+
+        return dialogArgs;
+
+        ListBoxRow MakeRow(CheckButton radio, string title, string subtitle)
+        {
+            var titleLabel = Label.New(title);
+            titleLabel.Halign = Align.Start;
+
+            var subtitleLabel = Label.New(subtitle);
+            subtitleLabel.Halign = Align.Start;
+            subtitleLabel.AddCssClass("dim-label");
+            subtitleLabel.SetEllipsize(Pango.EllipsizeMode.End);
+
+            var textBox = Box.New(Orientation.Vertical, 2);
+            textBox.Hexpand = true;
+            textBox.Append(titleLabel);
+            textBox.Append(subtitleLabel);
+
+            var rowBox = Box.New(Orientation.Horizontal, 12);
+            rowBox.MarginTop = 10;
+            rowBox.MarginBottom = 10;
+            rowBox.MarginStart = 12;
+            rowBox.MarginEnd = 12;
+            radio.Valign = Align.Center;
+            rowBox.Append(radio);
+            rowBox.Append(textBox);
+
+            var row = ListBoxRow.New();
+            row.Child = rowBox;
+            row.Activatable = true;
+            row.OnActivate += (_, _) => radio.Active = true;
+            return row;
+        }
+    }
+
     private async Task RemoveSelectedAsync()
     {
         var selectedItem = _selectionModel?.GetSelectedItem();
         if (selectedItem is not StringObject stringObj) return;
-        
+
         var packageId = stringObj.GetString();
+        bool removeConfig;
 
-        if (!configService.LoadConfig().NoConfirm)
-        {
-            var args = new GenericQuestionEventArgs(
-                "Remove Package?", packageId
-            );
-
-            genericQuestionService.RaiseQuestion(args);
-            if (!await args.ResponseTask)
-            {
-                return;
-            }
-        }
+        var args = BuildRemoveDialog();
         
+        genericQuestionService.RaiseDialog(args);
+
+        var message = await args.ResponseTask;
+
+        switch (message)
+        {
+            case FlatpakRemoveEnum.Cancel:
+                return;
+            case FlatpakRemoveEnum.KeepConfig:
+                removeConfig = false;
+                break;
+            case FlatpakRemoveEnum.RemoveConfig:
+                removeConfig = true;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
         try
         {
             lockoutService.Show($"Removing {packageId}...", 0, true);
-            var result = await unprivilegedOperationService.RemoveFlatpakPackage(packageId);
-            
+            var result = await unprivilegedOperationService.RemoveFlatpakPackage(packageId, removeConfig);
+
             if (!result.Success)
             {
                 Console.WriteLine($"Failed to remove package {packageId}: {result.Error}");
@@ -189,10 +296,9 @@ public class FlatpakRemove(IUnprivilegedOperationService unprivilegedOperationSe
         finally
         {
             lockoutService.Hide();
-            var args = new ToastMessageEventArgs(
+            genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs(
                 $"Removed Package(s)"
-            );
-            genericQuestionService.RaiseToastMessage(args);
+            ));
         }
     }
 

@@ -21,7 +21,7 @@ public interface IUnprivilegedOperationService
 
     Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package);
 
-    Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package);
+    Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool config);
 
     Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package, bool user,
         string remote, string branch);

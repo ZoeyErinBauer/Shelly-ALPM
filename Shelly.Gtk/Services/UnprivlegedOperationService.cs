@@ -172,8 +172,12 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
         return await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
     }
 
-    public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package)
+    public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool removeConfig)
     {
+        if(removeConfig)
+        {
+            return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package, "-c");
+        }
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
     }
 
