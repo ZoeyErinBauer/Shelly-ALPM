@@ -51,13 +51,14 @@ public class AurPackageManager(string? configPath = null)
     private HttpClient _httpClient = new HttpClient();
     private List<string> _availablePackages = [];
     private readonly HashSet<string> _currentlyInstallingAurDeps = new();
+    private bool _useChroot = false;
 
     public event EventHandler<PackageProgressEventArgs>? PackageProgress;
     public event EventHandler<PkgbuildDiffRequestEventArgs>? PkgbuildDiffRequest;
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmProgressEventArgs>? Progress;
 
-    public async Task Initialize(bool root = false, bool useTempPath = false, string tempPath = "")
+    public async Task Initialize(bool root = false, bool useTempPath = false, bool useChroot = false, string tempPath = "")
     {
         _alpm = configPath is null ? new AlpmManager() : new AlpmManager(configPath);
         _alpm.Initialize(root, useTempPath, tempPath);

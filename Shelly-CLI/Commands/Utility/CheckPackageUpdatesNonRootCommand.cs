@@ -3,7 +3,6 @@ using PackageManager.Alpm;
 using PackageManager.Aur;
 using PackageManager.Aur.Models;
 using PackageManager.Flatpak;
-using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -24,7 +23,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         var flatPakManager = new FlatpakManager();
         List<FlatpakPackageDto> flatpakPackages = [];
         var username = Environment.GetEnvironmentVariable("USER");
-        var dbPath = Path.Combine("/home", username, ".cache", "Shelly", "db");
+        var dbPath = Path.Combine("/home", username!, ".cache", "Shelly", "db");
         Directory.CreateDirectory(dbPath);
         AnsiConsole.WriteLine(dbPath);
         if (settings.JsonOutput)
@@ -44,7 +43,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
             syncModel.Packages = syncPackageModels;
             if (settings.CheckAur)
             {
-                aurManager.Initialize(false, true, dbPath);
+                await aurManager.Initialize(false, true,false, dbPath);
                 aurPackages = await aurManager.GetPackagesNeedingUpdate();
                 aurManager.Dispose();
                 List<SyncAurModel> aurPackageModels = [];
@@ -85,7 +84,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
             AnsiConsole.Status().Spinner(Spinner.Known.BouncingBall).Start("Initializing and syncing AUR packages",
                 async ctx =>
                 {
-                    aurManager.Initialize(false, true, dbPath);
+                    aurManager.Initialize(false, true, false,dbPath);
                     aurPackages = await aurManager.GetPackagesNeedingUpdate();
                     aurManager.Dispose();
                 });
@@ -167,7 +166,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
             syncModel.Packages = syncPackageModels;
             if (settings.CheckAur)
             {
-                aurManager.Initialize(false, true, dbPath);
+                aurManager.Initialize(false, true, false,dbPath);
                 aurPackages = await aurManager.GetPackagesNeedingUpdate();
                 aurManager.Dispose();
                 List<SyncAurModel> aurPackageModels = [];
@@ -202,8 +201,8 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         
         if (settings.CheckAur)
         {
-            Console.Error.WriteLine("Initializing and syncing AUR packages");
-            aurManager.Initialize(false, true, dbPath);
+            Console.Error.WriteLine("Initializing AUR packages");
+            await aurManager.Initialize(false, true, false,dbPath);
             aurPackages = await aurManager.GetPackagesNeedingUpdate();
             aurManager.Dispose();
             Console.Error.WriteLine("Finished checking AUR");
