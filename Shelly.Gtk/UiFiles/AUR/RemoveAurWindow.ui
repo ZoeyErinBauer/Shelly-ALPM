@@ -28,7 +28,7 @@
       <child>
         <object class="GtkCheckButton" id="cascade_delete_check">
           <property name="halign">start</property>
-          <property name="label">Cascade Delete</property>
+          <property name="label">Clean Uninstall</property>
           <property name="active">true</property>
         </object>
       </child>
