@@ -61,12 +61,15 @@ public class PackageInstall(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
-
+    
+    private GridView? _gridView = null!;
+    private SignalListItemFactory? _factory;
+    
     public Widget CreateWindow()
     {
         _builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/Package/PackageWindow.ui"), -1);
         _overlay = (Overlay)_builder.GetObject("PackageWindow")!;
-        _columnView = (ColumnView)_builder.GetObject("package_column_view")!;
+       // _columnView = (ColumnView)_builder.GetObject("package_column_view")!;
         _checkColumn = (ColumnViewColumn)_builder.GetObject("check_column")!;
         _checkColumn.Resizable = true;
         _nameColumn = (ColumnViewColumn)_builder.GetObject("name_column")!;
@@ -87,14 +90,16 @@ public class PackageInstall(
         _groupDropDown = (DropDown)_builder.GetObject("grouping_selection")!;
         _upgradeCheck = (CheckButton)_builder.GetObject("upgrade_check")!;
 
+        /*
         _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
         _filter = CustomFilter.New(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
         _columnView.SetModel(_selectionModel);
+        */
 
-        SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
+        /*SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
 
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
@@ -108,8 +113,8 @@ public class PackageInstall(
             {
                 pkgObj.ToggleSelection();
             }
-        };
-        _selectionModel.OnSelectionChanged += (_, _) =>
+        };*/
+        /*_selectionModel.OnSelectionChanged += (_, _) =>
         {
             var item = _selectionModel.GetSelectedItem();
             if (item is AlpmPackageGObject pkgObj)
@@ -122,7 +127,7 @@ public class PackageInstall(
                 _detailRevealer.SetVisible(false);
                 _currentDetailPkg = null;
             }
-        };
+        };*/
         _searchEntry.OnSearchChanged += (_, _) =>
         {
             _searchText = _searchEntry.GetText();
@@ -142,7 +147,133 @@ public class PackageInstall(
                 ApplyFilter();
             }
         };
+        
+        _gridView = (GridView)_builder.GetObject("list_packages")!;
+        _gridView.SetMaxColumns(4);
+        _gridView.SetMinColumns(1);
+        
+        _gridView.SetModel(_selectionModel);
+        _gridView.SingleClickActivate = true;
+        
+        _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
+        _filter = CustomFilter.New(FilterPackage);
+        _filterListModel = FilterListModel.New(_listStore, _filter);
+        _selectionModel = SingleSelection.New(_filterListModel);
+        _gridView.SetModel(_selectionModel);
+        _gridView.SingleClickActivate = true;
+        _factory = SignalListItemFactory.New();
+        _factory.OnSetup += OnSetup;
+        _factory.OnBind += OnBind;
+      //  _factory.OnUnbind += OnUnbind;
+        _gridView.SetFactory(_factory);
+        
+        _gridView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+        
         return _overlay;
+    }
+    
+    private static void OnSetup(SignalListItemFactory sender, SignalListItemFactory.SetupSignalArgs args)
+    {
+        var listItem = (ListItem)args.Object;
+        var hbox = Box.New(Orientation.Horizontal, 10);
+        hbox.MarginStart = 10;
+        hbox.MarginEnd = 10;
+        hbox.MarginTop = 5;
+        hbox.MarginBottom = 5;
+        hbox.Hexpand = false;
+        hbox.Vexpand = false;
+        hbox.Halign = Align.Start;
+
+
+        var icon = Image.New();
+        icon.PixelSize = 64;
+        icon.WidthRequest = 64;
+        icon.HeightRequest = 64;
+        icon.Valign = Align.Center;
+        hbox.Append(icon);
+
+
+        var vbox = Box.New(Orientation.Vertical, 2);
+        var nameBox = Box.New(Orientation.Horizontal, 4);
+        nameBox.Halign = Align.Start;
+
+        var nameLabel = Label.New(string.Empty);
+        nameLabel.Halign = Align.Start;
+        nameLabel.AddCssClass("heading");
+        nameBox.Append(nameLabel);
+
+
+        var verifiedIcon = Image.NewFromIconName("checkmark-symbolic");
+        verifiedIcon.PixelSize = 14;
+        verifiedIcon.Valign = Align.Center;
+        verifiedIcon.TooltipText = "Verified";
+        nameBox.Append(verifiedIcon);
+
+
+        var idLabel = Label.New(string.Empty);
+        idLabel.SetText(string.Empty);
+        idLabel.Halign = Align.Start;
+        idLabel.AddCssClass("dim-label");
+        idLabel.SetWrap(true);
+        idLabel.SetWrapMode(Pango.WrapMode.WordChar);
+        idLabel.SetEllipsize(Pango.EllipsizeMode.None);
+        idLabel.MaxWidthChars = 35;
+        idLabel.WidthChars = -1;
+
+        vbox.Append(nameBox);
+        vbox.Append(idLabel);
+        hbox.Append(vbox);
+
+        var frame = Frame.New(null);
+        frame.SetChild(hbox);
+        frame.WidthRequest = 300;
+        frame.Hexpand = false;
+        frame.Halign = Align.Fill;
+        frame.AddCssClass("card");
+
+        listItem.SetChild(frame);
+    }
+
+
+    private void OnBind(SignalListItemFactory sender, SignalListItemFactory.BindSignalArgs args)
+    {
+        var listItem = (ListItem)args.Object;
+        if (listItem.GetItem() is not AlpmPackageGObject obj) return;
+
+        var app = obj.Package;
+
+        if (app == null) return;
+
+        var frame = (Frame)listItem.GetChild()!;
+        var hbox = (Box)frame.GetChild()!;
+        var icon = (Image)hbox.GetFirstChild()!;
+        var vbox = (Box)icon.GetNextSibling()!;
+        var nameBox = (Box)vbox.GetFirstChild()!;
+        var nameLabel = (Label)nameBox.GetFirstChild()!;
+        var verifiedIcon = (Image)nameLabel.GetNextSibling()!;
+        var idLabel = (Label)nameBox.GetNextSibling()!;
+
+        nameLabel.SetText(app.Name);
+        idLabel.SetText(app.Description);
+       // verifiedIcon.SetVisible(app.is);
+
+        /*var path =
+            $"/var/lib/flatpak/appstream/{app.Remotes.FirstOrDefault()?.Name}/x86_64/active/icons/64x64/{app.Id}.png";*/
+        var iconPath = iconResolverService.GetIconPath(app.Name);
+        if(iconPath != null && File.Exists(iconPath))
+            icon.SetFromFile(iconPath);
+        else
+        {
+            if(app.Name.StartsWith("lib"))
+            {
+                icon.SetFromIconName("application-x-sharedlib");
+            }
+            else
+            {
+                icon.SetFromIconName("application-x-executable");
+            }
+        }
+           
     }
 
     private void ShowPackageDetails(AlpmPackageGObject pkgObj)

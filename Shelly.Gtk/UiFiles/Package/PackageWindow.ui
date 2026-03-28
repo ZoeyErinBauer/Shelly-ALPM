@@ -102,6 +102,7 @@
                 <property name="hexpand">true</property>
                 <property name="overlay-scrolling">false</property>
                 <property name="vexpand">true</property>
+                <property name="visible">false</property>
                 <child>
                   <object class="GtkColumnView" id="package_column_view">
                     <property name="hexpand">true</property>
@@ -138,6 +139,16 @@
                       </object>
                     </child>
                   </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="overlay-scrolling">false</property>
+                <property name="vexpand">true</property>
+                <property name="hexpand">true</property>
+                <child>
+                  <object class="GtkGridView" id="list_packages"/>
                 </child>
               </object>
             </child>

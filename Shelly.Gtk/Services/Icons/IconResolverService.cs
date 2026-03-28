@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Shelly.Gtk.Services.Icons;
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(Dictionary<string, List<string>>))]
+internal partial class ShellyManifestJsonContext : JsonSerializerContext
+{
+}
 
 public class IconResolverService : IIconResolverService
 {
@@ -12,8 +20,11 @@ public class IconResolverService : IIconResolverService
 
     private const string IconPath = "/usr/share/swcatalog";
     private const string LegacyIconPath = "/usr/share/app-info";
+    private const string ShellyIconAppstreamPath = "/usr/share/shelly-icon-appstream";
 
     private readonly ConcurrentDictionary<string, string> _iconMap = [];
+    private Dictionary<string, List<string>>? _shellyManifest;
+    private readonly object _manifestLock = new();
 
     //Commenting out extra methods and plan to add them back in after futher optimizations
     public string? GetIconPath(string packageName)
@@ -23,10 +34,55 @@ public class IconResolverService : IIconResolverService
             return iconPath;
         }
 
+        var shellyResult = GetShellyAppstreamIcon(packageName);
+        if (shellyResult != null)
+        {
+            _iconMap.TryAdd(packageName, shellyResult);
+            return shellyResult;
+        }
+
         var swcatalogResult = GetSwcatalogIcon(packageName);
         _iconMap.TryAdd(packageName, swcatalogResult ?? "");
         return swcatalogResult ??
                null;
+    }
+
+    private string? GetShellyAppstreamIcon(string packageName)
+    {
+        if (_shellyManifest == null)
+        {
+            lock (_manifestLock)
+            {
+                if (_shellyManifest == null)
+                {
+                    try
+                    {
+                        var manifestPath = Path.Combine(ShellyIconAppstreamPath, "manifest.json");
+                        if (File.Exists(manifestPath))
+                        {
+                            var json = File.ReadAllText(manifestPath);
+                            _shellyManifest = JsonSerializer.Deserialize(json, ShellyManifestJsonContext.Default.DictionaryStringListString);
+                        }
+                    }
+                    catch
+                    {
+                        _shellyManifest = [];
+                    }
+                }
+            }
+        }
+
+        if (_shellyManifest == null || !_shellyManifest.TryGetValue(packageName, out var icons) || icons.Count == 0)
+            return null;
+        
+        foreach (var relativePath in icons)
+        {
+            var fullPath = Path.Combine(ShellyIconAppstreamPath, relativePath);
+            if (File.Exists(fullPath))
+                return fullPath;
+        }
+
+        return null;
     }
 
     public void PreloadIcons(IEnumerable<string> packageNames)
