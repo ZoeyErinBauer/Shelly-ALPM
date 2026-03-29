@@ -26,11 +26,6 @@ public class Settings(
     private static string? _cachedLatestVersion = null!;
     private static DateTime _lastVersionCheck = DateTime.MinValue;
     private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromMinutes(5);
-
-    public void SetParentOverlay(Overlay overlay)
-    {
-        _parentOverlay = overlay;
-    }
     
     private static readonly HttpClient HttpClient = new()
     {
@@ -45,7 +40,8 @@ public class Settings(
         _box = (Box)builder.GetObject("SettingWindow")!;
 
         _config = configService.LoadConfig();
-
+        _parentOverlay = (Overlay)builder.GetObject("SettingsOverlay")!;
+        
         SetupAurSwitch("aur_switch", _config.AurEnabled, (v) => _config.AurEnabled = v, builder);
         SetupFlatpakSwitch("flatpak_switch", _config.FlatPackEnabled, (v) => _config.FlatPackEnabled = v, builder);
         SetupTraySwitch("tray_switch", _config.TrayEnabled, (v) => _config.TrayEnabled = v, builder);
