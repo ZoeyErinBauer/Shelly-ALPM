@@ -1,6 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -20,26 +18,50 @@ public class HomeWindow(
     ILockoutService lockoutService,
     IIconResolverService iconResolverService,
     IGenericQuestionService genericQuestionService,
+    IArchNewsService archNewsService,
+    IOperationLogService operationLogService,
     MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
-    private ListBox? _listBox;
+    private Revealer? _updatesRevealer;
+    private ListBox? _updatesListBox;
+    private Box? _archNewsContentBox;
+    private Label? _archNewsPageLabel;
+    private Button? _archNewsPrevButton;
+    private Button? _archNewsNextButton;
+    private List<RssModel> _archNewsItems = [];
+    private int _archNewsCurrentIndex;
     private Label? _totalAurLabel;
     private Label? _percentAurLabel;
     private Label? _totalPackageLabel;
     private Label? _packagePercentLabel;
     private Label? _totalFlatpakLabel;
     private Label? _flatpakPercentLabel;
+    private ListBox? _operationLogListBox;
 
     public Widget CreateWindow()
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/HomeWindow.ui"), -1);
+        var overlay = (Overlay)builder.GetObject("HomeWindowOverlay")!;
         _box = (Box)builder.GetObject("HomeWindow")!;
 
-        var listBox = (ListBox)builder.GetObject("NewsListBox")!;
-        _listBox = listBox;
-        listBox.OnRealize += (sender, args) => { _ = LoadFeedAsync(listBox, _cts.Token); };
+        _updatesRevealer = (Revealer)builder.GetObject("UpdatesRevealer")!;
+        _updatesListBox = (ListBox)builder.GetObject("UpdatesListBox")!;
+        var showUpdatesButton = (ToggleButton)builder.GetObject("ShowUpdatesButton")!;
+
+        var arrowImage = (Image)showUpdatesButton.GetFirstChild()!;
+        showUpdatesButton.OnToggled += (sender, args) =>
+        {
+            _updatesRevealer.RevealChild = showUpdatesButton.Active;
+            arrowImage.SetFromIconName(showUpdatesButton.Active
+                ? "pan-end-symbolic"
+                : "pan-start-symbolic");
+            if (showUpdatesButton.Active && _updatesListBox is not null)
+            {
+                _ = LoadUpdatesPanel(_updatesListBox, _cts.Token);
+            }
+        };
 
         var homeSearchEntry = (SearchEntry)builder.GetObject("HomeSearchEntry")!;
         var metaSearchContainer = (Box)builder.GetObject("MetaSearchContainer")!;
@@ -107,7 +129,20 @@ public class HomeWindow(
             });
         };
 
-        return _box;
+        _archNewsContentBox = (Box)builder.GetObject("ArchNewsContentBox")!;
+        _archNewsPageLabel = (Label)builder.GetObject("ArchNewsPageLabel")!;
+        _archNewsPrevButton = (Button)builder.GetObject("ArchNewsPrevButton")!;
+        _archNewsNextButton = (Button)builder.GetObject("ArchNewsNextButton")!;
+
+        _archNewsPrevButton.OnClicked += (_, _) => ShowArchNewsItem(_archNewsCurrentIndex - 1);
+        _archNewsNextButton.OnClicked += (_, _) => ShowArchNewsItem(_archNewsCurrentIndex + 1);
+
+        _ = LoadArchNews(_cts.Token);
+
+        _operationLogListBox = (ListBox)builder.GetObject("OperationLogListBox")!;
+        _ = LoadOperationLog(_cts.Token);
+
+        return overlay;
     }
 
     private async Task UpgradeAll()
@@ -198,8 +233,10 @@ public class HomeWindow(
             tasks.Add(LoadTotalFlatpak(_totalFlatpakLabel, _cts.Token));
         if (_flatpakPercentLabel is not null)
             tasks.Add(LoadPercentFlatpak(_flatpakPercentLabel, _cts.Token));
-        if (_listBox is not null)
-            tasks.Add(LoadFeedAsync(_listBox, _cts.Token));
+        if (_updatesListBox is not null)
+            tasks.Add(LoadUpdatesPanel(_updatesListBox, _cts.Token));
+        if (_operationLogListBox is not null)
+            tasks.Add(LoadOperationLog(_cts.Token));
 
         await Task.WhenAll(tasks);
     }
@@ -440,30 +477,79 @@ public class HomeWindow(
     }
 
 
-    private static async Task LoadFeedAsync(ListBox listBox, CancellationToken ct)
+    private async Task LoadUpdatesPanel(ListBox listBox, CancellationToken ct)
     {
-        var feedItems = new List<RssModel>();
-
-        // Fetch from network
         try
         {
-            var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/", ct);
+            var updates = await unprivilegedOperationService.CheckForApplicationUpdates();
             ct.ThrowIfCancellationRequested();
-            feedItems.AddRange(feed);
 
-            // Marshal back to GTK main thread to update UI
             GLib.Functions.IdleAdd(0, () =>
             {
-                PopulateListBox(listBox, feedItems);
-                return false; // run once
-            });
+                // Clear existing rows
+                while (listBox.GetFirstChild() is { } child)
+                    listBox.Remove(child);
 
-            // Cache the result
-            var cachedFeed = new CachedRssModel
-            {
-                TimeCached = DateTime.Now,
-                Rss = feedItems
-            };
+                foreach (var pkg in updates.Packages)
+                {
+                    var row = new ListBoxRow();
+                    var label = Label.New($"{pkg.Name}: {pkg.OldVersion} → {pkg.Version}");
+                    label.Halign = Align.Start;
+                    label.Wrap = true;
+                    label.MarginStart = 8;
+                    label.MarginEnd = 8;
+                    label.MarginTop = 4;
+                    label.MarginBottom = 4;
+                    row.SetActivatable(false);
+                    row.SetChild(label);
+                    listBox.Append(row);
+                }
+
+                foreach (var pkg in updates.Aur)
+                {
+                    var row = new ListBoxRow();
+                    var label = Label.New($"[AUR] {pkg.Name}: {pkg.OldVersion} → {pkg.Version}");
+                    label.Halign = Align.Start;
+                    label.Wrap = true;
+                    label.MarginStart = 8;
+                    label.MarginEnd = 8;
+                    label.MarginTop = 4;
+                    label.MarginBottom = 4;
+                    row.SetActivatable(false);
+                    row.SetChild(label);
+                    listBox.Append(row);
+                }
+
+                foreach (var pkg in updates.Flatpaks)
+                {
+                    var row = new ListBoxRow();
+                    var label = Label.New($"[Flatpak] {pkg.Name ?? pkg.Id}: {pkg.Version}");
+                    label.Halign = Align.Start;
+                    label.Wrap = true;
+                    label.MarginStart = 8;
+                    label.MarginEnd = 8;
+                    label.MarginTop = 4;
+                    label.MarginBottom = 4;
+                    row.SetActivatable(false);
+                    row.SetChild(label);
+                    listBox.Append(row);
+                }
+
+                if (updates.Packages.Count == 0 && updates.Aur.Count == 0 && updates.Flatpaks.Count == 0)
+                {
+                    var row = new ListBoxRow();
+                    var label = Label.New("All packages are up to date");
+                    label.Halign = Align.Center;
+                    label.AddCssClass("dim-label");
+                    label.MarginTop = 8;
+                    label.MarginBottom = 8;
+                    row.SetActivatable(false);
+                    row.SetChild(label);
+                    listBox.Append(row);
+                }
+
+                return false;
+            });
         }
         catch (Exception e)
         {
@@ -471,57 +557,210 @@ public class HomeWindow(
         }
     }
 
-    private static void PopulateListBox(ListBox listBox, List<RssModel> items)
+    private async Task LoadArchNews(CancellationToken ct)
     {
-        // Clear existing rows
-        while (listBox.GetFirstChild() is { } child)
-            listBox.Remove(child);
-
-        foreach (var item in items)
+        try
         {
-            var row = new ListBoxRow();
-            var vbox = Box.New(Orientation.Vertical, 4);
-            vbox.MarginStart = 8;
-            vbox.MarginEnd = 8;
-            vbox.MarginTop = 4;
-            vbox.MarginBottom = 4;
+            var items = await archNewsService.FetchNewsAsync(ct);
+            ct.ThrowIfCancellationRequested();
 
-            var title = Label.New(item.Title);
-            title.Halign = Align.Start;
-            title.Wrap = true;
-            title.AddCssClass("heading");
+            GLib.Functions.IdleAdd(0, () =>
+            {
+                _archNewsItems = items.Take(10).ToList();
+                _archNewsCurrentIndex = 0;
 
-            var date = Label.New(item.PubDate);
-            date.Halign = Align.Start;
-            date.AddCssClass("dim-label");
+                if (_archNewsItems.Count == 0)
+                {
+                    ShowArchNewsPlaceholder("Unable to load Arch News");
+                }
+                else
+                {
+                    ShowArchNewsItem(0);
+                }
 
-            var desc = Label.New(item.Description);
-            desc.Halign = Align.Start;
-            desc.Wrap = true;
-
-            vbox.Append(title);
-            vbox.Append(date);
-            vbox.Append(desc);
-
-            row.SetActivatable(false);
-            row.SetChild(vbox);
-            listBox.Append(row);
+                return false;
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load Arch News: {e.Message}");
         }
     }
 
-    // Port these from HomeViewModel or reference them from a shared service
-    private static async Task<List<RssModel>> GetRssFeedAsync(string url, CancellationToken ct = default)
+    private void ShowArchNewsItem(int index)
     {
-        using var client = new HttpClient();
-        var xmlString = await client.GetStringAsync(url, ct);
-        var xml = XDocument.Parse(xmlString);
+        if (_archNewsContentBox is null || _archNewsItems.Count == 0) return;
 
-        return xml.Descendants("item").Select(item => new RssModel
+        _archNewsCurrentIndex = Math.Clamp(index, 0, _archNewsItems.Count - 1);
+        var item = _archNewsItems[_archNewsCurrentIndex];
+
+        while (_archNewsContentBox.GetFirstChild() is { } child)
+            _archNewsContentBox.Remove(child);
+
+        var titleLabel = Label.New(item.Title);
+        titleLabel.AddCssClass("title-4");
+        titleLabel.SetXalign(0);
+        titleLabel.Wrap = true;
+        titleLabel.MaxWidthChars = 20;
+
+        var dateLabel = Label.New(item.PubDate ?? string.Empty);
+        dateLabel.AddCssClass("caption");
+        dateLabel.AddCssClass("dim-label");
+        dateLabel.SetXalign(0);
+        dateLabel.MaxWidthChars = 20;
+
+        _archNewsContentBox.Append(titleLabel);
+        _archNewsContentBox.Append(dateLabel);
+
+        if (!string.IsNullOrEmpty(item.Link))
         {
-            Title = item.Element("title")?.Value ?? "", Link = item.Element("link")?.Value ?? "",
-            Description = Regex.Replace(item.Element("description")?.Value ?? "", "<.*?>", string.Empty),
-            PubDate = item.Element("pubDate")?.Value ?? ""
-        }).ToList();
+            var linkButton = new Button();
+            linkButton.SetLabel("Read more...");
+            linkButton.AddCssClass("flat");
+            linkButton.Halign = Align.Start;
+            var link = item.Link;
+            linkButton.OnClicked += (_, _) =>
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = link,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to open link: {ex.Message}");
+                }
+            };
+            _archNewsContentBox.Append(linkButton);
+        }
+
+        _archNewsPrevButton!.Sensitive = _archNewsCurrentIndex > 0;
+        _archNewsNextButton!.Sensitive = _archNewsCurrentIndex < _archNewsItems.Count - 1;
+        _archNewsPageLabel!.SetText($"{_archNewsCurrentIndex + 1} / {_archNewsItems.Count}");
+    }
+
+    private void ShowArchNewsPlaceholder(string message)
+    {
+        if (_archNewsContentBox is null) return;
+
+        while (_archNewsContentBox.GetFirstChild() is { } child)
+            _archNewsContentBox.Remove(child);
+
+        var label = Label.New(message);
+        label.Halign = Align.Center;
+        label.AddCssClass("dim-label");
+        _archNewsContentBox.Append(label);
+
+        _archNewsPrevButton!.Sensitive = false;
+        _archNewsNextButton!.Sensitive = false;
+        _archNewsPageLabel!.SetText("0 / 0");
+    }
+
+    private async Task LoadOperationLog(CancellationToken ct)
+    {
+        try
+        {
+            var entries = await operationLogService.GetRecentOperationsAsync(8);
+            ct.ThrowIfCancellationRequested();
+
+            GLib.Functions.IdleAdd(0, () =>
+            {
+                if (_operationLogListBox is null) return false;
+
+                while (_operationLogListBox.GetFirstChild() is { } child)
+                    _operationLogListBox.Remove(child);
+
+                if (entries.Count == 0)
+                {
+                    var placeholder = Label.New("No recent activity");
+                    placeholder.AddCssClass("dim-label");
+                    placeholder.Halign = Align.Center;
+                    placeholder.MarginTop = 20;
+                    var row = new ListBoxRow();
+                    row.SetActivatable(false);
+                    row.SetChild(placeholder);
+                    _operationLogListBox.Append(row);
+                    return false;
+                }
+
+                foreach (var entry in entries)
+                {
+                    var row = new ListBoxRow();
+                    row.SetActivatable(false);
+
+                    var hbox = Box.New(Orientation.Horizontal, 10);
+                    hbox.MarginStart = 5;
+                    hbox.MarginEnd = 5;
+                    hbox.MarginTop = 4;
+                    hbox.MarginBottom = 4;
+
+                    var icon = Image.NewFromIconName(GetIconForCommand(entry.Command));
+                    icon.SetPixelSize(16);
+                    hbox.Append(icon);
+
+                    var cmdLabel = Label.New(entry.Command);
+                    cmdLabel.SetXalign(0);
+                    cmdLabel.Hexpand = true;
+                    cmdLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    hbox.Append(cmdLabel);
+
+                    var timeLabel = Label.New(FormatRelativeTime(entry.Timestamp));
+                    timeLabel.AddCssClass("dim-label");
+                    timeLabel.AddCssClass("caption");
+                    hbox.Append(timeLabel);
+
+                    if (entry.ExitCode.HasValue)
+                    {
+                        var statusIcon = Image.NewFromIconName(
+                            entry.ExitCode == 0 ? "emblem-ok-symbolic" : "dialog-error-symbolic");
+                        statusIcon.SetPixelSize(16);
+                        hbox.Append(statusIcon);
+                    }
+                    else
+                    {
+                        var inProgressLabel = Label.New("⏳");
+                        hbox.Append(inProgressLabel);
+                    }
+
+                    row.SetChild(hbox);
+                    _operationLogListBox.Append(row);
+                }
+
+                return false;
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load operation log: {e.Message}");
+        }
+    }
+
+    private static string GetIconForCommand(string command)
+    {
+        if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
+            return "emblem-synchronizing-symbolic";
+        if (command.Contains("install", StringComparison.OrdinalIgnoreCase))
+            return "list-add-symbolic";
+        if (command.Contains("remove", StringComparison.OrdinalIgnoreCase))
+            return "list-remove-symbolic";
+        if (command.Contains("upgrade", StringComparison.OrdinalIgnoreCase) ||
+            command.Contains("update", StringComparison.OrdinalIgnoreCase))
+            return "software-update-available-symbolic";
+        return "utilities-terminal-symbolic";
+    }
+
+    private static string FormatRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.Now - timestamp;
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 2) return "yesterday";
+        if (diff.TotalDays < 30) return $"{(int)diff.TotalDays}d ago";
+        return timestamp.ToString("MMM d");
     }
 
     public void Dispose()
