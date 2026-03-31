@@ -13,16 +13,16 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
     public event Action? OnExitRequested;
 
     private static readonly
-        Dictionary<int, (string Label, string Type, bool Enabled, string icon, string subMenu, MenuEnum action)> Items =
+        Dictionary<int, (string Label, string Type, bool Enabled, string icon, string subMenu, MenuEnum action, bool visible)> Items =
             new()
             {
-                [1] = ("Open Shelly", "standard", true, "shelly", "", MenuEnum.OpenShelly),
-                [2] = ("Update Packages", "standard", true, "", "", MenuEnum.UpdatePackages),
-                [3] = ("Check for Updates", "standard", true, "", "", MenuEnum.CheckForUpdates),
-                [4] = ("Last check: Never", "standard", false, "", "", MenuEnum.LastTime),
-                [5] = ("", "separator", false, "", "", MenuEnum.None),
-                [98] = ("", "separator", false, "", "", MenuEnum.None),
-                [99] = ("Exit", "standard", true, "", "", action: MenuEnum.Exit),
+                [1] = ("Open Shelly", "standard", true, "shelly", "", MenuEnum.OpenShelly, true),
+                [2] = ("Update Packages", "standard", true, "", "", MenuEnum.UpdatePackages, true),
+                [3] = ("Check for Updates", "standard", true, "", "", MenuEnum.CheckForUpdates, true),
+                [4] = ("Last check: Never", "standard", false, "", "", MenuEnum.LastTime, true),
+                [5] = ("", "separator", false, "", "", MenuEnum.None, true),
+                [98] = ("", "separator", false, "", "", MenuEnum.None, true),
+                [99] = ("Exit", "standard", true, "", "", action: MenuEnum.Exit, true),
             };
 
     private const int SubmenuId = 6;
@@ -47,10 +47,26 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
                 return HandleGetProperty(context);
             if (req.Member.SequenceEqual("AboutToShow"u8))
             {
-                var reader = req.GetBodyReader();
-                reader.ReadInt32();
                 using var w = context.CreateReplyWriter("b");
                 w.WriteBool(false);
+                context.Reply(w.CreateMessage());
+                return ValueTask.CompletedTask;
+            }
+
+            if (req.Member.SequenceEqual("AboutToShowGroup"u8))
+            {
+                var reader = req.GetBodyReader();
+                var ids = new List<int>();
+                var arrStart = reader.ReadArrayStart(DBusType.Int32);
+                while (reader.HasNext(arrStart))
+                    ids.Add(reader.ReadInt32());
+
+                Console.WriteLine($"[DBusMenu] AboutToShowGroup for ids: {string.Join(", ", ids)}");
+                using var w = context.CreateReplyWriter("aiai");
+                var updatesNeeded = w.WriteArrayStart(DBusType.Int32);
+                w.WriteArrayEnd(updatesNeeded);
+                var idErrors = w.WriteArrayStart(DBusType.Int32);
+                w.WriteArrayEnd(idErrors);
                 context.Reply(w.CreateMessage());
                 return ValueTask.CompletedTask;
             }
@@ -101,35 +117,39 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
     }
 
     private VariantValue BuildMenuItemVariant(int id, string label, string type, bool enabled, string icon,
-        string childrenDisplay)
+        string childrenDisplay, bool visible)
     {
         Dict<string, VariantValue> props = new(new Dictionary<string, VariantValue>
         {
             { "label", label },
             { "type", type },
             { "enabled", enabled },
-            { "visible", true },
+            { "visible", visible },
             { "icon-name", icon },
-            { "children-display", childrenDisplay }
+            { "children-display", childrenDisplay },
+            { "toggle-type", "" }
         });
 
         VariantValue[] children = [];
-        var submenuMap = new Dictionary<MenuEnum, Func<bool>>
-        {
-            { MenuEnum.StandardUpdate, () => id == GetIndexByAction(MenuEnum.StandardUpdate) },
-            { MenuEnum.AurUpdate, () => id == GetIndexByAction(MenuEnum.AurUpdate) },
-            { MenuEnum.FlatpakUpdate, () => id == GetIndexByAction(MenuEnum.FlatpakUpdate) },
-        };
 
-        if (childrenDisplay != "submenu")
+        if (childrenDisplay != "submenu" || !Items.TryGetValue(id, out var item))
             return VariantValue.Struct(
                 VariantValue.Int32(id),
                 props,
                 VariantValue.ArrayOfVariant(children)
             );
-        var match = submenuMap.FirstOrDefault(kvp => kvp.Value());
-        if (match.Key != default)
-            children = GetSubmenuChildren(match.Key);
+
+        if (UpdatesSubmenuChildren.TryGetValue(item.action, out var childIds))
+        {
+            children = childIds
+                .Select(childId => Items.TryGetValue(childId, out var childItem)
+                    ? BuildMenuItemVariant(childId, childItem.Label, childItem.Type, childItem.Enabled, childItem.icon,
+                        childItem.subMenu, childItem.visible)
+                    : VariantValue.Struct(VariantValue.Int32(childId),
+                        new Dict<string, VariantValue>(new Dictionary<string, VariantValue>()),
+                        VariantValue.ArrayOfVariant(Array.Empty<VariantValue>())))
+                .ToArray();
+        }
 
         return VariantValue.Struct(
             VariantValue.Int32(id),
@@ -144,7 +164,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         var parentId = reader.ReadInt32();
 
         using var w = context.CreateReplyWriter("u(ia{sv}av)");
-        w.WriteUInt32(1);
+        w.WriteUInt32(_revision);
 
         w.WriteStructureStart();
         w.WriteInt32(parentId);
@@ -152,24 +172,40 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         int[] childrenIds = [];
         var childrenDisplayValue = "";
 
-        MenuEnum action;
-
         if (parentId == 0)
         {
             childrenIds = Items.Keys.Where(k => k < 100).OrderBy(k => k).ToArray();
             childrenDisplayValue = "submenu";
         }
-        else
+        else if (Items.TryGetValue(parentId, out var parentItem))
         {
-            action = Items[parentId].action;
-            if (UpdatesSubmenuChildren.TryGetValue(action, out var children))
+            childrenDisplayValue = parentItem.subMenu;
+            if (childrenDisplayValue == "submenu")
             {
-                childrenIds = children.ToArray();
-                childrenDisplayValue = "submenu";
+                if (UpdatesSubmenuChildren.TryGetValue(parentItem.action, out var children))
+                {
+                    childrenIds = children.ToArray();
+                }
             }
         }
 
         var rootDict = w.WriteDictionaryStart();
+        if (Items.TryGetValue(parentId, out var pItem))
+        {
+            w.WriteDictionaryEntryStart();
+            w.WriteString("label");
+            w.WriteVariantString(pItem.Label);
+            w.WriteDictionaryEntryStart();
+            w.WriteString("type");
+            w.WriteVariantString(pItem.Type);
+            w.WriteDictionaryEntryStart();
+            w.WriteString("enabled");
+            w.WriteVariantBool(pItem.Enabled);
+            w.WriteDictionaryEntryStart();
+            w.WriteString("icon-name");
+            w.WriteVariantString(pItem.icon);
+        }
+
         w.WriteDictionaryEntryStart();
         w.WriteString("children-display");
         w.WriteVariantString(childrenDisplayValue);
@@ -178,14 +214,14 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         var av = w.WriteArrayStart(DBusType.Variant);
         foreach (var id in childrenIds)
             if (Items.TryGetValue(id, out var item))
-                w.WriteVariant(BuildMenuItemVariant(id, item.Label, item.Type, item.Enabled, item.icon, item.subMenu));
+                w.WriteVariant(BuildMenuItemVariant(id, item.Label, item.Type, item.Enabled, item.icon, item.subMenu, item.visible));
         w.WriteArrayEnd(av);
 
         context.Reply(w.CreateMessage());
         return ValueTask.CompletedTask;
     }
 
-    private async ValueTask HandleEvent(MethodContext context)
+    private ValueTask HandleEvent(MethodContext context)
     {
         var reader = context.Request.GetBodyReader();
         var id = reader.ReadInt32();
@@ -193,50 +229,65 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         reader.ReadVariantValue();
         reader.ReadUInt32();
 
-        if (event_ == "clicked")
+        using var w = context.CreateReplyWriter("");
+        context.Reply(w.CreateMessage());
+
+        if (event_ == "clicked" && Items.TryGetValue(id, out var item))
         {
-            var action = Items[id].action;
-            switch (action)
+            _ = Task.Run(() => DispatchAction(item.action));
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task DispatchAction(MenuEnum action)
+    {
+        switch (action)
+        {
+            case MenuEnum.CheckForUpdates:
+                var updates = await new UpdateService(this).CheckForUpdates();
+                new NotificationHandler().SendNotif(connection,
+                    updates > 0 ? $"Updates available: {updates}" : "No updates available.");
+                break;
+            case MenuEnum.OpenShelly:
+                AppRunner.LaunchAppIfNotRunning("");
+                break;
+            case MenuEnum.UpdatePackages:
+                await AppRunner.SpawnTerminalWithCommandAsync("sudo shelly -a");
+                await new UpdateService(this).CheckForUpdates();
+                break;
+            case MenuEnum.Exit:
+                OnExitRequested?.Invoke();
+                break;
+            case MenuEnum.None:
+            case MenuEnum.AurUpdate:
+            case MenuEnum.FlatpakUpdate:
+            case MenuEnum.StandardUpdate:
+            case MenuEnum.LastTime:
+            default:
+                break;
+        }
+    }
+
+    private ValueTask HandleEventGroup(MethodContext context)
+    {
+        var reader = context.Request.GetBodyReader();
+        var arrStart = reader.ReadArrayStart(DBusType.Struct);
+
+        while (reader.HasNext(arrStart))
+        {
+            var id = reader.ReadInt32();
+            var event_ = reader.ReadString();
+
+            Console.WriteLine($"[DBusMenu] Received event group: {event_} for id {id}");
+            if (event_ == "clicked" && Items.TryGetValue(id, out var item))
             {
-                case MenuEnum.CheckForUpdates:
-                    var updates = await new UpdateService(this).CheckForUpdates();
-                    new NotificationHandler().SendNotif(connection,
-                        updates > 0 ? $"Updates available: {updates}" : $"No updates available.");
-
-                    break;
-                case MenuEnum.OpenShelly:
-                    AppRunner.LaunchAppIfNotRunning("");
-
-                    break;
-                case MenuEnum.UpdatePackages:
-                    _ = Task.Run(async () =>
-                    {
-                        await AppRunner.SpawnTerminalWithCommandAsync("sudo shelly -a");
-                        await new UpdateService(this).CheckForUpdates();
-                    });
-                    break;
-                case MenuEnum.Exit:
-                    OnExitRequested?.Invoke();
-                    break;
-                case MenuEnum.None:
-                case MenuEnum.AurUpdate:
-                case MenuEnum.FlatpakUpdate:
-                case MenuEnum.StandardUpdate:
-                case MenuEnum.LastTime:
-                default:
-                    break;
+                _ = Task.Run(() => DispatchAction(item.action));
             }
         }
 
-        using var w = context.CreateReplyWriter("");
-        context.Reply(w.CreateMessage());
-    }
-
-    private static ValueTask HandleEventGroup(MethodContext context)
-    {
         using var w = context.CreateReplyWriter("ai");
-        var arr = w.WriteArrayStart(DBusType.Int32);
-        w.WriteArrayEnd(arr);
+        w.WriteArrayEnd(w.WriteArrayStart(DBusType.Int32));
         context.Reply(w.CreateMessage());
         return ValueTask.CompletedTask;
     }
@@ -261,8 +312,8 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
                 props["label"] = item.Label;
                 props["type"] = item.Type;
                 props["enabled"] = true;
-                props["visible"] = true;
-                props["children-display"] = "submenu";
+                props["visible"] = item.visible;
+                props["children-display"] = !string.IsNullOrEmpty(item.subMenu) ? item.subMenu : "";
             }
 
             w.WriteDictionary(props);
@@ -279,18 +330,23 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
     {
         var reader = context.Request.GetBodyReader();
 
+        var id = reader.ReadInt32();
+        var name = reader.ReadString();
+
         using var w = context.CreateReplyWriter("v");
-        switch (reader.ReadString())
+        switch (name)
         {
-            case "label" when Items.TryGetValue(reader.ReadInt32(), out var item):
+            case "label" when Items.TryGetValue(id, out var item):
                 w.WriteVariantString(item.Label);
                 break;
             case "enabled":
+                w.WriteVariantBool(Items.TryGetValue(id, out var ei) && ei.Enabled);
+                break;
             case "visible":
-                w.WriteVariantBool(true);
+                w.WriteVariantBool(Items.TryGetValue(id, out var vi) && vi.visible);
                 break;
             case "children-display":
-                w.WriteVariantString("submenu");
+                w.WriteVariantString(Items.TryGetValue(id, out var ci) ? ci.subMenu : "");
                 break;
             default:
                 w.WriteVariantString("");
@@ -330,6 +386,12 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
             var packageIds = RegisterSubmenuItems(syncModel.Packages, i => $"{i.Name} {i.OldVersion} -> {i.Version}",
                 MenuEnum.StandardUpdate, ref startValue);
             RegisterSubmenu(packageIds, MenuEnum.StandardUpdate, SubmenuId + 3, "Standard");
+
+            var totalUpdates = flatpakIds.Count + aurIds.Count + packageIds.Count;
+            if (Items.TryGetValue(98, out var separator))
+            {
+                Items[98] = (separator.Label, separator.Type, separator.Enabled, separator.icon, separator.subMenu, separator.action, totalUpdates > 0);
+            }
         }
         catch (Exception e)
         {
@@ -337,9 +399,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         }
 
         var time = GetIndexByAction(MenuEnum.LastTime);
-        Items[time!.Value] = ($"Last check: {DateTime.Now:HH:mm MM/dd}", "standard", false, "", "", MenuEnum.LastTime);
-
-        _revision++;
+        Items[time!.Value] = ($"Last check: {DateTime.Now:HH:mm MM/dd}", "standard", false, "", "", MenuEnum.LastTime, true);
 
         using var writer = connection.GetMessageWriter();
 
@@ -354,6 +414,16 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         WriteSubmenuEntry(writer, GetIndexByAction(MenuEnum.StandardUpdate) ?? -1, "Standard");
         WriteSubmenuEntry(writer, GetIndexByAction(MenuEnum.AurUpdate) ?? -1, "Aur");
         WriteSubmenuEntry(writer, GetIndexByAction(MenuEnum.FlatpakUpdate) ?? -1, "Flatpak");
+
+        if (Items.TryGetValue(98, out var bottomSep))
+        {
+            writer.WriteStructureStart();
+            writer.WriteInt32(98);
+            writer.WriteDictionary(new Dictionary<string, VariantValue>
+            {
+                { "visible", bottomSep.visible }
+            });
+        }
 
         writer.WriteStructureStart();
         writer.WriteInt32(time!.Value);
@@ -375,7 +445,12 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         writer.WriteArrayEnd(removedArr);
 
         connection.TrySendMessage(writer.CreateMessage());
+        ForceRedraw();
+    }
 
+    private void ForceRedraw()
+    {
+        _revision++;
         using var layoutWriter = connection.GetMessageWriter();
         layoutWriter.WriteSignalHeader(
             path: Path,
@@ -393,6 +468,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
 
     private static void WriteSubmenuEntry(MessageWriter writer, int id, string label)
     {
+        if (id == -1) return;
         writer.WriteStructureStart();
         writer.WriteInt32(id);
         writer.WriteDictionary(new Dictionary<string, VariantValue>
@@ -400,21 +476,11 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
             { "label", label },
             { "type", "standard" },
             { "enabled", true },
-            { "children-display", "submenu" }
+            { "children-display", "submenu" },
+            { "toggle-type", "" }
         });
     }
 
-    private VariantValue[] GetSubmenuChildren(MenuEnum menuEnum)
-    {
-        return UpdatesSubmenuChildren[menuEnum]
-            .Select(childId => Items.TryGetValue(childId, out var childItem)
-                ? BuildMenuItemVariant(childId, childItem.Label, childItem.Type, childItem.Enabled, childItem.icon,
-                    childItem.subMenu)
-                : VariantValue.Struct(VariantValue.Int32(childId),
-                    new Dict<string, VariantValue>(new Dictionary<string, VariantValue>()),
-                    VariantValue.ArrayOfVariant(Array.Empty<VariantValue>())))
-            .ToArray();
-    }
 
     private static List<int> RegisterSubmenuItems<T>(
         IEnumerable<T> source,
@@ -426,7 +492,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
         foreach (var item in source)
         {
             Items.Remove(startValue);
-            Items.Add(startValue, (labelSelector(item), "standard", true, "", "", action: menuEnum));
+            Items.Add(startValue, (labelSelector(item), "standard", true, "", "", menuEnum, true));
             ids.Add(startValue);
             startValue++;
         }
@@ -438,7 +504,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
     {
         if (ids.Count <= 0) return;
         UpdatesSubmenuChildren.Add(menuEnum, ids);
-        Items.Add(parentId, (parentLabel, "standard", true, "", "submenu", menuEnum));
+        Items.Add(parentId, (parentLabel, "standard", true, "", "submenu", menuEnum, true));
     }
 
     private static int? GetIndexByAction(MenuEnum action)
