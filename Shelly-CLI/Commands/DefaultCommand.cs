@@ -55,10 +55,10 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
             }
             else
             {
-                new InstallCommand().Execute(context, new InstallPackageSettings()
+                new InstallCommand().ExecuteAsync(context, new InstallPackageSettings()
                 {
                     Packages = [name]
-                });
+                }).Wait();
             }
 
             return 0;

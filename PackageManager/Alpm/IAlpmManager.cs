@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PackageManager.Alpm.Events.EventArgs;
 
 namespace PackageManager.Alpm;
 
@@ -11,14 +12,20 @@ public interface IAlpmManager
     event EventHandler<AlpmQuestionEventArgs>? Question;
     event EventHandler<AlpmReplacesEventArgs>? Replaces;
 
+    event EventHandler<AlpmScriptletEventArgs>? ScriptletInfo;
+    event EventHandler<AlpmHookEventArgs>? HookRun;
+    
+    event EventHandler<AlpmPacnewEventArgs>? PacnewInfo;
+    event EventHandler<AlpmPacsaveEventArgs>? PacsaveInfo;
+
     void IntializeWithSync();
-    void Initialize(bool root = false, int parallelDownloads=1, bool useTempPath = false, string tempPath = "");
+    void Initialize(bool root = false, int parallelDownloads = 1, bool useTempPath = false, string tempPath = "");
     void Sync(bool force = false);
     List<AlpmPackageDto> GetInstalledPackages();
     List<AlpmPackageDto> GetAvailablePackages();
     List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate();
 
-    void InstallPackages(List<string> packageNames,
+    Task InstallPackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
     void RemovePackages(List<string> packageNames,
@@ -44,7 +51,7 @@ public interface IAlpmManager
     /// <param name="packageName">Name of the package that dependencies are being installed for</param>
     /// <param name="includeMakeDeps"></param>
     /// <param name="flags">Flags that should be used for the installation</param>
-    void InstallDependenciesOnly(string packageName,bool includeMakeDeps = false,
+    void InstallDependenciesOnly(string packageName, bool includeMakeDeps = false,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
     /// <summary>
@@ -67,6 +74,6 @@ public interface IAlpmManager
     /// <param name="dependency">The dependency string (e.g., "python>=3.10", "libgl")</param>
     /// <returns>The package name that satisfies the dependency, or null if not found</returns>
     string? FindSatisfierInSyncDbs(string dependency);
-    
+
     void Refresh();
 }

@@ -2,19 +2,20 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PackageManager.Alpm;
+using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Standard;
 
-public class InstallCommand : Command<InstallPackageSettings>
+public class InstallCommand : AsyncCommand<InstallPackageSettings>
 {
-    public override int Execute([NotNull] CommandContext context, [NotNull] InstallPackageSettings settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] InstallPackageSettings settings)
     {
         if (Program.IsUiMode)
         {
-            return HandleUiModeInstall(context,settings);
+            return HandleUiModeInstall(context, settings);
         }
 
         if (settings.Packages.Length == 0)
@@ -37,6 +38,9 @@ public class InstallCommand : Command<InstallPackageSettings>
 
 
         using var manager = new AlpmManager();
+        //manager.Initialize(true);
+        //await SplitOutput.Output(manager, x => x.InstallPackages(packageList), settings.NoConfirm);
+        //return 0;
         object renderLock = new();
 
         manager.Question += (sender, args) =>
@@ -48,7 +52,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             }
         };
 
-        AnsiConsole.MarkupLine("[yellow]Initializing and syncing ALPM...[/]");
+        AnsiConsole.MarkupLine("[yellow]Initializing ALPM...[/]");
         manager.Initialize(true);
         if (settings.Upgrade)
         {
@@ -123,16 +127,10 @@ public class InstallCommand : Command<InstallPackageSettings>
                 lastPercent = pct;
             }
         };
-        
-        manager.ScriptletInfo += (sender, args) =>
-        {
-            Console.WriteLine(args.Line);
-        };
 
-        manager.HookRun += (sender, args) =>
-        {
-            Console.WriteLine(args.Description);
-        };
+        manager.ScriptletInfo += (sender, args) => { Console.WriteLine(args.Line); };
+
+        manager.HookRun += (sender, args) => { Console.WriteLine(args.Description); };
 
         manager.InstallPackages(packageList);
         Console.WriteLine(); // Final newline after last package
@@ -196,10 +194,7 @@ public class InstallCommand : Command<InstallPackageSettings>
         Console.WriteLine("Installing packages...");
         var rowIndex = new Dictionary<string, int>();
         manager.Progress += (sender, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
-        manager.HookRun += (sender, args) =>
-        {
-            Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}");
-        };
+        manager.HookRun += (sender, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
         try
         {
             manager.InstallPackages(settings.Packages.ToList());
@@ -210,7 +205,7 @@ public class InstallCommand : Command<InstallPackageSettings>
             Console.Error.WriteLine($"[ALPM_ERROR]Failed to install packages: {ex.Message}");
             return 1;
         }
-        
+
         return 0;
     }
 }

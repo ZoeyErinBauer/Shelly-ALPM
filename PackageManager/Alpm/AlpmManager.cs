@@ -963,7 +963,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
     }
 
-    public void InstallPackages(List<string> packageNames,
+    public Task InstallPackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None)
     {
         if (_handle == IntPtr.Zero) Initialize();
@@ -997,7 +997,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             pkgPtrs.Add(pkgPtr);
         }
 
-        if (pkgPtrs.Count == 0) return;
+        if (pkgPtrs.Count == 0) return Task.CompletedTask;
 
         // If we are doing a DbOnly install, we should also skip dependency checks, 
         // extraction, and signature/checksum validation to avoid requirement for the physical package file.
@@ -1051,6 +1051,8 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             // Release transaction
             TransRelease(_handle);
         }
+
+        return Task.CompletedTask;
     }
 
     public void RemovePackages(List<string> packageNames,
