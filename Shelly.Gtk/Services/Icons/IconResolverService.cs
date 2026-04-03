@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace Shelly.Gtk.Services.Icons;
 
@@ -12,15 +13,37 @@ public class IconResolverService : IIconResolverService
 
     private const string IconPath = "/usr/share/swcatalog";
     private const string LegacyIconPath = "/usr/share/app-info";
+    private string _shellyStreamPath =  Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local/share/shelly-icons/shelly-icon-stream-main/");
 
     private readonly ConcurrentDictionary<string, string> _iconMap = [];
+    private readonly Dictionary<string, List<string>> _shellyStreamManifest = [];
+
+    private readonly IConfigService _configService;
+    
+    public IconResolverService(IConfigService configService)
+    {
+        _shellyStreamManifest = LoadShellyStreamManifest();
+        _configService= configService;
+    }
 
     //Commenting out extra methods and plan to add them back in after futher optimizations
     public string? GetIconPath(string packageName)
     {
+        if (!_configService.LoadConfig().ShellyIconsEnabled)
+        {
+            return "Unavailable";
+        }
+        
         if (_iconMap.TryGetValue(packageName, out var iconPath))
         {
             return iconPath;
+        }
+
+        var shellyResult = GetShellyStreamIcon(packageName);
+        if (shellyResult != null)
+        {
+            _iconMap.TryAdd(packageName, shellyResult);
+            return shellyResult;
         }
 
         var swcatalogResult = GetSwcatalogIcon(packageName);
@@ -52,125 +75,48 @@ public class IconResolverService : IIconResolverService
             .FirstOrDefault(x => x != null);
     }
 
-    private string? GetIconFromTheme(string packageName)
+    private string? GetBasePath() => Directory.Exists("/usr/share/swcatalog") ? IconPath :
+        Directory.Exists(LegacyIconPath) ? LegacyIconPath : null;
+
+    private Dictionary<string, List<string>> LoadShellyStreamManifest()
     {
-        var themeName = GetCurrentIconTheme();
-        if (string.IsNullOrEmpty(themeName))
-            return null;
-
-        var iconName = GetDesktopIconName(packageName) ?? packageName;
-
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string[] themeBasePaths =
-        [
-            Path.Combine(home, ".local", "share", "icons"),
-            "/usr/share/icons"
-        ];
-
-        foreach (var basePath in themeBasePaths)
+        try
         {
-            var themePath = Path.Combine(basePath, themeName);
-            if (!Directory.Exists(themePath))
-                continue;
+            var manifestPath = Path.Combine(_shellyStreamPath, "manifest.json");
+            if (!File.Exists(manifestPath))
+                return [];
 
-            foreach (var size in ThemeSizes)
-            {
-                var appsDir = Path.Combine(themePath, size, "apps");
-                if (!Directory.Exists(appsDir))
-                    continue;
+            var json = File.ReadAllText(manifestPath);
+            return JsonSerializer.Deserialize(json, ShellyGtkJsonContext.Default.DictionaryStringListString) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
 
-                foreach (var ext in IconExtensions)
-                {
-                    var match = Directory.EnumerateFiles(appsDir, $"{iconName}{Path.GetExtension(ext)}")
-                        .FirstOrDefault();
-                    if (match != null)
-                        return match;
-                }
-            }
-
-            var altAppsDir = Path.Combine(themePath, "apps", "scalable");
-            if (Directory.Exists(altAppsDir))
-            {
-                foreach (var ext in IconExtensions)
-                {
-                    var match = Directory.EnumerateFiles(altAppsDir, $"{iconName}{Path.GetExtension(ext)}")
-                        .FirstOrDefault();
-                    if (match != null)
-                        return match;
-                }
-            }
+    private string? GetShellyStreamIcon(string packageName)
+    {
+        if (!_shellyStreamManifest.TryGetValue(packageName, out var icons) || icons.Count == 0)
+            return null;
+        
+        foreach (var size in Sizes)
+        {
+            var icon = icons.FirstOrDefault(x => x.Contains(size));
+            if (icon == null) continue;
+            var fullPath = Path.Combine(_shellyStreamPath, icon);
+            if (File.Exists(fullPath))
+                return fullPath;
+        }
+        
+        var firstIcon = icons.FirstOrDefault();
+        if (firstIcon == null) return null;
+        {
+            var fullPath = Path.Combine(_shellyStreamPath, firstIcon);
+            if (File.Exists(fullPath))
+                return fullPath;
         }
 
         return null;
     }
-
-    private static string? GetPixmapIcon(string packageName)
-    {
-        const string pixmapsPath = "/usr/share/pixmaps";
-        if (!Directory.Exists(pixmapsPath))
-            return null;
-
-        var iconName = GetDesktopIconName(packageName) ?? packageName;
-
-        return IconExtensions
-            .SelectMany(ext => Directory.EnumerateFiles(pixmapsPath, $"{iconName}{Path.GetExtension(ext)}"))
-            .FirstOrDefault();
-    }
-
-    private static string? GetDesktopIconName(string packageName)
-    {
-        var desktopFile = $"/usr/share/applications/{packageName}.desktop";
-        if (!File.Exists(desktopFile))
-            return null;
-
-        var iconLine = File.ReadLines(desktopFile)
-            .FirstOrDefault(l => l.StartsWith("Icon=", StringComparison.OrdinalIgnoreCase));
-
-        return iconLine?.Split('=', 2).ElementAtOrDefault(1)?.Trim();
-    }
-
-    private static string? GetCurrentIconTheme()
-    {
-        try
-        {
-            var configDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".config");
-
-            var gtk3Settings = Path.Combine(configDir, "gtk-3.0", "settings.ini");
-            if (File.Exists(gtk3Settings))
-            {
-                var themeLine = File.ReadLines(gtk3Settings)
-                    .FirstOrDefault(l => l.StartsWith("gtk-icon-theme-name", StringComparison.OrdinalIgnoreCase));
-                if (themeLine != null)
-                {
-                    var value = themeLine.Split('=', 2).ElementAtOrDefault(1)?.Trim();
-                    if (!string.IsNullOrEmpty(value))
-                        return value;
-                }
-            }
-
-            var gtk4Settings = Path.Combine(configDir, "gtk-4.0", "settings.ini");
-            if (File.Exists(gtk4Settings))
-            {
-                var themeLine = File.ReadLines(gtk4Settings)
-                    .FirstOrDefault(l => l.StartsWith("gtk-icon-theme-name", StringComparison.OrdinalIgnoreCase));
-                if (themeLine != null)
-                {
-                    var value = themeLine.Split('=', 2).ElementAtOrDefault(1)?.Trim();
-                    if (!string.IsNullOrEmpty(value))
-                        return value;
-                }
-            }
-
-            return "hicolor";
-        }
-        catch
-        {
-            return "hicolor";
-        }
-    }
-
-    private string? GetBasePath() => Directory.Exists("/usr/share/swcatalog") ? IconPath :
-        Directory.Exists(LegacyIconPath) ? LegacyIconPath : null;
 }

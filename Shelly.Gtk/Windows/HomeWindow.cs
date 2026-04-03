@@ -21,6 +21,7 @@ public class HomeWindow(
     IGenericQuestionService genericQuestionService,
     IArchNewsService archNewsService,
     IOperationLogService operationLogService,
+    IIConDownloadService iconDownloadService,
     MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
@@ -42,13 +43,22 @@ public class HomeWindow(
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/HomeWindow.ui"), -1);
         _overlay = (Overlay)builder.GetObject("HomeWindowOverlay")!;
         _box = (Box)builder.GetObject("HomeWindow")!;
-        
+
         _updatesListBox = (ListBox)builder.GetObject("UpdatesListBox")!;
         _archNewsButton = (Button)builder.GetObject("ArchNewsButton")!;
 
         var homeSearchEntry = (SearchEntry)builder.GetObject("HomeSearchEntry")!;
         var metaSearchContainer = (Box)builder.GetObject("MetaSearchContainer")!;
         var searchPromptOverlay = (Box)builder.GetObject("SearchPromptOverlay")!;
+
+        if (configService.LoadConfig().ShellyIconsEnabled)
+        {
+            Task.Run(async () =>
+            {
+                await iconDownloadService.DownloadAndUnpackIcons();
+                return Task.CompletedTask;
+            });
+        }
 
         homeSearchEntry.OnActivate += (_, _) =>
         {
@@ -110,7 +120,7 @@ public class HomeWindow(
                 return false;
             });
         };
-        
+
 
         _operationLogListBox = (ListBox)builder.GetObject("OperationLogListBox")!;
         _operationLogListBox.OnRealize += (sender, args) => { _ = LoadOperationLog(_cts.Token); };
@@ -119,7 +129,7 @@ public class HomeWindow(
         _archNewsButton.OnRealize += (sender, args) => { _ = LoadArchNews(_cts.Token); };
 
         _ = LoadUpdatesPanel(_updatesListBox!, _cts.Token);
-        
+
         return _overlay;
     }
 
@@ -298,7 +308,7 @@ public class HomeWindow(
             tasks.Add(LoadUpdatesPanel(_updatesListBox, _cts.Token));
         if (_operationLogListBox is not null)
             tasks.Add(LoadOperationLog(_cts.Token));
-        
+
         tasks.Add(LoadArchNews(_cts.Token));
 
         await Task.WhenAll(tasks);
