@@ -34,6 +34,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private AlpmQuestionCallback _questionCallback;
     private AlpmProgressCallback? _progressCallback;
     private int _parallelDownloads = 1;
+    private bool _showHiddenPackages = false;
     private bool _isPackageDownload;
 
     public event EventHandler<AlpmProgressEventArgs>? Progress;
@@ -52,9 +53,10 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     }
 
     public void Initialize(bool root = false, int parallelDownloads = 10, bool useTempPath = false,
-        string tempPath = "")
+        string tempPath = "", bool showHiddenPackages = false)
     {
         _parallelDownloads = parallelDownloads;
+        _showHiddenPackages = showHiddenPackages;
         if (_handle != IntPtr.Zero)
         {
             Release(_handle);
@@ -816,6 +818,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             }
         }
 
+        if (_showHiddenPackages)
+        {
+            foreignPackages.RemoveAll(x => _config.IgnorePkg.Contains(x.Name));
+        }
+
         return foreignPackages;
     }
 
@@ -1192,7 +1199,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         return Task.CompletedTask;
     }
-    
+
     public async Task SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.None)
     {
         if (_handle == IntPtr.Zero) Initialize();

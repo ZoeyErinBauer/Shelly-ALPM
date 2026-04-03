@@ -19,7 +19,10 @@ public interface IAlpmManager
     event EventHandler<AlpmPacsaveEventArgs>? PacsaveInfo;
 
     void IntializeWithSync();
-    void Initialize(bool root = false, int parallelDownloads = 1, bool useTempPath = false, string tempPath = "");
+
+    void Initialize(bool root = false, int parallelDownloads = 1, bool useTempPath = false, string tempPath = "",
+        bool showHiddenPackages = false);
+
     void Sync(bool force = false);
     List<AlpmPackageDto> GetInstalledPackages();
     List<AlpmPackageDto> GetAvailablePackages();
