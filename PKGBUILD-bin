@@ -24,6 +24,7 @@ depends=(
 optdepends=(
     'flatpak: For supporting flatpak implementation.'
     'archlinux-appstream-data: package icons and metadata'
+    'fish: Fish shell completions'
 )
 
 source=(
@@ -71,4 +72,7 @@ EOF
   install -Dm644 "$srcdir/shellylogo.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/shelly.png"
   install -Dm644 "$srcdir/flatpak-symbolic.svg" "$pkgdir/usr/share/icons/hicolor/symbolic/apps/flatpak-symbolic.svg"
   install -Dm644 "$srcdir/arch-symbolic.svg" "$pkgdir/usr/share/icons/hicolor/symbolic/apps/arch-symbolic.svg"
+
+  # Install fish shell completions
+  install -Dm644 "$srcdir/shelly.fish" "$pkgdir/usr/share/fish/vendor_completions.d/shelly.fish"
 }

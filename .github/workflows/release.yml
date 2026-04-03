@@ -29,6 +29,7 @@ jobs:
         dotnet publish Shelly-CLI/Shelly-CLI.csproj -c Release -o publish/shelly-cli -p:InstructionSet=x86-64
         cd publish/shelly-cli
         rm -f *.dbg *.pdb
+        cp ../../shelly.fish .
         tar -czf ../Shelly-CLI-linux-x64.tar.gz .
         cd ../..
 
@@ -47,10 +48,14 @@ jobs:
 
     - name: Bundle Shelly-ALPM
       run: |
+        cp shelly.fish publish/shelly-ui/
         cd publish/shelly-ui
         rm -f *.dbg *.pdb
         tar -czf ../Shelly-ALPM-linux-x64.tar.gz .
         cd ../..
+
+    - name: Copy standalone completions
+      run: cp shelly.fish publish/shelly.fish
 
     - name: Generate SHA256 checksums
       run: |
@@ -59,8 +64,8 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/}
         curl -sL "https://github.com/ZoeyErinBauer/Shelly-ALPM/archive/${VERSION}.tar.gz" -o "source-${VERSION}.tar.gz"
         sha256sum "source-${VERSION}.tar.gz" | sed "s/source-${VERSION}.tar.gz/${VERSION}.tar.gz/" > SHA256SUMS.txt
-        # Add binary tarballs checksums
-        sha256sum Shelly-ALPM-linux-x64.tar.gz Shelly-CLI-linux-x64.tar.gz >> SHA256SUMS.txt
+        # Add binary tarballs and completions checksums
+        sha256sum Shelly-ALPM-linux-x64.tar.gz Shelly-CLI-linux-x64.tar.gz shelly.fish >> SHA256SUMS.txt
         rm "source-${VERSION}.tar.gz"
         cat SHA256SUMS.txt
         
@@ -70,6 +75,7 @@ jobs:
         files: |
           publish/Shelly-ALPM-linux-x64.tar.gz
           publish/Shelly-CLI-linux-x64.tar.gz
+          publish/shelly.fish
           publish/SHA256SUMS.txt
         draft: false
         prerelease: false
