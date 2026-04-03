@@ -1,4 +1,5 @@
 using Shelly_Notifications.Constants;
+using Shelly_Notifications.Services;
 using Tmds.DBus.Protocol;
 
 namespace Shelly_Notifications.DbusHandlers;
@@ -19,8 +20,8 @@ class ShellyUiReceiver(Action? onRefreshRequested = null) : IPathMethodHandler
                 case "RefreshSettings":
                     HandleSettingsRefresh(context);
                     return default;
-                case "CloseTray":
-                    HandleCloseTray(context);
+                case "UpdatesMadeInUi":
+                    UpdatesMadeInUi(context);
                     return default;
             }
         }
@@ -40,14 +41,16 @@ class ShellyUiReceiver(Action? onRefreshRequested = null) : IPathMethodHandler
         context.Reply(writer.CreateMessage());
     }
     
-    private void HandleCloseTray(MethodContext context)
+    private static void UpdatesMadeInUi(MethodContext context)
     {
-        Console.WriteLine("CloseTray called");
+        Console.WriteLine("Updates called");
 
         using var writer = context.CreateReplyWriter(null);
         context.Reply(writer.CreateMessage());
 
-        Environment.Exit(0);
+        var updateService = new UpdateService();
+        Task.Run(updateService.CheckForUpdates);
+        
     }
 }
 

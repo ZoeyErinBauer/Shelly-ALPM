@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.Icons;
+using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.Windows;
 using Shelly.Gtk.Windows.AUR;
 using Shelly.Gtk.Windows.Dialog;
@@ -23,7 +24,9 @@ public static class ServiceBuilder
         collection.AddSingleton<IIconResolverService, IconResolverService>();
         collection.AddSingleton<IArchNewsService, ArchNewsService>();
         collection.AddSingleton<IOperationLogService, OperationLogService>();
+        collection.AddSingleton<IIConDownloadService, IconDownloadService>();
         collection.AddScoped<IUpdateService, GitHubUpdateService>();
+        collection.AddScoped<ITrayDbus, TrayDBus>();
         collection.AddTransient<HomeWindow>();
         collection.AddTransient<FlatpakRemove>();
         collection.AddTransient<AurInstall>();

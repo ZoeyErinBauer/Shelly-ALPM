@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 
@@ -18,15 +13,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly IAlpmEventService _alpmEventService;
     private readonly IConfigService _configService;
     private readonly ILockoutService _lockoutService;
+    private readonly ITrayDbus _trayDbus;
     private bool _usedPassword = false;
 
     public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
-        IConfigService configService, ILockoutService lockoutService)
+        IConfigService configService, ILockoutService lockoutService, ITrayDbus trayDbus)
     {
         _credentialManager = credentialManager;
         _alpmEventService = alpmEventService;
         _configService = configService;
         _lockoutService = lockoutService;
+        _trayDbus = trayDbus;
         _cliPath = FindCliPath();
     }
 
@@ -130,6 +127,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         {
             packageArgs += " -u";
         }
+
         return await ExecutePrivilegedWithNoConfirmCheck("Install packages", "install", packageArgs);
     }
 
@@ -164,24 +162,31 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedWithNoConfirmCheck("Update packages", "update", packageArgs);
+
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Update packages", "update", packageArgs);
+        SendDbusMessage(result);
+        return result;
     }
 
     public async Task<OperationResult> UpgradeSystemAsync()
     {
-        return await ExecutePrivilegedWithNoConfirmCheck("Upgrade system", "upgrade");
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Upgrade system", "upgrade");
+        SendDbusMessage(result);
+        return result;
     }
 
     public async Task<OperationResult> UpgradeAllAsync()
     {
-        return await ExecutePrivilegedWithNoConfirmCheck("Upgrade all", "upgrade", "-a");
+        var result =  await ExecutePrivilegedWithNoConfirmCheck("Upgrade all", "upgrade", "-a");
+        SendDbusMessage(result);
+        return result;
     }
 
     public async Task<OperationResult> ForceSyncDatabaseAsync()
     {
         return await ExecutePrivilegedCommandAsync("Force synchronize package databases", "sync", "--force");
     }
-    
+
     public async Task<OperationResult> RemoveDbLockAsync()
     {
         return await ExecutePrivilegedSystemCommandAsync(
@@ -217,7 +222,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
-        return await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
+        SendDbusMessage(result);
+        return result;
     }
 
     public async Task<List<PackageBuild>> GetAurPackageBuild(IEnumerable<string> packages)
@@ -461,6 +468,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return standardPackages.Any(x => x.Name.Contains(packageName));
     }
 
+    private void SendDbusMessage(OperationResult result)
+    {
+        if (result.Success)
+        {
+            _ = Task.Run(() => _trayDbus.UpdatesMadeInUiAsync());
+        }
+    }
+
     private async Task<OperationResult> ExecuteCommandAsync(params string[] args)
     {
         var arguments = string.Join(" ", args);
@@ -521,7 +536,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             };
         }
     }
-    
+
     private async Task<OperationResult> ExecutePrivilegedCommandAsync(string operationDescription, params string[] args)
     {
         // Request credentials if not already available
@@ -904,86 +919,88 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         }
     }
 
-private async Task<OperationResult> ExecutePrivilegedSystemCommandAsync( string operationDescription, params string[] args){
-    var hasCredentials = await _credentialManager.RequestCredentialsAsync(operationDescription);
-    if (!hasCredentials)
+    private async Task<OperationResult> ExecutePrivilegedSystemCommandAsync(string operationDescription,
+        params string[] args)
     {
-        return new OperationResult
+        var hasCredentials = await _credentialManager.RequestCredentialsAsync(operationDescription);
+        if (!hasCredentials)
         {
-            Success = false,
-            Output = string.Empty,
-            Error = "Authentication cancelled by user.",
-            ExitCode = -1
-        };
-    }
-
-    var password = _credentialManager.GetPassword();
-    var isPasswordless = password == "NOPASSWORD67";
-
-    var arguments = string.Join(" ", args);
-
-    Console.WriteLine($"Executing privileged system command: sudo {arguments}");
-
-    var process = new Process
-    {
-        StartInfo = new ProcessStartInfo
-        {
-            FileName = "sudo",
-            Arguments = isPasswordless
-                ? $"-k {arguments}"
-                : $"-S -k {arguments}",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-            CreateNoWindow = true
-        }
-    };
-
-    try
-    {
-        process.Start();
-
-        if (!isPasswordless)
-        {
-            await process.StandardInput.WriteLineAsync(password);
-            await process.StandardInput.FlushAsync();
-            process.StandardInput.Close();
+            return new OperationResult
+            {
+                Success = false,
+                Output = string.Empty,
+                Error = "Authentication cancelled by user.",
+                ExitCode = -1
+            };
         }
 
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
+        var password = _credentialManager.GetPassword();
+        var isPasswordless = password == "NOPASSWORD67";
 
-        await Task.WhenAll(outputTask, errorTask);
-        await process.WaitForExitAsync();
+        var arguments = string.Join(" ", args);
 
-        var output = await outputTask;
-        var error = await errorTask;
+        Console.WriteLine($"Executing privileged system command: sudo {arguments}");
 
-        if (!string.IsNullOrEmpty(error))
+        var process = new Process
         {
-            Console.Error.WriteLine(error);
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "sudo",
+                Arguments = isPasswordless
+                    ? $"-k {arguments}"
+                    : $"-S -k {arguments}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
+            }
+        };
+
+        try
+        {
+            process.Start();
+
+            if (!isPasswordless)
+            {
+                await process.StandardInput.WriteLineAsync(password);
+                await process.StandardInput.FlushAsync();
+                process.StandardInput.Close();
+            }
+
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+
+            await Task.WhenAll(outputTask, errorTask);
+            await process.WaitForExitAsync();
+
+            var output = await outputTask;
+            var error = await errorTask;
+
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.Error.WriteLine(error);
+            }
+
+            return new OperationResult
+            {
+                Success = process.ExitCode == 0,
+                Output = output,
+                Error = error,
+                ExitCode = process.ExitCode
+            };
         }
-
-        return new OperationResult
+        catch (Exception ex)
         {
-            Success = process.ExitCode == 0,
-            Output = output,
-            Error = error,
-            ExitCode = process.ExitCode
-        };
+            return new OperationResult
+            {
+                Success = false,
+                Output = string.Empty,
+                Error = ex.Message,
+                ExitCode = -1
+            };
+        }
     }
-    catch (Exception ex)
-    {
-        return new OperationResult
-        {
-            Success = false,
-            Output = string.Empty,
-            Error = ex.Message,
-            ExitCode = -1
-        };
-    }
-}
 
     /// <summary>
     /// Strips UTF-8 BOM (Byte Order Mark) from the beginning of a string if present.

@@ -2,9 +2,9 @@ using Tmds.DBus.Protocol;
 
 namespace Shelly.Gtk.Services.TrayServices;
 
-public class TrayDBus : IDisposable
+public class TrayDBus : ITrayDbus
 {
-    private readonly Connection _connection = new(Address.Session!);
+    private readonly DBusConnection _connection = new(DBusAddress.Session!);
     
     public async Task RefreshSettingsAsync()
     {
@@ -12,10 +12,10 @@ public class TrayDBus : IDisposable
         await CallAsync("RefreshSettings");
     }
 
-    public async Task CloseTrayAsync()
+    public async Task UpdatesMadeInUiAsync()
     {
         await _connection.ConnectAsync();
-        await CallAsync("CloseTray");
+        await CallAsync("UpdatesMadeInUi");
     }
 
     private Task CallAsync(string method)

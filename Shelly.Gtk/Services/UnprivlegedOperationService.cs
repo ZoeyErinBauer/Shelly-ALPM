@@ -1,25 +1,16 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 
 
 namespace Shelly.Gtk.Services;
 
-public class UnprivilegedOperationService : IUnprivilegedOperationService
+public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOperationService
 {
-    private readonly string _cliPath;
-
-    public UnprivilegedOperationService()
-    {
-        _cliPath = FindCliPath();
-    }
+    private readonly string _cliPath = FindCliPath();
 
     private static string FindCliPath()
     {
@@ -199,7 +190,9 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 
     public async Task<UnprivilegedOperationResult> FlatpakUpgrade()
     {
-        return await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
+        var result = await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
+        SendDbusMessage(result);
+        return result;
     }
 
     public async Task<List<FlatpakRemoteDto>> FlatpakListRemotes()
@@ -505,5 +498,13 @@ public class UnprivilegedOperationService : IUnprivilegedOperationService
 
         // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
         return input.TrimStart('\uFEFF');
+    }
+    
+    private void SendDbusMessage(UnprivilegedOperationResult result)
+    {
+        if (result.Success)
+        {
+            _ = Task.Run(trayDbus.UpdatesMadeInUiAsync);
+        }
     }
 }

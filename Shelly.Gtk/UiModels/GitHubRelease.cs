@@ -19,4 +19,7 @@ public class GitHubAsset
 
     [JsonPropertyName("browser_download_url")]
     public string BrowserDownloadUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("digest")]
+    public string Digest { get; set; } = string.Empty;
 }
