@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shelly.Gtk.Services;
+using Shelly.Gtk.Services.FlatHub;
 using Shelly.Gtk.Services.Icons;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.Windows;
@@ -27,6 +28,7 @@ public static class ServiceBuilder
         collection.AddSingleton<IIConDownloadService, IconDownloadService>();
         collection.AddScoped<IUpdateService, GitHubUpdateService>();
         collection.AddScoped<ITrayDbus, TrayDBus>();
+        collection.AddScoped<IFlatHubApiService, FlatHubApiService>();
         collection.AddTransient<HomeWindow>();
         collection.AddTransient<FlatpakRemove>();
         collection.AddTransient<AurInstall>();

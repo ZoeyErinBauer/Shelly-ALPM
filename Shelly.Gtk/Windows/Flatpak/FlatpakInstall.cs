@@ -3,6 +3,7 @@ using Gtk;
 using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
+using Shelly.Gtk.Services.FlatHub;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 
@@ -14,7 +15,8 @@ public class FlatpakInstall(
     IUnprivilegedOperationService unprivilegedOperationService,
     ILockoutService lockoutService,
     IConfigService configService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IFlatHubApiService flatHubApiService) : IShellyWindow
 {
     private GridView? _gridView;
     private readonly CancellationTokenSource _cts = new();
@@ -26,6 +28,10 @@ public class FlatpakInstall(
     private SignalHandler<Button>? _addonHistoryHandler;
     private ListBox? _categoryListBox;
     private List<AppstreamApp> _allPackages = [];
+    private List<string> _trendingApps = [];
+    private List<string> _popularApps = [];
+    private List<string> _recentlyUpdatedApps = [];
+    private List<string> _recentlyAddedApps = [];
     private string _searchText = string.Empty;
     private FlatpakCategories _selectedCategory = FlatpakCategories.AllApplications;
     private SignalListItemFactory? _factory;
@@ -611,6 +617,21 @@ public class FlatpakInstall(
             icon.SetFromIconName("application-x-executable");
     }
 
+    private async Task BuildAndStartFlatHubTasksAsync()
+    {
+        var trendingTask = flatHubApiService.GetCollectionTrendingAsync();
+        var popularTask = flatHubApiService.GetCollectionPopularAsync();
+        var recentlyUpdatedTask = flatHubApiService.GetCollectionRecentlyUpdatedAsync();
+        var recentlyAddedTask = flatHubApiService.GetCollectionRecentlyAddedAsync();
+
+        await Task.WhenAll(trendingTask, popularTask, recentlyUpdatedTask, recentlyAddedTask);
+
+        _trendingApps = await trendingTask;
+        _popularApps = await popularTask;
+        _recentlyUpdatedApps = await recentlyUpdatedTask;
+        _recentlyAddedApps = await recentlyAddedTask;
+    }
+
     private async Task LoadDataAsync(CancellationToken ct = default)
     {
         try
@@ -623,6 +644,7 @@ public class FlatpakInstall(
                 return false;
             });
 
+            var flathubTask = BuildAndStartFlatHubTasksAsync();
 
             await RefreshRemotesList(); //Refresh before getting for icons 
 
@@ -632,6 +654,8 @@ public class FlatpakInstall(
             ct.ThrowIfCancellationRequested();
             _allPackages = await unprivilegedOperationService.ListAppstreamFlatpak(ct);
             ct.ThrowIfCancellationRequested();
+
+            await flathubTask;
 
             GLib.Functions.IdleAdd(0, () =>
             {
