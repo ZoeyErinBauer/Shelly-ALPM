@@ -307,7 +307,7 @@ public class FlatpakManager : IDisposable
 
         return instances;
     }
-    
+
     /// <summary>
     /// Installs a flatpak package from a remote repository.
     /// <param name="refLocation">Path to location of ref to install</param>
@@ -383,7 +383,7 @@ public class FlatpakManager : IDisposable
                     IntPtr.Zero, IntPtr.Zero, 0);
 
                 var addSuccess = FlatpakReference.TransactionAddInstallFlatpakref(
-                    transactionPtr,bytePtr, out var addError);
+                    transactionPtr, bytePtr, out var addError);
 
                 if (!addSuccess || addError != IntPtr.Zero)
                 {
@@ -487,7 +487,9 @@ public class FlatpakManager : IDisposable
                 return "No remote repository configured. Add a remote like 'flathub' first.";
             }
 
-            var refString = isRuntime ? $"runtime/{appId}/{GetCurrentArch()}/{branch}" : $"app/{appId}/{GetCurrentArch()}/{branch}";
+            var refString = isRuntime
+                ? $"runtime/{appId}/{GetCurrentArch()}/{branch}"
+                : $"app/{appId}/{GetCurrentArch()}/{branch}";
 
 
             var transactionPtr = FlatpakReference.TransactionNewForInstallation(
@@ -1752,22 +1754,41 @@ public class FlatpakManager : IDisposable
             return new FlatpakRemoteRefInfo();
         }
 
-        var installation = FlatpakReference.FlatpakInstallationNewSystem(IntPtr.Zero, out var error);
+        FlatpakRemoteRefInfo remoteRefInfo;
+
+        var installation = FlatpakReference.FlatpakInstallationNewSystem(IntPtr.Zero, out _);
 
         var remoteRef = FlatpakReference.InstallationFetchRemoteRefsSync(installation, remote, 0, name,
             GetCurrentArch(), branch, IntPtr.Zero, out _);
 
-        if (remoteRef == IntPtr.Zero) return new FlatpakRemoteRefInfo();
-
-        var remoteRefInfo = new FlatpakRemoteRefInfo
+        if (remoteRef != IntPtr.Zero)
         {
-            DownloadSize = FlatpakReference.RemoteRefGetDownloadSize(remoteRef),
-            InstalledSize = FlatpakReference.RemoteRefGetInstalledSize(remoteRef),
-        };
+            remoteRefInfo = new FlatpakRemoteRefInfo
+            {
+                DownloadSize = FlatpakReference.RemoteRefGetDownloadSize(remoteRef),
+                InstalledSize = FlatpakReference.RemoteRefGetInstalledSize(remoteRef),
+            };
+            FlatpakReference.GObjectUnref(remoteRef);
+            return remoteRefInfo;
+        }
+     
+        installation = FlatpakReference.InstallationNewUser(IntPtr.Zero, out _);
 
+        remoteRef = FlatpakReference.InstallationFetchRemoteRefsSync(installation, remote, 0, name,
+            GetCurrentArch(), branch, IntPtr.Zero, out _);
 
-        FlatpakReference.GObjectUnref(remoteRef);
-        return remoteRefInfo;
+        if (remoteRef != IntPtr.Zero)
+        {
+            remoteRefInfo = new FlatpakRemoteRefInfo
+            {
+                DownloadSize = FlatpakReference.RemoteRefGetDownloadSize(remoteRef),
+                InstalledSize = FlatpakReference.RemoteRefGetInstalledSize(remoteRef),
+            };
+            FlatpakReference.GObjectUnref(remoteRef);
+            return remoteRefInfo;
+        }
+        
+        return new FlatpakRemoteRefInfo();
     }
 
     /// <summary>

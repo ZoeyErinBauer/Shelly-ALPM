@@ -50,6 +50,7 @@ public class FlatpakInstall(
     private string _selectedRemote = "Any";
     private DropDown _remoteDropDown = null!;
     private AppstreamApp _selectedPackage = null!;
+    private ListView _listRemotes = null!;
 
     private Box _remoteRefOverlay = null!;
     private Box _addRemoteOverlay = null!;
@@ -123,8 +124,13 @@ public class FlatpakInstall(
         _installFromFlatpakRef = (Button)builder.GetObject("install_from_flatpak_ref_button")!;
         _installFromFlatpakRefDropDown = (DropDown)builder.GetObject("install_from_flatpak_ref_dropdown")!;
 
+        _remoteListStore = Gio.ListStore.New(FlatpakRemoteGObject.GetGType());
+        _remoteSelectionModel = new SingleSelection { Model = _remoteListStore };
+        _listRemotes = (ListView)builder.GetObject("list_remotes")!;
+        _listRemotes.SetModel(_remoteSelectionModel);
+        
         _overlayInstallButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
-        _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(builder); };
+        _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(); };
         _remoteRefBackButton.OnClicked += (_, _) => { _remoteRefOverlay.Hide(); };
         _installFromFlatpakRef.OnClicked += (_, _) => { _ = InstallFromFlatpakRef(); };
 
@@ -595,9 +601,9 @@ public class FlatpakInstall(
         if (_userOnly)
         {
             var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            _overlayIconImage.SetFromFile(
+            path = 
                 Path.Combine(userHome, ".local/share/flatpak/appstream", app.Remotes.FirstOrDefault()?.Name ?? "",
-                    "x86_64/active/icons/64x64", $"{app.Id}.png"));
+                    "x86_64/active/icons/64x64", $"{app.Id}.png");
         }
         else
         {
@@ -1116,23 +1122,15 @@ public class FlatpakInstall(
         });
     }
 
-    private async Task BuildAndShowRemoteRef(Builder builder)
+    private async Task BuildAndShowRemoteRef()
     {
-        var listRemotes = (ListView)builder.GetObject("list_remotes")!;
 
         if (_remoteFactory == null)
         {
             _remoteFactory = new SignalListItemFactory();
             _remoteFactory.OnSetup += OnSetupRemote;
             _remoteFactory.OnBind += OnBindRemote;
-            listRemotes.SetFactory(_remoteFactory);
-        }
-
-        if (_remoteListStore == null)
-        {
-            _remoteListStore = Gio.ListStore.New(FlatpakRemoteGObject.GetGType());
-            _remoteSelectionModel = new SingleSelection { Model = _remoteListStore };
-            listRemotes.SetModel(_remoteSelectionModel);
+            _listRemotes.SetFactory(_remoteFactory);
         }
 
         await RefreshRemotesList();
