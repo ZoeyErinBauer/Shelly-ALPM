@@ -170,7 +170,7 @@
                                                 <property name="halign">start</property>
                                                 <child>
                                                     <object class="GtkImage">
-                                                        <property name="icon-name">software-update-available-symbolic</property>
+                                                        <property name="icon-name">emblem-synchronizing-symbolic</property>
                                                         <property name="pixel-size">16</property>
                                                     </object>
                                                 </child>
@@ -197,7 +197,7 @@
                                                 <property name="halign">start</property>
                                                 <child>
                                                     <object class="GtkImage">
-                                                        <property name="icon-name">package-x-generic-symbolic</property>
+                                                        <property name="icon-name">view-list-symbolic</property>
                                                         <property name="pixel-size">16</property>
                                                     </object>
                                                 </child>
@@ -265,7 +265,7 @@
                                                         <property name="spacing">8</property>
                                                         <child>
                                                             <object class="GtkImage">
-                                                                <property name="icon-name">software-update-available-symbolic</property>
+                                                                <property name="icon-name">emblem-synchronizing-symbolic</property>
                                                                 <property name="pixel-size">16</property>
                                                             </object>
                                                         </child>
@@ -361,7 +361,7 @@
                                                         <property name="spacing">8</property>
                                                         <child>
                                                             <object class="GtkImage">
-                                                                <property name="icon-name">software-update-available-symbolic</property>
+                                                                <property name="icon-name">emblem-synchronizing-symbolic</property>
                                                                 <property name="pixel-size">16</property>
                                                             </object>
                                                         </child>

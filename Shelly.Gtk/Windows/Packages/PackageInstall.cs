@@ -86,6 +86,7 @@ public class PackageInstall(
         _detailRevealer = (Revealer)_builder.GetObject("detail_revealer")!;
         _detailBox = (Box)_builder.GetObject("detail_box")!;
         _groupDropDown = (DropDown)_builder.GetObject("grouping_selection")!;
+        _groupDropDown.EnableSearch = false;
         _upgradeCheck = (CheckButton)_builder.GetObject("upgrade_check")!;
         _showHiddenCheck = (CheckButton)_builder.GetObject("show_hidden_check")!;
 
@@ -140,9 +141,11 @@ public class PackageInstall(
             if (args.Pspec.GetName() == "selected")
             {
                 var idx = _groupDropDown.GetSelected();
-                var item = (StringObject)_groupDropDown.GetModel()!.GetObject(idx)!;
-                _selectedGroup = item.GetString();
-                ApplyFilter();
+                if (idx != uint.MaxValue && _groupDropDown.GetModel()?.GetObject(idx) is StringObject item)
+                {
+                    _selectedGroup = item.GetString();
+                    ApplyFilter();
+                }
             }
         };
         return _overlay;
@@ -522,15 +525,15 @@ public class PackageInstall(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
-
         if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null) return false;
 
         if (_selectedGroup != "Any" && !pkgObj.Package.Groups.Contains(_selectedGroup))
         {
             return false;
         }
+
+        if (string.IsNullOrWhiteSpace(_searchText))
+            return true;
 
         return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
                pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
