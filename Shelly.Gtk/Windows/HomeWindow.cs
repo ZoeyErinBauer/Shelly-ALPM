@@ -104,6 +104,9 @@ public class HomeWindow(
         var upgradeAllButton = (Button)builder.GetObject("UpgradeAllButton")!;
         upgradeAllButton.OnClicked += (sender, args) => { _ = UpgradeAll(); };
 
+        var cacheCleanButton = (Button)builder.GetObject("CacheCleanButton")!;
+        cacheCleanButton.OnClicked += (sender, args) => OpenCacheCleanDialog();
+
         var config = configService.LoadConfig();
         var aurBox = (Box)builder.GetObject("AurBox")!;
         var flatpakBox = (Box)builder.GetObject("FlatpakBox")!;
@@ -381,6 +384,62 @@ public class HomeWindow(
         catch (Exception e)
         {
             Console.WriteLine(e);
+        }
+    }
+
+    private void OpenCacheCleanDialog()
+    {
+        try
+        {
+            var cacheDir = "/var/cache/pacman/pkg";
+            if (!Directory.Exists(cacheDir))
+            {
+                var toastArgs = new ToastMessageEventArgs("Cache directory does not exist");
+                genericQuestionService.RaiseToastMessage(toastArgs);
+                return;
+            }
+
+            var dialogEventArgs = new GenericDialogEventArgs(new Box());
+
+            var content = CacheCleanDialog.BuildContent(
+                cacheDir,
+                onClean: (keep, uninstalledOnly) =>
+                {
+                    dialogEventArgs.SetResponse(true);
+                    _ = ExecuteCacheClean(keep, uninstalledOnly);
+                },
+                onCancel: () => dialogEventArgs.SetResponse(false)
+            );
+
+            GenericOverlay.ShowGenericOverlay(_overlay, content, dialogEventArgs, 650, 550);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    private async Task ExecuteCacheClean(int keep, bool uninstalledOnly)
+    {
+        try
+        {
+            lockoutService.Show("Cleaning package cache...");
+            var result = await privilegedOperationService.RunCacheCleanAsync(keep, uninstalledOnly);
+
+            var message = result.Success
+                ? "Package cache cleaned successfully"
+                : $"Cache clean failed: {result.Error}";
+
+            var toastArgs = new ToastMessageEventArgs(message);
+            genericQuestionService.RaiseToastMessage(toastArgs);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            lockoutService.Hide();
         }
     }
 

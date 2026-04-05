@@ -21,12 +21,12 @@ public class CacheCleanSettings : CommandSettings
     [CommandOption("-d | --dry-run")]
     [Description("Show what would be removed")]
     public bool DryRun { get; set; } = false;
-    
+
     [CommandOption("-c | --cache-dir")]
     [CommandArgument(0, "<cache-dir>")]
     [Description("Path to the cache directory")]
-    public string? CacheDir { get; set; }
-    
-    
+    public string? CacheDir { get; set; } = "/var/cache/pacman/pkg";
+
+
 
 }

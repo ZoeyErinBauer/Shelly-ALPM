@@ -29,6 +29,7 @@ public interface IPrivilegedOperationService
     Task<List<AurUpdateDto>> GetAurUpdatePackagesAsync(bool showHidden = false);
     Task<List<AurPackageDto>> SearchAurPackagesAsync(string query);
     Task<bool> IsPackageInstalledOnMachine(string packageName);
+    Task<OperationResult> RunCacheCleanAsync(int keep, bool uninstalledOnly);
 }
 
 public class OperationResult

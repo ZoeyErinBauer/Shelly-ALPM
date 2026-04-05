@@ -386,6 +386,16 @@ public class Program
                     .WithExample("utility", "updates", "--aur")
                     .WithExample("utility", "updates", "-l")
                     .WithExample("utility", "updates", "--flatpak");
+
+                utility.AddCommand<CacheClean>("cache-clean")
+                    .WithDescription("Cleans the cache of all downloaded packages")
+                    .WithExample("utility", "cache-clean")
+                    .WithExample("utility", "cache-clean", "--dry-run")
+                    .WithExample("utility", "cache-clean", "-r")
+                    .WithExample("utility", "cache-clean", "-r", "-k", "2")
+                    .WithExample("utility", "cache-clean", "-r", "--uninstalled")
+                    .WithExample("utility", "cache-clean", "-r", "-c", "/var/cache/pacman/pkg");
+
             });
 
             config.AddBranch("config", configure =>

@@ -77,4 +77,10 @@ public interface IAlpmManager
     string? FindSatisfierInSyncDbs(string dependency);
 
     void Refresh();
+
+    /// <summary>
+    /// Compares two package version strings using libalpm's vercmp.
+    /// Returns negative if a &lt; b, 0 if equal, positive if a &gt; b.
+    /// </summary>
+    static int VersionCompare(string a, string b) => AlpmReference.PkgVerCmp(a, b);
 }

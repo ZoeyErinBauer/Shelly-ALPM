@@ -468,6 +468,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return standardPackages.Any(x => x.Name.Contains(packageName));
     }
 
+    public async Task<OperationResult> RunCacheCleanAsync(int keep, bool uninstalledOnly)
+    {
+        var args = new List<string> { "utility", "cache-clean", "-r", "-k", keep.ToString() };
+        if (uninstalledOnly)
+            args.Add("-u");
+        return await ExecutePrivilegedCommandAsync("Clean package cache", args.ToArray());
+    }
+
     private void SendDbusMessage(OperationResult result)
     {
         if (result.Success)

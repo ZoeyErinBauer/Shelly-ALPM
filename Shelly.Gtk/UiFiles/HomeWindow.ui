@@ -281,6 +281,11 @@
                           </object>
                         </child>
                         <child>
+                          <object class="GtkButton" id="CacheCleanButton">
+                            <property name="label">Clean Cache</property>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkButton" id="ArchNewsButton">
                             <property name="label">View News</property>
                           </object>

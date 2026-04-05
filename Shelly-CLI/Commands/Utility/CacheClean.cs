@@ -1,3 +1,5 @@
+using PackageManager.Alpm;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Utility;
@@ -10,7 +12,85 @@ public class CacheClean : AsyncCommand<CacheCleanSettings>
         {
             return Task.FromResult(0);
         }
+
+        var cacheDir = settings.CacheDir ?? "/var/cache/pacman/pkg";
+
+        if (!Directory.Exists(cacheDir))
+        {
+            AnsiConsole.MarkupLine($"[red]Cache directory does not exist: {cacheDir.EscapeMarkup()}[/]");
+            return Task.FromResult(1);
+        }
+
+        var entries = Directory.EnumerateFiles(cacheDir)
+            .Select(CacheCleanHelper.ParsePackageFilename)
+            .Where(e => e != null)
+            .Cast<CacheEntry>()
+            .ToList();
+
+        if (entries.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No package files found in cache directory.[/]");
+            return Task.FromResult(0);
+        }
+
+        var grouped = entries.GroupBy(e => e.Name).ToDictionary(g => g.Key, g => g.ToList());
+
+        var candidates = new List<CacheEntry>();
+        foreach (var (name, pkgEntries) in grouped)
+        {
+            pkgEntries.Sort((a, b) => AlpmManager.VersionCompare(a.Version, b.Version));
+            var toRemove = pkgEntries.Take(Math.Max(0, pkgEntries.Count - settings.Keep));
+            candidates.AddRange(toRemove);
+        }
+
+        if (settings.Uninstalled)
+        {
+            using var manager = new AlpmManager();
+            var installedNames = manager.GetInstalledPackages().Select(p => p.Name).ToHashSet();
+            candidates = candidates.Where(c => !installedNames.Contains(c.Name)).ToList();
+        }
         
-        throw new NotImplementedException();
+        if (candidates.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[green]No candidate packages to remove.[/]");
+            return Task.FromResult(0);
+        }
+
+        var totalSize = candidates.Sum(c => c.FileSize);
+        
+        if (settings.DryRun)
+        {
+            AnsiConsole.MarkupLine("[blue]Dry run — the following files would be removed:[/]");
+            foreach (var entry in candidates)
+            {
+                AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({CacheCleanHelper.FormatSize(entry.FileSize)})[/]");
+            }
+            AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {CacheCleanHelper.FormatSize(totalSize)}[/]");
+            return Task.FromResult(0);
+        }
+
+        if (settings.Remove)
+        {
+            RootElevator.EnsureRootExectuion();
+
+            foreach (var entry in candidates)
+            {
+                File.Delete(entry.FullPath);
+            }
+
+            AnsiConsole.MarkupLine($"[green]Removed {candidates.Count} files, freed {CacheCleanHelper.FormatSize(totalSize)}[/]");
+            return Task.FromResult(0);
+        }
+
+        // Default: list candidates
+        AnsiConsole.MarkupLine("[blue]Candidates for removal:[/]");
+        foreach (var entry in candidates)
+        {
+            AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({CacheCleanHelper.FormatSize(entry.FileSize)})[/]");
+        }
+        AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {CacheCleanHelper.FormatSize(totalSize)}[/]");
+        AnsiConsole.MarkupLine("[dim]Use -r/--remove to delete these files, or -d/--dry-run to preview.[/]");
+
+        return Task.FromResult(0);
     }
 }

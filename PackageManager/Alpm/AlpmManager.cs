@@ -2118,4 +2118,9 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         throw new Exception($"Package '{pkg.Name}' not found in any sync database");
     }
+
+    public static int VersionCompare(string a, string b)
+    {
+        return AlpmReference.PkgVerCmp(a, b);
+    }
 }
