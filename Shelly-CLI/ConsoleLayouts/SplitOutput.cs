@@ -110,7 +110,7 @@ public static class SplitOutput
         {
             lock (renderLock)
             {
-                consoleLines.Add($"{e.Repository}/{e.PackageName} replaces {string.Join(",", e.Replaces)} packages");
+                consoleLines.Add($"{e.Repository.EscapeMarkup()}/{e.PackageName.EscapeMarkup()} replaces {string.Join(",", e.Replaces.Select(r => r.EscapeMarkup()))} packages");
                 var visible = consoleLines.Skip(Math.Max(0, consoleLines.Count - maxVisibleLines)).ToList();
                 layout["Console"].Update(
                     new Panel(new Markup(string.Join("\n", visible)))
@@ -124,7 +124,7 @@ public static class SplitOutput
         {
             lock (renderLock)
             {
-                consoleLines.Add($"Pacnew stored @ {e.FileLocation}.pacnew");
+                consoleLines.Add($"Pacnew stored @ {e.FileLocation.EscapeMarkup()}.pacnew");
                 var visible = consoleLines.Skip(Math.Max(0, consoleLines.Count - maxVisibleLines)).ToList();
                 layout["Console"].Update(
                     new Panel(new Markup(string.Join("\n", visible)))
@@ -138,7 +138,7 @@ public static class SplitOutput
         {
             lock (renderLock)
             {
-                consoleLines.Add($"Pacnew stored @ {e.FileLocation}.pacsave");
+                consoleLines.Add($"Pacsave stored @ {e.FileLocation.EscapeMarkup()}.pacsave");
                 var visible = consoleLines.Skip(Math.Max(0, consoleLines.Count - maxVisibleLines)).ToList();
                 layout["Console"].Update(
                     new Panel(new Markup(string.Join("\n", visible)))
