@@ -85,6 +85,7 @@ public class PackageUpdate(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
+        _selectionModel.Autoselect = false;
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _sizeDiffColumn, _oldColumn, _versionColumn);
