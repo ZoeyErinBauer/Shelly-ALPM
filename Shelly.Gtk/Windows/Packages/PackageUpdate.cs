@@ -149,7 +149,7 @@ public class PackageUpdate(
         }
 
         var backButton = Button.New();
-        backButton.SetIconName("go-previous-symbolic");
+        backButton.SetIconName("go-next-symbolic");
         backButton.Halign = Align.Start;
         backButton.AddCssClass("flat");
         backButton.TooltipText = "Close details";
