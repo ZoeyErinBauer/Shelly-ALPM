@@ -47,13 +47,42 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         table.AddColumn("Package");
         table.AddColumn("Current Version");
         table.AddColumn("New Version");
+        table.AddColumn($"Net Change ({config.FileSizeDisplay})");
         table.AddColumn($"Download Size ({config.FileSizeDisplay})");
+        
+        long totalDownloadSize = 0;
+        long totalNetChange = 0;
+        
         foreach (var pkg in packagesNeedingUpdate)
         {
-            table.AddRow(pkg.Name, pkg.CurrentVersion, pkg.NewVersion, CalculateDownside(parsed, pkg.DownloadSize));
+            long oldInstalledSizeBytes =  pkg.DownloadSize; 
+            long newInstalledSizeBytes = pkg.DownloadSize; 
+            long netChangeBytes = newInstalledSizeBytes - oldInstalledSizeBytes;
+
+           
+            totalDownloadSize += pkg.DownloadSize;
+            totalNetChange += netChangeBytes;
+
+            table.AddRow(
+                pkg.Name, 
+                pkg.CurrentVersion, 
+                pkg.NewVersion, 
+                FormatSize(parsed, netChangeBytes), 
+                FormatSize(parsed, pkg.DownloadSize) 
+            );
+        }
+        
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[bold]Total Download Size:[/] {FormatSize(parsed, totalDownloadSize)} {config.FileSizeDisplay}");
+
+        string FormatSize(SizeDisplay size, double bytes)
+        {
+            throw new NotImplementedException();
         }
 
-        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"[bold]Net Upgrade Size:[/]  {FormatSize(parsed, totalNetChange)} {config.FileSizeDisplay}");
+        AnsiConsole.WriteLine();
         if (!settings.NoConfirm)
         {
             if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
