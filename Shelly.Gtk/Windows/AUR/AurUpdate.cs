@@ -26,6 +26,9 @@ public class AurUpdate(
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
+    private Box _detailBox = null!;
+    private AurUpdateGObject? _currentDetailPkg;
+    private Revealer _detailRevealer = null!;
 
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
         _checkBinding = [];
@@ -55,6 +58,9 @@ public class AurUpdate(
         _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         _versionColumn.Resizable = true;
 
+        _detailBox = (Box)builder.GetObject("detail_box")!;
+        _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
+
         _updateButton = (Button)builder.GetObject("update_button")!;
         _runChecksCheck = (CheckButton)builder.GetObject("run_checks_check")!;
         _showHiddenCheck = (CheckButton)builder.GetObject("show_hidden_check")!;
@@ -68,6 +74,7 @@ public class AurUpdate(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
+        _selectionModel.Autoselect = false;
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
@@ -90,6 +97,22 @@ public class AurUpdate(
         };
         _updateButton.OnClicked += (_, _) => { _ = RemovePackagesAsync(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+
+        _selectionModel.OnSelectionChanged += (_, _) =>
+        {
+            var item = _selectionModel.GetSelectedItem();
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+            if (item is AurUpdateGObject pkgObj)
+            {
+                ShowPackageDetails(pkgObj);
+            }
+            else
+            {
+                _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+            }
+        };
 
         return _box;
     }
@@ -310,6 +333,116 @@ public class AurUpdate(
         }
 
         return false;
+    }
+
+    private void ShowPackageDetails(AurUpdateGObject pkgObj)
+    {
+        if (pkgObj.Package == null) return;
+
+        _currentDetailPkg = pkgObj;
+        var pkg = pkgObj.Package;
+
+        while (_detailBox.GetFirstChild() is { } child)
+        {
+            _detailBox.Remove(child);
+        }
+
+        var backButton = Button.New();
+        backButton.SetIconName("go-next-symbolic");
+        backButton.Halign = Align.Start;
+        backButton.AddCssClass("flat");
+        backButton.TooltipText = "Close details";
+        backButton.OnClicked += (_, _) =>
+        {
+            _currentDetailPkg = null;
+            _selectionModel.UnselectItem(_selectionModel.GetSelected());
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+            _detailRevealer.SetRevealChild(false);
+        };
+        _detailBox.Append(backButton);
+
+        void AddDetail(string label, string value)
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New(label + ":");
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.WidthRequest = 80;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(value);
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+            valueWidget.Selectable = true;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
+
+        var headerBox = Box.New(Orientation.Vertical, 4);
+        headerBox.MarginBottom = 16;
+        headerBox.MarginTop = 8;
+
+        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
+
+        iconImage.SetFromIconName("package-x-generic");
+
+        headerBox.Append(iconImage);
+
+        var nameLabel = Label.New(pkg.Name);
+        nameLabel.AddCssClass("title-2");
+        nameLabel.Halign = Align.Center;
+        headerBox.Append(nameLabel);
+
+        var descLabel = Label.New(pkg.Description);
+        descLabel.AddCssClass("dim-label");
+        descLabel.Halign = Align.Center;
+        descLabel.Wrap = true;
+        descLabel.Justify = Justification.Center;
+        descLabel.MaxWidthChars = 40;
+        headerBox.Append(descLabel);
+
+        _detailBox.Append(headerBox);
+
+        var separator = Separator.New(Orientation.Horizontal);
+        separator.MarginBottom = 16;
+        _detailBox.Append(separator);
+
+        AddDetail("Version", pkg.Version);
+      
+        if (!string.IsNullOrEmpty(pkg.Url))
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New("URL:");
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.WidthRequest = 80;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(null);
+            var escaped = GLib.Functions.MarkupEscapeText(pkg.Url, -1);
+            valueWidget.SetMarkup($"<a href=\"{escaped}\">{escaped}</a>");
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
+
+        _detailRevealer.SetRevealChild(true);
+        
     }
 
     public void Dispose()

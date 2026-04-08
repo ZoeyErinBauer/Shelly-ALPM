@@ -118,6 +118,7 @@ public class PackageUpdate(
         _selectionModel.OnSelectionChanged += (_, _) =>
         {
             var item = _selectionModel.GetSelectedItem();
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
             if (item is AlpmUpdateGObject pkgObj)
             {
                 ShowPackageDetails(pkgObj);
@@ -125,7 +126,6 @@ public class PackageUpdate(
             else
             {
                 _detailRevealer.SetRevealChild(false);
-                _detailRevealer.SetVisible(false);
                 _currentDetailPkg = null;
             }
         };
@@ -157,8 +157,8 @@ public class PackageUpdate(
         {
             _currentDetailPkg = null;
             _selectionModel.UnselectItem(_selectionModel.GetSelected());
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
             _detailRevealer.SetRevealChild(false);
-            _detailRevealer.SetVisible(false);
         };
         _detailBox.Append(backButton);
 
@@ -218,8 +218,6 @@ public class PackageUpdate(
         AddDetail("New", pkg.NewVersion);
         AddDetail("Download", SizeHelpers.FormatSize(pkg.DownloadSize));
         AddDetail("Size Diff", SizeHelpers.FormatSize(pkg.SizeDifference));
-
-        _detailRevealer.SetVisible(true);
         _detailRevealer.SetRevealChild(true);
     }
 

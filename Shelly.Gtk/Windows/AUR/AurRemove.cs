@@ -27,6 +27,9 @@ public class AurRemove(
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
+    private Box _detailBox = null!;
+    private AurPackageGObject? _currentDetailPkg;
+    private Revealer _detailRevealer = null!;
 
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
         _checkBinding = [];
@@ -50,6 +53,11 @@ public class AurRemove(
         _checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
         _nameColumn = (ColumnViewColumn)builder.GetObject("name_column")!;
         _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
+        _versionColumn.Resizable = true;
+
+        _detailBox = (Box)builder.GetObject("detail_box")!;
+        _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
+
         _removeButton = (Button)builder.GetObject("remove_button")!;
         _removeButton.SetSensitive(false);
         _cascadeDeleteCheck = (CheckButton)builder.GetObject("cascade_delete_check")!;
@@ -59,6 +67,7 @@ public class AurRemove(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
+        _selectionModel.Autoselect = false;
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
@@ -81,6 +90,22 @@ public class AurRemove(
         };
         _removeButton.OnClicked += (_, _) => { _ = RemovePackagesAsync(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+
+        _selectionModel.OnSelectionChanged += (_, _) =>
+        {
+            var item = _selectionModel.GetSelectedItem();
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+            if (item is AurPackageGObject pkgObj)
+            {
+                ShowPackageDetails(pkgObj);
+            }
+            else
+            {
+                _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+            }
+        };
 
         return _box;
     }
@@ -289,6 +314,228 @@ public class AurRemove(
         }
 
         return false;
+    }
+
+    private void ShowPackageDetails(AurPackageGObject pkgObj)
+    {
+        if (pkgObj.Package == null) return;
+
+        _currentDetailPkg = pkgObj;
+        var pkg = pkgObj.Package;
+
+        while (_detailBox.GetFirstChild() is { } child)
+        {
+            _detailBox.Remove(child);
+        }
+
+        var backButton = Button.New();
+        backButton.SetIconName("go-next-symbolic");
+        backButton.Halign = Align.Start;
+        backButton.AddCssClass("flat");
+        backButton.TooltipText = "Close details";
+        backButton.OnClicked += (_, _) =>
+        {
+            _currentDetailPkg = null;
+            _selectionModel.UnselectItem(_selectionModel.GetSelected());
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
+            _detailRevealer.SetRevealChild(false);
+        };
+        _detailBox.Append(backButton);
+
+        void AddDetail(string label, string value)
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New(label + ":");
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.WidthRequest = 80;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(value);
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+            valueWidget.Selectable = true;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
+
+        var headerBox = Box.New(Orientation.Vertical, 4);
+        headerBox.MarginBottom = 16;
+        headerBox.MarginTop = 8;
+
+        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
+
+        iconImage.SetFromIconName("package-x-generic");
+
+        headerBox.Append(iconImage);
+
+        var nameLabel = Label.New(pkg.Name);
+        nameLabel.AddCssClass("title-2");
+        nameLabel.Halign = Align.Center;
+        headerBox.Append(nameLabel);
+
+        var descLabel = Label.New(pkg.Description);
+        descLabel.AddCssClass("dim-label");
+        descLabel.Halign = Align.Center;
+        descLabel.Wrap = true;
+        descLabel.Justify = Justification.Center;
+        descLabel.MaxWidthChars = 40;
+        headerBox.Append(descLabel);
+
+        _detailBox.Append(headerBox);
+
+        var separator = Separator.New(Orientation.Horizontal);
+        separator.MarginBottom = 16;
+        _detailBox.Append(separator);
+
+        AddDetail("Version", pkg.Version);
+        if (pkg.NumVotes > 0)
+            AddDetail("Votes", pkg.NumVotes.ToString());
+        if (pkg.Popularity > 0)
+            AddDetail("Popularity", pkg.Popularity.ToString("F2"));
+        if (pkg.OutOfDate != null)
+            AddDetail("Out of Date",
+                DateTimeOffset.FromUnixTimeSeconds(pkg.OutOfDate.Value).ToString("yyyy-MM-dd"));
+
+        AddDetail("Maintainer", pkg.Maintainer ?? "Orphaned");
+        AddDetail("Last Modified", DateTimeOffset.FromUnixTimeSeconds(pkg.LastModified).ToString("yyyy-MM-dd HH:mm"));
+        AddDetail("First Submitted",
+            DateTimeOffset.FromUnixTimeSeconds(pkg.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
+        if (!string.IsNullOrEmpty(pkg.Url))
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New("URL:");
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.WidthRequest = 80;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(null);
+            var escaped = GLib.Functions.MarkupEscapeText(pkg.Url, -1);
+            valueWidget.SetMarkup($"<a href=\"{escaped}\">{escaped}</a>");
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
+
+        if (pkg.Depends?.Count > 0)
+        {
+            AddChipList("Depends", pkg.Depends);
+        }
+
+        if (pkg.MakeDepends?.Count > 0)
+        {
+            AddChipList("Make Depends", pkg.MakeDepends);
+        }
+
+        if (pkg.CheckDepends?.Count > 0)
+        {
+            AddChipList("Check Depends", pkg.CheckDepends);
+        }
+
+        if (pkg.OptDepends?.Count > 0)
+        {
+            AddChipList("Optional Deps", pkg.OptDepends, true);
+        }
+
+        if (pkg.License?.Count > 0)
+        {
+            AddChipList("License", pkg.License);
+        }
+
+        if (pkg.Keywords?.Count > 0)
+        {
+            AddChipList("Keywords", pkg.Keywords);
+        }
+
+
+        if (pkg.Provides?.Count > 0)
+            AddChipList("Provides", pkg.Provides);
+        if (pkg.Conflicts?.Count > 0)
+            AddChipList("Conflicts", pkg.Conflicts);
+        if (pkg.Groups?.Count > 0)
+            AddChipList("Groups", pkg.Groups);
+        if (pkg.Replaces?.Count > 0)
+            AddChipList("Replaces", pkg.Replaces);
+
+        if (configService.LoadConfig().WebViewEnabled)
+        {
+            if (pkg.Depends?.Count > 0)
+            {
+                var dictionary = new Dictionary<string, List<string>> { { pkg.Name, pkg.Depends } };
+
+                foreach (var dep in pkg.Depends)
+                {
+                    for (uint i = 0; i < _listStore.GetNItems(); i++)
+                    {
+                        var obj = _listStore.GetObject(i);
+                        if (obj is not AurPackageGObject depObj || depObj.Package == null) continue;
+                        if (depObj.Package.Name.Contains(dep))
+                            dictionary.TryAdd(depObj.Package.Name, depObj.Package.Depends ?? []);
+                    }
+                }
+
+                var window = new WebWindow(pkg.Name, dictionary);
+                _detailBox.Append(window.CreateWindow());
+            }
+        }
+
+        _detailRevealer.SetRevealChild(true);
+        return;
+
+        void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
+        {
+            var expander = new Expander { Label = $"{label} ({items.Count})" };
+            expander.AddCssClass("package-detail-expander");
+            expander.Hexpand = false;
+
+            var flowBox = new FlowBox
+            {
+                SelectionMode = SelectionMode.None,
+                ColumnSpacing = 6,
+                RowSpacing = 6,
+                Halign = Align.Start,
+                Valign = Align.Start,
+                MaxChildrenPerLine = isOptional ? 1u : 10u,
+                MinChildrenPerLine = 1
+            };
+
+            foreach (var item in items)
+            {
+                var chip = Label.New(item);
+                chip.AddCssClass("package-chip");
+                chip.Selectable = true;
+                chip.Ellipsize = Pango.EllipsizeMode.End;
+                chip.MaxWidthChars = 25;
+
+                if (isOptional)
+                {
+                    chip.Wrap = true;
+                    chip.WrapMode = Pango.WrapMode.WordChar;
+                    chip.Xalign = 0;
+                }
+
+                flowBox.Append(chip);
+            }
+
+            expander.SetChild(flowBox);
+            _detailBox.Append(expander);
+        }
     }
 
     public void Dispose()

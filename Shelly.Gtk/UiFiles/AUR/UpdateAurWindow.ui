@@ -1,109 +1,155 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk" version="4.0"/>
-  <object class="GtkBox" id="AurUpdateWindow">
-    <property name="orientation">vertical</property>
-    <child>
-      <object class="GtkBox">
-        <property name="halign">baseline</property>
-        <property name="margin-bottom">10</property>
-        <property name="margin-top">10</property>
-        <property name="margin-start">10</property>
-        <property name="margin-end">10</property>
-        <property name="spacing">5</property>
+    <requires lib="gtk" version="4.0"/>
+    <object class="GtkBox" id="AurUpdateWindow">
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkButton" id="update_button">
-            <property name="halign">start</property>
-            <property name="label">Update Aur Package(s)</property>
-            <style>
-              <class name="suggested-action"/>
-            </style>
-          </object>
+            <object class="GtkBox">
+                <property name="halign">baseline</property>
+                <property name="margin-bottom">10</property>
+                <property name="margin-top">10</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="spacing">5</property>
+                <child>
+                    <object class="GtkButton" id="update_button">
+                        <property name="halign">start</property>
+                        <property name="label">Update Aur Package(s)</property>
+                        <style>
+                            <class name="suggested-action"/>
+                        </style>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkBox">
+                        <property name="hexpand">true</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkCheckButton" id="run_checks_check">
+                        <property name="label">Run checks</property>
+                        <property name="tooltip-text">Run the --check function during package build (installs
+                            checkdepends)
+                        </property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkCheckButton" id="show_hidden_check">
+                        <property name="halign">start</property>
+                        <property name="label">Show Hidden</property>
+                        <property name="tooltip-text">Show packages in the IgnorePkg list from pacman.conf</property>
+                        <property name="active">false</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkSearchEntry" id="search_entry">
+                        <property name="placeholder-text">Search packages...</property>
+                        <property name="width-request">200</property>
+                        <style>
+                            <class name="spaced-search"/>
+                        </style>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkButton" id="search_button">
+                        <property name="icon-name">view-refresh-symbolic</property>
+                        <property name="tooltip-text">refresh</property>
+                    </object>
+                </child>
+            </object>
         </child>
         <child>
-          <object class="GtkBox">
-            <property name="hexpand">true</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="run_checks_check">
-            <property name="label">Run checks</property>
-            <property name="tooltip-text">Run the --check function during package build (installs checkdepends)</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="show_hidden_check">
-            <property name="halign">start</property>
-            <property name="label">Show Hidden</property>
-            <property name="tooltip-text">Show packages in the IgnorePkg list from pacman.conf</property>
-            <property name="active">false</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSearchEntry" id="search_entry">
-            <property name="placeholder-text">Search packages...</property>
-            <property name="width-request">200</property>
-            <style>
-              <class name="spaced-search"/>
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton" id="search_button">
-            <property name="icon-name">view-refresh-symbolic</property>
-            <property name="tooltip-text">refresh</property>
-          </object>
-        </child>
-      </object>
-    </child>
-    <child>
-      <object class="GtkOverlay">
-        <property name="margin-start">10</property>
-        <property name="margin-end">10</property>
-        <property name="margin-bottom">10</property>
-        <child>
-          <object class="GtkScrolledWindow">
-            <property name="hexpand">true</property>
-            <property name="overlay-scrolling">false</property>
-            <property name="vexpand">true</property>
-            <style>
-              <class name="rounded-card"/>
-            </style>
-            <child>
-              <object class="GtkColumnView" id="package_grid">
+            <object class="GtkBox" id="detail_hbox">
                 <property name="hexpand">true</property>
+                <property name="orientation">horizontal</property>
                 <property name="vexpand">true</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-bottom">10</property>
                 <child>
-                  <object class="GtkColumnViewColumn" id="name_column">
-                    <property name="title">Name</property>
-                    <property name="expand">true</property>
-                  </object>
+                    <object class="GtkOverlay">
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
+                        <child>
+                            <object class="GtkScrolledWindow">
+                                <property name="hexpand">true</property>
+                                <property name="overlay-scrolling">false</property>
+                                <property name="vexpand">true</property>
+                                <style>
+                                    <class name="rounded-card"/>
+                                </style>
+                                <child>
+                                    <object class="GtkColumnView" id="package_grid">
+                                        <property name="hexpand">true</property>
+                                        <property name="vexpand">true</property>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="name_column">
+                                                <property name="title">Name</property>
+                                                <property name="expand">true</property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="version_column">
+                                                <property name="title">Version</property>
+                                                <property name="expand">true</property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="check_column">
+                                                <property name="title"></property>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                        <child type="overlay">
+                            <object class="GtkLabel" id="no_packages_label">
+                                <property name="halign">center</property>
+                                <property name="valign">center</property>
+                                <property name="opacity">0.5</property>
+                                <property name="visible">false</property>
+                                <property name="use-markup">true</property>
+                            </object>
+                        </child>
+                    </object>
                 </child>
                 <child>
-                  <object class="GtkColumnViewColumn" id="version_column">
-                    <property name="title">Version</property>
-                    <property name="expand">true</property>
-                  </object>
+                    <object class="GtkRevealer" id="detail_revealer">
+                        <property name="reveal-child">false</property>
+                        <property name="transition-type">slide-left</property>
+                        <child>
+                            <object class="GtkFrame">
+                                <property name="width-request">300</property>
+                                <property name="margin-start">12</property>
+                                <style>
+                                    <class name="rounded-card"/>
+                                </style>
+                                <child>
+                                    <object class="GtkScrolledWindow">
+                                        <property name="hscrollbar-policy">never</property>
+                                        <property name="overlay-scrolling">true</property>
+                                        <property name="propagate-natural-height">True</property>
+                                        <property name="propagate-natural-width">False</property>
+
+                                        <property name="vexpand">true</property>
+                                        <child>
+                                            <object class="GtkBox" id="detail_box">
+                                                <property name="margin-bottom">10</property>
+                                                <property name="margin-end">10</property>
+                                                <property name="margin-start">10</property>
+                                                <property name="margin-top">10</property>
+                                                <property name="orientation">vertical</property>
+                                                <property name="spacing">8</property>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
                 </child>
-                <child>
-                  <object class="GtkColumnViewColumn" id="check_column">
-                    <property name="title"></property>
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
+            </object>
         </child>
-        <child type="overlay">
-          <object class="GtkLabel" id="no_packages_label">
-            <property name="halign">center</property>
-            <property name="valign">center</property>
-            <property name="opacity">0.5</property>
-            <property name="visible">false</property>
-            <property name="use-markup">true</property>
-          </object>
-        </child>
-      </object>
-    </child>
-  </object>
+    </object>
 </interface>

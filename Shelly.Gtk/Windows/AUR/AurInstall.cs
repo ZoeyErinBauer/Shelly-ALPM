@@ -102,6 +102,7 @@ public class AurInstall(
         _selectionModel.OnSelectionChanged += (_, _) =>
         {
             var item = _selectionModel.GetSelectedItem();
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
             if (item is AurPackageGObject pkgObj)
             {
                 ShowPackageDetails(pkgObj);
@@ -109,7 +110,6 @@ public class AurInstall(
             else
             {
                 _detailRevealer.SetRevealChild(false);
-                _detailRevealer.SetVisible(false);
                 _currentDetailPkg = null;
             }
         };
@@ -450,8 +450,8 @@ public class AurInstall(
         {
             _currentDetailPkg = null;
             _selectionModel.UnselectItem(_selectionModel.GetSelected());
+            _detailRevealer.SetTransitionType(RevealerTransitionType.SlideLeft);
             _detailRevealer.SetRevealChild(false);
-            _detailRevealer.SetVisible(false);
         };
         _detailBox.Append(backButton);
 
@@ -606,7 +606,6 @@ public class AurInstall(
             }
         }
 
-        _detailRevealer.SetVisible(true);
         _detailRevealer.SetRevealChild(true);
         return;
 
