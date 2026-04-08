@@ -336,7 +336,7 @@ public class HomeWindow(
             packageList.Max(package => package.Name.Length));
 
         return string.Join(Environment.NewLine, packageList.Select(package =>
-            $"{FormatPackageName(package.Name, packageColumnWidth)}  {package.Version} -> {package.OldVersion}"));
+            $"{FormatPackageName(package.Name, packageColumnWidth)}  {package.OldVersion} -> {package.Version}"));
     }
 
     private static string FormatPackageName(string packageName, int width)
