@@ -55,6 +55,7 @@ public class PackageManagement(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
+    private HashSet<string> _installedPackageNames = [];
 
     public Widget CreateWindow()
     {
@@ -321,6 +322,9 @@ public class PackageManagement(
 
             foreach (var item in items)
             {
+                var chipBox = Box.New(Orientation.Horizontal, 4);
+                chipBox.Valign = Align.Center;
+
                 var chip = Label.New(item);
                 chip.AddCssClass("package-chip");
                 chip.Selectable = true;
@@ -332,8 +336,23 @@ public class PackageManagement(
                     chip.Wrap = true;
                     chip.WrapMode = Pango.WrapMode.WordChar;
                     chip.Xalign = 0;
+
+                    var optDepName = item.Split(':').First().Trim();
+                    var isInstalled = _installedPackageNames.Contains(optDepName);
+
+                    var installedLabel = Label.New("installed");
+                    installedLabel.AddCssClass("success");
+                    installedLabel.AddCssClass("caption");
+                    installedLabel.Visible = isInstalled;
+
+                    chipBox.Append(chip);
+                    chipBox.Append(installedLabel);
+                    flowBox.Append(chipBox);
                 }
-                flowBox.Append(chip);
+                else
+                {
+                    flowBox.Append(chip);
+                }
             }
 
             expander.SetChild(flowBox);
@@ -492,9 +511,11 @@ public class PackageManagement(
     {
         try
         {
+            _installedPackageNames.Clear();
             _packages = await privilegedOperationService.GetInstalledPackagesAsync(_showHiddenCheck.Active);
             _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
             _groups.Insert(0, "Any");
+            _installedPackageNames = new HashSet<string>(_packages.Select(x => x.Name));
             _groupsStringList = StringList.New(_groups.ToArray());
             _groupDropDown.SetModel(_groupsStringList);
             ct.ThrowIfCancellationRequested();
@@ -596,5 +617,6 @@ public class PackageManagement(
         _checkBinding.Clear();
         _packages.Clear();
         _groups.Clear();
+        _installedPackageNames.Clear();
     }
 }

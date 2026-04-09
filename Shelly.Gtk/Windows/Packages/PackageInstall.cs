@@ -33,7 +33,7 @@ public class PackageInstall(
     private List<string> _groups = [];
     private StringList _groupsStringList = null!;
     private string _selectedGroup = "Any";
-    private HashSet<string> _installedPackageNames = [];
+
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
         _checkBinding =
             [];
@@ -62,6 +62,7 @@ public class PackageInstall(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
+    private HashSet<string> _installedPackageNames = [];
 
     public Widget CreateWindow()
     {
@@ -217,7 +218,6 @@ public class PackageInstall(
         {
             iconImage.SetFromIconName("package-x-generic");
         }
-
         headerBox.Append(iconImage);
 
         var nameLabel = Label.New(pkg.Name);
@@ -331,9 +331,7 @@ public class PackageInstall(
             foreach (var item in items)
             {
                 var chipBox = Box.New(Orientation.Horizontal, 4);
-                
-                var packageName = item.Split(new[] { '>', '<', '=', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .FirstOrDefault();
+                chipBox.Valign = Align.Center;
 
                 var chip = Label.New(item);
                 chip.AddCssClass("package-chip");
@@ -346,22 +344,23 @@ public class PackageInstall(
                     chip.Wrap = true;
                     chip.WrapMode = Pango.WrapMode.WordChar;
                     chip.Xalign = 0;
-                }
 
-                chipBox.Append(chip);
-                
-                if (isOptional && !string.IsNullOrEmpty(packageName) && _installedPackageNames.Contains(packageName))
+                    var optDepName = item.Split(':').First().Trim();
+                    var isInstalled = _installedPackageNames.Contains(optDepName);
+
+                    var installedLabel = Label.New("installed");
+                    installedLabel.AddCssClass("success");
+                    installedLabel.AddCssClass("caption");
+                    installedLabel.Visible = isInstalled;
+
+                    chipBox.Append(chip);
+                    chipBox.Append(installedLabel);
+                    flowBox.Append(chipBox);
+                }
+                else
                 {
-                    var installedIcon = Image.NewFromIconName("object-select-symbolic");
-                    installedIcon.PixelSize = 16;
-                    installedIcon.AddCssClass("success");
-                    installedIcon.TooltipText = "Installed";
-                    installedIcon.Halign = Align.End;
-                    installedIcon.Valign = Align.Center;
-                    chipBox.Append(installedIcon);
+                    flowBox.Append(chip);
                 }
-
-                flowBox.Append(chipBox);
             }
 
             expander.SetChild(flowBox);
@@ -520,62 +519,63 @@ public class PackageInstall(
         repositoryColumn.SetFactory(_repositoryFactory);
     }
 
- private async Task LoadDataAsync(CancellationToken ct = default)
-{
-    GLib.Functions.IdleAdd(0, () =>
+    private async Task LoadDataAsync(CancellationToken ct = default)
     {
-        _listStore.RemoveAll();
-        _packageGObjectRefs.Clear();
-        _detailRevealer.SetRevealChild(false);
-        _currentDetailPkg = null;
-        return false;
-    });
-
-    try
-    {
-        _packages = await privilegedOperationService.GetAvailablePackagesAsync(_showHiddenCheck.Active);
-        _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
-        _groups.Insert(0, "Any");
-
-        ct.ThrowIfCancellationRequested();
-        var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
-        
-        _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
-        
-        var queue = new Queue<AlpmPackageDto>(_packages);
-
         GLib.Functions.IdleAdd(0, () =>
         {
-            _groupsStringList = StringList.New(_groups.ToArray());
-            _groupDropDown.SetModel(_groupsStringList);
-
-            if (ct.IsCancellationRequested) return false;
-
-            const int batchSize = 1000;
-            var count = 0;
-            var batch = new List<AlpmPackageGObject>();
-            while (queue.Count > 0 && count < batchSize)
-            {
-                var dequeued = queue.Dequeue();
-                var pkgObj = new AlpmPackageGObject()
-                    { Package = dequeued, IsInstalled = _installedPackageNames.Contains(dequeued.Name) };
-                _packageGObjectRefs.Add(pkgObj);
-                batch.Add(pkgObj);
-                count++;
-            }
-            _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(), (uint)batch.Count);
-
-            return queue.Count > 0;
+            _listStore.RemoveAll();
+            _packageGObjectRefs.Clear();
+            _detailRevealer.SetRevealChild(false);
+            _currentDetailPkg = null;
+            _installedPackageNames.Clear();
+            return false;
         });
+
+        try
+        {
+            _packages = await privilegedOperationService.GetAvailablePackagesAsync(_showHiddenCheck.Active);
+            _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
+            _groups.Insert(0, "Any");
+
+            ct.ThrowIfCancellationRequested();
+            var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
+            _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
+            var queue = new Queue<AlpmPackageDto>(_packages);
+
+            GLib.Functions.IdleAdd(0, () =>
+            {
+                _groupsStringList = StringList.New(_groups.ToArray());
+                _groupDropDown.SetModel(_groupsStringList);
+
+                if (ct.IsCancellationRequested) return false;
+
+                const int batchSize = 1000;
+                var count = 0;
+                var batch = new List<AlpmPackageGObject>();
+                while (queue.Count > 0 && count < batchSize)
+                {
+                    var dequeued = queue.Dequeue();
+                    var pkgObj = new AlpmPackageGObject()
+                        { Package = dequeued, IsInstalled = _installedPackageNames.Contains(dequeued.Name) };
+                    _packageGObjectRefs.Add(pkgObj);
+                    batch.Add(pkgObj);
+                    count++;
+                }
+
+                // ReSharper disable once CoVariantArrayConversion
+                _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(), (uint)batch.Count);
+
+                return queue.Count > 0;
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load packages: {e.Message}");
+        }
     }
-    catch (OperationCanceledException)
-    {
-    }
-    catch (Exception e)
-    {
-        Console.WriteLine($"Failed to load packages: {e.Message}");
-    }
-}
 
     private void ApplyFilter()
     {
@@ -837,6 +837,7 @@ public class PackageInstall(
         _checkBinding.Clear();
         _packages.Clear();
         _groups.Clear();
+        _installedPackageNames.Clear();
         _currentDetailPkg = null;
     }
 }
