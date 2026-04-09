@@ -314,10 +314,26 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
                 packageName =
                     $"{packageOne?.Name ?? "unknown"} - {packageOne?.Version ?? "unknown"} conflicts with {packageTwo?.Name ?? "unknown"} - {packageTwo?.Version ?? "unknown"}";
-                questionText = $"{packageName}. Remove {packageTwo?.Name ?? "unknown"}?";
+                // Determine which package is installed and which is new
+                var installedPkg = GetInstalledPackages().Any(x => x.Name == (packageOne?.Name ?? "unknown"))
+                    ? packageOne
+                    : packageTwo;
+                var incomingPkg = (installedPkg == packageOne) ? packageTwo : packageOne;
+
+                packageName =
+                    $"{incomingPkg?.Name ?? "unknown"} - {incomingPkg?.Version ?? "unknown"} conflicts with {installedPkg?.Name ?? "unknown"} - {installedPkg?.Version ?? "unknown"}";
+                questionText = $"{packageName}. Remove {installedPkg?.Name ?? "unknown"}?";
                 conflictOptions = new List<string>();
-                if (!string.IsNullOrEmpty(packageOne?.Name)) conflictOptions.Add(packageOne.Name);
-                if (!string.IsNullOrEmpty(packageTwo?.Name)) conflictOptions.Add(packageTwo.Name);
+                if (!string.IsNullOrEmpty(packageOne?.Name))
+                {
+                    conflictOptions.Add(packageOne.Name);
+                }
+
+                if (!string.IsNullOrEmpty(packageTwo?.Name))
+                {
+                    conflictOptions.Add(packageTwo.Name);
+                }
+
                 break;
             case AlpmQuestionType.CorruptedPkg:
                 var corruptQuestion = Marshal.PtrToStructure<CorruptedPackage>(questionPtr);
@@ -1028,7 +1044,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             var args = new AlpmQuestionEventArgs(AlpmQuestionType.SelectOptionalDeps,
                 "Select optional dependencies",
                 optDependList);
-            Question?.Invoke(this,args);
+            Question?.Invoke(this, args);
             args.WaitForResponse();
             var selectedOptDeps = optDependList
                 .Where((dep, index) => (args.Response & (1 << index)) != 0)
@@ -1058,6 +1074,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                         Console.Error.WriteLine($"[ALPM_WARN] Skipping duplicate package in transaction.");
                         continue;
                     }
+
                     throw new Exception($"Failed to add a package to transaction: {GetErrorMessage(err)}");
                 }
             }

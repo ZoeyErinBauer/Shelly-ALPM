@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Aur;
+using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -45,46 +46,8 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
                 }
             }
 
-            manager.PackageProgress += (sender, args) =>
-            {
-                var statusColor = args.Status switch
-                {
-                    PackageProgressStatus.Downloading => "yellow",
-                    PackageProgressStatus.Building => "blue",
-                    PackageProgressStatus.Installing => "cyan",
-                    PackageProgressStatus.Completed => "green",
-                    PackageProgressStatus.Failed => "red",
-                    _ => "white"
-                };
-
-                AnsiConsole.MarkupLine(
-                    $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName.EscapeMarkup()}: {args.Status}[/]" +
-                    (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
-            };
-
-            manager.PkgbuildDiffRequest += (sender, args) =>
-            {
-                if (settings.NoConfirm)
-                {
-                    args.ProceedWithUpdate = true;
-                    return;
-                }
-
-                var showDiff = AnsiConsole.Confirm(
-                    $"[yellow]PKGBUILD changed for {args.PackageName.EscapeMarkup()}. View diff?[/]", defaultValue: false);
-
-                if (showDiff)
-                {
-                    AnsiConsole.MarkupLine($"[blue]--- PKGBUILD diff for {args.PackageName.EscapeMarkup()} ---[/]");
-                    PrintUnifiedDiff(args.OldPkgbuild, args.NewPkgbuild);
-                }
-
-                args.ProceedWithUpdate = AnsiConsole.Confirm(
-                    $"[yellow]Proceed with update for {args.PackageName.EscapeMarkup()}?[/]", defaultValue: true);
-            };
-
             var packageNames = updates.Select(u => u.Name).ToList();
-            await manager.UpdatePackages(packageNames);
+            await AurSplitOutput.Output(manager, m => m.UpdatePackages(packageNames), settings.NoConfirm);
             AnsiConsole.MarkupLine("[green]Upgrade complete.[/]");
 
             return 0;
@@ -126,6 +89,22 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
             {
                 Console.Error.WriteLine($"[{args.CurrentIndex}/{args.TotalCount}] {args.PackageName}: {args.Status}" +
                     (args.Message != null ? $" - {args.Message}" : ""));
+            };
+
+            manager.BuildOutput += (sender, e) =>
+            {
+                if (e.IsError)
+                {
+                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Line}");
+                }
+                else if (e.Percent.HasValue)
+                {
+                    Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {e.Percent}% Message: {e.ProgressMessage}");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"[Shelly] makepkg: {e.Line}");
+                }
             };
 
             manager.PkgbuildDiffRequest += (sender, args) =>

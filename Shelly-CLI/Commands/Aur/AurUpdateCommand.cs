@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -28,65 +29,10 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         try
         {
             manager = new AurPackageManager();
-            object renderLock = new();
             await manager.Initialize(root: true, noCheck: !settings.Check);
 
-            manager.PackageProgress += (sender, args) =>
-            {
-                var statusColor = args.Status switch
-                {
-                    PackageProgressStatus.Downloading => "yellow",
-                    PackageProgressStatus.Building => "blue",
-                    PackageProgressStatus.Installing => "cyan",
-                    PackageProgressStatus.Completed => "green",
-                    PackageProgressStatus.Failed => "red",
-                    _ => "white"
-                };
-
-                AnsiConsole.MarkupLine(
-                    $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName.EscapeMarkup()}: {args.Status}[/]" +
-                    (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
-            };
-
-            manager.Progress += (sender, args) =>
-            {
-                AnsiConsole.MarkupLine($"[blue]{args.PackageName.EscapeMarkup()}[/]: {args.Percent}%");
-            };
-
-            manager.Question += (sender, args) =>
-            {
-                lock (renderLock)
-                {
-                    AnsiConsole.WriteLine();
-                    QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
-                }
-            };
-
-            manager.PkgbuildDiffRequest += (sender, args) =>
-            {
-                if (settings.NoConfirm)
-                {
-                    args.ProceedWithUpdate = true;
-                    return;
-                }
-
-                var showDiff = AnsiConsole.Confirm(
-                    $"[yellow]PKGBUILD changed for {args.PackageName.EscapeMarkup()}. View diff?[/]", defaultValue: false);
-
-                if (showDiff)
-                {
-                    AnsiConsole.MarkupLine("[blue]--- Old PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.OldPkgbuild);
-                    AnsiConsole.MarkupLine("[blue]--- New PKGBUILD ---[/]");
-                    AnsiConsole.WriteLine(args.NewPkgbuild);
-                }
-
-                args.ProceedWithUpdate = AnsiConsole.Confirm(
-                    $"[yellow]Proceed with update for {args.PackageName.EscapeMarkup()}?[/]", defaultValue: true);
-            };
-
             AnsiConsole.MarkupLine($"[yellow]Updating AUR packages: {string.Join(", ", settings.Packages.Select(p => p.EscapeMarkup()))}[/]");
-            await manager.UpdatePackages(settings.Packages.ToList());
+            await AurSplitOutput.Output(manager, m => m.UpdatePackages(settings.Packages.ToList()), settings.NoConfirm);
             AnsiConsole.MarkupLine("[green]Update complete.[/]");
 
             return 0;
@@ -130,6 +76,16 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             manager.Question += (sender, args) =>
             {
                 QuestionHandler.HandleQuestion(args, true, settings.NoConfirm);
+            };
+
+            manager.BuildOutput += (sender, e) =>
+            {
+                if (e.IsError)
+                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Line}");
+                else if (e.Percent.HasValue)
+                    Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {e.Percent}% Message: {e.ProgressMessage}");
+                else
+                    Console.Error.WriteLine($"[Shelly] makepkg: {e.Line}");
             };
 
             manager.PkgbuildDiffRequest += (sender, args) =>

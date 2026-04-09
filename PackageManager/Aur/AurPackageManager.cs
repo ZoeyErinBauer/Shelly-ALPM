@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using PackageManager.Alpm;
+using PackageManager.Alpm.Events.EventArgs;
 using PackageManager.Aur.Models;
 using PackageManager.Utilities;
 
@@ -29,6 +30,15 @@ public class PkgbuildDiffRequestEventArgs : EventArgs
     public required string NewPkgbuild { get; init; }
     public bool ShowDiff { get; set; }
     public bool ProceedWithUpdate { get; set; } = true;
+}
+
+public class BuildOutputEventArgs : EventArgs
+{
+    public required string PackageName { get; init; }
+    public required string Line { get; init; }
+    public bool IsError { get; init; }
+    public int? Percent { get; init; }
+    public string? ProgressMessage { get; init; }
 }
 
 public enum PackageProgressStatus
@@ -60,6 +70,13 @@ public class AurPackageManager(string? configPath = null)
     public event EventHandler<PkgbuildDiffRequestEventArgs>? PkgbuildDiffRequest;
     public event EventHandler<AlpmQuestionEventArgs>? Question;
     public event EventHandler<AlpmProgressEventArgs>? Progress;
+    public event EventHandler<BuildOutputEventArgs>? BuildOutput;
+    public event EventHandler<AlpmPackageOperationEventArgs>? PackageOperation;
+    public event EventHandler<AlpmScriptletEventArgs>? ScriptletInfo;
+    public event EventHandler<AlpmHookEventArgs>? HookRun;
+    public event EventHandler<AlpmReplacesEventArgs>? Replaces;
+    public event EventHandler<AlpmPacnewEventArgs>? PacnewInfo;
+    public event EventHandler<AlpmPacsaveEventArgs>? PacsaveInfo;
 
     public async Task Initialize(bool root = false, bool useTempPath = false, bool useChroot = false,
         string chrootPath = "/var/lib/shelly/chroot", string tempPath = "", bool showHiddenPackages = false,
@@ -69,6 +86,12 @@ public class AurPackageManager(string? configPath = null)
         _alpm.Initialize(root, useTempPath: useTempPath, tempPath: tempPath, showHiddenPackages: showHiddenPackages);
         _alpm.Question += (sender, args) => Question?.Invoke(this, args);
         _alpm.Progress += (sender, args) => Progress?.Invoke(this, args);
+        _alpm.PackageOperation += (sender, args) => PackageOperation?.Invoke(this, args);
+        _alpm.ScriptletInfo += (sender, args) => ScriptletInfo?.Invoke(this, args);
+        _alpm.HookRun += (sender, args) => HookRun?.Invoke(this, args);
+        _alpm.Replaces += (sender, args) => Replaces?.Invoke(this, args);
+        _alpm.PacnewInfo += (sender, args) => PacnewInfo?.Invoke(this, args);
+        _alpm.PacsaveInfo += (sender, args) => PacsaveInfo?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
         _availablePackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
         _useChroot = useChroot;
@@ -375,20 +398,64 @@ public class AurPackageManager(string? configPath = null)
 
             // Backup PKGBUILD to PreviousVersions folder
             var previousVersionsPath = System.IO.Path.Combine(tempPath, "PreviousVersions");
-            System.IO.Directory.CreateDirectory(previousVersionsPath);
             var pkgbuildPath = System.IO.Path.Combine(tempPath, "PKGBUILD");
             if (System.IO.File.Exists(pkgbuildPath))
             {
-                var existingBackups = System.IO.Directory.GetFiles(previousVersionsPath, "PKGBUILD.*");
+                // Create directory as the non-root user to avoid permission issues
+                var mkdirProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} mkdir -p {previousVersionsPath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                mkdirProcess.Start();
+                await mkdirProcess.WaitForExitAsync();
+
+                var existingBackups = System.IO.Directory.Exists(previousVersionsPath)
+                    ? System.IO.Directory.GetFiles(previousVersionsPath, "PKGBUILD.*")
+                    : Array.Empty<string>();
                 var nextNumber = existingBackups.Length + 1;
                 var backupPath = System.IO.Path.Combine(previousVersionsPath, $"PKGBUILD.{nextNumber}");
-                System.IO.File.Copy(pkgbuildPath, backupPath, overwrite: true);
+
+                var cpProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} cp {pkgbuildPath} {backupPath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                cpProcess.Start();
+                await cpProcess.WaitForExitAsync();
             }
 
             // Remove any existing package files before building
             foreach (var oldPkgFile in System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*"))
             {
-                System.IO.File.Delete(oldPkgFile);
+                var rmPkgProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} rm -f {oldPkgFile}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                rmPkgProcess.Start();
+                await rmPkgProcess.WaitForExitAsync();
             }
 
             if (_useChroot)
@@ -399,27 +466,37 @@ public class AurPackageManager(string? configPath = null)
             var buildProcess = CreateBuildProcess(tempPath);
             buildProcess.OutputDataReceived += (sender, e) =>
             {
-                if (e.Data?.Contains('%') == true)
+                if (string.IsNullOrEmpty(e.Data)) return;
+                int? percent = null;
+                string? progressMessage = null;
+                if (e.Data.Contains('%'))
                 {
                     var match = Regex.Match(e.Data, @"\[\s*(?<percent>\d+)%\]\s+(?<message>.+)");
-
-                    if (!match.Success) return;
-                    var percent = match.Groups["percent"].Value;
-                    var message = match.Groups["message"].Value;
-                    if (!string.IsNullOrEmpty(e.Data))
-                        Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {percent}% Message: {message}");
+                    if (match.Success)
+                    {
+                        percent = int.Parse(match.Groups["percent"].Value);
+                        progressMessage = match.Groups["message"].Value;
+                    }
                 }
-                else
+                BuildOutput?.Invoke(this, new BuildOutputEventArgs
                 {
-                    if (!string.IsNullOrEmpty(e.Data))
-                        Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
-                }
+                    PackageName = packageName,
+                    Line = e.Data,
+                    IsError = false,
+                    Percent = percent,
+                    ProgressMessage = progressMessage
+                });
             };
 
             buildProcess.ErrorDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+                if (string.IsNullOrEmpty(e.Data)) return;
+                BuildOutput?.Invoke(this, new BuildOutputEventArgs
+                {
+                    PackageName = packageName,
+                    Line = e.Data,
+                    IsError = true
+                });
             };
 
             buildProcess.Start();
@@ -609,14 +686,37 @@ public class AurPackageManager(string? configPath = null)
         var buildProcess = CreateBuildProcess(tempPath, "--noconfirm" + (_noCheck ? " --nocheck" : ""));
         buildProcess.OutputDataReceived += (sender, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
-                Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
+            if (string.IsNullOrEmpty(e.Data)) return;
+            int? percent = null;
+            string? progressMessage = null;
+            if (e.Data.Contains('%'))
+            {
+                var match = Regex.Match(e.Data, @"\[\s*(?<percent>\d+)%\]\s+(?<message>.+)");
+                if (match.Success)
+                {
+                    percent = int.Parse(match.Groups["percent"].Value);
+                    progressMessage = match.Groups["message"].Value;
+                }
+            }
+            BuildOutput?.Invoke(this, new BuildOutputEventArgs
+            {
+                PackageName = packageName,
+                Line = e.Data,
+                IsError = false,
+                Percent = percent,
+                ProgressMessage = progressMessage
+            });
         };
 
         buildProcess.ErrorDataReceived += (sender, e) =>
         {
-            if (!string.IsNullOrEmpty(e.Data))
-                Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+            if (string.IsNullOrEmpty(e.Data)) return;
+            BuildOutput?.Invoke(this, new BuildOutputEventArgs
+            {
+                PackageName = packageName,
+                Line = e.Data,
+                IsError = true
+            });
         };
         buildProcess.Start();
         buildProcess.BeginOutputReadLine();
@@ -755,63 +855,67 @@ public class AurPackageManager(string? configPath = null)
     {
         try
         {
-            var url = $"https://aur.archlinux.org/cgit/aur.git/snapshot/{packageName}.tar.gz";
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
             var home = $"/home/{user}";
             var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
 
-            // Download the package tarball
-            var response = await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
+            if (System.IO.Directory.Exists(System.IO.Path.Combine(tempPath, ".git")))
             {
-                return false;
-            }
-
-            // Create temp directory if it doesn't exist (run as non-root user)
-            if (!System.IO.Directory.Exists(tempPath))
-            {
-                var mkdirProcess = new System.Diagnostics.Process
+                // Already cloned — pull latest
+                var pullProcess = new System.Diagnostics.Process
                 {
                     StartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "sudo",
-                        Arguments = $"-u {user} mkdir -p {tempPath}",
+                        Arguments = $"-u {user} git pull",
+                        WorkingDirectory = tempPath,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
                     }
                 };
-                mkdirProcess.Start();
-                await mkdirProcess.WaitForExitAsync();
+                pullProcess.Start();
+                await pullProcess.WaitForExitAsync();
+                if (pullProcess.ExitCode != 0) return false;
             }
-
-            // Save the tarball
-            var tarballPath = System.IO.Path.Combine(tempPath, $"{packageName}.tar.gz");
-            await using (var fileStream = System.IO.File.Create(tarballPath))
+            else
             {
-                await response.Content.CopyToAsync(fileStream);
-            }
-
-            // Extract the tarball (run as non-root user)
-            var extractProcess = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
+                // Remove directory if it exists but isn't a git repo
+                if (System.IO.Directory.Exists(tempPath))
                 {
-                    FileName = "sudo",
-                    Arguments = $"-u {user} tar -xzf {tarballPath} -C {tempPath} --strip-components=1",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
+                    var rmProcess = new System.Diagnostics.Process
+                    {
+                        StartInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "rm",
+                            Arguments = $"-rf {tempPath}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    rmProcess.Start();
+                    await rmProcess.WaitForExitAsync();
                 }
-            };
-            extractProcess.Start();
-            await extractProcess.WaitForExitAsync();
 
-            if (extractProcess.ExitCode != 0)
-            {
-                return false;
+                // Clone the AUR git repository
+                var cloneProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-u {user} git clone https://aur.archlinux.org/{packageName}.git {tempPath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                cloneProcess.Start();
+                await cloneProcess.WaitForExitAsync();
+                if (cloneProcess.ExitCode != 0) return false;
             }
 
             // Verify PKGBUILD exists
@@ -1054,27 +1158,37 @@ public class AurPackageManager(string? configPath = null)
             var buildProcess = CreateBuildProcess(tempPath);
             buildProcess.OutputDataReceived += (sender, e) =>
             {
-                if (e.Data?.Contains('%') == true)
+                if (string.IsNullOrEmpty(e.Data)) return;
+                int? percent = null;
+                string? progressMessage = null;
+                if (e.Data.Contains('%'))
                 {
                     var match = Regex.Match(e.Data, @"\[\s*(?<percent>\d+)%\]\s+(?<message>.+)");
-
-                    if (!match.Success) return;
-                    var percent = match.Groups["percent"].Value;
-                    var message = match.Groups["message"].Value;
-                    if (!string.IsNullOrEmpty(e.Data))
-                        Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {percent}% Message: {message}");
+                    if (match.Success)
+                    {
+                        percent = int.Parse(match.Groups["percent"].Value);
+                        progressMessage = match.Groups["message"].Value;
+                    }
                 }
-                else
+                BuildOutput?.Invoke(this, new BuildOutputEventArgs
                 {
-                    if (!string.IsNullOrEmpty(e.Data))
-                        Console.Error.WriteLine($"[Shelly] makepkg: {e.Data}");
-                }
+                    PackageName = packageName,
+                    Line = e.Data,
+                    IsError = false,
+                    Percent = percent,
+                    ProgressMessage = progressMessage
+                });
             };
 
             buildProcess.ErrorDataReceived += (sender, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Data}");
+                if (string.IsNullOrEmpty(e.Data)) return;
+                BuildOutput?.Invoke(this, new BuildOutputEventArgs
+                {
+                    PackageName = packageName,
+                    Line = e.Data,
+                    IsError = true
+                });
             };
 
             buildProcess.Start();

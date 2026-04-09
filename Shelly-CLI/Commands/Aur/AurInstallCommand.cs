@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -26,7 +27,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
             AnsiConsole.MarkupLine("[red]No packages specified.[/]");
             return 1;
         }
-
+        RootElevator.EnsureRootExectuion();
         var packageList = settings.Packages.ToList();
 
         AnsiConsole.MarkupLine($"[yellow]AUR packages to install:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
@@ -42,41 +43,8 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 
         try
         {
-            RootElevator.EnsureRootExectuion();
             manager = new AurPackageManager();
             await manager.Initialize(root: true, useChroot: settings.UseChroot, noCheck: !settings.Check);
-            object renderLock = new();
-
-            manager.PackageProgress += (sender, args) =>
-            {
-                lock (renderLock)
-                {
-                    var statusColor = args.Status switch
-                    {
-                        PackageProgressStatus.Downloading => "yellow",
-                        PackageProgressStatus.Building => "blue",
-                        PackageProgressStatus.Installing => "cyan",
-                        PackageProgressStatus.Completed => "green",
-                        PackageProgressStatus.Failed => "red",
-                        _ => "white"
-                    };
-
-                    AnsiConsole.MarkupLine(
-                        $"[{statusColor}][[{args.CurrentIndex}/{args.TotalCount}]] {args.PackageName.EscapeMarkup()}: {args.Status}[/]" +
-                        (args.Message != null ? $" - {args.Message.EscapeMarkup()}" : ""));
-                }
-            };
-
-            manager.Question += (sender, args) =>
-            {
-                lock (renderLock)
-                {
-                    AnsiConsole.WriteLine();
-                    // Handle SelectProvider and ConflictPkg differently - they need a selection, not yes/no
-                    QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
-                }
-            };
-
 
             if (settings.BuildDepsOn)
             {
@@ -89,59 +57,25 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                 if (settings.MakeDepsOn)
                 {
                     AnsiConsole.MarkupLine("[yellow]Installing dependencies (including make dependencies)...[/]");
-                    await manager.InstallDependenciesOnly(packageList.First(), true);
+                    await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), true), settings.NoConfirm);
                     AnsiConsole.MarkupLine("[green]Dependencies installed successfully![/]");
                     return 0;
                 }
 
                 AnsiConsole.MarkupLine("[yellow]Installing dependencies...[/]");
-                await manager.InstallDependenciesOnly(packageList.First(), false);
+                await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), false), settings.NoConfirm);
                 AnsiConsole.MarkupLine("[green]Dependencies installed successfully![/]");
                 return 0;
             }
 
             AnsiConsole.MarkupLine($"[yellow]Installing AUR packages: {string.Join(", ", settings.Packages.Select(p => p.EscapeMarkup()))}[/]");
-            var progressTable = new Table().AddColumns("Package", "Progress", "Status", "Stage");
-            await AnsiConsole.Live(progressTable).AutoClear(false)
-                .StartAsync(async ctx =>
-                {
-                    var rowIndex = new Dictionary<string, int>();
+            await AurSplitOutput.Output(manager, m => m.InstallPackages(packageList), settings.NoConfirm);
 
-                    manager.Progress += (sender, args) =>
-                    {
-                        lock (renderLock)
-                        {
-                            var name = args.PackageName ?? "unknown";
-                            var pct = args.Percent ?? 0;
-                            var bar = new string('█', pct / 5) + new string('░', 20 - pct / 5);
-                            var actionType = args.ProgressType;
-
-                            if (!rowIndex.TryGetValue(name, out var idx))
-                            {
-                                progressTable.AddRow(
-                                    $"[blue]{Markup.Escape(name)}[/]",
-                                    $"[green]{bar}[/]",
-                                    $"{pct}%",
-                                    $"{actionType}"
-                                );
-                                rowIndex[name] = rowIndex.Count;
-                            }
-                            else
-                            {
-                                progressTable.UpdateCell(idx, 1, $"[green]{bar}[/]");
-                                progressTable.UpdateCell(idx, 2, $"{pct}%");
-                                progressTable.UpdateCell(idx, 3, $"{actionType}");
-                            }
-
-                            ctx.Refresh();
-                        }
-                    };
-                    await manager.InstallPackages(packageList);
-                });
             manager.Dispose();
             manager = new AurPackageManager();
             await manager.Initialize(root: true, useChroot: settings.UseChroot, noCheck: !settings.Check);
-            var missingPackages = await GetMissingPackages(manager, packageList);
+            var packageNames = packageList.Select(x => x.EndsWith("-bin") ? x.Split("-")[0] : x).ToList();
+            var missingPackages = await GetMissingPackages(manager, packageNames);
             if (missingPackages.Count > 0)
             {
                 AnsiConsole.MarkupLine(
@@ -192,6 +126,17 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 
             // Handle questions
             manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+
+            // Handle build output
+            manager.BuildOutput += (sender, e) =>
+            {
+                if (e.IsError)
+                    Console.Error.WriteLine($"[Shelly] makepkg error: {e.Line}");
+                else if (e.Percent.HasValue)
+                    Console.Error.WriteLine($"[AUR_PROGRESS]Percent: {e.Percent}% Message: {e.ProgressMessage}");
+                else
+                    Console.Error.WriteLine($"[Shelly] makepkg: {e.Line}");
+            };
 
             // Handle build dependencies only mode
             if (settings.BuildDepsOn)
