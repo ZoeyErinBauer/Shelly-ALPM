@@ -12,7 +12,7 @@ namespace Shelly_CLI.Commands.Standard;
 
 public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 {
-    public override async Task<int> ExecuteAsync(CommandContext context,UpgradeSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, UpgradeSettings settings)
     {
         if (Program.IsUiMode)
         {
@@ -43,20 +43,57 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             (SizeDisplay)Parse(typeof(SizeDisplay),
                 config.FileSizeDisplay);
 
-        var table = new Table();
-        table.AddColumn("Package");
-        table.AddColumn("Current Version");
-        table.AddColumn("New Version");
-        table.AddColumn($"Download Size ({config.FileSizeDisplay})");
+        
+        var table = new Table().Border(TableBorder.None);
+        
+      
+        table.AddColumn(new TableColumn($"[bold green]Package ({packagesNeedingUpdate.Count})[/]").LeftAligned());
+        table.AddColumn(new TableColumn("[bold green]Old Version[/]").LeftAligned());
+        table.AddColumn(new TableColumn("[bold green]New Version[/]").LeftAligned());
+        table.AddColumn(new TableColumn("[bold green]Net Change[/]").RightAligned());
+        table.AddColumn(new TableColumn("[bold green]Download Size[/]").RightAligned());
+        
+        long totalDownloadSize = 0;
+        long totalNetChange = 0;
+        long totalInstalledSize = 0;
+        
         foreach (var pkg in packagesNeedingUpdate)
         {
-            table.AddRow(pkg.Name, pkg.CurrentVersion, pkg.NewVersion, CalculateDownside(parsed, pkg.DownloadSize));
+            long netChangeBytes = pkg.SizeDifference;
+
+            totalDownloadSize += pkg.DownloadSize;
+            totalNetChange += netChangeBytes;
+
+            table.AddRow(
+                $"[green]{Markup.Escape(pkg.Name)}[/]", 
+                $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]", 
+                $"[green]{Markup.Escape(pkg.NewVersion)}[/]", 
+                $"[green]{FormatSize(parsed, netChangeBytes)}[/]", 
+                $"[green]{FormatSize(parsed, pkg.DownloadSize)}[/]" 
+            );
+        }
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {FormatSize(parsed, totalDownloadSize),10}");
+        AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {FormatSize(parsed, totalNetChange),10}");
+        AnsiConsole.WriteLine();
+
+        
+        string FormatSize(SizeDisplay size, double bytes)
+        {
+            return size switch
+            {
+                SizeDisplay.Bytes => $"{bytes:0} B",
+                SizeDisplay.Megabytes => $"{(bytes / 1048576.0):F2} MiB",
+                SizeDisplay.Gigabytes => $"{(bytes / 1073741824.0):F2} GiB",
+                _ => $"{bytes:0} B"
+            };
         }
 
-        AnsiConsole.Write(table);
         if (!settings.NoConfirm)
         {
-            if (!AnsiConsole.Confirm("Do you want to proceed with system upgrade?"))
+           
+            if (!AnsiConsole.Confirm("[bold green]:: Proceed with installation?[/]"))
             {
                 AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
                 return 0;
@@ -167,16 +204,5 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         await Console.Error.WriteLineAsync("System upgraded successfully!");
         manager.Dispose();
         return 0;
-    }
-
-    private static string CalculateDownside(SizeDisplay size, long downloadSize)
-    {
-        return size switch
-        {
-            SizeDisplay.Bytes => downloadSize.ToString(),
-            SizeDisplay.Megabytes => (downloadSize / 1048576.0).ToString("F2"),
-            SizeDisplay.Gigabytes => (downloadSize / 1073741824.0).ToString("F2"),
-            _ => downloadSize.ToString()
-        };
     }
 }
