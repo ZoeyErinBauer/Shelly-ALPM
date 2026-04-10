@@ -145,6 +145,7 @@ public class AurInstall(
             void OnToggled(CheckButton s, EventArgs e)
             {
                 pkgObj.IsSelected = s.GetActive();
+                _installButton.SetSensitive(AnySelected());
             }
 
             void OnExternalToggle(object? s, EventArgs e)
@@ -152,6 +153,7 @@ public class AurInstall(
                 if (listItem.GetItem() == pkgObj)
                 {
                     checkButton.SetActive(pkgObj.IsSelected);
+                    _installButton.SetSensitive(AnySelected());
                 }
             }
         };

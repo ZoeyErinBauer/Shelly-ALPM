@@ -44,7 +44,15 @@ public static class AppRunner
 
     public static async Task SpawnTerminalWithCommandAsync(string command)
     {
-        var terminal = Environment.GetEnvironmentVariable("TERMINAL") ?? "alacritty";
+        var terminal = GetTerminal();
+
+        if (terminal == null)
+        {
+            Console.WriteLine("[Shell-Notifications] No supported terminal emulator found.");
+            return;
+        }
+
+        Console.WriteLine($"[Shell-Notifications] Spawning terminal {terminal} with command: {command}");
 
         var process = Process.Start(new ProcessStartInfo
         {
@@ -52,9 +60,48 @@ public static class AppRunner
             Arguments = $"-e bash -c \"{command}\"",
             UseShellExecute = false,
         });
-        
-        //auuuugh default to alacritty could spawn shelly maybe once we have a better home page that update 
-        //all or maybe we can just give notification 
-        await process!.WaitForExitAsync();
+
+        if (process != null)
+        {
+            await process.WaitForExitAsync();
+        }
+    }
+
+    private static string? GetTerminal()
+    {
+        var envTerminal = Environment.GetEnvironmentVariable("TERMINAL");
+        if (!string.IsNullOrEmpty(envTerminal) && IsCommandAvailable(envTerminal))
+        {
+            return envTerminal;
+        }
+
+        string[] terminals =
+        [
+            "alacritty",
+            "rio",
+            "ghostty",
+            "kitty",
+            "konsole",
+            "kgx",
+            "gnome-terminal",
+            "xfce4-terminal",
+            "lxterminal",
+            "xterm",
+            "st",
+            "foot",
+            "terminator"
+        ];
+
+        return terminals.FirstOrDefault(IsCommandAvailable);
+    }
+
+    private static bool IsCommandAvailable(string command)
+    {
+        var path = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(path)) return false;
+
+        return path.Split(Path.PathSeparator)
+            .Select(dir => Path.Combine(dir, command))
+            .Any(File.Exists);
     }
 }

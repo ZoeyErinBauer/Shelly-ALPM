@@ -2,13 +2,17 @@
 
 ![Shelly Wiki](https://img.shields.io/badge/Shelly-Wiki-blue)
 
-<p align="center">
+<details>
+  <summary>Screenshots</summary>
+  <p align="center">
   Search Standard Packages, AUR, and Flatpak in one place
 
- <img width="1372" height="1019" alt="image" src="https://github.com/user-attachments/assets/6aa86662-d9f6-4d3c-9164-9df5d05257b3" />
+  <img width="1372" height="1019" alt="image" src="https://github.com/user-attachments/assets/6aa86662-d9f6-4d3c-9164-9df5d05257b3" />
   <img width="1768" height="1177" alt="image" src="https://github.com/user-attachments/assets/8e9d851b-a3a0-4aaf-b91a-b3b3c3ec7f6d" />
   <img width="1768" height="1177" alt="image" src="https://github.com/user-attachments/assets/cc2a8d31-e5c9-42d4-ba87-db25e10a1110" />
-</p>
+  </p>
+</details>
+
 
 ### About
 
