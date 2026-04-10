@@ -7,7 +7,7 @@ namespace Shelly_CLI.ConsoleLayouts;
 
 public static class AurSplitOutput
 {
-    public static async Task Output(AurPackageManager manager, Func<AurPackageManager, Task> operation,
+    public static async Task<bool> Output(AurPackageManager manager, Func<AurPackageManager, Task> operation,
         bool noConfirm = false,
         int consoleRatio = 3,
         int progressRatio = 2)
@@ -24,6 +24,7 @@ public static class AurSplitOutput
         layout["Progress"].Update(new Panel("Waiting...").Header("Progress").Expand());
         LiveDisplayContext? liveCtx = null;
         object renderLock = new();
+        bool hadError = false;
 
         // Track package progress lines by package name for in-place updates
         var packageProgressIndex = new Dictionary<string, int>();
@@ -341,10 +342,22 @@ public static class AurSplitOutput
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
         };
 
+        manager.ErrorEvent += (sender, e) =>
+        {
+            lock (renderLock)
+            {
+                hadError = true;
+                consoleLines.Add($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
+            }
+
+            SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
+        };
+
         await AnsiConsole.Live(layout).StartAsync(async ctx =>
         {
             liveCtx = ctx;
             await operation(manager);
         });
+        return !hadError;
     }
 }

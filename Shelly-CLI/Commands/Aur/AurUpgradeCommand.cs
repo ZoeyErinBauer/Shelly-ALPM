@@ -47,7 +47,12 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
             }
 
             var packageNames = updates.Select(u => u.Name).ToList();
-            await AurSplitOutput.Output(manager, m => m.UpdatePackages(packageNames), settings.NoConfirm);
+            var result = await AurSplitOutput.Output(manager, m => m.UpdatePackages(packageNames), settings.NoConfirm);
+            if (!result)
+            {
+                AnsiConsole.MarkupLine("[red]Upgrade failed. See errors above.[/]");
+                return 1;
+            }
             AnsiConsole.MarkupLine("[green]Upgrade complete.[/]");
 
             return 0;
@@ -66,6 +71,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
     private static async Task<int> HandleUiModeUpgrade(AurUpgradeSettings settings)
     {
         AurPackageManager? manager = null;
+        bool hadError = false;
         try
         {
             manager = new AurPackageManager();
@@ -84,6 +90,12 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
             {
                 Console.Error.WriteLine($"  {pkg.Name}: {pkg.Version} -> {pkg.NewVersion}");
             }
+
+            manager.ErrorEvent += (_, e) =>
+            {
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+                hadError = true;
+            };
 
             manager.PackageProgress += (sender, args) =>
             {
@@ -125,6 +137,11 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
 
             var packageNames = updates.Select(u => u.Name).ToList();
             await manager.UpdatePackages(packageNames);
+            if (hadError)
+            {
+                Console.Error.WriteLine("Upgrade failed.");
+                return 1;
+            }
             Console.Error.WriteLine("Upgrade complete.");
 
             return 0;

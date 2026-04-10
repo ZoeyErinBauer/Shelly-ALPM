@@ -34,6 +34,16 @@ public class UpdateCommand : Command<PackageSettings>
 
         using var manager = new AlpmManager();
         object renderLock = new();
+        bool hadError = false;
+
+        manager.ErrorEvent += (_, e) =>
+        {
+            if (Program.IsUiMode)
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+            else
+                AnsiConsole.MarkupLine($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
+            hadError = true;
+        };
 
         manager.Question += (sender, args) =>
         {
@@ -86,6 +96,11 @@ public class UpdateCommand : Command<PackageSettings>
                 manager.UpdatePackages(packageList);
             });
 
+        if (hadError)
+        {
+            AnsiConsole.MarkupLine("[red]Update failed. See errors above.[/]");
+            return 1;
+        }
         AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
         return 0;
     }

@@ -295,12 +295,16 @@ public class AlpmManagerTests
     }
 
     [Test]
-    public void InstallPackages_ThrowsException_WhenAnyPackageNotFound()
+    public void InstallPackages_FiresErrorEvent_WhenAnyPackageNotFound()
     {
         _manager.Initialize();
+        string? capturedError = null;
+        _manager.ErrorEvent += (_, e) => capturedError = e.Error;
         var packages = new List<string> { "doctest", "this-package-does-not-exist-12345" };
-        var ex = Assert.Throws<Exception>(() => _manager.InstallPackages(packages));
-        Assert.That(ex.Message, Does.Contain("not found"));
+        var result = _manager.InstallPackages(packages).Result;
+        Assert.That(result, Is.False);
+        Assert.That(capturedError, Is.Not.Null);
+        Assert.That(capturedError, Does.Contain("not found"));
     }
 
 }

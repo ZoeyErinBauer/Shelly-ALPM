@@ -33,6 +33,7 @@ public class AurRemoveCommand : AsyncCommand<AurRemovePackageSettings>
             manager = new AurPackageManager();
             await manager.Initialize(root: true);
             object renderLock = new();
+            bool hadError = false;
 
             manager.PackageProgress += (sender, args) =>
             {
@@ -63,6 +64,16 @@ public class AurRemoveCommand : AsyncCommand<AurRemovePackageSettings>
                     QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
                 }
             };
+
+            manager.ErrorEvent += (_, e) =>
+            {
+                lock (renderLock)
+                {
+                    AnsiConsole.MarkupLine($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
+                }
+                hadError = true;
+            };
+
             var flags = AlpmTransFlag.None;
             if (settings.Cascade)
             {
@@ -112,6 +123,12 @@ public class AurRemoveCommand : AsyncCommand<AurRemovePackageSettings>
                     };
                     await manager.RemovePackages(settings.Packages.ToList(),flags);
                 });
+
+            if (hadError)
+            {
+                AnsiConsole.MarkupLine("[red]Removal failed. See errors above.[/]");
+                return 1;
+            }
             AnsiConsole.MarkupLine("[green]Removal complete.[/]");
 
             return 0;
@@ -146,6 +163,7 @@ public class AurRemoveCommand : AsyncCommand<AurRemovePackageSettings>
         }
 
         AurPackageManager? manager = null;
+        bool hadError = false;
         try
         {
             manager = new AurPackageManager();
@@ -166,8 +184,19 @@ public class AurRemoveCommand : AsyncCommand<AurRemovePackageSettings>
             // Handle questions
             manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
 
+            manager.ErrorEvent += (_, e) =>
+            {
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+                hadError = true;
+            };
+
             Console.Error.WriteLine($"Removing AUR packages: {string.Join(", ", packageList)}");
             await manager.RemovePackages(packageList,flags);
+            if (hadError)
+            {
+                Console.Error.WriteLine("Removal failed.");
+                return 1;
+            }
             Console.Error.WriteLine("Removal complete.");
 
             return 0;

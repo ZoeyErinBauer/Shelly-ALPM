@@ -117,26 +117,31 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
             }
         };
 
-        try
+        bool hadError = false;
+        manager.ErrorEvent += (_, e) =>
         {
-            AnsiConsole.MarkupLine("[yellow]Installing package...[/]");
-            manager.InstallLocalPackage(filePath);
-            AnsiConsole.MarkupLine("[green]Package downgraded successfully![/]");
+            lock (renderLock)
+            {
+                AnsiConsole.MarkupLine($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
+            }
+            hadError = true;
+        };
+
+        AnsiConsole.MarkupLine("[yellow]Installing package...[/]");
+        var result = manager.InstallLocalPackage(filePath).Result;
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
         }
-        catch (Exception ex)
+        manager.Dispose();
+
+        if (!result || hadError)
         {
-            AnsiConsole.WriteException(ex);
+            AnsiConsole.MarkupLine("[red]Downgrade failed. See errors above.[/]");
             return 1;
         }
-        finally
-        {
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-            manager.Dispose();
-        }
-
+        AnsiConsole.MarkupLine("[green]Package downgraded successfully![/]");
         return 0;
     }
 

@@ -101,9 +101,14 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         }
 
         AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
-        await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
-        AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
+        var upgradeResult = await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
         manager.Dispose();
+        if (!upgradeResult)
+        {
+            AnsiConsole.MarkupLine("[red]System upgrade failed. See errors above.[/]");
+            return 1;
+        }
+        AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         if (settings.Aur || settings.All)
         {
             var aurCommand = new AurUpgradeCommand();
@@ -183,8 +188,20 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}");
         };
 
-        await manager.SyncSystemUpdate();
+        bool hadError = false;
+        manager.ErrorEvent += (_, e) =>
+        {
+            Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+            hadError = true;
+        };
+
+        var result = await manager.SyncSystemUpdate();
         manager.Dispose();
+        if (!result || hadError)
+        {
+            await Console.Error.WriteLineAsync("System upgrade failed.");
+            return 1;
+        }
         if (settings.Aur || settings.All)
         {
             var aurCommand = new AurUpgradeCommand();

@@ -77,6 +77,7 @@ public class AurPackageManager(string? configPath = null)
     public event EventHandler<AlpmReplacesEventArgs>? Replaces;
     public event EventHandler<AlpmPacnewEventArgs>? PacnewInfo;
     public event EventHandler<AlpmPacsaveEventArgs>? PacsaveInfo;
+    public event EventHandler<AlpmErrorEventArgs>? ErrorEvent;
 
     public async Task Initialize(bool root = false, bool useTempPath = false, bool useChroot = false,
         string chrootPath = "/var/lib/shelly/chroot", string tempPath = "", bool showHiddenPackages = false,
@@ -92,6 +93,7 @@ public class AurPackageManager(string? configPath = null)
         _alpm.Replaces += (sender, args) => Replaces?.Invoke(this, args);
         _alpm.PacnewInfo += (sender, args) => PacnewInfo?.Invoke(this, args);
         _alpm.PacsaveInfo += (sender, args) => PacsaveInfo?.Invoke(this, args);
+        _alpm.ErrorEvent += (sender, args) => ErrorEvent?.Invoke(this, args);
         _aurSearchManager = new AurSearchManager(_httpClient);
         _availablePackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
         _useChroot = useChroot;

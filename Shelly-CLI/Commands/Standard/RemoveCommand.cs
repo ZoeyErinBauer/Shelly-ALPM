@@ -12,7 +12,7 @@ public class RemoveCommand : AsyncCommand<RemovePackageSettings>
     {
         if (Program.IsUiMode)
         {
-            return HandleUiModeRemove(settings);
+            return await HandleUiModeRemove(settings);
         }
 
         if (settings.Packages.Length == 0)
@@ -53,13 +53,18 @@ public class RemoveCommand : AsyncCommand<RemovePackageSettings>
             flags |= AlpmTransFlag.Cascade;
         }
 
-        await SplitOutput.Output(manager, x => x.RemovePackages(packageList, flags), settings.NoConfirm);
+        var result = await SplitOutput.Output(manager, x => x.RemovePackages(packageList, flags), settings.NoConfirm);
 
         if (settings.RemoveConfig)
         {
             HandleConfigRemoval(settings.Packages);
         }
 
+        if (!result)
+        {
+            AnsiConsole.MarkupLine("[red]Removal failed. See errors above.[/]");
+            return 1;
+        }
         AnsiConsole.MarkupLine("[green]Packages removed successfully![/]");
         return 0;
     }
@@ -82,7 +87,7 @@ public class RemoveCommand : AsyncCommand<RemovePackageSettings>
         return 0;
     }
 
-    private static int HandleUiModeRemove(RemovePackageSettings settings)
+    private static async Task<int> HandleUiModeRemove(RemovePackageSettings settings)
     {
         if (settings.Packages.Length == 0)
         {
@@ -91,45 +96,48 @@ public class RemoveCommand : AsyncCommand<RemovePackageSettings>
         }
 
         using var manager = new AlpmManager();
-        try
+        bool hadError = false;
+        var packageList = settings.Packages.ToList();
+
+        // Handle questions
+        manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+
+        // Handle progress events
+        manager.Progress += (sender, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+
+        manager.HookRun += (sender, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
+        manager.ErrorEvent += (_, e) =>
         {
-            var packageList = settings.Packages.ToList();
+            Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+            hadError = true;
+        };
 
-            // Handle questions
-            manager.Question += (sender, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+        Console.Error.WriteLine("Initializing ALPM...");
+        manager.Initialize(true);
 
-            // Handle progress events
-            manager.Progress += (sender, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
-
-            Console.Error.WriteLine("Initializing ALPM...");
-            manager.Initialize(true);
-
-            Console.Error.WriteLine($"Removing packages: {string.Join(", ", packageList)}");
-            var flags = AlpmTransFlag.None;
-            if (settings.Cascade)
-            {
-                flags |= AlpmTransFlag.NoSave | AlpmTransFlag.Recurse;
-            }
-            else if (settings.Ripple)
-            {
-                flags |= AlpmTransFlag.Cascade;
-            }
-
-            manager.HookRun += (sender, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
-            manager.RemovePackages(packageList, flags);
-            if (settings.RemoveConfig)
-            {
-                HandleConfigRemoval(settings.Packages);
-            }
-
-            Console.Error.WriteLine("Packages removed successfully!");
-
-            return 0;
+        Console.Error.WriteLine($"Removing packages: {string.Join(", ", packageList)}");
+        var flags = AlpmTransFlag.None;
+        if (settings.Cascade)
+        {
+            flags |= AlpmTransFlag.NoSave | AlpmTransFlag.Recurse;
         }
-        catch (Exception ex)
+        else if (settings.Ripple)
         {
-            Console.Error.WriteLine($"Removal failed: {ex.Message}");
+            flags |= AlpmTransFlag.Cascade;
+        }
+
+        var result = await manager.RemovePackages(packageList, flags);
+        if (settings.RemoveConfig)
+        {
+            HandleConfigRemoval(settings.Packages);
+        }
+
+        if (!result || hadError)
+        {
+            Console.Error.WriteLine("Removal failed.");
             return 1;
         }
+        Console.Error.WriteLine("Packages removed successfully!");
+        return 0;
     }
 }

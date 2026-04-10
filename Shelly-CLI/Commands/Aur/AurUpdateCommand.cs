@@ -32,7 +32,12 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             await manager.Initialize(root: true, noCheck: !settings.Check);
 
             AnsiConsole.MarkupLine($"[yellow]Updating AUR packages: {string.Join(", ", settings.Packages.Select(p => p.EscapeMarkup()))}[/]");
-            await AurSplitOutput.Output(manager, m => m.UpdatePackages(settings.Packages.ToList()), settings.NoConfirm);
+            var result = await AurSplitOutput.Output(manager, m => m.UpdatePackages(settings.Packages.ToList()), settings.NoConfirm);
+            if (!result)
+            {
+                AnsiConsole.MarkupLine("[red]Update failed. See errors above.[/]");
+                return 1;
+            }
             AnsiConsole.MarkupLine("[green]Update complete.[/]");
 
             return 0;
@@ -57,10 +62,17 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         }
 
         AurPackageManager? manager = null;
+        bool hadError = false;
         try
         {
             manager = new AurPackageManager();
             await manager.Initialize(root: true, noCheck: !settings.Check);
+
+            manager.ErrorEvent += (_, e) =>
+            {
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+                hadError = true;
+            };
 
             manager.PackageProgress += (sender, args) =>
             {
@@ -106,6 +118,11 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
 
             Console.Error.WriteLine($"Updating AUR packages: {string.Join(", ", settings.Packages)}");
             await manager.UpdatePackages(settings.Packages.ToList());
+            if (hadError)
+            {
+                Console.Error.WriteLine("Update failed.");
+                return 1;
+            }
             Console.Error.WriteLine("Update complete.");
 
             return 0;

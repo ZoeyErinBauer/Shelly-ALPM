@@ -18,6 +18,8 @@ public interface IAlpmManager
     event EventHandler<AlpmPacnewEventArgs>? PacnewInfo;
     event EventHandler<AlpmPacsaveEventArgs>? PacsaveInfo;
 
+    event EventHandler<AlpmErrorEventArgs>? ErrorEvent;
+
     void IntializeWithSync();
 
     void Initialize(bool root = false, int parallelDownloads = 1, bool useTempPath = false, string tempPath = "",
@@ -28,18 +30,18 @@ public interface IAlpmManager
     List<AlpmPackageDto> GetAvailablePackages();
     List<AlpmPackageUpdateDto> GetPackagesNeedingUpdate();
 
-    Task InstallPackages(List<string> packageNames,
+    Task<bool> InstallPackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
-    Task RemovePackages(List<string> packageNames,
+    Task<bool> RemovePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
-    void UpdatePackages(List<string> packageNames,
+    Task<bool> UpdatePackages(List<string> packageNames,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
-    Task SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.None);
+    Task<bool> SyncSystemUpdate(AlpmTransFlag flags = AlpmTransFlag.None);
 
-    Task InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None);
+    Task<bool> InstallLocalPackage(string path, AlpmTransFlag flags = AlpmTransFlag.None);
 
     /// <summary>
     /// This installs the first package that provides a given dependency.
@@ -52,7 +54,7 @@ public interface IAlpmManager
     /// <param name="packageName">Name of the package that dependencies are being installed for</param>
     /// <param name="includeMakeDeps"></param>
     /// <param name="flags">Flags that should be used for the installation</param>
-    Task InstallDependenciesOnly(string packageName, bool includeMakeDeps = false,
+    Task<bool> InstallDependenciesOnly(string packageName, bool includeMakeDeps = false,
         AlpmTransFlag flags = AlpmTransFlag.None);
 
     /// <summary>

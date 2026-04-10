@@ -57,19 +57,34 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                 if (settings.MakeDepsOn)
                 {
                     AnsiConsole.MarkupLine("[yellow]Installing dependencies (including make dependencies)...[/]");
-                    await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), true), settings.NoConfirm);
+                    var makeDepsResult = await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), true), settings.NoConfirm);
+                    if (!makeDepsResult)
+                    {
+                        AnsiConsole.MarkupLine("[red]Dependency installation failed. See errors above.[/]");
+                        return 1;
+                    }
                     AnsiConsole.MarkupLine("[green]Dependencies installed successfully![/]");
                     return 0;
                 }
 
                 AnsiConsole.MarkupLine("[yellow]Installing dependencies...[/]");
-                await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), false), settings.NoConfirm);
+                var depsResult = await AurSplitOutput.Output(manager, m => m.InstallDependenciesOnly(packageList.First(), false), settings.NoConfirm);
+                if (!depsResult)
+                {
+                    AnsiConsole.MarkupLine("[red]Dependency installation failed. See errors above.[/]");
+                    return 1;
+                }
                 AnsiConsole.MarkupLine("[green]Dependencies installed successfully![/]");
                 return 0;
             }
 
             AnsiConsole.MarkupLine($"[yellow]Installing AUR packages: {string.Join(", ", settings.Packages.Select(p => p.EscapeMarkup()))}[/]");
-            await AurSplitOutput.Output(manager, m => m.InstallPackages(packageList), settings.NoConfirm);
+            var installResult = await AurSplitOutput.Output(manager, m => m.InstallPackages(packageList), settings.NoConfirm);
+            if (!installResult)
+            {
+                AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+                return 1;
+            }
 
             manager.Dispose();
             manager = new AurPackageManager();
@@ -107,6 +122,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
         }
 
         AurPackageManager? manager = null;
+        bool hadError = false;
         try
         {
             manager = new AurPackageManager();
@@ -138,6 +154,12 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                     Console.Error.WriteLine($"[Shelly] makepkg: {e.Line}");
             };
 
+            manager.ErrorEvent += (_, e) =>
+            {
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+                hadError = true;
+            };
+
             // Handle build dependencies only mode
             if (settings.BuildDepsOn)
             {
@@ -151,18 +173,21 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                 {
                     Console.Error.WriteLine("Installing dependencies (including make dependencies)...");
                     await manager.InstallDependenciesOnly(packageList.First(), true);
+                    if (hadError) return 1;
                     Console.Error.WriteLine("Dependencies installed successfully!");
                     return 0;
                 }
 
                 Console.Error.WriteLine("Installing dependencies...");
                 await manager.InstallDependenciesOnly(packageList.First(), false);
+                if (hadError) return 1;
                 Console.Error.WriteLine("Dependencies installed successfully!");
                 return 0;
             }
 
             Console.Error.WriteLine($"Installing AUR packages: {string.Join(", ", packageList)}");
             await manager.InstallPackages(packageList);
+            if (hadError) return 1;
 
             // Recreate manager to get fresh installed package list (avoid stale cache)
             manager.Dispose();

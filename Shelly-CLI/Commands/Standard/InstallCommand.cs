@@ -12,7 +12,7 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
     {
         if (Program.IsUiMode)
         {
-            return HandleUiModeInstall(context, settings);
+            return await HandleUiModeInstall(context, settings);
         }
 
         if (settings.Packages.Length == 0)
@@ -40,7 +40,12 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
         if (settings.Upgrade)
         {
             AnsiConsole.Markup("[yellow]Running system upgrade[/yellow]");
-            await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
+            var upgradeResult = await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
+            if (!upgradeResult)
+            {
+                AnsiConsole.MarkupLine("[red]System upgrade failed. See errors above.[/]");
+                return 1;
+            }
         }
 
         if (settings.BuildDepsOn)
@@ -54,14 +59,24 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
             if (settings.MakeDepsOn)
             {
                 AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-                await SplitOutput.Output(manager, x => x.InstallDependenciesOnly(packageList.First(), true),
+                var result = await SplitOutput.Output(manager, x => x.InstallDependenciesOnly(packageList.First(), true),
                     settings.NoConfirm);
+                if (!result)
+                {
+                    AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+                    return 1;
+                }
                 return 0;
             }
 
             AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-            await SplitOutput.Output(manager, x => x.InstallDependenciesOnly(packageList.First()),
+            var depsResult = await SplitOutput.Output(manager, x => x.InstallDependenciesOnly(packageList.First()),
                 settings.NoConfirm);
+            if (!depsResult)
+            {
+                AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+                return 1;
+            }
             AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
@@ -70,22 +85,32 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
         {
             AnsiConsole.MarkupLine("[yellow]Skipping dependency installation.[/]");
             AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-            await SplitOutput.Output(manager, x => x.InstallPackages(packageList, AlpmTransFlag.NoDeps),
+            var noDepsResult = await SplitOutput.Output(manager, x => x.InstallPackages(packageList, AlpmTransFlag.NoDeps),
                 settings.NoConfirm);
+            if (!noDepsResult)
+            {
+                AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+                return 1;
+            }
             AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
 
         AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
 
-        await SplitOutput.Output(manager, x => x.InstallPackages(packageList), settings.NoConfirm);
+        var installResult = await SplitOutput.Output(manager, x => x.InstallPackages(packageList), settings.NoConfirm);
         Console.WriteLine(); // Final newline after last package
 
+        if (!installResult)
+        {
+            AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+            return 1;
+        }
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;
     }
 
-    private static int HandleUiModeInstall(CommandContext context, InstallPackageSettings settings)
+    private static async Task<int> HandleUiModeInstall(CommandContext context, InstallPackageSettings settings)
     {
         if (settings.Packages.Length == 0)
         {
@@ -103,7 +128,15 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
         }
 
         using var manager = new AlpmManager();
+        bool hadError = false;
         manager.Question += (_, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+        manager.Progress += (_, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+        manager.HookRun += (_, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
+        manager.ErrorEvent += (_, e) =>
+        {
+            Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+            hadError = true;
+        };
         Console.Error.WriteLine("Initializing ALPM...");
         manager.Initialize(true);
 
@@ -118,12 +151,14 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
             if (settings.MakeDepsOn)
             {
                 Console.Error.WriteLine("Installing packages...");
-                manager.InstallDependenciesOnly(settings.Packages.ToList().First(), true);
+                var result = await manager.InstallDependenciesOnly(settings.Packages.ToList().First(), true);
+                if (!result || hadError) return 1;
                 return 0;
             }
 
             Console.Error.WriteLine("Installing packages...");
-            manager.InstallDependenciesOnly(settings.Packages.ToList().First());
+            var depsResult = await manager.InstallDependenciesOnly(settings.Packages.ToList().First());
+            if (!depsResult || hadError) return 1;
             Console.Error.WriteLine("Packages installed successfully!");
             return 0;
         }
@@ -132,25 +167,16 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
         {
             Console.Error.WriteLine("Skipping dependency installation.");
             Console.Error.WriteLine("Installing packages...");
-            manager.InstallPackages(settings.Packages.ToList(), AlpmTransFlag.NoDeps);
+            var noDepsResult = await manager.InstallPackages(settings.Packages.ToList(), AlpmTransFlag.NoDeps);
+            if (!noDepsResult || hadError) return 1;
             Console.Error.WriteLine("Packages installed successfully!");
             return 0;
         }
 
         Console.WriteLine("Installing packages...");
-        manager.Progress += (_, args) => { Console.WriteLine($"{args.PackageName}: {args.Percent}%"); };
-        manager.HookRun += (_, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
-        try
-        {
-            manager.InstallPackages(settings.Packages.ToList());
-            Console.Error.WriteLine("Finished installing packages.");
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[ALPM_ERROR]Failed to install packages: {ex.Message}");
-            return 1;
-        }
-
+        var installResult = await manager.InstallPackages(settings.Packages.ToList());
+        if (!installResult || hadError) return 1;
+        Console.Error.WriteLine("Finished installing packages.");
         return 0;
     }
 }

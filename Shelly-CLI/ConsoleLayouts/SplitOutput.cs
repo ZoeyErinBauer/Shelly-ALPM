@@ -6,7 +6,7 @@ namespace Shelly_CLI.ConsoleLayouts;
 
 public static class SplitOutput
 {
-    public static async Task Output(IAlpmManager manager, Func<IAlpmManager, Task> operation, bool noConfirm = false,
+    public static async Task<bool> Output(IAlpmManager manager, Func<IAlpmManager, Task<bool>> operation, bool noConfirm = false,
         int consoleRation = 3,
         int progressRatio = 2)
     {
@@ -57,7 +57,7 @@ public static class SplitOutput
 
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
         };
-
+        
         manager.ScriptletInfo += (sender, e) =>
         {
             lock (renderLock)
@@ -114,6 +114,15 @@ public static class SplitOutput
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
         };
 
+        manager.ErrorEvent += (sender, e) =>
+        {
+            lock (renderLock)
+            {
+                consoleLines.Add($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
+            }
+
+            SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
+        };
 
         manager.Question += (sender, e) =>
         {
@@ -138,10 +147,12 @@ public static class SplitOutput
             SplitOutputHelpers.HandleYesNoInConsole(e, consoleLines, maxVisibleLines, layout, liveCtx, renderLock);
         };
 
+        bool result = false;
         await AnsiConsole.Live(layout).StartAsync(async ctx =>
         {
             liveCtx = ctx;
-            await operation(manager);
+            result = await operation(manager);
         });
+        return result;
     }
 }

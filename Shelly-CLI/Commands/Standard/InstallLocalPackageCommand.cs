@@ -52,10 +52,15 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         {
             if (Program.IsUiMode)
             {
-                return HandleUiModeInstall(settings);
+                return await HandleUiModeInstall(settings);
             }
 
-            await InitializeAndInstallLocalAlpmPackage(settings);
+            var installResult = await InitializeAndInstallLocalAlpmPackage(settings);
+            if (!installResult)
+            {
+                AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
+                return 1;
+            }
             return 0;
         }
 
@@ -222,17 +227,17 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         return false;
     }
 
-    private static async Task InitializeAndInstallLocalAlpmPackage(InstallLocalPackageSettings settings)
+    private static async Task<bool> InitializeAndInstallLocalAlpmPackage(InstallLocalPackageSettings settings)
     {
-
         var manager = new AlpmManager();
         AnsiConsole.MarkupLine("[yellow]Initializing ALPM...[/]");
         manager.Initialize();
-        await SplitOutput.Output(manager, x => x.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation!)));
+        var result = await SplitOutput.Output(manager, x => x.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation!)));
         manager.Dispose();
+        return result;
     }
 
-    private static int HandleUiModeInstall(InstallLocalPackageSettings settings)
+    private static async Task<int> HandleUiModeInstall(InstallLocalPackageSettings settings)
     {
         if (settings.PackageLocation == null)
         {
@@ -241,28 +246,32 @@ public class InstallLocalPackageCommand : AsyncCommand<InstallLocalPackageSettin
         }
 
         using var manager = new AlpmManager();
-        try
+        bool hadError = false;
+
+        // Handle questions
+        manager.Question += (_, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+
+        // Handle progress events
+        manager.Progress += (_, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+
+        manager.ErrorEvent += (_, e) =>
         {
-            // Handle questions
-            manager.Question += (_, args) => { QuestionHandler.HandleQuestion(args, true, settings.NoConfirm); };
+            Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+            hadError = true;
+        };
 
-            // Handle progress events
-            manager.Progress += (_, args) => { Console.Error.WriteLine($"{args.PackageName}: {args.Percent}%"); };
+        Console.Error.WriteLine("Initializing ALPM...");
+        manager.Initialize();
 
-            Console.Error.WriteLine("Initializing ALPM...");
-            manager.Initialize();
-
-            Console.Error.WriteLine($"Installing local package: {settings.PackageLocation}");
-            manager.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation));
-            Console.Error.WriteLine("Installation complete.");
-
-            return 0;
-        }
-        catch (Exception ex)
+        Console.Error.WriteLine($"Installing local package: {settings.PackageLocation}");
+        var result = await manager.InstallLocalPackage(Path.GetFullPath(settings.PackageLocation));
+        if (!result || hadError)
         {
-            Console.Error.WriteLine($"Installation failed: {ex.Message}");
+            Console.Error.WriteLine("Installation failed.");
             return 1;
         }
+        Console.Error.WriteLine("Installation complete.");
+        return 0;
     }
 
     internal async Task<bool> IsArchPackage(string filePath)
