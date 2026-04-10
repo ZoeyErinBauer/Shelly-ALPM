@@ -79,16 +79,14 @@ paru -Rns shelly
 
 Upcoming features and development targets:
 
-- **Trigger updates from Notifications**: Allow users to trigger package updates from the notification system.
 - **Repository Modification**: Allow modification of supported repositories (In progress).
 - **App Image Support**: Further app image support similar to [AppLever](https://github.com/mijorus/gearlever). (In
   progress)
-- **Flatpak Overhaul**: Improve Flatpak integration and management. Allow for management of flatpak app stream
-  locations. (In progress)
 - **Package Import**: Allow for import of a previously existing package list to bring the system back to a saved package
   state. (Not yet started)
-- **Icons for Standard Packages**: Allow icons for standard package applications to be viewed while searching for 
-  packages. (Architecting)
+- **Multi Language Support**: Translation layer for supporting languages outside english
+- **Offline Updates**: Similar functionality to pacman-offline script
+- **Layout Customization**: Allow for customization of the individual user experience.
 
 ## Prerequisites
 
