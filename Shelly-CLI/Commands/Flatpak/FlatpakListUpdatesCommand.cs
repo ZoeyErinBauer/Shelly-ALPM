@@ -18,7 +18,7 @@ public class FlatpakListUpdatesCommand : Command<DefaultSettings>
 
         var manager = new FlatpakManager();
 
-        var packages = manager.GetPackagesWithUpdates();
+        var packages = FlatpakManager.GetPackagesWithUpdates();
 
         if (settings.JsonOutput)
         {
@@ -53,7 +53,7 @@ public class FlatpakListUpdatesCommand : Command<DefaultSettings>
     {
         var manager = new FlatpakManager();
 
-        var packages = manager.GetPackagesWithUpdates();
+        var packages = FlatpakManager.GetPackagesWithUpdates();
 
         if (settings.JsonOutput)
         {

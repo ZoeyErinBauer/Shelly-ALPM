@@ -822,28 +822,35 @@ public class FlatpakManager : IDisposable
     /// <returns>A result message indicating success or failure</returns>
     public string UpdateApp(string nameOrId)
     {
-        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
-
-        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+        var installations = new List<(IntPtr Ptr, bool IsUser)>();
+        
+        var sysInstallationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr sysError);
+        if (sysError == IntPtr.Zero && sysInstallationsPtr != IntPtr.Zero)
         {
-            FlatpakReference.GErrorFree(error);
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
-            return "Failed to get system installations.";
+            var dataPtr = Marshal.ReadIntPtr(sysInstallationsPtr);
+            var length = Marshal.ReadInt32(sysInstallationsPtr + IntPtr.Size);
+            for (var i = 0; i < length; i++)
+            {
+                var inst = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                if (inst != IntPtr.Zero) installations.Add((inst, false));
+            }
         }
+        else if (sysError != IntPtr.Zero) FlatpakReference.GErrorFree(sysError);
+
+        var userInstPtr = FlatpakReference.InstallationNewUser(IntPtr.Zero, out IntPtr userError);
+        if (userError == IntPtr.Zero && userInstPtr != IntPtr.Zero)
+        {
+            installations.Add((userInstPtr, true));
+        }
+        else if (userError != IntPtr.Zero) FlatpakReference.GErrorFree(userError);
 
         try
         {
-            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
-            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
-
-            for (var i = 0; i < length; i++)
+            foreach (var (installationPtr, isUser) in installations)
             {
-                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
-                if (installationPtr == IntPtr.Zero) continue;
-
                 var match = FindInstalledApp(installationPtr, nameOrId);
-
                 if (match == null) continue;
+
                 var refString = BuildRefString(match);
 
                 var transactionPtr = FlatpakReference.TransactionNewForInstallation(
@@ -851,7 +858,8 @@ public class FlatpakManager : IDisposable
 
                 if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
                 {
-                    return "Failed to create update transaction.";
+                    if (transactionError != IntPtr.Zero) FlatpakReference.GErrorFree(transactionError);
+                    continue;
                 }
 
                 try
@@ -868,6 +876,7 @@ public class FlatpakManager : IDisposable
                     if (!addSuccess || addError != IntPtr.Zero)
                     {
                         var response = FlatpakReference.GetErrorMessage(addError);
+                        if (addError != IntPtr.Zero) FlatpakReference.GErrorFree(addError);
                         return
                             $"Failed to add {nameOrId} to update queue. Error: {response} App may already be up to date.";
                     }
@@ -877,7 +886,9 @@ public class FlatpakManager : IDisposable
 
                     if (!runSuccess || runError != IntPtr.Zero)
                     {
-                        return $"Update of {nameOrId} failed. You may need elevated permissions.";
+                        var msg = FlatpakReference.GetErrorMessage(runError);
+                        if (runError != IntPtr.Zero) FlatpakReference.GErrorFree(runError);
+                        return $"Update of {nameOrId} failed: {msg}";
                     }
 
                     return $"Successfully updated {match.Name} ({match.Id}).";
@@ -890,7 +901,8 @@ public class FlatpakManager : IDisposable
         }
         finally
         {
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
+            if (sysInstallationsPtr != IntPtr.Zero) FlatpakReference.GPtrArrayUnref(sysInstallationsPtr);
+            if (userInstPtr != IntPtr.Zero) FlatpakReference.GObjectUnref(userInstPtr);
         }
 
         return $"Could not find installed app matching '{nameOrId}'.";
@@ -900,71 +912,122 @@ public class FlatpakManager : IDisposable
     /// Updates all flatpak installations
     /// </summary>
     /// <returns>A result message indicating success or failure</returns>
-    public string UpdateAllFlatpak()
+    public static string UpdateAllFlatpak()
     {
         if (!NativeResolver.IsLibraryAvailable(FlatpakReference.LibName))
         {
             return string.Empty;
         }
 
-        var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out var error);
-
-        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+        var installations = new List<(IntPtr Ptr, bool IsUser)>();
+        var totalUpdated = 0;
+        var errorMessages = new List<string>();
+        
+        var sysInstallationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out var sysError);
+        if (sysError == IntPtr.Zero && sysInstallationsPtr != IntPtr.Zero)
         {
-            FlatpakReference.GErrorFree(error);
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
-            return "Failed to get system installations.";
+            var dataPtr = Marshal.ReadIntPtr(sysInstallationsPtr);
+            var length = Marshal.ReadInt32(sysInstallationsPtr + IntPtr.Size);
+            for (var i = 0; i < length; i++)
+            {
+                var inst = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                if (inst != IntPtr.Zero) installations.Add((inst, false));
+            }
         }
+        else if (sysError != IntPtr.Zero) FlatpakReference.GErrorFree(sysError);
+
+        var userInstPtr = FlatpakReference.InstallationNewUser(IntPtr.Zero, out var userError);
+        if (userError == IntPtr.Zero && userInstPtr != IntPtr.Zero)
+        {
+            installations.Add((userInstPtr, true));
+        }
+        else if (userError != IntPtr.Zero) FlatpakReference.GErrorFree(userError);
 
         try
         {
-            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
-
-            var installationPtr = Marshal.ReadIntPtr(dataPtr);
-
-            var transactionPtr = FlatpakReference.TransactionNewForInstallation(
-                installationPtr, IntPtr.Zero, out IntPtr transactionError);
-
-            var packagesWithUpdates = GetPackagesWithUpdates();
-
-            if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+            foreach (var (installationPtr, isUser) in installations)
             {
-                return "Failed to create update transaction.";
+                var refsPtr = FlatpakReference.InstanceGetUpdates(installationPtr, IntPtr.Zero, out var refsError);
+                if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
+                {
+                    if (refsError != IntPtr.Zero) FlatpakReference.GErrorFree(refsError);
+                    continue;
+                }
+
+                try
+                {
+                    var refsDataPtr = Marshal.ReadIntPtr(refsPtr);
+                    var refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
+                    if (refsLength == 0) continue;
+                    
+                    var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                        installationPtr, IntPtr.Zero, out var transactionError);
+
+                    if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+                    {
+                        errorMessages.Add(
+                            $"Failed to create transaction for {(isUser ? "user" : "system")} installation.");
+                        if (transactionError != IntPtr.Zero) FlatpakReference.GErrorFree(transactionError);
+                        continue;
+                    }
+
+                    try
+                    {
+                        for (var j = 0; j < refsLength; j++)
+                        {
+                            var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
+                            if (refPtr == IntPtr.Zero) continue;
+
+                            var package = new FlatpackPackage(refPtr);
+                            var refString = BuildRefString(package.ToDto());
+
+                            FlatpakReference.TransactionAddUpdate(
+                                transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
+
+                            if (addError != IntPtr.Zero) FlatpakReference.GErrorFree(addError);
+                        }
+                        
+                        var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                        var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                        FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                            IntPtr.Zero, IntPtr.Zero, 0);
+                        
+                        var runSuccess =
+                            FlatpakReference.TransactionRun(transactionPtr, IntPtr.Zero, out var runError);
+                        if (runSuccess && runError == IntPtr.Zero)
+                        {
+                            totalUpdated += refsLength;
+                        }
+                        else
+                        {
+                            var msg = FlatpakReference.GetErrorMessage(runError);
+                            errorMessages.Add($"Update failed for {(isUser ? "user" : "system")}: {msg}");
+                            if (runError != IntPtr.Zero) FlatpakReference.GErrorFree(runError);
+                        }
+                    }
+                    finally
+                    {
+                        FlatpakReference.GObjectUnref(transactionPtr);
+                    }
+                }
+                finally
+                {
+                    FlatpakReference.GPtrArrayUnref(refsPtr);
+                }
             }
-
-            foreach (var packageDto in packagesWithUpdates)
-            {
-                var refString = BuildRefString(packageDto);
-
-                var addSuccess = FlatpakReference.TransactionAddUpdate(
-                    transactionPtr, refString, IntPtr.Zero, null, out IntPtr addError);
-
-                if (addSuccess && addError == IntPtr.Zero) continue;
-                var response = FlatpakReference.GetErrorMessage(addError);
-                return
-                    $"Failed to add {packageDto.Id} to update queue. Error: {response} App may already be up to date.";
-            }
-
-
-            var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
-            var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
-            FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
-                IntPtr.Zero, IntPtr.Zero, 0);
-
-            var runSuccess = FlatpakReference.TransactionRun(
-                transactionPtr, IntPtr.Zero, out IntPtr runError);
-
-            if (!runSuccess || runError != IntPtr.Zero)
-            {
-                return $"Full system update failed";
-            }
-
-            return $"Successfully updated {packagesWithUpdates.Count} packages.";
         }
         finally
         {
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
+            if (sysInstallationsPtr != IntPtr.Zero) FlatpakReference.GPtrArrayUnref(sysInstallationsPtr);
+            if (userInstPtr != IntPtr.Zero) FlatpakReference.GObjectUnref(userInstPtr);
         }
+
+        if (errorMessages.Count > 0 && totalUpdated == 0)
+        {
+            return $"Update failed: {string.Join(" | ", errorMessages)}";
+        }
+
+        return $"Successfully updated {totalUpdated} packages across all installations.";
     }
 
     public List<FlatpakRemoteDto> ListRemotesWithDetails()
@@ -1398,7 +1461,7 @@ public class FlatpakManager : IDisposable
     /// Retrieve flatpak that require updates
     /// <returns>List of FlatpakPackageDto</returns>
     /// </summary>
-    public List<FlatpakPackageDto> GetPackagesWithUpdates()
+    public static List<FlatpakPackageDto> GetPackagesWithUpdates()
     {
         if (!NativeResolver.IsLibraryAvailable(FlatpakReference.LibName))
         {
@@ -1406,44 +1469,43 @@ public class FlatpakManager : IDisposable
         }
 
         var packages = new List<FlatpakPackageDto>();
+        var installations = new List<IntPtr>();
 
         var installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
-
-        if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
-        {
-            FlatpakReference.GErrorFree(error);
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
-            return packages;
-        }
-
-        try
+        if (error == IntPtr.Zero && installationsPtr != IntPtr.Zero)
         {
             var dataPtr = Marshal.ReadIntPtr(installationsPtr);
             var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
-
             for (var i = 0; i < length; i++)
             {
-                var installationPtr = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
-                if (installationPtr == IntPtr.Zero) continue;
+                var inst = Marshal.ReadIntPtr(dataPtr + i * IntPtr.Size);
+                if (inst != IntPtr.Zero) installations.Add(inst);
+            }
+        }
+        else if (error != IntPtr.Zero) FlatpakReference.GErrorFree(error);
 
-                var refsPtr = FlatpakReference.InstanceGetUpdates(
-                    installationPtr, IntPtr.Zero, out IntPtr refsError);
+        var userInstPtr = FlatpakReference.InstallationNewUser(IntPtr.Zero, out IntPtr userError);
+        if (userError == IntPtr.Zero && userInstPtr != IntPtr.Zero)
+        {
+            installations.Add(userInstPtr);
+        }
+        else if (userError != IntPtr.Zero) FlatpakReference.GErrorFree(userError);
 
-                if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero)
-                {
-                    continue;
-                }
+        try
+        {
+            foreach (var installationPtr in installations)
+            {
+                var refsPtr = FlatpakReference.InstanceGetUpdates(installationPtr, IntPtr.Zero, out IntPtr refsError);
+                if (refsError != IntPtr.Zero || refsPtr == IntPtr.Zero) continue;
 
                 try
                 {
                     var refsDataPtr = Marshal.ReadIntPtr(refsPtr);
                     var refsLength = Marshal.ReadInt32(refsPtr + IntPtr.Size);
-
                     for (var j = 0; j < refsLength; j++)
                     {
                         var refPtr = Marshal.ReadIntPtr(refsDataPtr + j * IntPtr.Size);
                         if (refPtr == IntPtr.Zero) continue;
-
                         var package = new FlatpackPackage(refPtr);
                         packages.Add(package.ToDto());
                     }
@@ -1456,7 +1518,8 @@ public class FlatpakManager : IDisposable
         }
         finally
         {
-            FlatpakReference.GPtrArrayUnref(installationsPtr);
+            if (installationsPtr != IntPtr.Zero) FlatpakReference.GPtrArrayUnref(installationsPtr);
+            if (userInstPtr != IntPtr.Zero) FlatpakReference.GObjectUnref(userInstPtr);
         }
 
         return packages;

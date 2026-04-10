@@ -54,7 +54,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
 
             if (settings.CheckFlatpak)
             {
-                flatpakPackages = flatPakManager.GetPackagesWithUpdates();
+                flatpakPackages = FlatpakManager.GetPackagesWithUpdates();
                 List<SyncFlatpakModel> flatpakPackageModels = [];
                 flatpakPackageModels.AddRange(flatpakPackages.Select(pkg => new SyncFlatpakModel()
                     { Id = pkg.Id, Name = pkg.Name, Version = pkg.Version }));
@@ -95,7 +95,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         {
             AnsiConsole.Status().Spinner(Spinner.Known.BouncingBall).Start(
                 "Initializing and syncing Flatpak packages",
-                ctx => { flatpakPackages = flatPakManager.GetPackagesWithUpdates(); });
+                ctx => { flatpakPackages = FlatpakManager.GetPackagesWithUpdates(); });
             AnsiConsole.MarkupLine("[green]Finished checking Flatpak[/]");
         }
 
@@ -177,7 +177,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
 
             if (settings.CheckFlatpak)
             {
-                flatpakPackages = flatPakManager.GetPackagesWithUpdates();
+                flatpakPackages = FlatpakManager.GetPackagesWithUpdates();
                 List<SyncFlatpakModel> flatpakPackageModels = [];
                 flatpakPackageModels.AddRange(flatpakPackages.Select(pkg => new SyncFlatpakModel()
                     { Id = pkg.Id, Name = pkg.Name, Version = pkg.Version }));
@@ -211,7 +211,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         if (settings.CheckFlatpak)
         {
             Console.Error.WriteLine("Initializing and syncing Flatpak packages");
-            flatpakPackages = flatPakManager.GetPackagesWithUpdates();
+            flatpakPackages = FlatpakManager.GetPackagesWithUpdates();
             Console.Error.WriteLine("Finished checking Flatpak");
         }
 
