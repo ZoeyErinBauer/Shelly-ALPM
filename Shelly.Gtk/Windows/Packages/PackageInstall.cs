@@ -336,20 +336,27 @@ public class PackageInstall(
                     var isInstalled = _installedPackageNames.Contains(optDepName);
 
                     var escapedItem = GLib.Functions.MarkupEscapeText(item, -1);
-                    var displayText = isInstalled
-                        ? $"<span foreground='#9a9996'>✔</span> {escapedItem}"
-                        : escapedItem!;
 
-                    var chip = Label.New(string.Empty);
-                    chip.SetMarkup($"<span size='small'>{displayText}</span>");
-                    chip.AddCssClass("package-chip");
-                    chip.Selectable = true;
-                    chip.Ellipsize = Pango.EllipsizeMode.End;
-                    chip.MaxWidthChars = 25;
-                    chip.Wrap = true;
-                    chip.WrapMode = Pango.WrapMode.WordChar;
-                    chip.Xalign = 0;
-                    flowBox.Append(chip);
+                    var chipBox = Box.New(Orientation.Horizontal, 4);
+                    chipBox.AddCssClass("package-chip");
+                    chipBox.Valign = Align.Center;
+
+                    var checkIcon = Image.NewFromIconName("object-select-symbolic");
+                    checkIcon.PixelSize = 16;
+                    checkIcon.Visible = isInstalled;
+
+                    var chipLabel = Label.New(string.Empty);
+                    chipLabel.SetMarkup($"<span size='small'>{escapedItem}</span>");
+                    chipLabel.Selectable = true;
+                    chipLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    chipLabel.MaxWidthChars = 25;
+                    chipLabel.Wrap = true;
+                    chipLabel.WrapMode = Pango.WrapMode.WordChar;
+                    chipLabel.Xalign = 0;
+
+                    chipBox.Append(checkIcon);
+                    chipBox.Append(chipLabel);
+                    flowBox.Append(chipBox);
                 }
                 else
                 {

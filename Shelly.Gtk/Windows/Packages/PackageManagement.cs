@@ -328,20 +328,27 @@ public class PackageManagement(
                     var isInstalled = _installedPackageNames.Contains(optDepName);
 
                     var escapedItem = GLib.Functions.MarkupEscapeText(item, -1);
-                    var displayText = isInstalled
-                        ? $"<span foreground='#9a9996'>✔</span> {escapedItem}"
-                        : escapedItem!;
 
-                    var chip = Label.New(string.Empty);
-                    chip.SetMarkup($"<span size='small'>{displayText}</span>");
-                    chip.AddCssClass("package-chip");
-                    chip.Selectable = true;
-                    chip.Ellipsize = Pango.EllipsizeMode.End;
-                    chip.MaxWidthChars = 25;
-                    chip.Wrap = true;
-                    chip.WrapMode = Pango.WrapMode.WordChar;
-                    chip.Xalign = 0;
-                    flowBox.Append(chip);
+                    var chipBox = Box.New(Orientation.Horizontal, 4);
+                    chipBox.AddCssClass("package-chip");
+                    chipBox.Valign = Align.Center;
+
+                    var checkIcon = Image.NewFromIconName("object-select-symbolic");
+                    checkIcon.PixelSize = 16;
+                    checkIcon.Visible = isInstalled;
+
+                    var chipLabel = Label.New(string.Empty);
+                    chipLabel.SetMarkup($"<span size='small'>{escapedItem}</span>");
+                    chipLabel.Selectable = true;
+                    chipLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    chipLabel.MaxWidthChars = 25;
+                    chipLabel.Wrap = true;
+                    chipLabel.WrapMode = Pango.WrapMode.WordChar;
+                    chipLabel.Xalign = 0;
+
+                    chipBox.Append(checkIcon);
+                    chipBox.Append(chipLabel);
+                    flowBox.Append(chipBox);
                 }
                 else
                 {
@@ -419,19 +426,22 @@ public class PackageManagement(
             var box = Box.New(Orientation.Horizontal, 6);
             var packageIcon = new Image { PixelSize = 24 };
             var label = Label.New(string.Empty);
+            var installedIcon = Image.NewFromIconName("object-select-symbolic");
 
             box.Append(packageIcon);
             box.Append(label);
+            box.Append(installedIcon);
             listItem.SetChild(box);
         };
         _nameFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
+            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } pkgObj ||
                 listItem.GetChild() is not Box box) return;
 
             var packageIcon = (Image)box.GetFirstChild()!;
             var label = (Label)packageIcon.GetNextSibling()!;
+            var installedIcon = (Image)label.GetNextSibling()!;
 
             var iconPath = iconResolverService.GetIconPath(pkg.Name);
             if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
@@ -448,6 +458,8 @@ public class PackageManagement(
 
             label.SetText(pkg.Name);
             label.Halign = Align.Start;
+            installedIcon.Visible = pkgObj.IsInstalled;
+            installedIcon.TooltipText = "Installed";
         };
         nameColumn.SetFactory(_nameFactory);
 
