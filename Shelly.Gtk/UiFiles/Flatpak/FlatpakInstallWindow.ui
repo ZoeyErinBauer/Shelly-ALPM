@@ -544,7 +544,7 @@
                                 <property name="spacing">5</property>
                                 <child>
                                     <object class="GtkButton" id="install_from_flatpak_ref_button">
-                                        <property name="label">Install from FlatpakRef</property>
+                                        <property name="label">Install local flatpak</property>
                                     </object>
                                 </child>
                                 <child>

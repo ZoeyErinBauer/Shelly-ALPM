@@ -113,3 +113,13 @@ public class FlatpakRemoteRefFileInstallSettings : CommandSettings
     public bool SystemWide { get; set; } = true;
 }
 
+public class FlatpakBundleInstallSettings : CommandSettings
+{
+    [CommandArgument(0, "<BundlePath>")]
+    [Description("Path to the .flatpak bundle file")]
+    public string BundlePath { get; init; } = string.Empty;
+
+    [CommandOption("-s|--system <true|false>")]
+    public bool SystemWide { get; set; } = true;
+}
+

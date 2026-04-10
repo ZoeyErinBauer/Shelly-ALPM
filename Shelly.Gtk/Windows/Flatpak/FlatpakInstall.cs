@@ -792,8 +792,9 @@ public class FlatpakInstall(
             dialog.SetTitle("Install Flatpak Ref");
 
             var filter = FileFilter.New();
-            filter.SetName("Local FlatpakRef files (\"*.FlatpakRef\"");
+            filter.SetName("Local Flatpak files (\"*.FlatpakRef\", \"*.flatpak)\"");
             filter.AddPattern("*.FlatpakRef");
+            filter.AddPattern("*.flatpak");
 
             var filters = Gio.ListStore.New(FileFilter.GetGType());
             filters.Append(filter);
@@ -803,25 +804,48 @@ public class FlatpakInstall(
 
             if (file is not null)
             {
-                lockoutService.Show($"Installing selected ref...");
-                var result =
-                    await unprivilegedOperationService.FlatpakInsallFromRef(file.GetPath()!, _selectedRefScope);
-                if (!result.Success)
+                lockoutService.Show($"Installing selected local flatpak file...");
+                if (file.GetPath()!.EndsWith(".FlatpakRef", StringComparison.OrdinalIgnoreCase))
                 {
-                    var args = new ToastMessageEventArgs(
-                        $"Installing Flatpak failed"
-                    );
-                    genericQuestionService.RaiseToastMessage(args);
-                    Console.WriteLine($"Failed to install local package: {result.Error}");
+                    var result =
+                        await unprivilegedOperationService.FlatpakInsallFromRef(file.GetPath()!, _selectedRefScope);
+                    if (!result.Success)
+                    {
+                        var args = new ToastMessageEventArgs(
+                            $"Installing Flatpak failed"
+                        );
+                        genericQuestionService.RaiseToastMessage(args);
+                        Console.WriteLine($"Failed to install local package: {result.Error}");
+                    }
+                    else
+                    {
+                        _overlayInstallButton.SetSensitive(false);
+
+                        var args = new ToastMessageEventArgs(
+                            $"Installed Flatpak"
+                        );
+                        genericQuestionService.RaiseToastMessage(args);
+                    }
                 }
                 else
                 {
-                    _overlayInstallButton.SetSensitive(false);
-
-                    var args = new ToastMessageEventArgs(
-                        $"Installed Flatpak"
-                    );
-                    genericQuestionService.RaiseToastMessage(args);
+                    var result =
+                        await unprivilegedOperationService.FlatpakInstallFromBundle(file.GetPath()!, _selectedRefScope);
+                    if (!result.Success)
+                    {
+                        var args = new ToastMessageEventArgs(
+                            $"Installing Flatpak failed"
+                        );
+                        genericQuestionService.RaiseToastMessage(args);
+                        Console.WriteLine($"Failed to install local bundle: {result.Error}");
+                    }
+                    else
+                    {
+                        var args = new ToastMessageEventArgs(
+                            $"Installed Flatpak"
+                        );
+                        genericQuestionService.RaiseToastMessage(args);
+                    }
                 }
             }
         }

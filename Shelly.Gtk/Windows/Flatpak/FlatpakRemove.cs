@@ -23,6 +23,7 @@ public class FlatpakRemove(
     private string _searchText = string.Empty;
     private SignalListItemFactory? _factory;
     private readonly List<StringObject> _stringObjectRefs = [];
+    private bool _userOnly;
 
     public Widget CreateWindow()
     {
@@ -70,7 +71,6 @@ public class FlatpakRemove(
         var vbox = Box.New(Orientation.Vertical, 2);
         var nameLabel = Label.New(string.Empty);
         nameLabel.Halign = Align.Start;
-        nameLabel.AddCssClass("heading");
 
         var idLabel = Label.New(string.Empty);
         idLabel.Halign = Align.Start;
@@ -104,15 +104,24 @@ public class FlatpakRemove(
         var idLabel = (Label)nameLabel.GetNextSibling()!;
         var versionLabel = (Label)vbox.GetNextSibling()!;
 
-        if (!string.IsNullOrEmpty(package.IconPath) && File.Exists(package.IconPath))
+        var path = "";
+        if (_userOnly)
         {
-            icon.SetFromFile(package.IconPath);
-            icon.PixelSize = 64;
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            path =
+                Path.Combine(userHome, ".local/share/flatpak/appstream", package.remote ?? "",
+                    "x86_64/active/icons/64x64", $"{package.Id}.png");
         }
         else
         {
-            icon.SetFromFile($"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{package.Id}.png");
+            path =
+                $"/var/lib/flatpak/appstream/{package.remote}/x86_64/active/icons/64x64/{package.Id}.png";
         }
+
+        if (File.Exists(path))
+            icon.SetFromFile(path);
+        else
+            icon.SetFromIconName("application-x-executable");
 
         nameLabel.SetText(package.Name);
         idLabel.SetText(package.Id);
@@ -126,8 +135,11 @@ public class FlatpakRemove(
             _allPackages = await unprivilegedOperationService.ListFlatpakPackages();
             ct.ThrowIfCancellationRequested();
 
+            var remotes = await unprivilegedOperationService.FlatpakListRemotes();
+
             GLib.Functions.IdleAdd(0, () =>
             {
+                _userOnly = remotes.Any(r => r.Scope != "system");
                 ApplyFilter();
                 return false;
             });
@@ -165,24 +177,24 @@ public class FlatpakRemove(
         var deleteRadio = CheckButton.New();
         deleteRadio.SetGroup(keepRadio);
         keepRadio.Active = true;
-        
+
         var listBox = ListBox.New();
         listBox.SelectionMode = SelectionMode.None;
         listBox.AddCssClass("boxed-list");
-        
+
         var firstRadio = MakeRow(keepRadio, "Keep Config", "Keep user data and configuration");
         var secondRadio = MakeRow(deleteRadio, "Delete Config", "Delete user data and configuration");
         listBox.Append(firstRadio);
         listBox.Append(secondRadio);
-        
+
         var gestureKeep = GestureClick.New();
         gestureKeep.OnReleased += (_, _) => keepRadio.Active = true;
         firstRadio.AddController(gestureKeep);
-        
+
         var gestureRemove = GestureClick.New();
         gestureRemove.OnReleased += (_, _) => deleteRadio.Active = true;
         secondRadio.AddController(gestureRemove);
-        
+
         var keepLabel = Label.New("Keep Config?");
         keepLabel.AddCssClass("heading");
 
@@ -205,14 +217,14 @@ public class FlatpakRemove(
                 ? FlatpakRemoveEnum.KeepConfig
                 : FlatpakRemoveEnum.RemoveConfig);
         };
-        
+
         closeButton.Hexpand = false;
         removeButton.Hexpand = false;
 
         buttonBox.Halign = Align.Fill;
         buttonBox.Hexpand = true;
         buttonBox.Homogeneous = true;
-        buttonBox.Spacing= 5;
+        buttonBox.Spacing = 5;
         buttonBox.Append(removeButton);
         buttonBox.Append(closeButton);
         box.Append(buttonBox);
@@ -260,7 +272,7 @@ public class FlatpakRemove(
         bool removeConfig;
 
         var args = BuildRemoveDialog();
-        
+
         genericQuestionService.RaiseDialog(args);
 
         var message = await args.ResponseTask;

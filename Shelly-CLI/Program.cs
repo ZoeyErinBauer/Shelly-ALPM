@@ -348,6 +348,9 @@ public class Program
                 flatpak.AddCommand<FlatpakInstallFromRefFile>("install-ref-file")
                     .WithDescription("Installs flatpak app from ref file");
 
+                flatpak.AddCommand<FlatpakInstallFromBundleFile>("install-bundle")
+                    .WithDescription("Installs flatpak app from bundle file");
+
                 flatpak.AddCommand<GetAppRemoteInfo>("app-remote-info").WithDescription("Get app remote info");
             });
 

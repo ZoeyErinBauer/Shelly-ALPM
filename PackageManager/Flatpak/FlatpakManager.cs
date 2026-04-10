@@ -429,6 +429,155 @@ public class FlatpakManager : IDisposable
     }
 
     /// <summary>
+    /// Installs a flatpak package from a local bundle file.
+    /// <param name="bundlePath">Path to location of bundle to install</param>
+    /// <param name="isSystem">Whether to install to user installation (true) or system installation (false)</param>
+    /// <returns>A result message indicating success or failure</returns>
+    public static string InstallAppFromBundle(string bundlePath, bool isSystem = false)
+    {
+        IntPtr installationPtr;
+        var installationsPtr = IntPtr.Zero;
+
+        if (!isSystem)
+        {
+            installationPtr = FlatpakReference.InstallationNewUser(IntPtr.Zero, out IntPtr userError);
+            if (userError != IntPtr.Zero || installationPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GErrorFree(userError);
+                return "Failed to get user installation.";
+            }
+        }
+        else
+        {
+            installationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out IntPtr error);
+
+            if (error != IntPtr.Zero || installationsPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GErrorFree(error);
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "Failed to get system installations.";
+            }
+
+            var dataPtr = Marshal.ReadIntPtr(installationsPtr);
+            var length = Marshal.ReadInt32(installationsPtr + IntPtr.Size);
+
+            if (length == 0)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "No flatpak installations found.";
+            }
+
+            installationPtr = Marshal.ReadIntPtr(dataPtr);
+            if (installationPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+                return "Installation pointer is invalid.";
+            }
+        }
+
+        try
+        {
+            var filePtr = FlatpakReference.GFileNewForPath(bundlePath);
+
+            if (filePtr == IntPtr.Zero)
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG] Failed to create GFile from path: {bundlePath}");
+                return "Failed to create GFile from bundle file.";
+            }
+            
+            var actualPathPtr = FlatpakReference.GFileGetPath(filePtr);
+            var actualPath = PtrToStringSafe(actualPathPtr);
+            Console.Error.WriteLine($"[DEBUG_LOG] GFile path: {actualPath}");
+
+            var transactionPtr = FlatpakReference.TransactionNewForInstallation(
+                installationPtr, IntPtr.Zero, out IntPtr transactionError);
+
+
+            if (transactionError != IntPtr.Zero || transactionPtr == IntPtr.Zero)
+            {
+                FlatpakReference.GObjectUnref(filePtr);
+                return "Failed to create installation transaction.";
+            }
+
+            try
+            {
+                var newOpCallback = new FlatpakReference.TransactionNewOperationCallback(OnNewOperation);
+                var newOpCallbackPtr = Marshal.GetFunctionPointerForDelegate(newOpCallback);
+                FlatpakReference.GSignalConnectData(transactionPtr, "new-operation", newOpCallbackPtr,
+                    IntPtr.Zero, IntPtr.Zero, 0);
+                
+                FlatpakReference.TransactionSetNoInteraction(transactionPtr, true);
+                
+                if (!isSystem)
+                {
+                    var sysInstallationsPtr = FlatpakReference.GetSystemInstallations(IntPtr.Zero, out _);
+                    if (sysInstallationsPtr != IntPtr.Zero)
+                    {
+                        var sysDataPtr = Marshal.ReadIntPtr(sysInstallationsPtr);
+                        var sysLength = Marshal.ReadInt32(sysInstallationsPtr + IntPtr.Size);
+                        for (var i = 0; i < sysLength; i++)
+                        {
+                            var sysInstallationPtr = Marshal.ReadIntPtr(sysDataPtr + i * IntPtr.Size);
+                            if (sysInstallationPtr != IntPtr.Zero)
+                            {
+                                FlatpakReference.TransactionAddDependencySource(transactionPtr, sysInstallationPtr);
+                            }
+                        }
+                        FlatpakReference.GPtrArrayUnref(sysInstallationsPtr);
+                    }
+                }
+
+                var addSuccess = FlatpakReference.TransactionAddInstallBundle(
+                    transactionPtr, filePtr, IntPtr.Zero, out var addError);
+
+                if (!addSuccess || addError != IntPtr.Zero)
+                {
+                    var errorMsg = addError != IntPtr.Zero ? FlatpakReference.GetErrorMessage(addError) : "Unknown error (result was false)";
+                    if (addError != IntPtr.Zero) FlatpakReference.GErrorFree(addError);
+                    FlatpakReference.GObjectUnref(filePtr);
+                    Console.Error.WriteLine($"[DEBUG_LOG] Failed to add Flatpak bundle: {errorMsg}");
+                    return $"Failed to add Flatpak bundle to installation queue: {errorMsg}";
+                }
+
+                var runSuccess = FlatpakReference.TransactionRun(
+                    transactionPtr, IntPtr.Zero, out IntPtr runError);
+
+                if (!runSuccess || runError != IntPtr.Zero)
+                {
+                    var errorMsg = runError != IntPtr.Zero ? FlatpakReference.GetErrorMessage(runError) : "Unknown error (result was false)";
+                    if (runError != IntPtr.Zero) FlatpakReference.GErrorFree(runError);
+                    FlatpakReference.GObjectUnref(filePtr);
+                    Console.Error.WriteLine($"[DEBUG_LOG] Installation of Flatpak failed: {errorMsg}");
+                    return $"Installation of Flatpak failed: {errorMsg}";
+                }
+
+                if (filePtr != IntPtr.Zero)
+                {
+                    FlatpakReference.GObjectUnref(filePtr);
+                }
+
+                var scope = isSystem ? "system" : "user";
+                return $"Successfully installed Flatpak bundle to {scope}.";
+            }
+            finally
+            {
+                FlatpakReference.GObjectUnref(transactionPtr);
+            }
+        }
+        finally
+        {
+            if (isSystem)
+            {
+                FlatpakReference.GObjectUnref(installationPtr);
+            }
+            else if (installationsPtr != IntPtr.Zero)
+            {
+                FlatpakReference.GPtrArrayUnref(installationsPtr);
+            }
+        }
+    }
+
+    /// <summary>
     /// Installs a flatpak package from a remote repository.
     /// </summary>
     /// <param name="appId">The application ID (e.g., "org.mozilla.firefox")</param>
@@ -1925,6 +2074,21 @@ public class FlatpakManager : IDisposable
     {
         try
         {
+            if (operation != IntPtr.Zero)
+            {
+                var opType = FlatpakReference.TransactionOperationGetOperationType(operation);
+                var opTypeStrPtr = FlatpakReference.TransactionOperationTypeToString(opType);
+                var opTypeStr = PtrToStringSafe(opTypeStrPtr) ?? "unknown";
+                
+                var refPtr = FlatpakReference.TransactionOperationGetRef(operation);
+                var @ref = PtrToStringSafe(refPtr) ?? "unknown";
+                
+                var remotePtr = FlatpakReference.TransactionOperationGetRemote(operation);
+                var remote = PtrToStringSafe(remotePtr) ?? "unknown";
+
+                Console.Error.WriteLine($"[DEBUG_LOG] New operation: {opTypeStr} of {@ref} from {remote}");
+            }
+
             if (progress == IntPtr.Zero)
             {
                 return;

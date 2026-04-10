@@ -231,6 +231,20 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             "true");
     }
 
+    public async Task<UnprivilegedOperationResult> FlatpakInstallFromBundle(string path, string scope)
+    {
+        if (scope == "user")
+        {
+            return await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
+                "--user",
+                "false");
+        }
+
+        return await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
+            "--system",
+            "true");
+    }
+
     public async Task<UnprivilegedOperationResult> RunFlatpakName(string name)
     {
         return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak run", name);

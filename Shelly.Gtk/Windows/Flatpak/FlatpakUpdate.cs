@@ -3,11 +3,16 @@ using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
+
 // ReSharper disable CollectionNeverQueried.Local
 
 namespace Shelly.Gtk.Windows.Flatpak;
 
-public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationService, ILockoutService lockoutService, IConfigService configService, IGenericQuestionService genericQuestionService) : IShellyWindow
+public class FlatpakUpdate(
+    IUnprivilegedOperationService unprivilegedOperationService,
+    ILockoutService lockoutService,
+    IConfigService configService,
+    IGenericQuestionService genericQuestionService) : IShellyWindow
 {
     private ListView? _listView;
     private readonly CancellationTokenSource _cts = new();
@@ -17,6 +22,7 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
     private string _searchText = string.Empty;
     private SignalListItemFactory? _factory;
     private readonly List<StringObject> _stringObjectRefs = [];
+    private bool _userOnly;
 
     public Widget CreateWindow()
     {
@@ -98,20 +104,30 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
         var idLabel = (Label)nameLabel.GetNextSibling()!;
         var versionLabel = (Label)vbox.GetNextSibling()!;
 
-        if (!string.IsNullOrEmpty(package.IconPath) && File.Exists(package.IconPath))
+        var path = "";
+        if (_userOnly)
         {
-            icon.SetFromFile(package.IconPath);
-            icon.PixelSize = 64;
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            path =
+                Path.Combine(userHome, ".local/share/flatpak/appstream", package.remote ?? "",
+                    "x86_64/active/icons/64x64", $"{package.Id}.png");
         }
         else
         {
-            icon.SetFromFile($"/var/lib/flatpak/appstream/flathub/x86_64/active/icons/64x64/{package.Id}.png");
+            path =
+                $"/var/lib/flatpak/appstream/{package.remote}/x86_64/active/icons/64x64/{package.Id}.png";
         }
+
+        if (File.Exists(path))
+            icon.SetFromFile(path);
+        else
+            icon.SetFromIconName("application-x-executable");
 
         nameLabel.SetText(package.Name);
         idLabel.SetText(package.Id);
         versionLabel.SetText(package.Version);
     }
+
     private async Task LoadDataAsync(CancellationToken ct = default)
     {
         try
@@ -119,8 +135,11 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
             _allPackages = await unprivilegedOperationService.ListFlatpakUpdates();
             ct.ThrowIfCancellationRequested();
 
+            var remotes = await unprivilegedOperationService.FlatpakListRemotes();
+
             GLib.Functions.IdleAdd(0, () =>
             {
+                _userOnly = remotes.Any(r => r.Scope != "system");
                 ApplyFilter();
                 return false;
             });
@@ -151,7 +170,7 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
             _listStore.Append(strObj);
         }
     }
-    
+
     private async Task UpdateAllCommand()
     {
         if (!configService.LoadConfig().NoConfirm)
@@ -166,12 +185,12 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
                 return;
             }
         }
-        
+
         try
         {
             lockoutService.Show("Updating Flatpak packages...", 0, true);
             var result = await unprivilegedOperationService.FlatpakUpgrade();
-            
+
             if (!result.Success)
             {
                 Console.WriteLine($@"Failed to update packages: {result.Error}");
@@ -182,7 +201,7 @@ public class FlatpakUpdate(IUnprivilegedOperationService unprivilegedOperationSe
         finally
         {
             lockoutService.Hide();
-            
+
             var args = new ToastMessageEventArgs(
                 $"Updated all Flatpak(s)"
             );

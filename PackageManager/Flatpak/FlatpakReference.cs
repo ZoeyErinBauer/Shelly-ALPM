@@ -241,11 +241,39 @@ internal static partial class FlatpakReference
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionAddInstallFlatpakref(IntPtr transaction, IntPtr remote, out IntPtr error);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_install_bundle",
+        StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TransactionAddInstallBundle(IntPtr transaction, IntPtr file, IntPtr gpgData, out IntPtr error);
 
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_run", StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionRun(IntPtr transaction, IntPtr cancellable, out IntPtr error);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_operation_type",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int TransactionOperationGetOperationType(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_ref",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr TransactionOperationGetRef(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_remote",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr TransactionOperationGetRemote(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_type_to_string",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr TransactionOperationTypeToString(int type);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_set_no_interaction",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void TransactionSetNoInteraction(IntPtr transaction, [MarshalAs(UnmanagedType.Bool)] bool noInteraction);
+    
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_dependency_source",
+        StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void TransactionAddDependencySource(IntPtr transaction, IntPtr installation);
+    
     #endregion
 
     #region Transaction Progress
