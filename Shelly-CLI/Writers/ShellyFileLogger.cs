@@ -90,8 +90,6 @@ public class ShellyFileLogger : TextWriter
         WriteToLog(clean);
     }
     
-    
-
     private void WriteToLog(string clean)
     {
         if (clean == _lastLoggedLine) return;
@@ -99,7 +97,6 @@ public class ShellyFileLogger : TextWriter
         _fileWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{_streamLabel}] {clean}");
         _fileWriter.Flush();    
     }
-
     
     public override void WriteLine(string? value)
     {
