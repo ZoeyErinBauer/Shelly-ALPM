@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Shelly.Writers;
 
@@ -13,7 +14,20 @@ public class ShellyFileLogger : TextWriter
     private readonly StreamWriter _fileWriter;
     private readonly string _streamLabel;
     private readonly StringBuilder _lineBuffer = new();
-
+    private string? _lastLoggedLine;
+    
+    private readonly List<string> _tuiFrameBuffer = [];
+    private bool _inTuiFrame = false;
+    
+    private static readonly Regex AnsiEscape = new(@"\x1B\[[\?0-9;]*[a-zA-Z]", RegexOptions.Compiled);
+    private static readonly Regex[] NoisePatterns =
+    [
+        new(@"ALPM Progress:.*%:\s*\d+", RegexOptions.Compiled),
+        new(@"Reading content stream", RegexOptions.Compiled),
+    ];
+    private static readonly Regex BoxBorder = new(@"^[\s┌┐└┘─│╔╗╚╝═║]+$", RegexOptions.Compiled);
+    private static readonly Regex BoxContent = new(@"│([^│]*)│?", RegexOptions.Compiled);
+    
     private const string LogPath = "/var/log/shelly.log";
     private const string RotatedLogPath = "/var/log/shelly.log.1";
     private const long MaxLogSizeBytes = 5 * 1024 * 1024; // 5MB
@@ -25,14 +39,75 @@ public class ShellyFileLogger : TextWriter
         _streamLabel = streamLabel;
     }
 
+    private void FlushTuiFrame()
+    {
+        bool isHeader = true;
+        var cells = new List<string>();
+
+        foreach (var line in _tuiFrameBuffer)
+        {
+            if (isHeader) { isHeader = false; continue; }
+            var lineCells = BoxContent.Matches(line)
+                .Select(m => m.Groups[1].Value.Trim())
+                .Where(c => !string.IsNullOrWhiteSpace(c)
+                            && !c.All(ch => ch is '█' or '░' or ' ')
+                            && !BoxBorder.IsMatch(c));
+
+            cells.AddRange(lineCells);
+        }
+
+        if (cells.Count > 0)
+            WriteToLog(string.Join(" | ", cells));
+    }
+    
+    
+    private void HandleLogLine(string raw)
+    {
+        var clean = AnsiEscape.Replace(raw, "").Trim();
+        if (string.IsNullOrEmpty(clean)) return;
+
+        if (clean.StartsWith('┌'))
+        {
+            _inTuiFrame = true;
+            _tuiFrameBuffer.Clear();
+            return;
+        }
+
+        if (_inTuiFrame)
+        {
+            if (clean.StartsWith('└'))
+            {
+                _inTuiFrame = false;
+                FlushTuiFrame();
+                return;
+            }
+            if (clean.StartsWith('├')) return;
+
+            _tuiFrameBuffer.Add(clean);
+            return;
+        }
+        if (NoisePatterns.Any(p => p.IsMatch(clean))) return;
+        WriteToLog(clean);
+    }
+    
+    
+
+    private void WriteToLog(string clean)
+    {
+        if (clean == _lastLoggedLine) return;
+        _lastLoggedLine = clean;
+        _fileWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{_streamLabel}] {clean}");
+        _fileWriter.Flush();    
+    }
+
+    
     public override void WriteLine(string? value)
     {
         _inner.WriteLine(value);
         FlushBufferToLog();
-        _fileWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{_streamLabel}] {value}");
-        _fileWriter.Flush();
+        if (value != null) HandleLogLine(value);  
     }
-
+    
     public override void Write(string? value)
     {
         _inner.Write(value);
@@ -66,13 +141,9 @@ public class ShellyFileLogger : TextWriter
     private void FlushBufferToLog()
     {
         if (_lineBuffer.Length == 0) return;
-        var line = _lineBuffer.ToString().TrimEnd('\r', '\n');
-        if (line.Length > 0)
-        {
-            _fileWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{_streamLabel}] {line}");
-            _fileWriter.Flush();
-        }
+        var raw = _lineBuffer.ToString().TrimEnd('\r', '\n');
         _lineBuffer.Clear();
+        if (raw.Length > 0) HandleLogLine(raw);    
     }
     
     public static StreamWriter? OpenLogFile()
