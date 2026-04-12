@@ -83,8 +83,6 @@ public class FlatpakInstall(
 
     private readonly HttpClient _httpClient = new();
 
-    private bool _userOnly;
-
     public Widget CreateWindow()
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/Flatpak/FlatpakInstallWindow.ui"), -1);
@@ -151,7 +149,6 @@ public class FlatpakInstall(
         _factory.OnBind += OnBind;
         _factory.OnUnbind += OnUnbind;
         _gridView.SetFactory(_factory);
-
 
         _installFromFlatpakRefDropDown.OnNotify += (_, args) =>
         {
@@ -358,9 +355,9 @@ public class FlatpakInstall(
 
             _overlayAuthorLabel.SetText(obj.DeveloperName);
             _overlayNameLabel.SetText(obj.Name);
-            _overlayVersionLabel.SetText(obj.Releases.First().Version);
+            _overlayVersionLabel.SetText("Version: " + obj.Releases.First().Version);
 
-            _overlayLicenseLabel.SetText(obj.ProjectLicense);
+            _overlayLicenseLabel.SetText("License: " + obj.ProjectLicense);
             _overlaySummaryLabel.SetText(obj.Summary);
             _overlayDescriptionLabel.SetText(obj.Description);
 
@@ -380,15 +377,16 @@ public class FlatpakInstall(
                 _overlayInstallButton.Label = "Install";
             }
 
-            _overlaySizeLabel.SetText(SizeHelpers.FormatSize((long)result));
+            _overlaySizeLabel.SetText("Size: " + SizeHelpers.FormatSize((long)result));
 
             SetUrlLinks(obj.Urls);
 
-            if (_userOnly)
+            var remotes = obj.Remotes.FirstOrDefault() ?? new FlatpakRemoteDto();
+            if (remotes.Scope == "user")
             {
                 var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 _overlayIconImage.SetFromFile(
-                    Path.Combine(userHome, ".local/share/flatpak/appstream", obj.Remotes.FirstOrDefault()!.Name,
+                    Path.Combine(userHome, $".local/share/flatpak/appstream", obj.Remotes.FirstOrDefault()!.Name,
                         "x86_64/active/icons/64x64", $"{obj.Id}.png"));
             }
             else
@@ -649,12 +647,14 @@ public class FlatpakInstall(
         idLabel.SetText(app.Summary);
         verifiedIcon.SetVisible(app.IsVerified);
 
+        var remotes = app.Remotes.FirstOrDefault() ?? new FlatpakRemoteDto();
+        
         var path = "";
-        if (_userOnly)
+        if (remotes.Scope == "user")
         {
             var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             path = 
-                Path.Combine(userHome, ".local/share/flatpak/appstream", app.Remotes.FirstOrDefault()?.Name ?? "",
+                Path.Combine(userHome, $".local/share/flatpak/appstream", app.Remotes.FirstOrDefault()?.Name ?? "",
                     "x86_64/active/icons/64x64", $"{app.Id}.png");
         }
         else
@@ -1181,7 +1181,6 @@ public class FlatpakInstall(
 
         GLib.Functions.IdleAdd(0, () =>
         {
-            _userOnly = remotes.Any(r => r.Scope != "system");
             if (_cts.Token.IsCancellationRequested) return false;
             _remoteListStore.RemoveAll();
             foreach (var obj in remotes.Select(remote => new FlatpakRemoteGObject { Remote = remote }))
