@@ -1069,13 +1069,24 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             var result = PackageListBuilder.Build(_handle, selectedOptDeps);
             pkgPtrs.AddRange(result);
         }
-
+        Console.Error.WriteLine($"[DEBUG] TransInit: handle={_handle}, dbPath={_config.DbPath}");
+        Console.Error.WriteLine($"[DEBUG] db.lck exists: {File.Exists(Path.Combine(_config.DbPath, "db.lck"))}");
+        
+        var lockfilePath = AlpmReference.GetLockFile(_handle);  // Need to bind alpm_option_get_lockfile
+        Console.Error.WriteLine($"[DEBUG] libalpm lockfile: {Marshal.PtrToStringAnsi(lockfilePath)}");
+        Console.Error.WriteLine($"[DEBUG] C# check path: {Path.Combine(_config.DbPath, "db.lck")}");
+        Console.Error.WriteLine($"[DEBUG] dbpath dir exists: {Directory.Exists(_config.DbPath)}");
         // Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
-            var err = ErrorNumber(_handle);
+            // var posixErrno = Marshal.ReadInt32(ErrnoLocation());
+            // Console.Error.WriteLine($"[DEBUG] POSIX errno: {posixErrno}");
+             var err = ErrorNumber(_handle);
+            // Console.Error.WriteLine($"[DEBUG] TransInit failed: errno={err} ({(int)err}), message={GetErrorMessage(err)}");
             ErrorEvent?.Invoke(this,
-                new AlpmErrorEventArgs($"Failed to initialize transaction: {GetErrorMessage(err)}"));
+                new AlpmErrorEventArgs($"Failed to initialize transaction: with Error Number: {err} and message: {GetErrorMessage(err)}"));
+            
+           
             return Task.FromResult(false);
         }
 
@@ -1549,7 +1560,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             _handle = IntPtr.Zero;
         }
 
-        Initialize();
+        Initialize(true);
     }
 
     public Task<bool> UpdatePackages(List<string> packageNames,

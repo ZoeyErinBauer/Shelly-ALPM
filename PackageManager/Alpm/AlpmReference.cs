@@ -36,6 +36,13 @@ namespace PackageManager.Alpm
         [LibraryImport(LibName, EntryPoint = "alpm_option_set_progresscb")]
         public static partial int SetProgressCallback(IntPtr handle, AlpmProgressCallback cb, IntPtr ctx);
 
+        [LibraryImport("libalpm.so", EntryPoint = "alpm_option_get_lockfile")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        public static partial IntPtr GetLockFile(IntPtr handle);
+        //
+        // [LibraryImport("libc", EntryPoint = "__errno_location")]
+        // public static partial IntPtr ErrnoLocation();
+        
         /// <summary>
         /// Initializes the alpm library.
         /// </summary>
