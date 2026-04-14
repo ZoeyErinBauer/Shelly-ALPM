@@ -6,8 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using PackageManager.Alpm.Events;
 using PackageManager.Alpm.Events.EventArgs;
@@ -31,7 +33,36 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private string _configPath = configPath;
     private PacmanConf _config;
     private IntPtr _handle = IntPtr.Zero;
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = new(new SocketsHttpHandler
+    {
+        ConnectCallback = async (context, cancellationToken) =>
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            async Task<NetworkStream> TryConnect(AddressFamily family)
+            {
+                var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
+                try
+                {
+                    await socket.ConnectAsync(context.DnsEndPoint, cts.Token);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            }
+
+            var ipv6Task = TryConnect(AddressFamily.InterNetworkV6);
+            await Task.Delay(250, cts.Token).ContinueWith(_ => { });
+            var ipv4Task = TryConnect(AddressFamily.InterNetwork);
+
+            var winner = await Task.WhenAny(ipv6Task, ipv4Task);
+            await cts.CancelAsync();
+            return await winner;
+        }
+    });
     private AlpmFetchCallback _fetchCallback;
     private AlpmEventCallback _eventCallback;
     private AlpmQuestionCallback _questionCallback;
@@ -539,23 +570,11 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         // Use a temporary file for atomic writes - prevents corruption if download is interrupted
         string tempPath = localpath + ".part";
         Console.Error.WriteLine($"[DEBUG_LOG] Using temp file {tempPath}");
-        SocketsHttpHandler? handler = null;
-        HttpClient? client = null;
         try
         {
             Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
 
-            handler = new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                AutomaticDecompression = System.Net.DecompressionMethods.All,
-                AllowAutoRedirect = true,
-                MaxAutomaticRedirections = 10,
-                UseProxy = true,
-            };
-            client = new HttpClient(handler);
-            client.Timeout = TimeSpan.FromMinutes(30);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM/1.0 (compatible)");
+            HttpClient? client = HttpClient;
             using var response = client.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
@@ -575,7 +594,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             using (var stream = response.Content.ReadAsStream())
             {
                 Console.Error.WriteLine($"[DEBUG_LOG] Reading content stream");
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[1024 * 1024];
                 int bytesRead;
                 long totalRead = 0;
                 int lastPercent = -1;
@@ -677,8 +696,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
         finally
         {
-            client?.Dispose();
-            handler?.Dispose();
         }
 
         try
