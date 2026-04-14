@@ -57,7 +57,17 @@ public class AppImageConfigUpdates : AsyncCommand<AppImageConfigUpdatesSettings>
         targetAppImage = targetAppImage.Replace("/opt/shelly/", "");
 
         var manager = new AppImageManager();
-        var success = await AppImageManager.AppImageConfigureUpdates(settings.UpdateUrl, targetAppImage, settings.UpdateType);
+        manager.ErrorEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[red]{args.Error.EscapeMarkup()}[/]");
+        };
+
+        manager.MessageEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.Message.EscapeMarkup()}[/]");
+        };
+
+        var success = await manager.AppImageConfigureUpdates(settings.UpdateUrl, targetAppImage, settings.UpdateType);
 
         if (success)
         {

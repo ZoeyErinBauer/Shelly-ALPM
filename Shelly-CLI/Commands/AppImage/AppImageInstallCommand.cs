@@ -42,16 +42,26 @@ public class AppImageInstallCommand : AsyncCommand<AppImageSettings>
         if (await AppImageManager.IsAppImage(settings.PackageLocation))
         {
             var manager = new AppImageManager();
+            manager.ErrorEvent += (_, args) =>
+            {
+                AnsiConsole.MarkupLine($"[red]{args.Error.EscapeMarkup()}[/]");
+            };
+
+            manager.MessageEvent += (_, args) =>
+            {
+                AnsiConsole.MarkupLine($"[blue]{args.Message.EscapeMarkup()}[/]");
+            };
+
             var result = await manager.InstallAppImage(settings.PackageLocation, settings.UpdateUrl);
 
             if (settings.UpdateUrl is { Length: > 0 } && settings.UpdateType != UpdateType.None)
             {
                 var appName = Path.GetFileNameWithoutExtension(settings.PackageLocation);
-                var appImages = await AppImageManager.GetAppImagesFromLocalDb();
+                var appImages = await manager.GetAppImagesFromLocalDb();
                 var appImage = appImages.FirstOrDefault(a => a.Name == appName);
                 if (appImage != null)
                 {
-                    await AppImageManager.AppImageConfigureUpdates(settings.UpdateUrl, appImage.Name, settings.UpdateType);
+                    await manager.AppImageConfigureUpdates(settings.UpdateUrl, appImage.Name, settings.UpdateType);
                 }
             }
 

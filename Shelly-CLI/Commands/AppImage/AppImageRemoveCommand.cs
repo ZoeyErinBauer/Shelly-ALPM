@@ -73,6 +73,17 @@ public class AppImageRemoveCommand : AsyncCommand<AppImageRemoveSettings>
             return 0;
         }
 
-        return await AppImageManager.RemoveAppImage(targetAppImage);
+        var manager = new AppImageManager();
+        manager.ErrorEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[red]{args.Error.EscapeMarkup()}[/]");
+        };
+
+        manager.MessageEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.Message.EscapeMarkup()}[/]");
+        };
+
+        return await manager.RemoveAppImage(targetAppImage);
     }
 }

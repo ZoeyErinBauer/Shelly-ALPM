@@ -7,12 +7,34 @@ using System.Text;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using PackageManager.AppImage.Events.EventArgs;
 
 namespace PackageManager.AppImage;
 
 public class AppImageManager
 {
     private const string InstallDirectory = "/opt/shelly";
+
+    public event EventHandler<AppImageErrorEventArgs>? ErrorEvent;
+    public event EventHandler<AppImageMessageEventArgs>? MessageEvent;
+
+    private void LogMessage(string message)
+    {
+        //Console.WriteLine(message);
+        MessageEvent?.Invoke(this, new AppImageMessageEventArgs(message));
+    }
+
+    private void LogError(string error)
+    {
+        //Console.Error.WriteLine($"Error: {error}");
+        ErrorEvent?.Invoke(this, new AppImageErrorEventArgs(error));
+    }
+
+    private void LogWarning(string message)
+    {
+        //Console.WriteLine($"Warning: {message}");
+        MessageEvent?.Invoke(this, new AppImageMessageEventArgs($"Warning: {message}"));
+    }
 
     public async Task<int> InstallAppImage(string location, string? updateUrlOverride = null)
     {
@@ -26,7 +48,7 @@ public class AppImageManager
         Directory.CreateDirectory(workingDir);
 
 
-        Console.Error.WriteLine($"Extracting AppImage...");
+        LogMessage($"Extracting AppImage...");
         SetFilePermissions(filePath, "a+x");
 
         var extractProcess = Process.Start(new ProcessStartInfo
@@ -44,14 +66,14 @@ public class AppImageManager
         var squashfsRoot = Path.Combine(workingDir, "squashfs-root");
         if (!Directory.Exists(squashfsRoot))
         {
-            Console.WriteLine("Error: Failed to extract AppImage.");
+            LogError("Failed to extract AppImage.");
             return 1;
         }
 
         var desktopFile = Directory.GetFiles(squashfsRoot, "*.desktop", SearchOption.TopDirectoryOnly).FirstOrDefault();
         if (desktopFile == null)
         {
-            Console.WriteLine("Warning: No .desktop file found in AppImage.");
+            LogWarning("No .desktop file found in AppImage.");
         }
 
         string? iconName = null;
@@ -93,11 +115,11 @@ public class AppImageManager
             {
                 File.Copy(iconPath, destIconPath, true);
                 finalIconPath = destIconName;
-                Console.WriteLine($"Exported icon");
+                LogMessage($"Exported icon");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Warning: Could not copy icon: {ex.Message}");
+                LogWarning($"Could not copy icon: {ex.Message}");
             }
         }
 
@@ -145,11 +167,11 @@ public class AppImageManager
                 await File.WriteAllTextAsync(desktopFilePath, patchedContent.ToString());
                 SetFilePermissions(desktopFilePath, "644");
                 UpdateDesktopDatabase(desktopDir);
-                Console.WriteLine($"Installed original desktop entry");
+                LogMessage($"Installed original desktop entry");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Warning: Could not install original desktop entry");
+                LogWarning($"Could not install original desktop entry");
                 CreateDesktopEntry(appName, destAppImagePath, icon: finalIconPath);
             }
         }
@@ -187,7 +209,7 @@ public class AppImageManager
         return 0;
     }
 
-    private async Task<string> GetAppImageUpdateInfo(string appImagePath)
+    public async Task<string> GetAppImageUpdateInfo(string appImagePath)
     {
         try
         {
@@ -211,7 +233,7 @@ public class AppImageManager
 
             if (process.ExitCode != 0)
             {
-                Console.Error.WriteLine($"Warning: Failed to get update info for {appImagePath}: {error}");
+                LogError($"Failed to get update info for {appImagePath}: {error}");
                 return string.Empty;
             }
 
@@ -219,12 +241,12 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Warning: Could not get update info for {appImagePath}: {ex.Message}");
+            LogError($"Could not get update info for {appImagePath}: {ex.Message}");
             return string.Empty;
         }
     }
 
-    public static async Task<int> RemoveAppImage(string appImagePath)
+    public async Task<int> RemoveAppImage(string appImagePath)
     {
         var appName = Path.GetFileNameWithoutExtension(appImagePath);
         var cleanName = CleanInvalidNames(appName);
@@ -238,13 +260,13 @@ public class AppImageManager
             if (File.Exists(appImagePath))
             {
                 File.Delete(appImagePath);
-                Console.Error.WriteLine($"[green]Removed AppImage: {appImagePath}[/]");
+                LogMessage($"Removed AppImage: {appImagePath}");
             }
 
             if (File.Exists(desktopFilePath))
             {
                 File.Delete(desktopFilePath);
-                Console.Error.WriteLine($"[green]Removed desktop entry: {desktopFilePath}[/]");
+                LogMessage($"Removed desktop entry: {desktopFilePath}");
                 UpdateDesktopDatabase(desktopDir);
             }
             else
@@ -258,7 +280,7 @@ public class AppImageManager
                     var content = await File.ReadAllLinesAsync(df);
                     if (!content.Any(l => l.StartsWith("Exec=") && l.Contains(appImagePath))) continue;
                     File.Delete(df);
-                    Console.WriteLine($"Removed desktop entry: {df}");
+                    LogMessage($"Removed desktop entry: {df}");
                     UpdateDesktopDatabase(desktopDir);
                     break;
                 }
@@ -271,13 +293,13 @@ public class AppImageManager
                 foreach (var icon in potentialIcons)
                 {
                     File.Delete(icon);
-                    Console.WriteLine($"Removed icon: {icon}");
+                    LogMessage($"Removed icon: {icon}");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during removal: {ex.Message}");
+            LogError($"Error during removal: {ex.Message}");
             return 1;
         }
 
@@ -290,20 +312,20 @@ public class AppImageManager
         var appImage = appImages.FirstOrDefault(a => a.Name == update.Name);
         if (appImage == null)
         {
-            Console.WriteLine($"Error: AppImage '{update.Name}' not found in local database.");
+            LogError($"AppImage '{update.Name}' not found in local database.");
             return 1;
         }
 
         if (string.IsNullOrEmpty(update.DownloadUrl))
         {
-            Console.WriteLine($"Error: No download URL found for {update.Name}.");
+            LogError($"No download URL found for {update.Name}.");
             return 1;
         }
 
         var currentPath = Path.Combine(InstallDirectory, $"{appImage.Name}.AppImage");
         if (!File.Exists(currentPath))
         {
-            Console.WriteLine($"Error: Current AppImage not found at {currentPath}.");
+            LogError($"Current AppImage not found at {currentPath}.");
             return 1;
         }
         
@@ -316,7 +338,7 @@ public class AppImageManager
         {
             if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
-            Console.WriteLine($"Downloading update for {update.Name}...");
+            LogMessage($"Downloading update for {update.Name}...");
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM");
@@ -328,17 +350,17 @@ public class AppImageManager
 
             SetFilePermissions(downloadPath, "a+x");
 
-            Console.WriteLine($"Backing up current version to {backupPath}...");
+            LogMessage($"Backing up current version to {backupPath}...");
             File.Copy(currentPath, backupPath, true);
 
             try
             {
-                Console.WriteLine("Installing new version...");
+                LogMessage("Installing new version...");
                 File.Move(downloadPath, currentPath, true);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error installing new version: {ex.Message}. Rolling back...");
+                LogError($"Error installing new version: {ex.Message}. Rolling back...");
                 File.Copy(backupPath, currentPath, true);
                 return 1;
             }
@@ -351,7 +373,7 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during update: {ex.Message}");
+            LogError($"Error during update: {ex.Message}");
             if (File.Exists(downloadPath)) File.Delete(downloadPath);
             if (File.Exists(backupPath) && !File.Exists(currentPath))
             {
@@ -362,7 +384,7 @@ public class AppImageManager
         }
     }
 
-    public static async Task<List<AppImageUpdateDto>> CheckForAppImageUpdates()
+    public async Task<List<AppImageUpdateDto>> CheckForAppImageUpdates()
     {
         var appImages = await GetAppImagesFromLocalDb();
         var updates = new List<AppImageUpdateDto>();
@@ -379,9 +401,9 @@ public class AppImageManager
         return updates;
     }
 
-    public static async Task<bool> AppImageConfigureUpdates(string url, string name, UpdateType updateType)
+    public async Task<bool> AppImageConfigureUpdates(string url, string name, UpdateType updateType)
     {
-        Console.WriteLine($"Configuring updates for {name} {url}, type: {updateType}...");
+        LogMessage($"Configuring updates for {name} {url}, type: {updateType}...");
         var appImages = await GetAppImagesFromLocalDb();
         var appImage = appImages.FirstOrDefault(a => a.Name == name);
         if (appImage == null) return false;
@@ -393,7 +415,7 @@ public class AppImageManager
         return await AddAppImageToLocalDb(appImage);
     }
 
-    private static async Task<AppImageUpdateDto?> CheckUpdate(AppImageDto appImage)
+    public async Task<AppImageUpdateDto?> CheckUpdate(AppImageDto appImage)
     {
         return appImage.UpdateType switch
         {
@@ -648,7 +670,7 @@ public class AppImageManager
         return Task.FromResult(string.Equals(extension, ".AppImage", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static void SetFilePermissions(string filePath, string permissions)
+    private void SetFilePermissions(string filePath, string permissions)
     {
         try
         {
@@ -665,11 +687,11 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Warning: Could not set file permissions: {ex.Message}");
+            LogWarning($"Could not set file permissions: {ex.Message}");
         }
     }
 
-    private static void CreateDesktopEntry(
+    private void CreateDesktopEntry(
         string appName,
         string executablePath,
         string? comment = null,
@@ -700,15 +722,15 @@ public class AppImageManager
             SetFilePermissions(desktopFilePath, "644");
             UpdateDesktopDatabase(desktopDir);
 
-            Console.Error.WriteLine($"[green]Desktop entry created: {desktopFilePath}");
+            LogMessage($"Desktop entry created: {desktopFilePath}");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"[yellow]Warning: Could not create desktop entry: {ex.Message}");
+            LogWarning($"Could not create desktop entry: {ex.Message}");
         }
     }
 
-    private static void UpdateFromUrl(AppImageDto appImage, string url)
+    private void UpdateFromUrl(AppImageDto appImage, string url)
     {
         var uri = new Uri(url);
         var host = uri.Host.ToLower();
@@ -756,7 +778,7 @@ public class AppImageManager
             .Replace("\\", "-");
     }
 
-    private static void UpdateDesktopDatabase(string desktopDir)
+    private void UpdateDesktopDatabase(string desktopDir)
     {
         try
         {
@@ -773,7 +795,7 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Warning: Could not set desktop database: {ex.Message}[/]");
+            LogWarning($"Could not set desktop database: {ex.Message}");
         }
     }
 
@@ -807,7 +829,7 @@ public class AppImageManager
         }
     }
 
-    private static async Task<bool> AddAppImageToLocalDb(AppImageDto appImage)
+    private async Task<bool> AddAppImageToLocalDb(AppImageDto appImage)
     {
         try
         {
@@ -826,12 +848,12 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error adding AppImage to local DB: {ex.Message}");
+            LogError($"Error adding AppImage to local DB: {ex.Message}");
             return false;
         }
     }
 
-    private static async Task<bool> RemoveAppImageFromLocalDb(AppImageDto appImage)
+    private async Task<bool> RemoveAppImageFromLocalDb(AppImageDto appImage)
     {
         try
         {
@@ -850,12 +872,12 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error removing AppImage from local DB: {ex.Message}");
+            LogError($"Error removing AppImage from local DB: {ex.Message}");
             return false;
         }
     }
 
-    public static async Task<List<AppImageDto>> GetAppImagesFromLocalDb()
+    public async Task<List<AppImageDto>> GetAppImagesFromLocalDb()
     {
         try
         {
@@ -870,7 +892,7 @@ public class AppImageManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading AppImage local DB: {ex.Message}");
+            LogError($"Error reading AppImage local DB: {ex.Message}");
             return [];
         }
     }

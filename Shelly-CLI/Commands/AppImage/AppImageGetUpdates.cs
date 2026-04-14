@@ -9,7 +9,17 @@ public class AppImageGetUpdates : AsyncCommand
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
         var manager = new AppImageManager();
-        var result = await AppImageManager.CheckForAppImageUpdates();
+        manager.ErrorEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[red]{args.Error.EscapeMarkup()}[/]");
+        };
+
+        manager.MessageEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.Message.EscapeMarkup()}[/]");
+        };
+
+        var result = await manager.CheckForAppImageUpdates();
 
         foreach (var update in result)
         {

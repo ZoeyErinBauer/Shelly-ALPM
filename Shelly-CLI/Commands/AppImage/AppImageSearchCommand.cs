@@ -9,7 +9,18 @@ public class AppImageSearchCommand : AsyncCommand<AppImageSearchSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, AppImageSearchSettings settings)
     {
-        var appImages = await AppImageManager.GetAppImagesFromLocalDb();
+        var manager = new AppImageManager();
+        manager.ErrorEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[red]{args.Error.EscapeMarkup()}[/]");
+        };
+
+        manager.MessageEvent += (_, args) =>
+        {
+            AnsiConsole.MarkupLine($"[blue]{args.Message.EscapeMarkup()}[/]");
+        };
+
+        var appImages = await manager.GetAppImagesFromLocalDb();
         List<AppImageDto> results;
 
         if (!string.IsNullOrWhiteSpace(settings.Query))
