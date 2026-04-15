@@ -2051,63 +2051,52 @@ public class FlatpakManager : IDisposable
     {
         var permissions = new List<string>();
         if (keyFile == IntPtr.Zero) return permissions;
-
-        // Common groups for permissions in Flatpak metadata
+        
         string[] groups = ["Context", "ExtensionBus", "Shared", "Sockets", "Filesystems", "SessionBus", "SystemBus"];
         
         foreach (var group in groups)
         {
-            // Each group can have multiple keys. We want to collect all of them.
-            // For Context, keys are things like 'shared', 'sockets', 'filesystems', 'devices', 'features'.
-            // For other groups, the keys themselves are the permissions (e.g. SessionBus=org.freedesktop.Notifications).
-
             var keysPtr = FlatpakReference.GKeyFileGetKeys(keyFile, group, out var length, out _);
-            if (keysPtr != IntPtr.Zero)
+            
+            if (keysPtr == IntPtr.Zero) continue;
+            
+            for (nuint i = 0; i < length; i++)
             {
-                for (nuint i = 0; i < length; i++)
+                var keyPtr = Marshal.ReadIntPtr(keysPtr, (int)i * IntPtr.Size);
+                var key = Marshal.PtrToStringUTF8(keyPtr);
+                if (string.IsNullOrEmpty(key)) continue;
+                    
+                var listPtr = FlatpakReference.GKeyFileGetStringList(keyFile, group, key, out var listLength, out _);
+                if (listPtr != IntPtr.Zero)
                 {
-                    var keyPtr = Marshal.ReadIntPtr(keysPtr, (int)i * IntPtr.Size);
-                    var key = Marshal.PtrToStringUTF8(keyPtr);
-                    if (string.IsNullOrEmpty(key)) continue;
-
-                    // Now get the value(s) for this key
-                    var listPtr = FlatpakReference.GKeyFileGetStringList(keyFile, group, key, out var listLength, out _);
-                    if (listPtr != IntPtr.Zero)
+                    for (nuint j = 0; j < listLength; j++)
                     {
-                        for (nuint j = 0; j < listLength; j++)
+                        var valPtr = Marshal.ReadIntPtr(listPtr, (int)j * IntPtr.Size);
+                        var val = Marshal.PtrToStringUTF8(valPtr);
+                        if (!string.IsNullOrEmpty(val))
                         {
-                            var valPtr = Marshal.ReadIntPtr(listPtr, (int)j * IntPtr.Size);
-                            var val = Marshal.PtrToStringUTF8(valPtr);
-                            if (!string.IsNullOrEmpty(val))
-                            {
-                                permissions.Add($"{group}={key}:{val}");
-                            }
-                        }
-                        FlatpakReference.GStrFreeV(listPtr);
-                    }
-                    else
-                    {
-                        // Try as single string if list fails (though permissions are usually lists)
-                        var valPtr = FlatpakReference.GKeyFileGetString(keyFile, group, key, out _);
-                        if (valPtr != IntPtr.Zero)
-                        {
-                            var val = Marshal.PtrToStringUTF8(valPtr);
-                            if (!string.IsNullOrEmpty(val))
-                            {
-                                permissions.Add($"{group}={key}:{val}");
-                            }
-                            FlatpakReference.GFree(valPtr);
+                            permissions.Add($"{group}={key}:{val}");
                         }
                     }
+                    FlatpakReference.GStrFreeV(listPtr);
                 }
-                FlatpakReference.GStrFreeV(keysPtr);
+                else
+                {
+                    var valPtr = FlatpakReference.GKeyFileGetString(keyFile, group, key, out _);
+                    
+                    if (valPtr == IntPtr.Zero) continue;
+                    
+                    var val = Marshal.PtrToStringUTF8(valPtr);
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        permissions.Add($"{group}={key}:{val}");
+                    }
+                    FlatpakReference.GFree(valPtr);
+                }
             }
+            FlatpakReference.GStrFreeV(keysPtr);
         }
         return permissions;
-    }
-
-    private static void OnTransactionReady(IntPtr transaction, IntPtr userData)
-    {
     }
 
     /// <summary>
@@ -2145,11 +2134,6 @@ public class FlatpakManager : IDisposable
             var progressCallbackPtr = Marshal.GetFunctionPointerForDelegate(progressCallback);
             FlatpakReference.GSignalConnectData(progress, "changed", progressCallbackPtr,
                 IntPtr.Zero, IntPtr.Zero, 0);
-
-            // Extract metadata if it's an update or install
-            var opType = FlatpakReference.TransactionOperationGetOperationType(operation);
-            var refPtr = FlatpakReference.TransactionOperationGetRef(operation);
-            var refStr = PtrToStringSafe(refPtr);
         }
         catch (Exception ex)
         {
