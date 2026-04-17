@@ -69,8 +69,8 @@ public static class RestartManager
                 continue;
             }
         }
-
-        return (needsReboot, servicesNeedingRestart.ToList());
+        // Use  servicesNeedingRestart.ToList() after fixing above problems
+        return (needsReboot,[]);
     }
 
     public static async Task<List<(string service, string error)>> RestartServicesAsync(List<string> services)
