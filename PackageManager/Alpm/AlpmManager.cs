@@ -1005,9 +1005,56 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     {
         if (_handle == IntPtr.Zero) Initialize();
 
-        List<IntPtr> pkgPtrs = new List<IntPtr>();
+        List<IntPtr> pkgPtrs = [];
+        List<(string, string)> repoPkgs = [];
+        List<string> chosenPkgs = [];
 
-        foreach (var packageName in packageNames)
+        foreach (var name in packageNames)
+        {
+            if (name.Contains("/"))
+            {
+                var split = name.Split('/');
+                repoPkgs.Add((split[0], split[1]));
+            }
+            else
+            {
+                chosenPkgs.Add(name);
+            }
+        }
+
+        foreach (var (repoName, pkgName) in repoPkgs)
+        {
+            IntPtr pkgPtr = IntPtr.Zero;
+            var syncDbsPtr = GetSyncDbs(_handle);
+            var currentPtr = syncDbsPtr;
+
+            while (currentPtr != IntPtr.Zero)
+            {
+                var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                if (node.Data != IntPtr.Zero)
+                {
+                    var dbNamePtr = DbGetName(node.Data);
+                    var dbName = Marshal.PtrToStringUTF8(dbNamePtr);
+                    Console.Error.WriteLine($"[DEBUG_LOG] Found database: {dbName}");
+                    if (dbName != null && dbName.Equals(repoName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        pkgPtr = DbGetPkg(node.Data, pkgName);
+                        break;
+                    }
+                }
+                currentPtr = node.Next;
+            }
+
+            if (pkgPtr == IntPtr.Zero)
+            {
+                ErrorEvent?.Invoke(this,
+                    new AlpmErrorEventArgs($"Package '{pkgName}' not found in repository '{repoName}'."));
+                return Task.FromResult(false);
+            }
+
+            pkgPtrs.Add(pkgPtr);
+        }
+        foreach (var packageName in chosenPkgs)
         {
             // Find the package in sync databases
             IntPtr pkgPtr = IntPtr.Zero;
