@@ -2286,7 +2286,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 }
             }
         }
-
         return corruptedPackages;
     }
 

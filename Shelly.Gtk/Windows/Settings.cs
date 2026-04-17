@@ -110,6 +110,9 @@ public class Settings(
         var viewChangelogButton = (Button)builder.GetObject("changelog_button")!;
         viewChangelogButton.OnClicked += async (s, e) => { await ShowAppChangelogAsync(); };
 
+        var purifyCorruptionButton = (Button)builder.GetObject("purify_button")!;
+        purifyCorruptionButton.TooltipText = "Remove corrupted packages";
+        purifyCorruptionButton.OnClicked += async (s, e) => { await PurifyCorruption(); };
         var versionLabel = (Label)builder.GetObject("version_label")!;
         versionLabel.SetLabel(
             $"v{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "Unknown"}");
@@ -402,6 +405,43 @@ public class Settings(
         else
         {
             Console.Error.WriteLine($"Failed to remove database lock: {result.Error}");
+        }
+    }
+
+    private async Task PurifyCorruption()
+    {
+        var result = await privilegedOperationService.PurifyCorruptionAsync();
+        if (result.Success)
+        {
+            var purifyBox = new Box();
+            purifyBox.SetOrientation(Orientation.Vertical);
+            purifyBox.SetSpacing(12);
+            purifyBox.SetSizeRequest(500, -1);
+            var title = new Label();
+            title.SetText("Purified Corruption");
+            title.AddCssClass("title-2");
+            title.SetHalign(Align.Center);
+            purifyBox.Append(title);
+            var scroll = new ScrolledWindow();
+            scroll.HscrollbarPolicy = PolicyType.Never;
+            scroll.VscrollbarPolicy = PolicyType.Automatic;
+            scroll.SetOverlayScrolling(false);
+            scroll.SetSizeRequest(-1, 400);
+            var list = new Box();
+            list.SetOrientation(Orientation.Vertical);
+            list.SetSpacing(8);
+            var output = result.Output != "\n" ? result.Output.Split(",").ToList() : ["No corrupted packages found"];
+            foreach (var pkg in output)
+            {
+                var text = new Label();
+                text.SetText(pkg);
+                text.AddCssClass("text");
+                list.Append(text);
+            }
+
+            scroll.SetChild(list);
+            purifyBox.Append(scroll);
+            genericQuestionService.RaiseDialog(new GenericDialogEventArgs(purifyBox));
         }
     }
 

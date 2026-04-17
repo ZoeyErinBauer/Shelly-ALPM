@@ -517,6 +517,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             name, "-u", url, "-t", updateType.ToString().ToLowerInvariant());
     }
 
+    public async Task<OperationResult> PurifyCorruptionAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Delete corrupted packages", "purify");
+    }
+
     private void SendDbusMessage(OperationResult result)
     {
         if (result.Success)

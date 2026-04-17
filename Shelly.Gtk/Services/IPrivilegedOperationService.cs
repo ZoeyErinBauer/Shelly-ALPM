@@ -36,6 +36,7 @@ public interface IPrivilegedOperationService
     Task<OperationResult> AppImageUpgradeAsync();
     Task<OperationResult> AppImageRemoveAsync(string name);
     Task<OperationResult> AppImageConfigureUpdatesAsync(string url, string name, AppImageUpdateType updateType);
+    Task<OperationResult> PurifyCorruptionAsync();
 }
 
 public class OperationResult

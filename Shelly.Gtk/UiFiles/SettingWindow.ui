@@ -328,6 +328,15 @@
                         </style>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkButton" id="purify_button">
+                        <property name="label">Purify Packages</property>
+                          <property name="margin-top">10</property>
+                            <style>
+                                <class name="destructive-action"/>
+                            </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
