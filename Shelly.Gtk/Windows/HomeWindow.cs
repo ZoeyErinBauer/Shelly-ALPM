@@ -976,7 +976,7 @@ public class HomeWindow(
         var textView = new TextView();
         textView.Editable = false;
         textView.Monospace = true;
-        textView.WrapMode = WrapMode.WordChar;
+        textView.WrapMode = WrapMode.Word;
         
         var lines = await operationLogService.GetSessionExcerptAsync(entry, MaxRawLineBytes);
         if (lines.Count == 0)
@@ -986,7 +986,6 @@ public class HomeWindow(
             return;
         }        
         PopulateSessionBuffer(textView.Buffer, lines);        
-        
         
         var scrolledWindow = new ScrolledWindow();
         scrolledWindow.SetVexpand(true);
@@ -1003,6 +1002,7 @@ public class HomeWindow(
     private static void PopulateSessionBuffer(TextBuffer buffer, List<string> lines)
     {
         var text = string.Join("\n", lines);
+        Console.Write(text);
         buffer.SetText(text, text.Length);    
     }
     
