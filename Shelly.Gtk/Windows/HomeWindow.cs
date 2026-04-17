@@ -44,7 +44,7 @@ public class HomeWindow(
     private Overlay _overlay = null!;
     private ScrolledWindow? _sessionLogScrolledWindow;
     private uint _updateTimerId;
-    private const int MaxRawLineBytes = 512 * 1024; // 512 KB
+    private const int MaxRawLineBytes = 50 * 1024 * 1024; // 50 MB
     private GObject.SignalHandler<ListBox, ListBox.RowActivatedSignalArgs>? _logRowActivatedHandler;
 
 
@@ -941,9 +941,6 @@ public class HomeWindow(
         }
     }
     
-    private static int EstimateRawLinesSize(List<string> lines) =>
-        lines.Sum(l => Encoding.UTF8.GetByteCount(l));
-    
     private async void OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries)
     {
         var index = row.GetIndex();
@@ -963,8 +960,9 @@ public class HomeWindow(
 
         if (lines.Count == 0)
         {
-            var toastArgs = new ToastMessageEventArgs("Session log is too large to display");
-            genericQuestionService.RaiseToastMessage(toastArgs);
+            genericQuestionService.RaiseToastMessage(
+                new ToastMessageEventArgs("Session log is too large to display")
+            );
             return;
         }
 
@@ -984,19 +982,6 @@ public class HomeWindow(
         var listBox = new ListBox();
         listBox.SetSelectionMode(SelectionMode.Multiple);
 
-        foreach (var line in lines)
-        {
-            var rowItem = new ListBoxRow();
-
-            var label = Label.New(line);
-            label.Xalign = 0;
-            label.Wrap = true;
-            label.Selectable = true;
-
-            rowItem.SetChild(label);
-            listBox.Append(rowItem);
-        }
-
         var scrolledWindow = new ScrolledWindow();
         scrolledWindow.SetVexpand(true);
         scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
@@ -1004,20 +989,58 @@ public class HomeWindow(
 
         container.Append(scrolledWindow);
         
+        int batchSize = 200;
+        int currentIndex = 0;
+
+        void AppendNextBatch()
+        {
+            int end = Math.Min(currentIndex + batchSize, lines.Count);
+
+            for (int i = currentIndex; i < end; i++)
+            {
+                var rowItem = new ListBoxRow();
+
+                var label = Label.New(lines[i]);
+                label.Xalign = 0;
+                label.Wrap = true;
+                label.Selectable = true;
+
+                rowItem.SetChild(label);
+                listBox.Append(rowItem);
+            }
+
+            currentIndex = end;
+        }
+
+        AppendNextBatch();
+
+        var vadj = scrolledWindow.Vadjustment;
+        vadj.OnValueChanged += (_, _) =>
+        {
+            if (vadj.Value + vadj.PageSize >= vadj.Upper - 50)
+            {
+                if (currentIndex < lines.Count)
+                {
+                    AppendNextBatch();
+                }
+            }
+        };
+        
         var copyButton = Button.NewWithLabel("Copy Log");
         copyButton.Halign = Align.Start;
 
         copyButton.OnClicked += (_, _) =>
         {
             var text = string.Join("\n", lines);
-            var display = Gdk.Display.GetDefault();
-            var clipboard = display.GetClipboard();
+
+            var clipboard = Gdk.Display.GetDefault().GetClipboard();
             clipboard.SetText(text);
 
             genericQuestionService.RaiseToastMessage(
                 new ToastMessageEventArgs("Log copied to clipboard")
             );
         };
+
         container.Append(copyButton);
 
         var args = new GenericDialogEventArgs(container);
@@ -1025,7 +1048,6 @@ public class HomeWindow(
 
         _activeSessionLogOverlay = container;
     }    
-    
     private static string GetIconForCommand(string command)
     {
         if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
