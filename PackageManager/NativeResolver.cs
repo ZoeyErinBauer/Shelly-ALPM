@@ -28,7 +28,7 @@ public static class NativeResolver
     public static bool IsLibraryAvailable(string libraryName)
     {
         Initialize();
-        
+
         lock (Lock)
         {
             if (AvailabilityCache.TryGetValue(libraryName, out var available))
@@ -49,8 +49,15 @@ public static class NativeResolver
             "flatpak" => ResolveFlatpak(assembly, searchPath),
             "glib-2.0" => ResolveGLib(assembly, searchPath),
             "gobject-2.0" => ResolveGObject(assembly, searchPath),
+            "archive" => ResolveArchive(assembly, searchPath),
             _ => IntPtr.Zero
         };
+    }
+
+    private static IntPtr ResolveArchive(Assembly assembly, DllImportSearchPath? searchPath)
+    {
+        string[] versions = ["libarchive.so.13", "libarchive.so"];
+        return TryLoad(versions, assembly, searchPath);
     }
 
     private static IntPtr ResolveAlpm(Assembly assembly, DllImportSearchPath? searchPath)
@@ -87,6 +94,7 @@ public static class NativeResolver
             if (NativeLibrary.TryLoad(version, assembly, searchPath, out IntPtr handle))
                 return handle;
         }
+
         return IntPtr.Zero;
     }
 }

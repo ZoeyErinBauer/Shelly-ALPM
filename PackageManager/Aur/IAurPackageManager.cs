@@ -15,7 +15,7 @@ public interface IAurPackageManager : IDisposable
     Task<List<AurPackageDto>> GetInstalledPackages();
     Task<List<AurPackageDto>> SearchPackages(string query);
 
-    Task<List<AurUpdateDto>> GetPackagesNeedingUpdate();
+    Task<List<AurUpdateDto>> GetPackagesNeedingUpdate(bool checkDevel = true);
 
     Task UpdatePackages(List<string> packageNames);
 

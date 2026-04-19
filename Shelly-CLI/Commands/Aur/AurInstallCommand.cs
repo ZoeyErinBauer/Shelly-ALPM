@@ -32,7 +32,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
 
         AnsiConsole.MarkupLine($"[yellow]AUR packages to install:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
 
-        if (!Program.IsUiMode)
+        if (!settings.NoConfirm)
         {
             if (!AnsiConsole.Confirm("Do you want to proceed?"))
             {
@@ -86,21 +86,7 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
                 return 1;
             }
 
-            manager.Dispose();
-            manager = new AurPackageManager();
-            await manager.Initialize(root: true, useChroot: settings.UseChroot, noCheck: !settings.Check);
-            var packageNames = packageList.Select(x => x.EndsWith("-bin") ? x.Split("-")[0] : x).ToList();
-            var missingPackages = await GetMissingPackages(manager, packageNames);
-            if (missingPackages.Count > 0)
-            {
-                AnsiConsole.MarkupLine(
-                    $"[red]Installation failed:[/] {string.Join(", ", missingPackages.Select(p => p.EscapeMarkup()))}");
-                return 1;
-            }
 
-            AnsiConsole.MarkupLine("[green]Installation complete.[/]");
-
-            return 0;
         }
         catch (Exception ex)
         {
@@ -111,6 +97,10 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
         {
             manager?.Dispose();
         }
+        
+        AnsiConsole.MarkupLine("[green]Installation complete.[/]");
+
+        return 0;
     }
 
     private static async Task<int> HandleUiModeInstall(AurInstallSettings settings)
@@ -188,23 +178,6 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
             Console.Error.WriteLine($"Installing AUR packages: {string.Join(", ", packageList)}");
             await manager.InstallPackages(packageList);
             if (hadError) return 1;
-
-            // Recreate manager to get fresh installed package list (avoid stale cache)
-            manager.Dispose();
-            manager = new AurPackageManager();
-            await manager.Initialize(root: true, useChroot: settings.UseChroot, noCheck: !settings.Check);
-
-            var missingPackages = await GetMissingPackages(manager, packageList);
-            if (missingPackages.Count > 0)
-            {
-                Console.Error.WriteLine(
-                    $"Installation failed: Failed to install AUR package(s): {string.Join(", ", missingPackages)}");
-                return 1;
-            }
-
-            Console.Error.WriteLine("Installation complete.");
-
-            return 0;
         }
         catch (Exception ex)
         {
@@ -215,8 +188,12 @@ public class AurInstallCommand : AsyncCommand<AurInstallSettings>
         {
             manager?.Dispose();
         }
-    }
+        
+        Console.Error.WriteLine("Installation complete.");
 
+        return 0;
+    }
+    
     private static async Task<List<string>> GetMissingPackages(AurPackageManager manager, List<string> packageList)
     {
         var installedPackages = await manager.GetInstalledPackages();

@@ -14,6 +14,7 @@ namespace Shelly_CLI.Commands;
 
 public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
 {
+    //No Confirm is not implemented for default command by design
     public override async Task<int> ExecuteAsync(CommandContext context, [NotNull] DefaultCommandSettings settings)
     {
         var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;

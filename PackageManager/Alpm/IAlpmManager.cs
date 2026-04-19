@@ -85,4 +85,10 @@ public interface IAlpmManager
     /// Returns negative if a &lt; b, 0 if equal, positive if a &gt; b.
     /// </summary>
     static int VersionCompare(string a, string b) => AlpmReference.PkgVerCmp(a, b);
+
+    /// <summary>
+    /// Removes corrupted packages from the sync database.
+    /// </summary>
+    /// <returns>Names of corrupted pkgs removed</returns>
+    List<string> RemoveCorruptedPackages(bool dryRun = false);
 }

@@ -14,54 +14,17 @@ namespace PackageManager.Aur;
 public class AurSearchManager : IAurSearchManager, IDisposable
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "https://aur.archlinux.org/rpc/v5/";
-    private readonly string _cacheFilePath;
+    private const string BaseUrl = "https://aur.archlinux.org/rpc/";
 
     public AurSearchManager(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "shelly");
-        _cacheFilePath = Path.Combine(configPath, "aur-packages.json");
     }
 
     public async Task<AurResponse<AurPackageDto>> SearchAsync(string query,
         CancellationToken cancellationToken = default)
     {
-        if (File.Exists(_cacheFilePath))
-        {
-            try
-            {
-                await using var fs = File.OpenRead(_cacheFilePath);
-                var cachedPackages = await JsonSerializer.DeserializeAsync<List<AurPackageDto>>(fs,
-                    AurJsonContext.Default.ListAurPackageDto, cancellationToken);
-
-                if (cachedPackages != null)
-                {
-                    var results = cachedPackages
-                        .Where(p => p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                                    (p.Description != null &&
-                                     p.Description.Contains(query, StringComparison.OrdinalIgnoreCase)))
-                        .Take(100)
-                        .ToList();
-
-                    if (results.Count > 0)
-                    {
-                        return new AurResponse<AurPackageDto>
-                        {
-                            Type = "search",
-                            ResultCount = results.Count,
-                            Results = results
-                        };
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Fallback to API if cache reading fails
-            }
-        }
-
-        var url = $"{BaseUrl}search/{Uri.EscapeDataString(query)}";
+        var url = $"{BaseUrl}?v=5&type=search&arg={Uri.EscapeDataString(query)}&by=name-desc";
         var response =
             await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.AurResponseAurPackageDto, cancellationToken);
         return response ?? new AurResponse<AurPackageDto> { Type = "error", Error = "Empty response" };
@@ -70,14 +33,14 @@ public class AurSearchManager : IAurSearchManager, IDisposable
     public async Task<List<string>> SuggestAsync(string query,
         CancellationToken cancellationToken = default)
     {
-        var url = $"{BaseUrl}suggest/{Uri.EscapeDataString(query)}";
+        var url = $"{BaseUrl}?v=5&type=suggest&arg={Uri.EscapeDataString(query)}";
         return await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.ListString, cancellationToken) ?? [];
     }
 
     public async Task<List<string>>SuggestByPackageBaseNamesAsync(string query,
         CancellationToken cancellationToken = default)
     {
-        var url = $"{BaseUrl}suggest-pkgbase/{Uri.EscapeDataString(query)}";
+        var url = $"{BaseUrl}?v=5&type=suggest-pkgbase&arg={Uri.EscapeDataString(query)}";
         return await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.ListString, cancellationToken) ?? [];
     }
 
@@ -90,15 +53,40 @@ public class AurSearchManager : IAurSearchManager, IDisposable
             return new AurResponse<AurPackageDto> { Type = "info", Results = [] };
         }
 
-        // AUR RPC supports multiple names via arg[] parameter.
-        // To minimize requests, we send them all in one go.
-        // Note: There might be a limit on URL length or number of arguments, but for typical usage this is fine.
-        var queryParams = string.Join("&", names.Select(n => $"arg[]={Uri.EscapeDataString(n)}"));
-        var url = $"{BaseUrl}info?{queryParams}";
+        const int chunkSize = 100;
+        var allResults = new List<AurPackageDto>();
+        var resultType = "info";
 
-        var response =
-            await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.AurResponseAurPackageDto, cancellationToken);
-        return response ?? new AurResponse<AurPackageDto> { Type = "error", Error = "Empty response" };
+        for (var i = 0; i < names.Count; i += chunkSize)
+        {
+            var chunk = names.Skip(i).Take(chunkSize).ToList();
+            var queryParams = string.Join("&", chunk.Select(n => $"arg[]={Uri.EscapeDataString(n)}"));
+            var url = $"{BaseUrl}?v=5&type=info&{queryParams}";
+
+            var response =
+                await _httpClient.GetFromJsonAsync(url, AurJsonContext.Default.AurResponseAurPackageDto,
+                    cancellationToken);
+
+            if (response == null) continue;
+            
+            if (response.Type == "error")
+            {
+                return response;
+            }
+
+            resultType = response.Type;
+            if (response.Results != null)
+            {
+                allResults.AddRange(response.Results);
+            }
+        }
+
+        return new AurResponse<AurPackageDto>
+        {
+            Type = resultType,
+            ResultCount = allResults.Count,
+            Results = allResults
+        };
     }
 
     public void Dispose()

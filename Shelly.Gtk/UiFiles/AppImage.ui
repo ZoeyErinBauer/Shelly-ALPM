@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk" version="4.0"/>
+    <object class="GtkBox" id="AppImagePage">
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin-start">20</property>
+        <property name="margin-end">20</property>
+        <property name="margin-top">20</property>
+        <property name="margin-bottom">20</property>
+        <child>
+            <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">12</property>
+                <child>
+
+                    <object class="GtkLabel">
+                        <property name="label">Manage and Update Appimages</property>
+                        <property name="xalign">0</property>
+                        <style>
+                            <class name="title-4"/>
+                        </style>
+                    </object>
+
+                </child>
+                <child>
+                    <object class="GtkBox">
+                        <property name="hexpand">true</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkButton" id="SyncAllButton">
+                        <property name="valign">center</property>
+                        <property name="tooltip-text">Sync metadata for all AppImages. Useful if AppImage self updated.</property>
+                        <child>
+                            <object class="GtkBox">
+                                <property name="spacing">6</property>
+                                <child>
+                                    <object class="GtkImage">
+                                        <property name="icon-name">emblem-synchronizing-symbolic</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Sync All</property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkButton" id="UpgradeAllButton">
+                        <property name="valign">center</property>
+                        <property name="tooltip-text">Upgrade all AppImages to their latest versions</property>
+                        <child>
+                            <object class="GtkBox">
+                                <property name="spacing">6</property>
+                                <child>
+                                    <object class="GtkImage">
+                                        <property name="icon-name">software-update-available-symbolic</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Upgrade All</property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkButton" id="InstallAppImageButton">
+                        <property name="valign">center</property>
+                        <property name="tooltip-text">Install a new AppImage from a file or URL</property>
+                        <style>
+                            <class name="suggested-action"/>
+                        </style>
+                        <child>
+                            <object class="GtkBox">
+                                <property name="spacing">6</property>
+                                <child>
+                                    <object class="GtkImage">
+                                        <property name="icon-name">list-add-symbolic</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Install AppImage</property>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkSearchEntry" id="AppImageSearchEntry">
+                        <property name="placeholder-text">Search...</property>
+                        <property name="width-request">200</property>
+                        <property name="valign">center</property>
+                    </object>
+                </child>
+            </object>
+        </child>
+        <child>
+            <object class="GtkScrolledWindow">
+                <property name="vexpand">true</property>
+                <property name="hscrollbar-policy">never</property>
+                <child>
+                    <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <child>
+                            <object class="GtkListBox" id="AppImageListBox">
+                                <property name="selection-mode">none</property>
+                                <style>
+                                    <class name="rich-list"/>
+                                </style>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </object>
+    <object class="GtkScrolledWindow" id="AppImageDetailView">
+        <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
+        <property name="hscrollbar-policy">never</property>
+        <child>
+            <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="halign">center</property>
+                <property name="hexpand">true</property>
+                <child>
+                    <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">24</property>
+                        <property name="margin-start">20</property>
+                        <property name="margin-end">20</property>
+                        <property name="margin-top">30</property>
+                        <property name="margin-bottom">30</property>
+                        <property name="width-request">600</property>
+                        <child>
+                            <object class="GtkBox">
+                                <property name="spacing">18</property>
+                                <child>
+                                    <object class="GtkButton" id="BackToListButton">
+                                        <property name="icon-name">go-previous-symbolic</property>
+                                        <property name="valign">center</property>
+                                        <style>
+                                            <class name="flat"/>
+                                            <class name="circular"/>
+                                        </style>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkImage" id="DetailIcon">
+                                        <property name="pixel-size">64</property>
+                                        <property name="valign">center</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="valign">center</property>
+                                        <child>
+                                            <object class="GtkLabel" id="DetailTitleLabel">
+                                                <property name="label">App Name</property>
+                                                <property name="xalign">0</property>
+                                                <style>
+                                                    <class name="title-1"/>
+                                                </style>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="spacing">8</property>
+                                                <child>
+                                                    <object class="GtkLabel" id="DetailVersionLabel">
+                                                        <property name="label">Version</property>
+                                                        <property name="xalign">0</property>
+                                                        <style>
+                                                            <class name="caption"/>
+                                                            <class name="dim-label"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkLabel" id="DetailDescriptionLabel">
+                                                <property name="label">Description goes here...</property>
+                                                <property name="xalign">0</property>
+                                                <property name="wrap">true</property>
+                                                <property name="lines">3</property>
+                                                <property name="ellipsize">end</property>
+                                                <style>
+                                                    <class name="body"/>
+                                                    <class name="dim-label"/>
+                                                </style>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                        <child>
+                            <object class="GtkListBox">
+                                <property name="selection-mode">none</property>
+                                <style>
+                                    <class name="boxed-list"/>
+                                </style>
+                                <child>
+                                    <object class="GtkListBoxRow">
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="margin-start">12</property>
+                                                <property name="margin-end">12</property>
+                                                <property name="margin-top">12</property>
+                                                <property name="margin-bottom">12</property>
+                                                <property name="spacing">12</property>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Size on Disk</property>
+                                                        <property name="hexpand">true</property>
+                                                        <property name="xalign">0</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkLabel" id="DetailSizeLabel">
+                                                        <property name="valign">center</property>
+                                                        <style>
+                                                            <class name="dim-label"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkListBoxRow">
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="margin-start">12</property>
+                                                <property name="margin-end">12</property>
+                                                <property name="margin-top">12</property>
+                                                <property name="margin-bottom">12</property>
+                                                <property name="spacing">12</property>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Update Strategy</property>
+                                                        <property name="hexpand">true</property>
+                                                        <property name="xalign">0</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkDropDown" id="UpdateTypeDropDown">
+                                                        <property name="valign">center</property>
+                                                        <!-- Options added in code -->
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkListBoxRow">
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="margin-start">12</property>
+                                                <property name="margin-end">12</property>
+                                                <property name="margin-top">12</property>
+                                                <property name="margin-bottom">12</property>
+                                                <property name="spacing">12</property>
+                                                <property name="orientation">vertical</property>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Update URL / Repository Info</property>
+                                                        <property name="xalign">0</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkEntry" id="UpdateUrlEntry">
+                                                        <property name="placeholder-text">e.g. owner/repo or
+                                                            https://...
+                                                        </property>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkListBoxRow">
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="margin-start">12</property>
+                                                <property name="margin-end">12</property>
+                                                <property name="margin-top">12</property>
+                                                <property name="margin-bottom">12</property>
+                                                <property name="spacing">12</property>
+                                                <property name="orientation">vertical</property>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Installation Path</property>
+                                                        <property name="xalign">0</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkEntry" id="InstallPathEntry">
+                                                        <property name="editable">false</property>
+                                                        <property name="can-focus">true</property>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+
+                        <child>
+                            <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <property name="spacing">12</property>
+                                <property name="halign">center</property>
+                                <child>
+                                    <object class="GtkButton" id="SaveConfigButton">
+                                        <style>
+                                            <class name="suggested-action"/>
+                                        </style>
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="spacing">8</property>
+                                                <property name="halign">center</property>
+                                                <property name="valign">center</property>
+                                                <child>
+                                                    <object class="GtkImage">
+                                                        <property name="icon-name">document-save-symbolic</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Save</property>
+                                                        <style>
+                                                            <class name="bold"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkButton" id="SyncButton">
+                                        <property name="valign">center</property>
+                                        <property name="tooltip-text">Sync metadata for all AppImages. Useful if AppImage self updated.</property>
+                                        <child>
+                                            <object class="GtkBox">
+                                                <style>
+                                                    <class name="suggested-action"/>
+                                                </style>
+                                                <property name="spacing">6</property>
+                                                <child>
+                                                    <object class="GtkImage">
+                                                        <property name="icon-name">emblem-synchronizing-symbolic</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Sync</property>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkButton" id="RemoveAppImageButton">
+                                        <style>
+                                            <class name="destructive-action"/>
+                                        </style>
+                                        <child>
+                                            <object class="GtkBox">
+                                                <property name="spacing">8</property>
+                                                <property name="halign">center</property>
+                                                <property name="valign">center</property>
+                                                <child>
+                                                    <object class="GtkImage">
+                                                        <property name="icon-name">user-trash-symbolic</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkLabel">
+                                                        <property name="label">Remove</property>
+                                                        <style>
+                                                            <class name="bold"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </object>
+</interface>

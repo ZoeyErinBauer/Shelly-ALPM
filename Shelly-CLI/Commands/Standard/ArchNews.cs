@@ -11,13 +11,13 @@ namespace Shelly_CLI.Commands.Standard;
 
 public class ArchNews : AsyncCommand<ArchNewsSettings>
 {
-    
-    private static readonly string?  Username = Environment.GetEnvironmentVariable("USER");
-    
-    private static readonly string FeedFolder =  Path.Combine("/home", Username ?? throw new InvalidOperationException(), ".cache", "Shelly", "archNewsFeed");
+    private static readonly string? Username = Environment.GetEnvironmentVariable("USER");
+
+    private static readonly string FeedFolder = Path.Combine("/home", Username ?? throw new InvalidOperationException(),
+        ".cache", "Shelly", "archNewsFeed");
 
     private static readonly string FeedPath = Path.Combine(FeedFolder, "Feed.json");
-    
+
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ArchNewsSettings settings)
     {
         if (settings.All)
@@ -25,15 +25,27 @@ public class ArchNews : AsyncCommand<ArchNewsSettings>
             try
             {
                 var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/");
-                foreach (var item in feed)
+                if (settings.Json)
                 {
-                    AnsiConsole.MarkupLine($"[yellow]\n{item.Title.EscapeMarkup()}[/]");
-                    AnsiConsole.MarkupLine($"[gray]{item.PubDate.EscapeMarkup()}[/]");
-                    AnsiConsole.MarkupLine($"[blue]{item.Link.EscapeMarkup()}[/]");
-                    AnsiConsole.MarkupLine($"[white]{item.Description.EscapeMarkup()}[/]");
+                    var json = JsonSerializer.Serialize(feed, ShellyCLIJsonContext.Default.ListRssModel);
+                    await using var stdout = System.Console.OpenStandardOutput();
+                    await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                    await writer.WriteLineAsync(json);
+                    await writer.FlushAsync();
+                    CacheFeed(feed);
                 }
+                else
+                {
+                    foreach (var item in feed)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]\n{item.Title.EscapeMarkup()}[/]");
+                        AnsiConsole.MarkupLine($"[gray]{item.PubDate.EscapeMarkup()}[/]");
+                        AnsiConsole.MarkupLine($"[blue]{item.Link.EscapeMarkup()}[/]");
+                        AnsiConsole.MarkupLine($"[white]{item.Description.EscapeMarkup()}[/]");
+                    }
 
-                CacheFeed(feed);
+                    CacheFeed(feed);
+                }
             }
             catch (Exception e)
             {
@@ -44,8 +56,21 @@ public class ArchNews : AsyncCommand<ArchNewsSettings>
         {
             var cachedFeed = LoadCachedFeed();
             var feed = await GetRssFeedAsync("https://archlinux.org/feeds/news/");
-            
+
             var newFeed = feed.Except(cachedFeed).ToList();
+
+
+            if (settings.Json)
+            {
+                var json = JsonSerializer.Serialize(newFeed, ShellyCLIJsonContext.Default.ListRssModel);
+                await using var stdout = System.Console.OpenStandardOutput();
+                await using var writer = new System.IO.StreamWriter(stdout, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(json);
+                await writer.FlushAsync();
+                if (newFeed.Count > 0) CacheFeed(feed);
+                return 0;
+            }
+
             foreach (var item in newFeed)
             {
                 AnsiConsole.MarkupLine($"[yellow]\n{item.Title.EscapeMarkup()}[/]");
@@ -53,7 +78,8 @@ public class ArchNews : AsyncCommand<ArchNewsSettings>
                 AnsiConsole.MarkupLine($"[blue]{item.Link.EscapeMarkup()}[/]");
                 AnsiConsole.MarkupLine($"[white]{item.Description.EscapeMarkup()}[/]");
             }
-            if(newFeed.Count > 0) CacheFeed(feed);
+
+            if (newFeed.Count > 0) CacheFeed(feed);
             else AnsiConsole.MarkupLine("[green]No new news found[/]");
         }
 

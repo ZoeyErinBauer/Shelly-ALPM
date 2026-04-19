@@ -55,6 +55,7 @@ public class PackageManagement(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
+    private HashSet<string> _installedPackageNames = [];
 
     public Widget CreateWindow()
     {
@@ -321,19 +322,43 @@ public class PackageManagement(
 
             foreach (var item in items)
             {
-                var chip = Label.New(item);
-                chip.AddCssClass("package-chip");
-                chip.Selectable = true;
-                chip.Ellipsize = Pango.EllipsizeMode.End;
-                chip.MaxWidthChars = 25;
-
                 if (isOptional)
                 {
-                    chip.Wrap = true;
-                    chip.WrapMode = Pango.WrapMode.WordChar;
-                    chip.Xalign = 0;
+                    var optDepName = item.Split(':').First().Trim();
+                    var isInstalled = _installedPackageNames.Contains(optDepName);
+
+                    var escapedItem = GLib.Functions.MarkupEscapeText(item, -1);
+
+                    var chipBox = Box.New(Orientation.Horizontal, 4);
+                    chipBox.AddCssClass("package-chip");
+                    chipBox.Valign = Align.Center;
+
+                    var checkIcon = Image.NewFromIconName("object-select-symbolic");
+                    checkIcon.PixelSize = 16;
+                    checkIcon.Visible = isInstalled;
+
+                    var chipLabel = Label.New(string.Empty);
+                    chipLabel.SetMarkup($"<span size='small'>{escapedItem}</span>");
+                    chipLabel.Selectable = true;
+                    chipLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    chipLabel.MaxWidthChars = 25;
+                    chipLabel.Wrap = true;
+                    chipLabel.WrapMode = Pango.WrapMode.WordChar;
+                    chipLabel.Xalign = 0;
+
+                    chipBox.Append(checkIcon);
+                    chipBox.Append(chipLabel);
+                    flowBox.Append(chipBox);
                 }
-                flowBox.Append(chip);
+                else
+                {
+                    var chip = Label.New(item);
+                    chip.AddCssClass("package-chip");
+                    chip.Selectable = true;
+                    chip.Ellipsize = Pango.EllipsizeMode.End;
+                    chip.MaxWidthChars = 25;
+                    flowBox.Append(chip);
+                }
             }
 
             expander.SetChild(flowBox);
@@ -350,6 +375,13 @@ public class PackageManagement(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
+
+            check.OnToggled += (s, e) =>
+            {
+                if (listItem.GetItem() is not AlpmPackageGObject current) return;
+                current.IsSelected = s.GetActive();
+                _removeButton.SetSensitive(AnySelected());
+            };
         };
 
         _checkFactory.OnBind += (_, args) =>
@@ -359,19 +391,11 @@ public class PackageManagement(
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
-            checkButton.OnToggled += OnToggled;
-
+            
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
-
+            
             return;
-
-            void OnToggled(CheckButton s, EventArgs e)
-            {
-                pkgObj.IsSelected = s.GetActive();
-                _removeButton.SetSensitive(AnySelected());
-            }
-
+            
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -381,16 +405,14 @@ public class PackageManagement(
             }
         };
 
-        _checkFactory.OnUnbind += (_, args) =>
+        _checkFactory.OnUnbind += (_, _) => { };
+
+        _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not CheckButton checkButton) return;
-            if (_checkBinding.Remove(listItem, out var handlers))
-            {
-                pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
-                checkButton.OnToggled -= handlers.OnToggled;
-            }
+            listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
 
@@ -401,19 +423,22 @@ public class PackageManagement(
             var box = Box.New(Orientation.Horizontal, 6);
             var packageIcon = new Image { PixelSize = 24 };
             var label = Label.New(string.Empty);
+            var installedIcon = Image.NewFromIconName("object-select-symbolic");
 
             box.Append(packageIcon);
             box.Append(label);
+            box.Append(installedIcon);
             listItem.SetChild(box);
         };
         _nameFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
+            if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } pkgObj ||
                 listItem.GetChild() is not Box box) return;
 
             var packageIcon = (Image)box.GetFirstChild()!;
             var label = (Label)packageIcon.GetNextSibling()!;
+            var installedIcon = (Image)label.GetNextSibling()!;
 
             var iconPath = iconResolverService.GetIconPath(pkg.Name);
             if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
@@ -430,6 +455,8 @@ public class PackageManagement(
 
             label.SetText(pkg.Name);
             label.Halign = Align.Start;
+            installedIcon.Visible = pkgObj.IsInstalled;
+            installedIcon.TooltipText = "Installed";
         };
         nameColumn.SetFactory(_nameFactory);
 
@@ -473,7 +500,7 @@ public class PackageManagement(
     {
         if (obj is AlpmPackageGObject pkgObj && pkgObj.Package != null)
         {
-            if (_selectedGroup != "Any" && !pkgObj.Package.Groups.Contains(_selectedGroup))
+            if (_selectedGroup != "Any" && !(pkgObj.Package.Groups?.Contains(_selectedGroup) ?? false))
             {
                 return false;
             }
@@ -481,8 +508,8 @@ public class PackageManagement(
             if (string.IsNullOrWhiteSpace(_searchText))
                 return true;
 
-            return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                   pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            return (pkgObj.Package.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (pkgObj.Package.Description?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
         }
 
         return false;
@@ -492,9 +519,11 @@ public class PackageManagement(
     {
         try
         {
+            _installedPackageNames.Clear();
             _packages = await privilegedOperationService.GetInstalledPackagesAsync(_showHiddenCheck.Active);
             _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
             _groups.Insert(0, "Any");
+            _installedPackageNames = new HashSet<string>(_packages.Select(x => x.Name));
             _groupsStringList = StringList.New(_groups.ToArray());
             _groupDropDown.SetModel(_groupsStringList);
             ct.ThrowIfCancellationRequested();
@@ -596,5 +625,6 @@ public class PackageManagement(
         _checkBinding.Clear();
         _packages.Clear();
         _groups.Clear();
+        _installedPackageNames.Clear();
     }
 }

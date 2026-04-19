@@ -58,6 +58,8 @@ public class FlatpakUpdate(
     private static void OnSetup(SignalListItemFactory sender, SignalListItemFactory.SetupSignalArgs args)
     {
         var listItem = (ListItem)args.Object;
+        var mainVbox = Box.New(Orientation.Vertical, 0);
+        
         var hbox = Box.New(Orientation.Horizontal, 10);
         hbox.MarginStart = 10;
         hbox.MarginEnd = 10;
@@ -70,7 +72,6 @@ public class FlatpakUpdate(
         var vbox = Box.New(Orientation.Vertical, 2);
         var nameLabel = Label.New(string.Empty);
         nameLabel.Halign = Align.Start;
-        nameLabel.AddCssClass("heading");
 
         var idLabel = Label.New(string.Empty);
         idLabel.Halign = Align.Start;
@@ -84,25 +85,42 @@ public class FlatpakUpdate(
         versionLabel.Halign = Align.End;
         versionLabel.Hexpand = true;
         hbox.Append(versionLabel);
+        
+        mainVbox.Append(hbox);
 
-        listItem.SetChild(hbox);
+        var permissionExpander = Expander.New("Permission Changes");
+        permissionExpander.MarginStart = 50;
+        permissionExpander.MarginEnd = 10;
+        permissionExpander.MarginBottom = 5;
+        permissionExpander.Visible = false;
+        
+        var permissionVbox = Box.New(Orientation.Vertical, 2);
+        permissionExpander.SetChild(permissionVbox);
+        
+        mainVbox.Append(permissionExpander);
+
+        listItem.SetChild(mainVbox);
     }
 
     private void OnBind(SignalListItemFactory sender, SignalListItemFactory.BindSignalArgs args)
     {
         var listItem = (ListItem)args.Object;
         if (listItem.GetItem() is not StringObject stringObj) return;
-        if (listItem.GetChild() is not Box hbox) return;
+        if (listItem.GetChild() is not Box mainVbox) return;
 
         var packageId = stringObj.GetString();
         var package = _allPackages.FirstOrDefault(p => p.Id == packageId);
         if (package == null) return;
 
+        var hbox = (Box)mainVbox.GetFirstChild()!;
         var icon = (Image)hbox.GetFirstChild()!;
         var vbox = (Box)icon.GetNextSibling()!;
         var nameLabel = (Label)vbox.GetFirstChild()!;
         var idLabel = (Label)nameLabel.GetNextSibling()!;
-        var versionLabel = (Label)vbox.GetNextSibling()!;
+        var versionLabel = (Label)hbox.GetLastChild()!;
+
+        var permissionExpander = (Expander)hbox.GetNextSibling()!;
+        var permissionVbox = (Box)permissionExpander.GetChild()!;
 
         var path = "";
         if (_userOnly)
@@ -126,6 +144,37 @@ public class FlatpakUpdate(
         nameLabel.SetText(package.Name);
         idLabel.SetText(package.Id);
         versionLabel.SetText(package.Version);
+        
+        var child = permissionVbox.GetFirstChild();
+        while (child != null)
+        {
+            var next = child.GetNextSibling();
+            permissionVbox.Remove(child);
+            child = next;
+        }
+
+        if (package.Permissions.Count > 0)
+        {
+            permissionExpander.Visible = true;
+            foreach (var perm in package.Permissions)
+            {
+                var permLabel = Label.New(perm);
+                permLabel.Halign = Align.Start;
+                if ("+".StartsWith(perm))
+                {
+                    permLabel.AddCssClass("success");
+                }
+                else if ("-".StartsWith(perm))
+                {
+                    permLabel.AddCssClass("error");
+                }
+                permissionVbox.Append(permLabel);
+            }
+        }
+        else
+        {
+            permissionExpander.Visible = false;
+        }
     }
 
     private async Task LoadDataAsync(CancellationToken ct = default)

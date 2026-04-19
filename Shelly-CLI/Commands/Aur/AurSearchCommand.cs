@@ -11,16 +11,24 @@ public class AurSearchCommand : AsyncCommand<AurSearchSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] AurSearchSettings settings)
     {
+        var query = string.Join(" ", settings.Query);
         if (Program.IsUiMode)
         {
             return await HandleUiModeSearch(settings);
         }
 
-        if (string.IsNullOrWhiteSpace(settings.Query))
+        if (string.IsNullOrWhiteSpace(query))
         {
             AnsiConsole.MarkupLine("[red]Query cannot be empty.[/]");
             return 1;
         }
+        
+        if (query.Length < 2)
+        {
+            AnsiConsole.MarkupLine("[red]Error: Query must be at least 2 characters long[/]");
+            return 1;
+        }
+
 
         AurPackageManager? manager = null;
         try
@@ -28,7 +36,7 @@ public class AurSearchCommand : AsyncCommand<AurSearchSettings>
             manager = new AurPackageManager();
             await manager.Initialize();
 
-            var results = manager.SearchPackages(settings.Query).GetAwaiter().GetResult();
+            var results = manager.SearchPackages(query).GetAwaiter().GetResult();
 
             if (settings.JsonOutput)
             {
@@ -72,9 +80,16 @@ public class AurSearchCommand : AsyncCommand<AurSearchSettings>
 
     private static async Task<int> HandleUiModeSearch(AurSearchSettings settings)
     {
-        if (string.IsNullOrWhiteSpace(settings.Query))
+        var query = string.Join(" ", settings.Query);
+        if (string.IsNullOrWhiteSpace(query))
         {
             Console.Error.WriteLine("Error: Query cannot be empty.");
+            return 1;
+        }
+
+        if (query.Length < 2)
+        {
+            Console.Error.WriteLine("Error: Query must be at least 2 characters long");
             return 1;
         }
 
@@ -84,7 +99,7 @@ public class AurSearchCommand : AsyncCommand<AurSearchSettings>
             manager = new AurPackageManager();
             await manager.Initialize();
 
-            var results = manager.SearchPackages(settings.Query).GetAwaiter().GetResult();
+            var results = manager.SearchPackages(query).GetAwaiter().GetResult();
 
             if (settings.JsonOutput)
             {

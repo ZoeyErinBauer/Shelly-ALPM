@@ -14,11 +14,17 @@
                     <object class="GtkOverlay" id="list_overlay">
                         <property name="vexpand">true</property>
                         <property name="hexpand">true</property>
-                        <child>
+                        <child type="overlay">
                             <object class="GtkScrolledWindow">
                                 <property name="overlay-scrolling">false</property>
                                 <property name="vexpand">true</property>
+                                <property name="width-request">500</property>
+                                <property name="height-request">400</property>
                                 <property name="hexpand">true</property>
+                                <layout>
+                                    <property name="measure">True</property>
+                                    <property name="clip-overlay">False</property>
+                                </layout>
                                 <child>
                                     <object class="GtkGridView" id="list_flatpaks"/>
                                 </child>
@@ -27,9 +33,15 @@
                         <child type="overlay">
                             <object class="GtkBox" id="loading_overlay">
                                 <property name="visible">false</property>
+                                <property name="width-request">500</property>
+                                <property name="height-request">400</property>
                                 <property name="orientation">vertical</property>
                                 <property name="halign">fill</property>
                                 <property name="valign">fill</property>
+                                <layout>
+                                    <property name="measure">True</property>
+                                    <property name="clip-overlay">False</property>
+                                </layout>
                                 <style>
                                     <class name="background"/>
                                 </style>
@@ -62,9 +74,15 @@
                         <child type="overlay">
                             <object class="GtkBox" id="overlay_panel">
                                 <property name="visible">false</property>
+                                <property name="width-request">500</property>
+                                <property name="height-request">400</property>
                                 <property name="orientation">vertical</property>
                                 <property name="halign">fill</property>
                                 <property name="valign">fill</property>
+                                <layout>
+                                    <property name="measure">True</property>
+                                    <property name="clip-overlay">False</property>
+                                </layout>
                                 <style>
                                     <class name="background"/>
                                 </style>
@@ -88,25 +106,33 @@
                                             </object>
                                         </child>
                                         <child>
-                                            <object class="GtkButton" id="overlay_show_plugin_button">
-                                                <property name="label">Manage Addons</property>
-                                                <property name="visible">false</property>
+                                            <object class="GtkBox">
+                                                <property name="spacing">4</property>
                                                 <style>
-                                                    <class name="suggested-action"/>
+                                                    <class name="linked"/>
                                                 </style>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkDropDown" id="overlay_remote_selection">
-                                                <property name="tooltip-text">Group Filter</property>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="overlay_install_button">
-                                                <property name="label">Install</property>
-                                                <style>
-                                                    <class name="suggested-action"/>
-                                                </style>
+                                                <child>
+                                                    <object class="GtkButton" id="overlay_show_plugin_button">
+                                                        <property name="label">Addons</property>
+                                                        <property name="visible">false</property>
+                                                        <style>
+                                                            <class name="suggested-action"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkDropDown" id="overlay_remote_selection">
+                                                        <property name="tooltip-text">Group Filter</property>
+                                                    </object>
+                                                </child>
+                                                <child>
+                                                    <object class="GtkButton" id="overlay_install_button">
+                                                        <property name="label">Install</property>
+                                                        <style>
+                                                            <class name="suggested-action"/>
+                                                        </style>
+                                                    </object>
+                                                </child>
                                             </object>
                                         </child>
                                     </object>
@@ -125,10 +151,10 @@
                                             <object class="GtkBox">
                                                 <property name="orientation">vertical</property>
                                                 <property name="spacing">16</property>
-                                                <property name="margin-top">24</property>
-                                                <property name="margin-bottom">24</property>
-                                                <property name="margin-start">48</property>
-                                                <property name="margin-end">48</property>
+                                                <property name="margin-top">16</property>
+                                                <property name="margin-bottom">16</property>
+                                                <property name="margin-start">16</property>
+                                                <property name="margin-end">16</property>
 
                                                 <child>
                                                     <object class="GtkBox">
@@ -145,7 +171,7 @@
                                                         <child>
                                                             <object class="GtkBox">
                                                                 <property name="orientation">vertical</property>
-                                                                <property name="spacing">4</property>
+                                                                <property name="spacing">8</property>
                                                                 <property name="valign">center</property>
                                                                 <property name="hexpand">true</property>
                                                                 <child>
@@ -153,6 +179,8 @@
                                                                         <property name="label">App Name</property>
                                                                         <property name="halign">start</property>
                                                                         <property name="xalign">0</property>
+                                                                        <property name="wrap">true</property>
+                                                                        <property name="wrap-mode">word-char</property>
                                                                         <style>
                                                                             <class name="title-2"/>
                                                                         </style>
@@ -163,38 +191,48 @@
                                                                         <property name="label">Author</property>
                                                                         <property name="halign">start</property>
                                                                         <property name="xalign">0</property>
+                                                                        <property name="wrap">true</property>
+                                                                        <property name="wrap-mode">word-char</property>
                                                                         <style>
                                                                             <class name="dim-label"/>
                                                                         </style>
                                                                     </object>
                                                                 </child>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkBox">
-                                                                <property name="orientation">vertical</property>
-                                                                <property name="spacing">4</property>
-                                                                <property name="valign">center</property>
-                                                                <property name="halign">end</property>
                                                                 <child>
-                                                                    <object class="GtkLabel" id="overlay_version_label">
-                                                                        <property name="label">Version: -</property>
-                                                                        <property name="halign">end</property>
-                                                                        <property name="xalign">1</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel" id="overlay_size_label">
-                                                                        <property name="label">Size: -</property>
-                                                                        <property name="halign">end</property>
-                                                                        <property name="xalign">1</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel" id="overlay_license_label">
-                                                                        <property name="label">License: -</property>
-                                                                        <property name="halign">end</property>
-                                                                        <property name="xalign">1</property>
+                                                                    <object class="GtkBox">
+                                                                        <property name="orientation">horizontal</property>
+                                                                        <property name="spacing">12</property>
+                                                                        <style>
+                                                                            <class name="dim-label"/>
+                                                                        </style>
+                                                                        <child>
+                                                                            <object class="GtkLabel" id="overlay_version_label">
+                                                                                <property name="label">Version: -</property>
+                                                                                <property name="halign">start</property>
+                                                                                <property name="xalign">0</property>
+                                                                                <property name="wrap">true</property>
+                                                                                <property name="wrap-mode">word-char</property>
+                                                                            </object>
+                                                                        </child>
+                                                                        <child>
+                                                                            <object class="GtkLabel" id="overlay_size_label">
+                                                                                <property name="label">Size: -</property>
+                                                                                <property name="halign">start</property>
+                                                                                <property name="xalign">0</property>
+                                                                                <property name="wrap">true</property>
+                                                                                <property name="wrap-mode">word-char</property>
+                                                                            </object>
+                                                                        </child>
+                                                                        <child>
+                                                                            <object class="GtkLabel" id="overlay_license_label">
+                                                                                <property name="label">License: -</property>
+                                                                                <property name="halign">start</property>
+                                                                                <property name="xalign">0</property>
+                                                                                <property name="wrap">true</property>
+                                                                                <property name="wrap-mode">word-char</property>
+                                                                                <property name="hexpand">true</property>
+                                                                            </object>
+                                                                        </child>
                                                                     </object>
                                                                 </child>
                                                             </object>
@@ -242,7 +280,7 @@
                                                         <property name="halign">start</property>
                                                         <property name="xalign">0</property>
                                                         <property name="wrap">true</property>
-                                                        <property name="max-width-chars">80</property>
+                                                        <property name="wrap-mode">word-char</property>
                                                         <style>
                                                             <class name="body"/>
                                                         </style>
@@ -255,11 +293,15 @@
                                                 </child>
                                                 <child>
                                                     <object class="GtkGrid">
+                                                        <property name="column-spacing">12</property>
+                                                        <property name="row-spacing">12</property>
                                                         <child>
                                                             <object class="GtkLabel" id="overlay_urls_label">
                                                                 <property name="halign">start</property>
                                                                 <property name="xalign">0</property>
                                                                 <property name="use-markup">true</property>
+                                                                <property name="wrap">true</property>
+                                                                <property name="selectable">true</property>
                                                                 <layout>
                                                                     <property name="column">0</property>
                                                                     <property name="row">0</property>
@@ -267,7 +309,7 @@
                                                             </object>
                                                         </child>
                                                         <child>
-                                                            <object class="GtkGrid">
+                                                            <object class="GtkBox">
                                                                 <property name="hexpand">true</property>
                                                                 <layout>
                                                                     <property name="column">1</property>
@@ -278,6 +320,7 @@
                                                         <child>
                                                             <object class="GtkButton" id="version_history_button">
                                                                 <property name="halign">end</property>
+                                                                <property name="valign">start</property>
                                                                 <property name="label">Version History</property>
                                                                 <layout>
                                                                     <property name="column">2</property>
@@ -296,9 +339,15 @@
                         <child type="overlay">
                             <object class="GtkBox" id="overlay_remote_ref">
                                 <property name="visible">false</property>
+                                <property name="width-request">500</property>
+                                <property name="height-request">400</property>
                                 <property name="orientation">vertical</property>
                                 <property name="halign">fill</property>
                                 <property name="valign">fill</property>
+                                <layout>
+                                    <property name="measure">True</property>
+                                    <property name="clip-overlay">False</property>
+                                </layout>
                                 <style>
                                     <class name="background"/>
                                 </style>
@@ -355,13 +404,20 @@
                                     </object>
                                 </child>
                             </object>
+                            
                         </child>
                         <child type="overlay">
                             <object class="GtkBox" id="overlay_add_remote">
                                 <property name="visible">false</property>
+                                <property name="width-request">500</property>
+                                <property name="height-request">400</property>
                                 <property name="orientation">vertical</property>
                                 <property name="halign">fill</property>
                                 <property name="valign">fill</property>
+                                <layout>
+                                    <property name="measure">True</property>
+                                    <property name="clip-overlay">False</property>
+                                </layout>
                                 <style>
                                     <class name="background"/>
                                 </style>

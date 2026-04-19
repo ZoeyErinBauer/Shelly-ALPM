@@ -241,6 +241,20 @@ internal static partial class FlatpakReference
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TransactionAddInstallFlatpakref(IntPtr transaction, IntPtr remote, out IntPtr error);
 
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_operation_type")]
+    public static partial int TransactionOperationGetOperationType(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_ref", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr TransactionOperationGetRef(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_metadata")]
+    public static partial IntPtr TransactionOperationGetMetadata(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_operation_get_old_metadata")]
+    public static partial IntPtr TransactionOperationGetOldMetadata(IntPtr operation);
+
+    [LibraryImport(LibName, EntryPoint = "flatpak_transaction_get_operations")]
+    public static partial IntPtr TransactionGetOperations(IntPtr transaction);
     [LibraryImport(LibName, EntryPoint = "flatpak_transaction_add_install_bundle",
         StringMarshalling = StringMarshalling.Utf8)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -302,9 +316,31 @@ internal static partial class FlatpakReference
     public delegate void TransactionNewOperationCallback(IntPtr transaction, IntPtr operation, IntPtr progress,
         IntPtr userData);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate bool TransactionReadyCallback(IntPtr transaction, IntPtr userData);
+
     [LibraryImport(GObjectName, EntryPoint = "g_signal_connect_data", StringMarshalling = StringMarshalling.Utf8)]
     public static partial ulong GSignalConnectData(IntPtr instance, string detailedSignal, IntPtr handler,
         IntPtr data, IntPtr destroyData, int connectFlags);
+
+    #endregion
+
+    #region GLib GKeyFile
+
+    [LibraryImport(GLibName, EntryPoint = "g_key_file_get_string_list", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr GKeyFileGetStringList(IntPtr keyFile, string groupName, string key, out nuint length, out IntPtr error);
+
+    [LibraryImport(GLibName, EntryPoint = "g_key_file_get_keys", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr GKeyFileGetKeys(IntPtr keyFile, string groupName, out nuint length, out IntPtr error);
+
+    [LibraryImport(GLibName, EntryPoint = "g_key_file_get_string", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr GKeyFileGetString(IntPtr keyFile, string groupName, string key, out IntPtr error);
+
+    [LibraryImport(GLibName, EntryPoint = "g_free")]
+    public static partial void GFree(IntPtr mem);
+
+    [LibraryImport(GLibName, EntryPoint = "g_strfreev")]
+    public static partial void GStrFreeV(IntPtr strArray);
 
     #endregion
 

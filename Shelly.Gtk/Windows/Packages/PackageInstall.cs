@@ -34,10 +34,6 @@ public class PackageInstall(
     private StringList _groupsStringList = null!;
     private string _selectedGroup = "Any";
 
-    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
-        _checkBinding =
-            [];
-
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _sizeFactory = null!;
@@ -47,7 +43,6 @@ public class PackageInstall(
 
     private Button _installButton = null!;
     private Button _localInstallButton = null!;
-    private Button _appImageButton = null!;
     private SearchEntry _searchEntry = null!;
     private Builder _builder = null!;
     private ColumnViewColumn _checkColumn = null!;
@@ -62,6 +57,7 @@ public class PackageInstall(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
+    private HashSet<string> _installedPackageNames = [];
 
     public Widget CreateWindow()
     {
@@ -81,7 +77,6 @@ public class PackageInstall(
         _installButton = (Button)_builder.GetObject("install_button")!;
         _installButton.SetSensitive(false);
         _localInstallButton = (Button)_builder.GetObject("install_local_button")!;
-        _appImageButton = (Button)_builder.GetObject("install_appimage_button")!;
         _searchEntry = (SearchEntry)_builder.GetObject("search_entry")!;
         _detailRevealer = (Revealer)_builder.GetObject("detail_revealer")!;
         _detailBox = (Box)_builder.GetObject("detail_box")!;
@@ -134,7 +129,6 @@ public class PackageInstall(
         };
         _installButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
         _localInstallButton.OnClicked += (_, _) => { _ = InstallLocalPackage(); };
-        _appImageButton.OnClicked += (_, _) => { _ = InstallAppImage(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
 
         _groupDropDown.OnNotify += (sender, args) =>
@@ -210,13 +204,13 @@ public class PackageInstall(
         var iconPath = iconResolverService.GetIconPath(pkg.Name);
         if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
         {
-            var texture = Gdk.Texture.NewFromFilename(iconPath);
-            iconImage.SetFromPaintable(texture);
+            iconImage.SetFromFile(iconPath);
         }
         else
         {
             iconImage.SetFromIconName("package-x-generic");
         }
+
         headerBox.Append(iconImage);
 
         var nameLabel = Label.New(pkg.Name);
@@ -323,25 +317,49 @@ public class PackageInstall(
                 RowSpacing = 6,
                 Halign = Align.Start,
                 Valign = Align.Start,
-                MaxChildrenPerLine = isOptional ? 1u : 10u, 
+                MaxChildrenPerLine = isOptional ? 1u : 10u,
                 MinChildrenPerLine = 1
             };
 
             foreach (var item in items)
             {
-                var chip = Label.New(item);
-                chip.AddCssClass("package-chip");
-                chip.Selectable = true;
-                chip.Ellipsize = Pango.EllipsizeMode.End;
-                chip.MaxWidthChars = 25;
-
                 if (isOptional)
                 {
-                    chip.Wrap = true;
-                    chip.WrapMode = Pango.WrapMode.WordChar;
-                    chip.Xalign = 0;
+                    var optDepName = item.Split(':').First().Trim();
+                    var isInstalled = _installedPackageNames.Contains(optDepName);
+
+                    var escapedItem = GLib.Functions.MarkupEscapeText(item, -1);
+
+                    var chipBox = Box.New(Orientation.Horizontal, 4);
+                    chipBox.AddCssClass("package-chip");
+                    chipBox.Valign = Align.Center;
+
+                    var checkIcon = Image.NewFromIconName("object-select-symbolic");
+                    checkIcon.PixelSize = 16;
+                    checkIcon.Visible = isInstalled;
+
+                    var chipLabel = Label.New(string.Empty);
+                    chipLabel.SetMarkup($"<span size='small'>{escapedItem}</span>");
+                    chipLabel.Selectable = true;
+                    chipLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    chipLabel.MaxWidthChars = 25;
+                    chipLabel.Wrap = true;
+                    chipLabel.WrapMode = Pango.WrapMode.WordChar;
+                    chipLabel.Xalign = 0;
+
+                    chipBox.Append(checkIcon);
+                    chipBox.Append(chipLabel);
+                    flowBox.Append(chipBox);
                 }
-                flowBox.Append(chip);
+                else
+                {
+                    var chip = Label.New(item);
+                    chip.AddCssClass("package-chip");
+                    chip.Selectable = true;
+                    chip.Ellipsize = Pango.EllipsizeMode.End;
+                    chip.MaxWidthChars = 25;
+                    flowBox.Append(chip);
+                }
             }
 
             expander.SetChild(flowBox);
@@ -358,8 +376,15 @@ public class PackageInstall(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
+            
+            check.OnToggled += (s, e) =>
+            {
+                if (listItem.GetItem() is not AlpmPackageGObject current) return;
+                current.IsSelected = s.GetActive();
+                _installButton.SetSensitive(AnySelected());
+            };
         };
-
+        
         _checkFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
@@ -367,19 +392,11 @@ public class PackageInstall(
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
-            checkButton.OnToggled += OnToggled;
 
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
 
             return;
-
-            void OnToggled(CheckButton s, EventArgs e)
-            {
-                pkgObj.IsSelected = s.GetActive();
-                _installButton.SetSensitive(AnySelected());
-            }
-
+            
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -388,17 +405,22 @@ public class PackageInstall(
                 }
             }
         };
+        
+        _checkFactory.OnUnbind += (_, args) => { };
+
+        _checkFactory.OnTeardown += (_, args) =>
+        {
+            if (args.Object is not ColumnViewCell listItem) return;
+            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
+                listItem.GetChild() is not CheckButton checkButton) return;
+            listItem.SetChild(null);
+        };
 
         _checkFactory.OnUnbind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not CheckButton checkButton) return;
-            if (_checkBinding.Remove(listItem, out var handlers))
-            {
-                pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
-                checkButton.OnToggled -= handlers.OnToggled;
-            }
         };
 
         checkColumn.SetFactory(_checkFactory);
@@ -430,8 +452,7 @@ public class PackageInstall(
             var iconPath = iconResolverService.GetIconPath(pkg.Name);
             if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
             {
-                var texture = Gdk.Texture.NewFromFilename(iconPath);
-                packageIcon.SetFromPaintable(texture);
+                packageIcon.SetFromFile(iconPath);
                 packageIcon.Visible = true;
             }
             else
@@ -508,6 +529,7 @@ public class PackageInstall(
             _packageGObjectRefs.Clear();
             _detailRevealer.SetRevealChild(false);
             _currentDetailPkg = null;
+            _installedPackageNames.Clear();
             return false;
         });
 
@@ -519,7 +541,7 @@ public class PackageInstall(
 
             ct.ThrowIfCancellationRequested();
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
-            var installedNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
+            _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
             var queue = new Queue<AlpmPackageDto>(_packages);
 
             GLib.Functions.IdleAdd(0, () =>
@@ -536,7 +558,7 @@ public class PackageInstall(
                 {
                     var dequeued = queue.Dequeue();
                     var pkgObj = new AlpmPackageGObject()
-                        { Package = dequeued, IsInstalled = installedNames.Contains(dequeued.Name) };
+                        { Package = dequeued, IsInstalled = _installedPackageNames.Contains(dequeued.Name) };
                     _packageGObjectRefs.Add(pkgObj);
                     batch.Add(pkgObj);
                     count++;
@@ -566,7 +588,7 @@ public class PackageInstall(
     {
         if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null) return false;
 
-        if (_selectedGroup != "Any" && !pkgObj.Package.Groups.Contains(_selectedGroup))
+        if (_selectedGroup != "Any" && !(pkgObj.Package.Groups?.Contains(_selectedGroup) ?? false))
         {
             return false;
         }
@@ -574,9 +596,10 @@ public class PackageInstall(
         if (string.IsNullOrWhiteSpace(_searchText))
             return true;
 
-        return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return (pkgObj.Package.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (pkgObj.Package.Description?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
     }
+
 
     private async Task InstallSelectedAsync()
     {
@@ -751,51 +774,6 @@ public class PackageInstall(
         }
     }
 
-    private async Task InstallAppImage()
-    {
-        try
-        {
-            var dialog = FileDialog.New();
-            dialog.SetTitle("Install App Image");
-
-            var filter = FileFilter.New();
-            filter.SetName("Local AppImage files (\"*.AppImage\"");
-            filter.AddPattern("*.AppImage");
-
-            var filters = Gio.ListStore.New(FileFilter.GetGType());
-            filters.Append(filter);
-            dialog.SetFilters(filters);
-
-            var file = await dialog.OpenAsync((Window)_overlay.GetRoot()!);
-
-            if (file is not null)
-            {
-                lockoutService.Show($"Installing AppImage...");
-                var result = await privilegedOperationService.InstallAppImageAsync(file.GetPath()!);
-                if (!result.Success)
-                {
-                    Console.WriteLine($"Failed to install local package: {result.Error}");
-                }
-                else
-                {
-                    var args = new ToastMessageEventArgs(
-                        $"App Image installed"
-                    );
-
-                    genericQuestionService.RaiseToastMessage(args);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to install local package: {ex.Message}");
-        }
-        finally
-        {
-            lockoutService.Hide();
-        }
-    }
-
     private bool AnySelected()
     {
         for (uint i = 0; i < _listStore.GetNItems(); i++)
@@ -814,9 +792,9 @@ public class PackageInstall(
         _cts.Dispose();
         _listStore.RemoveAll();
         _packageGObjectRefs.Clear();
-        _checkBinding.Clear();
         _packages.Clear();
         _groups.Clear();
+        _installedPackageNames.Clear();
         _currentDetailPkg = null;
     }
 }

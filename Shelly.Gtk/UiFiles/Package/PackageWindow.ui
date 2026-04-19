@@ -52,26 +52,6 @@
                             </object>
                         </child>
                         <child>
-                            <object class="GtkButton" id="install_appimage_button">
-                                <property name="tooltip-text">Install App Image</property>
-                                <child>
-                                    <object class="GtkBox">
-                                        <property name="spacing">8</property>
-                                        <child>
-                                            <object class="GtkImage">
-                                                <property name="icon-name">folder-open-symbolic</property>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkLabel">
-                                                <property name="label">Install AppImage</property>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                            </object>
-                        </child>
-                        <child>
                             <object class="GtkBox">
                                 <property name="hexpand">true</property>
                             </object>

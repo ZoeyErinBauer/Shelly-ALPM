@@ -112,6 +112,7 @@
                     </child>
                     <child>
                       <object class="GtkScrolledWindow">
+                        <property name="overlay-scrolling">false</property>
                         <property name="vscrollbar-policy">automatic</property>
                         <property name="hscrollbar-policy">never</property>
                         <property name="vexpand">true</property>
@@ -160,11 +161,11 @@
                     </child>
                     <child>
                       <object class="GtkBox">
-                       <!-- <property name="homogeneous">true</property>-->
+                        <property name="homogeneous">true</property>
                         <property name="orientation">horizontal</property>
-                        <property name="spacing">20</property>
                         <child>
                           <object class="GtkBox" id="AurBox">
+                            <property name="hexpand">true</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkLabel">
@@ -201,6 +202,7 @@
                         </child>
                         <child>
                           <object class="GtkBox">
+                            <property name="hexpand">true</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkLabel">
@@ -233,6 +235,7 @@
                         </child>
                         <child>
                           <object class="GtkBox" id="FlatpakBox">
+                            <property name="hexpand">true</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkLabel">
@@ -343,6 +346,7 @@
                     </child>
                     <child>
                       <object class="GtkScrolledWindow">
+                        <property name="overlay-scrolling">false</property>
                         <property name="vexpand">true</property>
                         <child>
                           <object class="GtkListBox" id="UpdatesListBox">
@@ -403,6 +407,7 @@
         </child>
         <child>
           <object class="GtkScrolledWindow">
+            <property name="overlay-scrolling">false</property>
             <property name="vexpand">true</property>
             <property name="hscrollbar-policy">never</property>
             <child>

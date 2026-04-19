@@ -7,7 +7,7 @@ public sealed class AurSearchSettings : DefaultSettings
 {
     [CommandArgument(0, "<query>")]
     [Description("Search term to find packages in the Arch User Repository")]
-    public string Query { get; init; } = string.Empty;
+    public string[] Query { get; init; } = [];
 }
 
 public class AurPackageSettings : CommandSettings

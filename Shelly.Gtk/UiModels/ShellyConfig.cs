@@ -17,6 +17,8 @@ public class ShellyConfig
     
     public bool FlatPackEnabled { get; set; } = false;
     
+    public bool AppImageEnabled { get; set; } = false;
+    
     public bool ConsoleEnabled { get; set; } = false;
     
     public double WindowWidth { get; set; } = 800;
@@ -50,6 +52,8 @@ public class ShellyConfig
     public int ParallelDownloadCount { get; set; } = 10;
     
     public bool ShellyIconsEnabled { get; set; } = true;
+    
+    public bool NewInstallInitSettings { get; set; } = false;
     
     // Existing CLI settings (included for unified config compatibility)
     public string FileSizeDisplay { get; set; } = "Bytes";

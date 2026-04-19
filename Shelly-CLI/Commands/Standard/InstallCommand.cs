@@ -25,12 +25,15 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
 
         var packageList = settings.Packages.ToList();
 
-        AnsiConsole.MarkupLine($"[yellow]Packages to install:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
-
-        if (!AnsiConsole.Confirm("Do you want to proceed?"))
+        AnsiConsole.MarkupLine(
+            $"[yellow]Packages to install:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
+        if (!settings.NoConfirm)
         {
-            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-            return 0;
+            if (!AnsiConsole.Confirm("Do you want to proceed?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
         }
 
 
@@ -59,13 +62,15 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
             if (settings.MakeDepsOn)
             {
                 AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-                var result = await SplitOutput.Output(manager, x => x.InstallDependenciesOnly(packageList.First(), true),
+                var result = await SplitOutput.Output(manager,
+                    x => x.InstallDependenciesOnly(packageList.First(), true),
                     settings.NoConfirm);
                 if (!result)
                 {
                     AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
                     return 1;
                 }
+
                 return 0;
             }
 
@@ -77,6 +82,7 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
                 AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
                 return 1;
             }
+
             AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
@@ -85,13 +91,15 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
         {
             AnsiConsole.MarkupLine("[yellow]Skipping dependency installation.[/]");
             AnsiConsole.MarkupLine("[yellow]Installing packages...[/]");
-            var noDepsResult = await SplitOutput.Output(manager, x => x.InstallPackages(packageList, AlpmTransFlag.NoDeps),
+            var noDepsResult = await SplitOutput.Output(manager,
+                x => x.InstallPackages(packageList, AlpmTransFlag.NoDeps),
                 settings.NoConfirm);
             if (!noDepsResult)
             {
                 AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
                 return 1;
             }
+
             AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
             return 0;
         }
@@ -106,6 +114,7 @@ public class InstallCommand : AsyncCommand<InstallPackageSettings>
             AnsiConsole.MarkupLine("[red]Installation failed. See errors above.[/]");
             return 1;
         }
+
         AnsiConsole.MarkupLine("[green]Packages installed successfully![/]");
         return 0;
     }

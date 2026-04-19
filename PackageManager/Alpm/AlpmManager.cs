@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -31,12 +32,36 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     private string _configPath = configPath;
     private PacmanConf _config;
     private IntPtr _handle = IntPtr.Zero;
-    private static readonly HttpClient HttpClient = new();
+
+    private static SocketsHttpHandler _socketsHttpHandler = new()
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+        MaxConnectionsPerServer = 10,
+        AutomaticDecompression = DecompressionMethods.All,
+        AllowAutoRedirect = true,
+        MaxAutomaticRedirections = 10,
+        ConnectTimeout = TimeSpan.FromSeconds(30),
+        EnableMultipleHttp2Connections = true,
+        EnableMultipleHttp3Connections = true,
+    };
+
+    private static readonly HttpClient DownloadClient = new(_socketsHttpHandler, disposeHandler: false)
+    {
+        Timeout = TimeSpan.FromMinutes(5),
+        DefaultRequestHeaders =
+        {
+            { "User-Agent", "Shelly/2.0 (compatible)" }
+        },
+    };
+
+    private HashSet<string> _preDownloadedFiles = new();
+
     private AlpmFetchCallback _fetchCallback;
     private AlpmEventCallback _eventCallback;
     private AlpmQuestionCallback _questionCallback;
     private AlpmProgressCallback? _progressCallback;
-    private int _parallelDownloads = 1;
+    private int _parallelDownloads = 10;
     private bool _showHiddenPackages = false;
     private bool _isPackageDownload;
 
@@ -172,6 +197,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
 
         if (!string.IsNullOrEmpty(resolvedArch))
         {
+            Console.Error.WriteLine($"[DEBUG_LOG] Resolved Architecture: {resolvedArch}");
             AddArchitecture(_handle, resolvedArch);
             AddArchitecture(_handle, "any");
         }
@@ -202,6 +228,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         }
 
 
+        List<string> registeredArchitectures = [];
         foreach (var repo in _config.Repos)
         {
             var effectiveSigLevel = repo.SigLevel is AlpmSigLevel.None or AlpmSigLevel.UseDefault
@@ -216,13 +243,23 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 continue;
             }
 
+
             foreach (var server in repo.Servers)
             {
                 var archSuffixMatch = Regex.Match(server, @"\$arch([^/]+)");
                 if (archSuffixMatch.Success)
                 {
                     string suffix = archSuffixMatch.Groups[1].Value;
-                    AddArchitecture(_handle, resolvedArch + suffix);
+                    var archLevel = int.Parse(archSuffixMatch.Groups[1].Value.Split('v')[1]);
+                    for (var i = archLevel; i >= 2; i--)
+                    {
+                        if (registeredArchitectures.Contains(resolvedArch + $"_v{i}")) continue;
+                        AddArchitecture(_handle, resolvedArch + $"_v{i}");
+                        Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + $"_v{i}"}");
+                        registeredArchitectures.Add(resolvedArch + $"_v{i}");
+                    }
+                    //AddArchitecture(_handle, resolvedArch + suffix);
+
                     //Commented out logs because it's too much noise. Uncomment if needed
                     //Console.Error.WriteLine($"[DEBUG_LOG] Found architecture suffix: {suffix}");
                     //Console.Error.WriteLine($"[DEBUG_LOG] Registering Architecture: {resolvedArch + suffix}");
@@ -478,6 +515,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                 fileName = Path.GetFileName(url);
             }
 
+            if (!_isPackageDownload && _preDownloadedFiles.Remove(fileName))
+            {
+                Console.Error.WriteLine($"[DEBUG_LOG] File {fileName} already downloaded, skipping");
+                return 0;
+            }
+
             // Construct full destination path
             string localpath;
             if (!string.IsNullOrEmpty(localpathDir))
@@ -532,19 +575,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         try
         {
             Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading {fullUrl} to {localpath}");
-
-            handler = new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                AutomaticDecompression = System.Net.DecompressionMethods.All,
-                AllowAutoRedirect = true,
-                MaxAutomaticRedirections = 10,
-                UseProxy = true,
-            };
-            client = new HttpClient(handler);
-            client.Timeout = TimeSpan.FromMinutes(30);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM/1.0 (compatible)");
-            using var response = client.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
+            using var response = DownloadClient.GetAsync(fullUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
 
@@ -708,7 +739,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         {
             Console.Error.WriteLine($"[Shelly][DEBUG_LOG] Downloading signature {sigUrl}");
 
-            using var response = HttpClient.GetAsync(sigUrl, HttpCompletionOption.ResponseContentRead)
+            using var response = DownloadClient.GetAsync(sigUrl, HttpCompletionOption.ResponseContentRead)
                 .GetAwaiter()
                 .GetResult();
 
@@ -770,25 +801,65 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         _isPackageDownload = false;
         if (_handle == IntPtr.Zero) Initialize();
         var syncDbsPtr = GetSyncDbs(_handle);
-        if (syncDbsPtr != IntPtr.Zero)
+        if (syncDbsPtr == IntPtr.Zero)
         {
-            // Pass the entire list pointer directly to alpm_db_update
-            var result = Update(_handle, syncDbsPtr, force);
-            if (result < 0)
-            {
-                var error = ErrorNumber(_handle);
-                Console.Error.WriteLine($"Sync failed: {GetErrorMessage(error)}");
-            }
+            Console.WriteLine("No sync databases found");
+            return;
+        }
 
-            if (result > 0)
+        var databaseDownloads = new List<(string dbName, string serverUrl)>();
+        var currentPtr = syncDbsPtr;
+        while (currentPtr != IntPtr.Zero)
+        {
+            var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+            if (node.Data != IntPtr.Zero)
             {
-                Console.Error.WriteLine($"Sync database up to date");
-            }
+                var dbNamePtr = DbGetName(node.Data);
+                var dbName = Marshal.PtrToStringUTF8(dbNamePtr);
+                if (!string.IsNullOrEmpty(dbName))
+                {
+                    var serverPtrs = DbGetServers(node.Data);
+                    if (serverPtrs != IntPtr.Zero)
+                    {
+                        var serverNode = Marshal.PtrToStructure<AlpmList>(serverPtrs);
+                        if (serverNode.Data == IntPtr.Zero)
+                        {
+                            continue;
+                        }
 
-            if (result == 0)
-            {
-                Console.Error.WriteLine($"Updating Sync database");
+                        var serverUrl = Marshal.PtrToStringUTF8(serverNode.Data);
+                        if (!string.IsNullOrEmpty(serverUrl))
+                        {
+                            databaseDownloads.Add((dbName, serverUrl));
+                        }
+                    }
+                }
+
+                currentPtr = node.Next;
             }
+        }
+
+        var syncDirectory = Path.Combine(_config.DbPath, "sync");
+        // This should always exist, but just in case
+        Directory.CreateDirectory(syncDirectory);
+
+        var downloadTasks = databaseDownloads.Select(db => Task.Run(() =>
+        {
+            var dbFileName = $"{db.dbName}.db";
+            var url = $"{db.serverUrl.TrimEnd('/')}/{dbFileName}";
+            var localPath = Path.Combine(syncDirectory, dbFileName);
+            Console.Error.WriteLine($"[DEBUG_LOG] Downloading {url} to {localPath}");
+            PerformDownload(url, localPath);
+        }));
+
+        Task.WhenAll(downloadTasks).Wait();
+        _preDownloadedFiles = databaseDownloads.SelectMany(d => new[] { d.dbName + ".db", d.dbName + "db.sig" })
+            .ToHashSet();
+        var result = Update(_handle, syncDbsPtr, force);
+        if (result < 0)
+        {
+            var error = ErrorNumber(_handle);
+            Console.Error.WriteLine($"Sync failed: {GetErrorMessage(error)}");
         }
     }
 
@@ -934,9 +1005,56 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     {
         if (_handle == IntPtr.Zero) Initialize();
 
-        List<IntPtr> pkgPtrs = new List<IntPtr>();
+        List<IntPtr> pkgPtrs = [];
+        List<(string, string)> repoPkgs = [];
+        List<string> chosenPkgs = [];
 
-        foreach (var packageName in packageNames)
+        foreach (var name in packageNames)
+        {
+            if (name.Contains("/"))
+            {
+                var split = name.Split('/');
+                repoPkgs.Add((split[0], split[1]));
+            }
+            else
+            {
+                chosenPkgs.Add(name);
+            }
+        }
+
+        foreach (var (repoName, pkgName) in repoPkgs)
+        {
+            IntPtr pkgPtr = IntPtr.Zero;
+            var syncDbsPtr = GetSyncDbs(_handle);
+            var currentPtr = syncDbsPtr;
+
+            while (currentPtr != IntPtr.Zero)
+            {
+                var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                if (node.Data != IntPtr.Zero)
+                {
+                    var dbNamePtr = DbGetName(node.Data);
+                    var dbName = Marshal.PtrToStringUTF8(dbNamePtr);
+                    Console.Error.WriteLine($"[DEBUG_LOG] Found database: {dbName}");
+                    if (dbName != null && dbName.Equals(repoName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        pkgPtr = DbGetPkg(node.Data, pkgName);
+                        break;
+                    }
+                }
+                currentPtr = node.Next;
+            }
+
+            if (pkgPtr == IntPtr.Zero)
+            {
+                ErrorEvent?.Invoke(this,
+                    new AlpmErrorEventArgs($"Package '{pkgName}' not found in repository '{repoName}'."));
+                return Task.FromResult(false);
+            }
+
+            pkgPtrs.Add(pkgPtr);
+        }
+        foreach (var packageName in chosenPkgs)
         {
             // Find the package in sync databases
             IntPtr pkgPtr = IntPtr.Zero;
@@ -994,23 +1112,37 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     {
                         break;
                     }
-
-                    var pkgCache = DbGetPkgCache(node.Data);
-                    pkgPtr = PkgFindSatisfier(pkgCache, packageName);
-                    if (pkgPtr != IntPtr.Zero)
-                    {
-                        break;
-                    }
                 }
 
                 currentPtr = node.Next;
             }
 
+            // Failed to find direct pkg name or group pkg so looking for a satisfier.
             if (pkgPtr == IntPtr.Zero && groupPkgs == null)
             {
-                ErrorEvent?.Invoke(this,
-                    new AlpmErrorEventArgs($"Package '{packageName}' not found in any sync database."));
-                return Task.FromResult(false);
+                currentPtr = syncDbsPtr;
+                while (currentPtr != IntPtr.Zero)
+                {
+                    var node = Marshal.PtrToStructure<AlpmList>(currentPtr);
+                    if (node.Data != IntPtr.Zero)
+                    {
+                        var pkgCache = DbGetPkgCache(node.Data);
+                        pkgPtr = PkgFindSatisfier(pkgCache, packageName);
+                        if (pkgPtr != IntPtr.Zero)
+                        {
+                            break;
+                        }
+                    }
+
+                    currentPtr = node.Next;
+                }
+
+                if (pkgPtr == IntPtr.Zero)
+                {
+                    ErrorEvent?.Invoke(this,
+                        new AlpmErrorEventArgs($"Package '{packageName}' not found in any sync database."));
+                    return Task.FromResult(false);
+                }
             }
 
             if (pkgPtr != IntPtr.Zero)
@@ -1058,12 +1190,25 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             pkgPtrs.AddRange(result);
         }
 
+        Console.Error.WriteLine($"[DEBUG] TransInit: handle={_handle}, dbPath={_config.DbPath}");
+        Console.Error.WriteLine($"[DEBUG] db.lck exists: {File.Exists(Path.Combine(_config.DbPath, "db.lck"))}");
+
+        var lockfilePath = AlpmReference.GetLockFile(_handle); // Need to bind alpm_option_get_lockfile
+        Console.Error.WriteLine($"[DEBUG] libalpm lockfile: {Marshal.PtrToStringAnsi(lockfilePath)}");
+        Console.Error.WriteLine($"[DEBUG] C# check path: {Path.Combine(_config.DbPath, "db.lck")}");
+        Console.Error.WriteLine($"[DEBUG] dbpath dir exists: {Directory.Exists(_config.DbPath)}");
         // Initialize transaction
         if (TransInit(_handle, flags) != 0)
         {
+            // var posixErrno = Marshal.ReadInt32(ErrnoLocation());
+            // Console.Error.WriteLine($"[DEBUG] POSIX errno: {posixErrno}");
             var err = ErrorNumber(_handle);
+            // Console.Error.WriteLine($"[DEBUG] TransInit failed: errno={err} ({(int)err}), message={GetErrorMessage(err)}");
             ErrorEvent?.Invoke(this,
-                new AlpmErrorEventArgs($"Failed to initialize transaction: {GetErrorMessage(err)}"));
+                new AlpmErrorEventArgs(
+                    $"Failed to initialize transaction: with Error Number: {err} and message: {GetErrorMessage(err)}"));
+
+
             return Task.FromResult(false);
         }
 
@@ -1526,7 +1671,6 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
         if (dependencyToInstall.Count == 0) return Task.FromResult(true);
 
         return InstallPackages(dependencyToInstall, flags);
-
     }
 
     public void Refresh()
@@ -1537,7 +1681,7 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
             _handle = IntPtr.Zero;
         }
 
-        Initialize();
+        Initialize(true);
     }
 
     public Task<bool> UpdatePackages(List<string> packageNames,
@@ -2148,6 +2292,48 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
     public static int VersionCompare(string a, string b)
     {
         return AlpmReference.PkgVerCmp(a, b);
+    }
+
+    public List<string> RemoveCorruptedPackages(bool dryRun = false)
+    {
+        if (_handle == IntPtr.Zero)
+        {
+            Initialize(true);
+        }
+
+        List<string> corruptedPackages = [];
+        if (!Directory.Exists(_config.CacheDir))
+        {
+            return corruptedPackages;
+        }
+
+        var packageFiles = Directory.EnumerateFiles(_config.CacheDir, "*.pkg.tar*",
+            SearchOption.AllDirectories).Where(x => !x.EndsWith(".sig"));
+
+        foreach (var filePath in packageFiles)
+        {
+            var result = PkgLoad(_handle, filePath, false, AlpmSigLevel.PackageOptional | AlpmSigLevel.DatabaseOptional,
+                out var pkgPtr);
+            if (result == -1)
+            {
+                Console.WriteLine(filePath);
+                corruptedPackages.Add(Path.GetFileName(filePath));
+                if (!dryRun)
+                {
+                    File.Delete(filePath);
+                }
+            }
+            else if (pkgPtr != IntPtr.Zero)
+            {
+                if (PkgFree(pkgPtr) != 0)
+                {
+                    ErrorEvent?.Invoke(this, new AlpmErrorEventArgs("Failed to free package"));
+                    //Potentially need to manually release memory here will keep track of usage during testing.
+                    //If I find this later, and it's still here, you can just remove this as it works as expected.
+                }
+            }
+        }
+        return corruptedPackages;
     }
 
     private void HandleErrorMessage(IntPtr dataPtr, AlpmErrno error)

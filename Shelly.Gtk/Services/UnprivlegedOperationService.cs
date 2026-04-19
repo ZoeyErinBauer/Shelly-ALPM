@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using Shelly.Gtk.Enums;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
+using Shelly.Gtk.UiModels.AppImage;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 
 
@@ -84,7 +86,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
     public async Task<List<FlatpakPackageDto>> ListFlatpakUpdates()
     {
         var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
-
+        SendDbusMessage(result);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -168,10 +170,11 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool removeConfig)
     {
-        if(removeConfig)
+        if (removeConfig)
         {
             return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package, "-c");
         }
+
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
     }
 
@@ -283,10 +286,102 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         return 0;
     }
 
+    public async Task<List<AppImageDto>> GetInstallAppImagesAsync()
+    {
+        var result = await ExecuteUnprivilegedCommandAsync("Get Installed AppImages", "appimage list --json");
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyGtkJsonContext.Default.ListAppImageDto);
+                    return apps ?? [];
+                }
+            }
+
+            return [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse installed AppImages JSON: {ex.Message}");
+            return [];
+        }
+    }
+
+    public async Task<List<RssModel>> GetArchNewsAsync(bool all = false)
+    {
+        var args = all ? "news" + " --json" + " --all" : "news" + " --json";
+        var result = await ExecuteUnprivilegedCommandAsync("Fetch Arch News", args, "--ui-mode");
+        if (!result.Success || string.IsNullOrEmpty(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyGtkJsonContext.Default.ListRssModel);
+                    return apps ?? [];
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing Arch News: {ex.Message}");
+        }
+
+        return [];
+    }
+
+
+    public async Task<List<AppImageDto>> GetUpdatesAppImagesAsync()
+    {
+        var result = await ExecuteUnprivilegedCommandAsync("Get AppImage Updates", "appimage list-updates --json");
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        ShellyGtkJsonContext.Default.ListAppImageUpdateDto);
+                    return updates?.Select(u => new AppImageDto
+                    {
+                        Name = u.Name,
+                        Version = u.Version,
+                        UpdateVersion = u.Version,
+                        UpdateURl = u.DownloadUrl,
+                        UpdateType = AppImageUpdateType.StaticUrl // Default or map if possible
+                    }).ToList() ?? [];
+                }
+            }
+
+            return [];
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse AppImage updates JSON: {ex.Message}");
+            return [];
+        }
+    }
+
     public async Task<List<AlpmPackageUpdateDto>> CheckForStandardApplicationUpdates(bool showHidden = false)
     {
         var args = showHidden ? "list-updates --json --show-hidden" : "list-updates --json";
         var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", args);
+        SendDbusMessage(result);
         try
         {
             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -326,6 +421,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
     public async Task<SyncModel> CheckForApplicationUpdates()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", "utility updates -a -l --json");
+        //SendDbusMessage(result);
         try
         {
             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -445,7 +541,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 {
                     var questionText = e.Data.Substring("[Shelly][ALPM_QUESTION]".Length);
                     Console.Error.WriteLine($"[Shelly]Question received: {questionText}");
-                    
+
                     // Send response to CLI via stdin
                     if (stdinWriter != null)
                     {
@@ -513,7 +609,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         // UTF-8 BOM is 0xEF 0xBB 0xBF which appears as \uFEFF in .NET strings
         return input.TrimStart('\uFEFF');
     }
-    
+
     private void SendDbusMessage(UnprivilegedOperationResult result)
     {
         if (result.Success)

@@ -9,4 +9,9 @@ public class ArchNewsSettings : CommandSettings
     [Description("Shows all arch news")]
     [DefaultValue(false)]
     public bool All { get; set; } = false;
+    
+    [CommandOption("-j|--json")]
+    [Description("Returns news in JSON format")]
+    [DefaultValue(false)]
+    public bool Json { get; set; } = false;
 }

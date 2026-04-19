@@ -18,7 +18,7 @@ public class FlatpakListUpdatesCommand : Command<DefaultSettings>
 
         var manager = new FlatpakManager();
 
-        var packages = manager.GetPackagesWithUpdates();
+        var packages = FlatpakManager.GetPackagesWithUpdates(true);
 
         if (settings.JsonOutput)
         {
@@ -34,13 +34,19 @@ public class FlatpakListUpdatesCommand : Command<DefaultSettings>
         table.AddColumn("Name");
         table.AddColumn("Id");
         table.AddColumn("Version");
+        table.AddColumn("Permissions");
 
         foreach (var pkg in packages.OrderBy(p => p.Id))
         {
+            var permissions = pkg.Permissions.Count > 0 
+                ? string.Join("\n", pkg.Permissions) 
+                : "[grey]No changes[/]";
+                
             table.AddRow(
                 pkg.Name,
                 pkg.Id,
-                pkg.Version
+                pkg.Version,
+                permissions
             );
         }
 
@@ -53,7 +59,7 @@ public class FlatpakListUpdatesCommand : Command<DefaultSettings>
     {
         var manager = new FlatpakManager();
 
-        var packages = manager.GetPackagesWithUpdates();
+        var packages = FlatpakManager.GetPackagesWithUpdates(true);
 
         if (settings.JsonOutput)
         {

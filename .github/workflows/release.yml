@@ -37,6 +37,8 @@ jobs:
       run: |
         dotnet publish Shelly.Gtk/Shelly.Gtk.csproj -c Release -o publish/shelly-ui -p:InstructionSet=x86-64
         cp Shelly.Gtk/Assets/shellylogo.png publish/shelly-ui/
+        cp Shelly.Gtk/Assets/shellylogo-tray.png publish/shelly-ui/
+        cp Shelly.Gtk/Assets/shellylogo-update.png publish/shelly-ui/
         # Also bundle the CLI binary for convenience
         cp publish/shelly-cli/shelly publish/shelly-ui/
 

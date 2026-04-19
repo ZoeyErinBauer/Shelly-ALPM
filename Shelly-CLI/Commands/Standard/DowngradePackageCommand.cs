@@ -13,6 +13,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
     private const string archRepo = "https://archive.archlinux.org/packages/";
     private const string pacmanCache = "/var/cache/pacman/pkg/";
 
+    //TODO: IMPLEMENT TO HANDLE ADDITIONAL REPOS OTHER THAN JUST ARCH AND LOCAL PACKAGES
     public override int Execute(CommandContext context, DowngradePackageCommandSettings settings)
     {
         if (Program.IsUiMode)
@@ -33,11 +34,20 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
         var manager = new AlpmManager();
         manager.Initialize(true);
         var packages = SearchArchArchive(package);
-        var selection = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title($"[yellow]Select Version[/]")
-                .AddChoices(packages));
-        AnsiConsole.WriteLine(selection);
+        string selection;
+        if (!settings.NoConfirm)
+        {
+            selection = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"[yellow]Select Version[/]")
+                    .AddChoices(packages));
+            AnsiConsole.WriteLine(selection);
+        }
+        else
+        {
+            selection = packages.First();
+        }
+
         //"-x86_64.pkg.tar.zst";
         var handler = new SocketsHttpHandler()
         {
@@ -49,10 +59,10 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
         var client = new HttpClient(handler);
         client.Timeout = TimeSpan.FromMinutes(15);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Shelly-ALPM/1.0 (compatible)");
-        
+
         var fileName = $"{selection}-x86_64.pkg.tar.zst";
         var url = $"{archRepo}{package[0]}/{package}/{fileName}";
-        
+
         var filePath = Path.Combine(Path.GetTempPath(), fileName);
 
         AnsiConsole.Status()
@@ -67,10 +77,13 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
 
         AnsiConsole.MarkupLine($"[green]Downloaded to {filePath.EscapeMarkup()}[/]");
 
-        if (!AnsiConsole.Confirm("Do you want to proceed with the installation?"))
+        if (!settings.NoConfirm)
         {
-            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-            return 0;
+            if (!AnsiConsole.Confirm("Do you want to proceed with the installation?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                return 0;
+            }
         }
 
         var renderLock = new object();
@@ -124,6 +137,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
             {
                 AnsiConsole.MarkupLine($"[red]ERROR: {e.Error.EscapeMarkup()}[/]");
             }
+
             hadError = true;
         };
 
@@ -134,6 +148,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
         {
             File.Delete(filePath);
         }
+
         manager.Dispose();
 
         if (!result || hadError)
@@ -141,6 +156,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
             AnsiConsole.MarkupLine("[red]Downgrade failed. See errors above.[/]");
             return 1;
         }
+
         AnsiConsole.MarkupLine("[green]Package downgraded successfully![/]");
         return 0;
     }
@@ -162,7 +178,8 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
     {
         var htmlRegex =
             new Regex(
-                $"<a href=\"(?<filename>{Regex.Escape(packageName)}-[a-zA-Z0-9._+]+-[0-9]+-[a-zA-Z0-9_]+\\.pkg\\.tar\\.(?:zst|xz))\">", RegexOptions.Multiline);
+                $"<a href=\"(?<filename>{Regex.Escape(packageName)}-[a-zA-Z0-9._+]+-[0-9]+-[a-zA-Z0-9_]+\\.pkg\\.tar\\.(?:zst|xz))\">",
+                RegexOptions.Multiline);
 
         var handler = new SocketsHttpHandler()
         {
@@ -184,6 +201,7 @@ public class DowngradePackageCommand : Command<DowngradePackageCommandSettings>
             var filename = match.Groups["filename"].Value;
             results.Add(Regex.Replace(filename, "-x86.*", ""));
         }
+
         client.Dispose();
         return results;
     }

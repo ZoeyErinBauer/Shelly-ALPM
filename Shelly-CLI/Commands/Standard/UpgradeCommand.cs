@@ -1,4 +1,5 @@
 using PackageManager.Alpm;
+using PackageManager.Utilities;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Configuration;
@@ -125,6 +126,27 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             flatpakCommand.Execute(context);
         }
 
+        var (needsReboot, services) = RestartManager.CheckForRequiredRestarts();
+        if (needsReboot)
+        {
+            AnsiConsole.MarkupLine("[bold red]⚠ A full system reboot is required![/]");
+        }
+        else if (services.Count > 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]Restarting services...[/]");
+            var failures = await RestartManager.RestartServicesAsync(services);
+            if (failures.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[green]All services restarted successfully.[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[bold red] The following services failed to restart:[/]");
+                foreach (var (svc, error) in failures)
+                    AnsiConsole.MarkupLine($"[red]  • {Markup.Escape(svc)}: {Markup.Escape(error)}[/]");
+            }
+        }
+
         return 0;
     }
 
@@ -216,6 +238,18 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         {
             var flatpakCommand = new FlatpakUpgrade();
             flatpakCommand.Execute(context);
+        }
+
+        var (needsReboot, services) = RestartManager.CheckForRequiredRestarts();
+        if (needsReboot)
+        {
+            await Console.Error.WriteLineAsync("[RESTART_REQUIRED]reboot");
+        }
+        else if (services.Count > 0)
+        {
+            var failures = await RestartManager.RestartServicesAsync(services);
+            foreach (var (svc, error) in failures)
+                await Console.Error.WriteLineAsync($"[RESTART_FAILED]service:{svc}|{error}");
         }
 
         await Console.Error.WriteLineAsync("System upgraded successfully!");

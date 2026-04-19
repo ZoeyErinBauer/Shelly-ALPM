@@ -77,6 +77,21 @@
                         <property name="orientation">horizontal</property>
                         <child>
                           <object class="GtkLabel">
+                            <property name="label">Enable AppImage</property>
+                            <property name="hexpand">true</property>
+                            <property name="halign">start</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkSwitch" id="appimage_switch"/>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">horizontal</property>
+                        <child>
+                          <object class="GtkLabel">
                             <property name="label">Enable Tray Icon</property>
                             <property name="hexpand">true</property>
                             <property name="halign">start</property>
@@ -311,6 +326,15 @@
                         <style>
                           <class name="suggested-action"/>
                         </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="purify_button">
+                        <property name="label">Purify Packages</property>
+                          <property name="margin-top">10</property>
+                            <style>
+                                <class name="destructive-action"/>
+                            </style>
                       </object>
                     </child>
                   </object>

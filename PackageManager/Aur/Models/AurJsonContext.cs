@@ -8,6 +8,7 @@ namespace PackageManager.Aur.Models;
 [JsonSerializable(typeof(AurUpdateDto))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(List<AurPackageDto>))]
+[JsonSerializable(typeof(Dictionary<string, List<VcsSourceEntry>>))]
 public partial class AurJsonContext : JsonSerializerContext
 {
 }

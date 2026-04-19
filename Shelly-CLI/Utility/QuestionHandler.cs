@@ -41,6 +41,7 @@ public static class QuestionHandler
             if (noConfirm)
             {
                 question.SetResponse((int)((1L << 31) - 1));
+                return;
             }
 
             Console.Error.WriteLine($"[ALPM_SELECT_OPTDEPS]{question.DependencyName}");
@@ -51,7 +52,6 @@ public static class QuestionHandler
 
             Console.Error.WriteLine("[ALPM_OPTDEPS_END]");
             Console.Error.Flush();
-            
             var input = Console.ReadLine();
             var splitInput = input?.Split(" ");
             for (var i = 0; i < question.ProviderOptions.Count; i++)
@@ -65,7 +65,7 @@ public static class QuestionHandler
             question.SetResponse(bitmask);
             return;
         }
-        
+
         var selection = AnsiConsole.Prompt(
             new MultiSelectionPrompt<string>()
                 .Title($"[yellow]{question.QuestionText}[/]")

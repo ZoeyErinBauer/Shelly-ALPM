@@ -87,8 +87,6 @@ public class AppstreamParser
         }
 
         return apps;
-        
-       
     }
 
     /// <summary>
@@ -98,8 +96,8 @@ public class AppstreamParser
     {
         var type = component.Attribute("type")?.Value;
 
-        // Parse desktop applications, console applications, and addons
-        if (type != "desktop-application" && type != "console-application" && type != "addon")
+        // Parse desktop applications, console applications, desktop, and addons
+        if (type != "desktop-application" && type != "console-application" && type != "addon" && type != "desktop")
         {
             return null;
         }
@@ -114,11 +112,11 @@ public class AppstreamParser
                 .FirstOrDefault(e => e.Attribute(XNamespace.Xml + "lang") == null)?.Value ?? string.Empty,
             ProjectLicense = component.Element("project_license")?.Value ?? string.Empty,
             DeveloperName = component.Element("developer_name")?.Value
-                ?? component.Element("developer")?.Element("name")?.Value
-                ?? string.Empty,
+                            ?? component.Element("developer")?.Element("name")?.Value
+                            ?? string.Empty,
             Extends = component.Element("extends")?.Value
         };
-        
+
         // Parse description
         var descriptionElement = component.Elements("description")
             .FirstOrDefault(e => e.Attribute(XNamespace.Xml + "lang") == null);

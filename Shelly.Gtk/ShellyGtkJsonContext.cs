@@ -1,9 +1,14 @@
 using System.Text.Json.Serialization;
 using Shelly.Gtk.UiModels;
+using Shelly.Gtk.UiModels.AppImage;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 
 namespace Shelly.Gtk;
 
+[JsonSerializable(typeof(List<AppImageDto>))]
+[JsonSerializable(typeof(AppImageDto))]
+[JsonSerializable(typeof(List<AppImageUpdateDto>))]
+[JsonSerializable(typeof(AppImageUpdateDto))]
 [JsonSerializable(typeof(ShellyConfig))]
 [JsonSerializable(typeof(CachedRssModel))]
 [JsonSerializable(typeof(RssModel))]

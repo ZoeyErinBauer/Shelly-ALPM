@@ -21,14 +21,18 @@ public class UpdateCommand : Command<PackageSettings>
 
         var packageList = settings.Packages.ToList();
 
-        AnsiConsole.MarkupLine($"[yellow]Packages to update:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
+        AnsiConsole.MarkupLine(
+            $"[yellow]Packages to update:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
 
         if (!Program.IsUiMode)
         {
-            if (!AnsiConsole.Confirm("Do you want to proceed?"))
+            if (!settings.NoConfirm)
             {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
+                if (!AnsiConsole.Confirm("Do you want to proceed?"))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                    return 0;
+                }
             }
         }
 
@@ -50,7 +54,7 @@ public class UpdateCommand : Command<PackageSettings>
             lock (renderLock)
             {
                 AnsiConsole.WriteLine();
-                QuestionHandler.HandleQuestion(args,Program.IsUiMode,settings.NoConfirm);
+                QuestionHandler.HandleQuestion(args, Program.IsUiMode, settings.NoConfirm);
             }
         };
 
@@ -101,6 +105,7 @@ public class UpdateCommand : Command<PackageSettings>
             AnsiConsole.MarkupLine("[red]Update failed. See errors above.[/]");
             return 1;
         }
+
         AnsiConsole.MarkupLine("[green]Packages updated successfully![/]");
         return 0;
     }

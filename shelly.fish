@@ -14,15 +14,16 @@ complete -c shelly -n __fish_use_subcommand -a list-repos -d "List configured re
 complete -c shelly -n __fish_use_subcommand -a info -d "Display information about a package"
 complete -c shelly -n __fish_use_subcommand -a install -d "Install one or more packages"
 complete -c shelly -n __fish_use_subcommand -a install-local -d "Install a local package file (.xz, .gz, .zst)"
-complete -c shelly -n __fish_use_subcommand -a install-appimage -d "Install an appimage file"
 complete -c shelly -n __fish_use_subcommand -a remove -d "Remove one or more packages"
 complete -c shelly -n __fish_use_subcommand -a update -d "Update one or more packages"
 complete -c shelly -n __fish_use_subcommand -a upgrade -d "Perform a full system upgrade"
 complete -c shelly -n __fish_use_subcommand -a downgrade -d "Downgrade a package"
 complete -c shelly -n __fish_use_subcommand -a news -d "Shows Arch news you haven't seen before"
+complete -c shelly -n __fish_use_subcommand -a purify -d "Find and remove corrupted packages"
 complete -c shelly -n __fish_use_subcommand -a keyring -d "Manage pacman keyring"
 complete -c shelly -n __fish_use_subcommand -a aur -d "Manage AUR packages"
 complete -c shelly -n __fish_use_subcommand -a flatpak -d "Manage flatpak"
+complete -c shelly -n __fish_use_subcommand -a appimage -d "Manage AppImage packages"
 complete -c shelly -n __fish_use_subcommand -a config -d "Manage shelly configuration"
 complete -c shelly -n __fish_use_subcommand -a utility -d "shelly utils"
 
@@ -76,9 +77,11 @@ complete -c shelly -n "__fish_seen_subcommand_from install; and not __fish_seen_
 complete -c shelly -n "__fish_seen_subcommand_from install-local" -s l -l location -d "Location of the .pkg.tar.gz(xz) to be installed" -r -F
 complete -c shelly -n "__fish_seen_subcommand_from install-local" -s n -l no-confirm -d "Proceed without confirmation"
 
-# --- install-appimage (AppImageInstallSettings) ---
+# --- install-appimage (Legacy, moved to appimage branch) ---
 complete -c shelly -n "__fish_seen_subcommand_from install-appimage" -s l -l location -d "Location of the .AppImage to be installed" -r -F
 complete -c shelly -n "__fish_seen_subcommand_from install-appimage" -s n -l no-confirm -d "Proceed without confirmation"
+complete -c shelly -n "__fish_seen_subcommand_from install-appimage" -s u -l update-url -d "Set the release URL for update checking" -r
+complete -c shelly -n "__fish_seen_subcommand_from install-appimage" -s t -l type -d "Set the update type" -r -a "None StaticUrl GitHub GitLab Codeberg Forgejo"
 
 # --- remove (RemovePackageSettings extends PackageSettings extends DefaultSettings) ---
 complete -c shelly -n "__fish_seen_subcommand_from remove; and not __fish_seen_subcommand_from aur" -s c -l cascade -d "Remove dependent packages with no other uses"
@@ -110,6 +113,9 @@ complete -c shelly -n "__fish_seen_subcommand_from downgrade" -s y -l sync -d "S
 
 # --- news (ArchNewsSettings) ---
 complete -c shelly -n "__fish_seen_subcommand_from news" -s a -l all -d "Show all Arch news"
+# --- purify (CorruptedPackagesSettings) ---
+complete -c shelly -n "__fish_seen_subcommand_from purify" -s n -l no-confirm -d "Skip confirmation prompts"
+complete -c shelly -n "__fish_seen_subcommand_from purify" -s d -l dry-run -d "Show what would be removed without removing"
 
 # =====================
 # keyring subcommands
@@ -230,6 +236,36 @@ complete -c shelly -n "__fish_seen_subcommand_from flatpak; and __fish_seen_subc
 
 # flatpak install-ref-file options (FlatpakRemoteRefFileInstallSettings)
 complete -c shelly -n "__fish_seen_subcommand_from flatpak; and __fish_seen_subcommand_from install-ref-file" -s s -l system -d "System-wide install"
+
+# =====================
+# appimage subcommands
+# =====================
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a list -d "List installed AppImages"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a install -d "Install an AppImage"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a remove -d "Remove an AppImage"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a list-updates -d "Check for AppImage updates"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a upgrade -d "Upgrade AppImages"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and not __fish_seen_subcommand_from list install remove list-updates upgrade configure-updates" -a configure-updates -d "Configure update settings for an AppImage"
+
+# appimage list options
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from list" -f
+
+# appimage install options
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from install" -s l -l location -d "Location of the .AppImage to be installed" -r -F
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from install" -s n -l no-confirm -d "Proceed without confirmation"
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from install" -s u -l update-url -d "Set the release URL for update checking" -r
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from install" -s t -l type -d "Set the update type" -r -a "None StaticUrl GitHub GitLab Codeberg Forgejo"
+
+# appimage remove options
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from remove" -s n -l name -d "Name of the AppImage to be removed" -r
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from remove" -s c -l no-confirm -d "Proceed without confirmation"
+
+# appimage upgrade options
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from upgrade" -s n -l no-confirm -d "Proceed without confirmation"
+
+# appimage configure-updates options
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from configure-updates" -s u -l update-url -d "Set the update URL" -r
+complete -c shelly -n "__fish_seen_subcommand_from appimage; and __fish_seen_subcommand_from configure-updates" -s t -l type -d "Set the update type" -r -a "None StaticUrl GitHub GitLab Codeberg Forgejo"
 
 # =====================
 # config subcommands

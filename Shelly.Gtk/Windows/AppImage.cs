@@ -1,0 +1,428 @@
+using Gtk;
+using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Services;
+using Shelly.Gtk.UiModels.AppImage;
+using Shelly.Gtk.Enums;
+using Shelly.Gtk.UiModels;
+
+namespace Shelly.Gtk.Windows;
+
+public class AppImage(
+    IPrivilegedOperationService privilegedOperationService,
+    IUnprivilegedOperationService unprivilegedOperationService,
+    IGenericQuestionService genericQuestionService,
+    ILockoutService lockoutService) : IShellyWindow
+{
+    private Box _mainBox = null!;
+    private Box _listPage = null!;
+    private ScrolledWindow _detailPage = null!;
+    private ListBox _appListBox = null!;
+    private SearchEntry _searchEntry = null!;
+    private DropDown _updateTypeDropDown = null!;
+    private Entry _updateUrlEntry = null!;
+    private Entry _installPathEntry = null!;
+    private Label _detailTitleLabel = null!;
+    private Label _detailVersionLabel = null!;
+    private Label _detailDescriptionLabel = null!;
+    private Label _detailSizeLabel = null!;
+    private Image _detailIcon = null!;
+
+    private List<AppImageDto> _appImages = [];
+    private AppImageDto? _selectedApp;
+
+    private Button _backButton = null!;
+    private Button _saveButton = null!;
+    private Button _removeButton = null!;
+    private Button _installButton = null!;
+    private Button _upgradeAllButton = null!;
+    private Button _syncButton = null!;
+    private Button _syncAllButton = null!;
+
+    public Widget CreateWindow()
+    {
+        var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/AppImage.ui"), -1);
+        _listPage = (Box)builder.GetObject("AppImagePage")!;
+        _detailPage = (ScrolledWindow)builder.GetObject("AppImageDetailView")!;
+        _appListBox = (ListBox)builder.GetObject("AppImageListBox")!;
+        _searchEntry = (SearchEntry)builder.GetObject("AppImageSearchEntry")!;
+        _updateTypeDropDown = (DropDown)builder.GetObject("UpdateTypeDropDown")!;
+        _updateUrlEntry = (Entry)builder.GetObject("UpdateUrlEntry")!;
+        _installPathEntry = (Entry)builder.GetObject("InstallPathEntry")!;
+        _detailTitleLabel = (Label)builder.GetObject("DetailTitleLabel")!;
+        _detailVersionLabel = (Label)builder.GetObject("DetailVersionLabel")!;
+        _detailDescriptionLabel = (Label)builder.GetObject("DetailDescriptionLabel")!;
+        _detailSizeLabel = (Label)builder.GetObject("DetailSizeLabel")!;
+        _detailIcon = (Image)builder.GetObject("DetailIcon")!;
+
+        _syncButton = (Button)builder.GetObject("SyncButton")!;
+        _syncAllButton = (Button)builder.GetObject("SyncAllButton")!;
+
+        _backButton = (Button)builder.GetObject("BackToListButton")!;
+        _saveButton = (Button)builder.GetObject("SaveConfigButton")!;
+        _removeButton = (Button)builder.GetObject("RemoveAppImageButton")!;
+        _installButton = (Button)builder.GetObject("InstallAppImageButton")!;
+        _upgradeAllButton = (Button)builder.GetObject("UpgradeAllButton")!;
+
+        _mainBox = new Box();
+        _mainBox.Append(_listPage);
+        _detailPage.SetVisible(false);
+        _mainBox.Append(_detailPage);
+
+        var model = StringList.New(["None", "StaticUrl", "GitHub", "GitLab", "Codeberg", "Forgejo"]);
+        _updateTypeDropDown.Model = model;
+
+        _searchEntry.OnSearchChanged += (_, _) => FilterList();
+        _appListBox.OnRowActivated += (sender, args) =>
+        {
+            var index = 0;
+            var current = _appListBox.GetFirstChild();
+            while (current != null && current != args.Row)
+            {
+                current = current.GetNextSibling();
+                index++;
+            }
+
+            if (index < _appImages.Count)
+                ShowDetailPage(_appImages[index]);
+        };
+        _backButton.OnClicked += (_, _) => ShowListPage();
+        _saveButton.OnClicked += (_, _) => SaveConfig();
+        _removeButton.OnClicked += (_, _) => RemoveAppImage();
+        _installButton.OnClicked += (_, _) => InstallAppImage();
+        _upgradeAllButton.OnClicked += (_, _) => UpgradeAll();
+        _syncButton.OnClicked += (_, _) => SyncAppImage();
+        _syncAllButton.OnClicked += (_, _) => SyncAllAppImages();
+
+        _ = LoadDataAsync();
+
+        return _mainBox;
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var appImages = await unprivilegedOperationService.GetInstallAppImagesAsync();
+
+        GLib.Functions.IdleAdd(0, () =>
+        {
+            _appImages = appImages;
+            _appListBox.RemoveAll();
+
+            foreach (var row in _appImages.Select(CreateAppRow))
+            {
+                _appListBox.Append(row);
+            }
+
+            return false;
+        });
+    }
+
+    private static Widget CreateAppRow(AppImageDto app)
+    {
+        var row = new ListBoxRow();
+        row.Activatable = true;
+        var hbox = Box.New(Orientation.Horizontal, 12);
+        hbox.MarginStart = 12;
+        hbox.MarginEnd = 12;
+        hbox.MarginTop = 8;
+        hbox.MarginBottom = 8;
+
+        var iconName = string.IsNullOrEmpty(app.IconName) ? "application-x-executable-symbolic" : app.IconName;
+        var icon = Image.NewFromIconName(iconName);
+        icon.PixelSize = 32;
+        hbox.Append(icon);
+
+        var vbox = Box.New(Orientation.Vertical, 2);
+        vbox.Hexpand = true;
+
+        var nameLabel = Label.New(app.DesktopName);
+        nameLabel.AddCssClass("title-4");
+        nameLabel.Xalign = 0;
+        vbox.Append(nameLabel);
+
+        var versionLabel = Label.New(app.Version);
+        versionLabel.AddCssClass("caption");
+        versionLabel.AddCssClass("dim-label");
+        versionLabel.Xalign = 0;
+        vbox.Append(versionLabel);
+
+        if (!string.IsNullOrEmpty(app.Description))
+        {
+            var descriptionLabel = Label.New(app.Description);
+            descriptionLabel.AddCssClass("caption");
+            descriptionLabel.AddCssClass("dim-label");
+            descriptionLabel.Xalign = 0;
+            descriptionLabel.Ellipsize = Pango.EllipsizeMode.End;
+            descriptionLabel.MaxWidthChars = 50;
+            vbox.Append(descriptionLabel);
+        }
+
+        hbox.Append(vbox);
+
+        row.SetChild(hbox);
+        return row;
+    }
+
+    private void FilterList()
+    {
+        var query = _searchEntry.GetText().ToLower();
+        var index = 0;
+        for (var row = _appListBox.GetFirstChild(); row != null; row = row.GetNextSibling())
+        {
+            if (row is not ListBoxRow listBoxRow) continue;
+            var app = _appImages[index++];
+            listBoxRow.SetVisible(app.DesktopName.ToLower().Contains(query));
+        }
+    }
+
+    private async void InstallAppImage()
+    {
+        try
+        {
+            var fileChooser = FileDialog.New();
+            fileChooser.Title = "Select AppImage to Install";
+
+            var filter = FileFilter.New();
+            filter.Name = "AppImage Files";
+            filter.AddPattern("*.AppImage");
+            filter.AddPattern("*.appimage");
+
+            var listModel = Gio.ListStore.New(FileFilter.GetGType());
+            listModel.Append(filter);
+            fileChooser.Filters = listModel;
+
+            try
+            {
+                var file = await fileChooser.OpenAsync(null);
+                if (file == null) return;
+                var filePath = file.GetPath();
+                if (string.IsNullOrEmpty(filePath)) return;
+
+                lockoutService.Show("Installing AppImage...");
+
+                var result = await privilegedOperationService.AppImageInstallAsync(filePath);
+
+                if (result.Success)
+                {
+                    genericQuestionService.RaiseToastMessage(
+                        new ToastMessageEventArgs($"{file.GetBasename()} installed successfully!"));
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    genericQuestionService.RaiseToastMessage(
+                        new ToastMessageEventArgs($"Failed to install {file.GetBasename()}: {result.Error}"));
+                }
+            }
+            catch (Exception)
+            {
+                // User cancelled or error
+            }
+            finally
+            {
+                lockoutService.Hide();
+            }
+        }
+        catch (Exception e)
+        {
+            throw; // TODO handle exception
+        }
+    }
+
+    private async void UpgradeAll()
+    {
+        try
+        {
+            var resultUnpriv = await unprivilegedOperationService.GetUpdatesAppImagesAsync();
+
+            if (resultUnpriv.Count == 0)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs("No AppImages need to be upgraded"));
+                return;
+            }
+
+            lockoutService.Show("Running updates...");
+
+            genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs("Updating AppImages..."));
+            var result = await privilegedOperationService.AppImageUpgradeAsync();
+
+            if (result.Success)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs("All AppImages updated successfully!"));
+                await LoadDataAsync();
+            }
+            else
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Failed to update AppImages: {result.Error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to update AppImages: {ex.Message}");
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
+    }
+
+    private void ShowListPage()
+    {
+        _listPage.SetVisible(true);
+        _detailPage.SetVisible(false);
+    }
+
+    private void ShowDetailPage(AppImageDto app)
+    {
+        _selectedApp = app;
+        _detailTitleLabel.SetText(app.DesktopName);
+        _detailVersionLabel.SetText($"Version {app.Version}");
+        _detailDescriptionLabel.SetText(app.Description);
+        _detailSizeLabel.SetText(SizeHelpers.FormatSize(app.SizeOnDisk));
+        _detailIcon.IconName = string.IsNullOrEmpty(app.IconName) ? "application-x-executable-symbolic" : app.IconName;
+        _updateTypeDropDown.Selected = (uint)app.UpdateType;
+        _updateUrlEntry.SetText(app.UpdateURl);
+        _installPathEntry.SetText($"/opt/shelly/{app.Name}");
+
+        _listPage.SetVisible(false);
+        _detailPage.SetVisible(true);
+    }
+
+    private async void SaveConfig()
+    {
+        try
+        {
+            if (_selectedApp == null) return;
+
+            var updateType = (AppImageUpdateType)_updateTypeDropDown.Selected;
+            var updateUrl = _updateUrlEntry.GetText();
+
+            var result =
+                await privilegedOperationService.AppImageConfigureUpdatesAsync(updateUrl, _selectedApp.Name,
+                    updateType);
+
+            if (result.Success)
+            {
+                _selectedApp.UpdateType = updateType;
+                _selectedApp.UpdateURl = updateUrl;
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Configuration saved for {_selectedApp.Name}"));
+                ShowListPage();
+                await LoadDataAsync();
+            }
+            else
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Failed to save configuration: {result.Error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save AppImage configuration: {ex.Message}");
+        }
+    }
+
+    private async void SyncAppImage()
+    {
+        try
+        {
+            if (_selectedApp == null) return;
+
+            lockoutService.Show($"Syncing {_selectedApp.Name}...");
+
+            var result =
+                await privilegedOperationService.AppImageSyncApp(_selectedApp.Name);
+
+            if (result.Success)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Synced {_selectedApp.Name}"));
+                await LoadDataAsync();
+            }
+            else
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Failed to sync: {result.Error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save AppImage configuration: {ex.Message}");
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
+    }
+    
+    private async void SyncAllAppImages()
+    {
+        try
+        {
+            lockoutService.Show($"Syncing all AppImages ...");
+
+            var result =
+                await privilegedOperationService.AppImageSyncAll();
+
+            if (result.Success)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Synced"));
+                await LoadDataAsync();
+            }
+            else
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Failed to sync: {result.Error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save AppImage configuration: {ex.Message}");
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
+    }
+
+    private async void RemoveAppImage()
+    {
+        try
+        {
+            if (_selectedApp == null) return;
+
+            lockoutService.Show($"Removing {_selectedApp.Name}...");
+
+            var result = await privilegedOperationService.AppImageRemoveAsync(_selectedApp.Name);
+
+            if (result.Success)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"{_selectedApp.Name} removed successfully!"));
+                await LoadDataAsync();
+                ShowListPage();
+            }
+            else
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs($"Failed to remove {_selectedApp.Name}: {result.Error}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to remove AppImage: {ex.Message}");
+        }
+        finally
+        {
+            lockoutService.Hide();
+        }
+    }
+
+    public void Dispose()
+    {
+        _appListBox.RemoveAll();
+    }
+}

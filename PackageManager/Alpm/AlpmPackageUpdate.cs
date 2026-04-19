@@ -17,6 +17,16 @@ public class AlpmPackageUpdate(AlpmPackage installedPackage, AlpmPackage newPack
         NewVersion = NewVersion,
         DownloadSize = DownloadSize,
         SizeDifference = SizeDifference,
+        Description = newPackage.Description,
+        Url = newPackage.Url,
+        Repository = newPackage.Repository,
+        InstalledSize = newPackage.InstalledSize,
+        Depends = newPackage.Depends,
+        OptDepends = newPackage.OptDepends,
+        Licenses = newPackage.Licenses,
+        Provides = newPackage.Provides,
+        Conflicts = newPackage.Conflicts,
+        Groups = newPackage.Groups,
     };
 
     public override string ToString()

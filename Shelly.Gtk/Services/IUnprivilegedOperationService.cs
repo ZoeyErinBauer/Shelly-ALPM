@@ -1,4 +1,5 @@
 using Shelly.Gtk.UiModels;
+using Shelly.Gtk.UiModels.AppImage;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 
 
@@ -45,6 +46,12 @@ public interface IUnprivilegedOperationService
     Task<List<FlatpakPackageDto>> SearchFlathubAsync(string query);
 
     Task<ulong> GetFlatpakAppDataAsync(string remote, string app, string arch);
+    
+    Task<List<AppImageDto>> GetInstallAppImagesAsync();
+    
+    Task<List<AppImageDto>> GetUpdatesAppImagesAsync();
+    
+    Task<List<RssModel>> GetArchNewsAsync(bool all = false);
 }
 
 public class UnprivilegedOperationResult

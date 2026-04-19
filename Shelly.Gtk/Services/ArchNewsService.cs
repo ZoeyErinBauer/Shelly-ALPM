@@ -1,53 +1,35 @@
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using Shelly.Gtk.UiModels;
 
 namespace Shelly.Gtk.Services;
 
 
-public partial class ArchNewsService : IArchNewsService
+public partial class ArchNewsService(IUnprivilegedOperationService unprivilegedOperationService) : IArchNewsService
 {
-    private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(10) };
-    private CachedRssModel? _cache;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
-
     public async Task<List<RssModel>> FetchNewsAsync(CancellationToken ct)
     {
-        if (_cache is not null && _cache.TimeCached.HasValue &&
-            DateTime.Now - _cache.TimeCached.Value < CacheDuration)
-        {
-            return _cache.Rss;
-        }
-
         try
         {
-            var response = await HttpClient.GetStringAsync("https://archlinux.org/feeds/news/", ct);
-            var doc = XDocument.Parse(response);
-            var items = doc.Descendants("item")
-                .Select(item => new RssModel
-                {
-                    Title = item.Element("title")?.Value,
-                    Link = item.Element("link")?.Value,
-                    Description = ArchNewsRegex().Replace(item.Element("description")?.Value ?? "", string.Empty),
-                    PubDate = item.Element("pubDate")?.Value
-                })
-                .ToList();
-
-            _cache = new CachedRssModel
-            {
-                Rss = items,
-                TimeCached = DateTime.Now
-            };
-
+            var items = await unprivilegedOperationService.GetArchNewsAsync(true);
             return items;
         }
         catch (Exception e)
         {
             Console.WriteLine($"Failed to fetch Arch News: {e.Message}");
-            return _cache?.Rss ?? [];
         }
+        return [];
     }
-
-    [GeneratedRegex("<.*?>")]
-    private static partial Regex ArchNewsRegex();
+    
+    public async Task<List<RssModel>> FindNewNewsAsync(CancellationToken ct)
+    {
+        try
+        {
+            var items = await unprivilegedOperationService.GetArchNewsAsync();
+            return items;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to fetch Arch News: {e.Message}");
+        }
+        return [];
+    }
 }

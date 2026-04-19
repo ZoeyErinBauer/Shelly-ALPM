@@ -26,7 +26,7 @@ public class RemoveCommand : AsyncCommand<RemovePackageSettings>
 
         AnsiConsole.MarkupLine($"[yellow]Packages to remove:[/] {string.Join(", ", packageList.Select(p => p.EscapeMarkup()))}");
 
-        if (!Program.IsUiMode)
+        if (!settings.NoConfirm)
         {
             if (!AnsiConsole.Confirm("Do you want to proceed?"))
             {

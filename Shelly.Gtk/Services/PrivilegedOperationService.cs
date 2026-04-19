@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using Shelly.Gtk.Enums;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
@@ -177,7 +178,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<OperationResult> UpgradeAllAsync()
     {
-        var result =  await ExecutePrivilegedWithNoConfirmCheck("Upgrade all", "upgrade", "-a");
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Upgrade all", "upgrade", "-a");
         SendDbusMessage(result);
         return result;
     }
@@ -197,13 +198,15 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         );
     }
 
-    public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages, bool useChroot = false, bool runChecks = false)
+    public async Task<OperationResult> InstallAurPackagesAsync(IEnumerable<string> packages, bool useChroot = false,
+        bool runChecks = false)
     {
         var packageArgs = string.Join(" ", packages);
         if (useChroot)
         {
             packageArgs += " -c";
         }
+
         if (runChecks)
         {
             packageArgs += " --check";
@@ -230,6 +233,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         {
             packageArgs += " --check";
         }
+
         var result = await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
         SendDbusMessage(result);
         return result;
@@ -249,7 +253,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         // Use privileged execution to sync databases and get updates
         var result = await ExecutePrivilegedCommandAsync("Check for Updates", "list-updates", "--json");
-
+        SendDbusMessage(result);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -400,7 +404,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var result = showHidden
             ? await ExecuteCommandAsync("aur list-updates", "--json", "--show-hidden")
             : await ExecuteCommandAsync("aur list-updates", "--json");
-
+        SendDbusMessage(result);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -482,6 +486,50 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         if (uninstalledOnly)
             args.Add("-u");
         return await ExecutePrivilegedCommandAsync("Clean package cache", args.ToArray());
+    }
+
+    public async Task<OperationResult> AppImageInstallAsync(string filePath, string updateUrl = "",
+        AppImageUpdateType updateType = AppImageUpdateType.None)
+    {
+        if (updateUrl != "" && updateType != AppImageUpdateType.None)
+        {
+            return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", filePath, "-u",
+                updateUrl, "-t", updateType.ToString().ToLowerInvariant(), "-n");
+        }
+
+        return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", filePath, "-n");
+    }
+
+    public async Task<OperationResult> AppImageUpgradeAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Upgrade AppImage's", "appimage", "upgrade", "-n");
+    }
+
+    public async Task<OperationResult> AppImageRemoveAsync(string name)
+    {
+        return await ExecutePrivilegedCommandAsync("Remove AppImage's", "appimage", "remove", name, "-n");
+    }
+
+    public async Task<OperationResult> AppImageConfigureUpdatesAsync(string url, string name,
+        AppImageUpdateType updateType)
+    {
+        return await ExecutePrivilegedCommandAsync("Set AppImage's Update Config", "appimage", "configure-updates",
+            name, "-u", url, "-t", updateType.ToString().ToLowerInvariant());
+    }
+
+    public async Task<OperationResult> AppImageSyncApp(string name)
+    {
+        return await ExecutePrivilegedCommandAsync("Set AppImage's Update Config", "appimage", "sync-meta", name, "-n");
+    }
+
+    public async Task<OperationResult> AppImageSyncAll()
+    {
+        return await ExecutePrivilegedCommandAsync("Set AppImage's Update Config", "appimage", "sync-meta");
+    }
+
+    public async Task<OperationResult> PurifyCorruptionAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Delete corrupted packages", "purify");
     }
 
     private void SendDbusMessage(OperationResult result)
@@ -646,6 +694,10 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         string? conflictQuestion = null;
         var awaitingConflictSelection = false;
 
+        // State for restart check results
+        var restartNeedsReboot = false;
+        var restartFailures = new List<(string Service, string Error)>();
+
         process.OutputDataReceived += (sender, e) =>
         {
             if (e.Data != null)
@@ -758,6 +810,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                     if ((args.Response & (1 << i)) != 0)
                                         selected.Add(optDepsOptions[i]);
                                 }
+
                                 await SafeWriteAsync(string.Join(" ", selected));
                             }
 
@@ -891,6 +944,24 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                                 await SafeWriteAsync(args.Response == 1 ? "y" : "n");
                             }
                         }
+                        else if (e.Data.StartsWith("[Shelly][RESTART_REQUIRED]"))
+                        {
+                            var payload = e.Data.Substring("[Shelly][RESTART_REQUIRED]".Length);
+                            if (payload == "reboot")
+                                restartNeedsReboot = true;
+                        }
+                        else if (e.Data.StartsWith("[Shelly][RESTART_FAILED]"))
+                        {
+                            var payload = e.Data.Substring("[Shelly][RESTART_FAILED]".Length);
+                            if (payload.StartsWith("service:"))
+                            {
+                                var rest = payload.Substring("service:".Length);
+                                var parts = rest.Split('|', 2);
+                                var svcName = parts[0];
+                                var svcError = parts.Length > 1 ? parts[1] : "Unknown error";
+                                restartFailures.Add((svcName, svcError));
+                            }
+                        }
                         else if (e.Data.StartsWith("[Shelly][DEBUG]"))
                         {
                             // Debug messages - skip, don't forward to lockout dialog
@@ -974,7 +1045,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
                 Success = success,
                 Output = outputBuilder.ToString(),
                 Error = errorBuilder.ToString(),
-                ExitCode = process.ExitCode
+                ExitCode = process.ExitCode,
+                NeedsReboot = restartNeedsReboot,
+                FailedServiceRestarts = restartFailures
             };
         }
         catch (Exception ex)
@@ -1016,9 +1089,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "sudo",
-                Arguments = isPasswordless
-                    ? $"-k {arguments}"
-                    : $"-S -k {arguments}",
+                Arguments = $"-S -k {arguments}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

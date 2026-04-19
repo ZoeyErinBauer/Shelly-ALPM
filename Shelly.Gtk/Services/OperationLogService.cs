@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Shelly.Gtk.UiModels;
 
@@ -20,6 +21,54 @@ public partial class OperationLogService : IOperationLogService
     [GeneratedRegex(@"SESSION END — exit code: (\d+)")]
     private static partial Regex SessionEndRegex();
 
+    public async Task<List<string>> GetSessionExcerptAsync(OperationLogEntry entry, int maxBytes)
+    {
+        if (!File.Exists(entry.SourceFile))
+            return [];
+
+        var result = new List<string>();
+        int totalBytes = 0;
+
+        try
+        {
+            using var stream = File.OpenRead(entry.SourceFile);
+            using var reader = new StreamReader(stream);
+
+            int currentLine = 0;
+
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+
+                if (currentLine >= entry.StartLine && currentLine <= entry.EndLine)
+                {
+                    if (line != null)
+                    {
+                        int lineBytes = Encoding.UTF8.GetByteCount(line) + 1; 
+
+                        if (totalBytes + lineBytes > maxBytes)
+                        {
+                                return [];
+                        }
+
+                        result.Add(line);
+                        totalBytes += lineBytes;
+                    }
+                }
+
+                if (currentLine > entry.EndLine)
+                    break;
+
+                currentLine++;
+            }
+        }
+        catch
+        {
+            return [];
+        }
+
+        return result;
+    }
     public async Task<List<OperationLogEntry>> GetRecentOperationsAsync(int count = 10)
     {
         var entries = new List<OperationLogEntry>();
@@ -56,14 +105,22 @@ public partial class OperationLogService : IOperationLogService
 
         OperationLogEntry? current = null;
 
-        foreach (var line in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
+            var line = lines[i];
+
             var startMatch = SessionStartRegex().Match(line);
             if (startMatch.Success)
             {
-                current = new OperationLogEntry();
+                current = new OperationLogEntry
+                {
+                    SourceFile = path,
+                    StartLine = i
+                };
+
                 if (DateTime.TryParse(startMatch.Groups[1].Value, out var ts))
                     current.Timestamp = ts;
+
                 continue;
             }
 
@@ -89,17 +146,18 @@ public partial class OperationLogService : IOperationLogService
             {
                 if (int.TryParse(endMatch.Groups[1].Value, out var exitCode))
                     current.ExitCode = exitCode;
+
+                current.EndLine = i;
                 entries.Add(current);
                 current = null;
             }
         }
 
-        // Add any in-progress session (no SESSION END yet)
         if (current != null)
         {
+            current.EndLine = lines.Length - 1;
             entries.Add(current);
         }
 
         return entries;
-    }
-}
+    }}

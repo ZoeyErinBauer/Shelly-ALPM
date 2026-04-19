@@ -55,7 +55,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
             }
             AnsiConsole.MarkupLine("[green]Upgrade complete.[/]");
 
-            return 0;
+          
         }
         catch (Exception ex)
         {
@@ -66,6 +66,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
         {
             manager?.Dispose();
         }
+        return 0;
     }
 
     private static async Task<int> HandleUiModeUpgrade(AurUpgradeSettings settings)
@@ -144,7 +145,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
             }
             Console.Error.WriteLine("Upgrade complete.");
 
-            return 0;
+         
         }
         catch (Exception ex)
         {
@@ -155,6 +156,7 @@ public class AurUpgradeCommand : AsyncCommand<AurUpgradeSettings>
         {
             manager?.Dispose();
         }
+        return 0;
     }
     
     private static void PrintUnifiedDiff(string oldText, string newText)

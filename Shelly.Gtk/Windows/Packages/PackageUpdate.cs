@@ -1,5 +1,3 @@
-using GLib.Internal;
-using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -30,9 +28,6 @@ public class PackageUpdate(
     private CustomFilter _filter = null!;
     private string _searchText = string.Empty;
 
-    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
-        _checkBinding = [];
-
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _oldVersionFactory = null!;
@@ -53,6 +48,7 @@ public class PackageUpdate(
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
     private AlpmUpdateGObject? _currentDetailPkg;
+    private HashSet<string> _installedPackageNames = [];
 
 
     public Widget CreateWindow()
@@ -102,11 +98,16 @@ public class PackageUpdate(
             {
                 if (pkgObj.IsSelected)
                 {
-                    _ = ConfirmPartialUpdateAsync(() => pkgObj.ToggleSelection());
+                    _ = ConfirmPartialUpdateAsync(() =>
+                    {
+                        pkgObj.ToggleSelection();
+                        _updateButton.SetSensitive(AnySelected());
+                    });
                 }
                 else
                 {
                     pkgObj.ToggleSelection();
+                    _updateButton.SetSensitive(AnySelected());
                 }
             }
         };
@@ -208,6 +209,14 @@ public class PackageUpdate(
         nameLabel.Halign = Align.Center;
         headerBox.Append(nameLabel);
 
+        var descLabel = Label.New(pkg.Description);
+        descLabel.AddCssClass("dim-label");
+        descLabel.Halign = Align.Center;
+        descLabel.Wrap = true;
+        descLabel.Justify = Justification.Center;
+        descLabel.MaxWidthChars = 40;
+        headerBox.Append(descLabel);
+
         _detailBox.Append(headerBox);
 
         var separator = Separator.New(Orientation.Horizontal);
@@ -218,7 +227,138 @@ public class PackageUpdate(
         AddDetail("New", pkg.NewVersion);
         AddDetail("Download", SizeHelpers.FormatSize(pkg.DownloadSize));
         AddDetail("Size Diff", SizeHelpers.FormatSize(pkg.SizeDifference));
+        AddDetail("Repository", pkg.Repository);
+        AddDetail("Size", SizeHelpers.FormatSize(pkg.InstalledSize));
+        if (!string.IsNullOrEmpty(pkg.Url))
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New("URL:");
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.WidthRequest = 80;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(null);
+            var escaped = GLib.Functions.MarkupEscapeText(pkg.Url, -1);
+            valueWidget.SetMarkup($"<a href=\"{escaped}\">{escaped}</a>");
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
+
+        if (pkg.Depends.Count > 0)
+        {
+            AddChipList("Depends", pkg.Depends);
+        }
+
+        if (pkg.OptDepends.Count > 0)
+        {
+            AddChipList("Optional Deps", pkg.OptDepends, true);
+        }
+
+        if (pkg.Licenses.Count > 0)
+            AddDetail("Licenses", string.Join(", ", pkg.Licenses));
+        if (pkg.Provides.Count > 0)
+            AddDetail("Provides", string.Join(", ", pkg.Provides));
+        if (pkg.Conflicts.Count > 0)
+            AddDetail("Conflicts", string.Join(", ", pkg.Conflicts));
+        if (pkg.Groups.Count > 0)
+            AddDetail("Groups", string.Join(", ", pkg.Groups));
+
+        if (configService.LoadConfig().WebViewEnabled)
+        {
+            if (pkg.Depends.Count > 0)
+            {
+                var dictionary = new Dictionary<string, List<string>> { { pkg.Name, pkg.Depends } };
+
+                foreach (var dep in pkg.Depends)
+                {
+                    for (uint i = 0; i < _listStore.GetNItems(); i++)
+                    {
+                        var obj = _listStore.GetObject(i);
+                        if (obj is not AlpmUpdateGObject depObj || depObj.Package == null) continue;
+                        if (depObj.Package.Name.Contains(dep))
+                            dictionary.TryAdd(depObj.Package.Name, depObj.Package.Depends);
+                    }
+                }
+
+                var window = new WebWindow(pkg.Name, dictionary);
+                _detailBox.Append(window.CreateWindow());
+            }
+        }
+
         _detailRevealer.SetRevealChild(true);
+        return;
+
+        void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
+        {
+            var expander = new Expander { Label = $"{label} ({items.Count})" };
+            expander.AddCssClass("package-detail-expander");
+            expander.Hexpand = false;
+
+            var flowBox = new FlowBox
+            {
+                SelectionMode = SelectionMode.None,
+                ColumnSpacing = 6,
+                RowSpacing = 6,
+                Halign = Align.Start,
+                Valign = Align.Start,
+                MaxChildrenPerLine = isOptional ? 1u : 10u,
+                MinChildrenPerLine = 1
+            };
+
+            foreach (var item in items)
+            {
+                if (isOptional)
+                {
+                    var optDepName = item.Split(':').First().Trim();
+                    var isInstalled = _installedPackageNames.Contains(optDepName);
+
+                    var escapedItem = GLib.Functions.MarkupEscapeText(item, -1);
+
+                    var chipBox = Box.New(Orientation.Horizontal, 4);
+                    chipBox.AddCssClass("package-chip");
+                    chipBox.Valign = Align.Center;
+
+                    var checkIcon = Image.NewFromIconName("object-select-symbolic");
+                    checkIcon.PixelSize = 16;
+                    checkIcon.Visible = isInstalled;
+
+                    var chipLabel = Label.New(string.Empty);
+                    chipLabel.SetMarkup($"<span size='small'>{escapedItem}</span>");
+                    chipLabel.Selectable = true;
+                    chipLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    chipLabel.MaxWidthChars = 25;
+                    chipLabel.Wrap = true;
+                    chipLabel.WrapMode = Pango.WrapMode.WordChar;
+                    chipLabel.Xalign = 0;
+
+                    chipBox.Append(checkIcon);
+                    chipBox.Append(chipLabel);
+                    flowBox.Append(chipBox);
+                }
+                else
+                {
+                    var chip = Label.New(item);
+                    chip.AddCssClass("package-chip");
+                    chip.Selectable = true;
+                    chip.Ellipsize = Pango.EllipsizeMode.End;
+                    chip.MaxWidthChars = 25;
+                    flowBox.Append(chip);
+                }
+            }
+
+            expander.SetChild(flowBox);
+            _detailBox.Append(expander);
+        }
     }
 
     private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn,
@@ -230,27 +370,15 @@ public class PackageUpdate(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
-        };
 
-        _checkFactory.OnBind += (_, args) =>
-        {
-            if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
-
-            checkButton.SetActive(pkgObj.IsSelected);
-            checkButton.OnToggled += OnToggled;
-
-            pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
-
-            return;
-
-            void OnToggled(CheckButton s, EventArgs e)
+            check.OnToggled += (s, _) =>
             {
+                if (listItem.GetItem() is not AlpmUpdateGObject pkgObj) return;
+
                 if (_suppressToggleConfirmation)
                 {
                     pkgObj.IsSelected = s.GetActive();
+                    _updateButton.SetSensitive(AnySelected());
                     return;
                 }
 
@@ -262,33 +390,44 @@ public class PackageUpdate(
                         _suppressToggleConfirmation = true;
                         s.SetActive(false);
                         _suppressToggleConfirmation = false;
+                        _updateButton.SetSensitive(AnySelected());
                     });
                 }
                 else
                 {
                     pkgObj.IsSelected = true;
+                    _updateButton.SetSensitive(AnySelected());
                 }
-            }
+            };
+        };
+
+        _checkFactory.OnBind += (_, args) =>
+        {
+            if (args.Object is not ColumnViewCell listItem) return;
+            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
+                listItem.GetChild() is not CheckButton checkButton) return;
+
+            checkButton.SetActive(pkgObj.IsSelected);
+
+            pkgObj.OnSelectionToggled += OnExternalToggle;
+            return;
 
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
                 {
                     checkButton.SetActive(pkgObj.IsSelected);
+                    _updateButton.SetSensitive(AnySelected());
                 }
             }
         };
 
-        _checkFactory.OnUnbind += (_, args) =>
+        _checkFactory.OnUnbind += (_, _) => { };
+
+        _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
-            if (_checkBinding.Remove(listItem, out var handlers))
-            {
-                pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
-                checkButton.OnToggled -= handlers.OnToggled;
-            }
+            listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
 
@@ -391,7 +530,7 @@ public class PackageUpdate(
         if (string.IsNullOrWhiteSpace(_searchText))
             return true;
 
-        return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return pkgObj.Package.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
     private async Task LoadDataAsync()
@@ -399,6 +538,8 @@ public class PackageUpdate(
         try
         {
             var packages = await unprivilegedOperationService.CheckForStandardApplicationUpdates(_showHiddenCheck.Active);
+            var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
+            _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
             GLib.Functions.IdleAdd(0, () =>
             {
                 _listStore.RemoveAll();
@@ -411,6 +552,7 @@ public class PackageUpdate(
                 }
 
                 _noPackagesLabel.Visible = packages.Count == 0;
+                _updateButton.SetSensitive(AnySelected());
                 return false;
             });
         }
@@ -488,12 +630,39 @@ public class PackageUpdate(
             try
             {
                 lockoutService.Show($"Updating...");
+                OperationResult upgradeResult;
                 if (isFullUpgrade)
-                    await privilegedOperationService.UpgradeSystemAsync();
+                    upgradeResult = await privilegedOperationService.UpgradeSystemAsync();
                 else
-                    await privilegedOperationService.UpdatePackagesAsync(selectedPackages);
+                    upgradeResult = await privilegedOperationService.UpdatePackagesAsync(selectedPackages);
 
                 await LoadDataAsync();
+
+                if (upgradeResult.NeedsReboot)
+                {
+                    var rebootArgs = new GenericQuestionEventArgs(
+                        "Reboot Required",
+                        "A full system reboot is required for updates to take effect.\n\nWould you like to reboot now?",
+                        true
+                    );
+                    genericQuestionService.RaiseQuestion(rebootArgs);
+                    if (await rebootArgs.ResponseTask)
+                    {
+                        System.Diagnostics.Process.Start("systemctl", "reboot");
+                    }
+                }
+                else if (upgradeResult.FailedServiceRestarts.Count > 0)
+                {
+                    var failureList = string.Join("\n", upgradeResult.FailedServiceRestarts
+                        .Select(f => $"  • {f.Service}: {f.Error}"));
+                    var failArgs = new GenericQuestionEventArgs(
+                        "Service Restart Failures",
+                        $"The following services failed to restart automatically:\n{failureList}",
+                        false
+                    );
+                    genericQuestionService.RaiseQuestion(failArgs);
+                    await failArgs.ResponseTask;
+                }
             }
             catch (Exception e)
             {
@@ -539,12 +708,25 @@ public class PackageUpdate(
         return packageName.PadRight(width);
     }
 
+    private bool AnySelected()
+    {
+        for (uint i = 0; i < _listStore.GetNItems(); i++)
+        {
+            var item = _listStore.GetObject(i);
+            if (item is AlpmUpdateGObject { IsSelected: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();
         _packageGObjectRefs.Clear();
-        _checkBinding.Clear();
     }
 }

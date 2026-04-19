@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using PackageManager.AppImage;
 using PackageManager.Alpm;
 using PackageManager.Aur.Models;
 using PackageManager.Flatpak;
@@ -24,6 +25,10 @@ namespace Shelly_CLI;
 [JsonSerializable(typeof(List<AurSearchPackageBuild.PackageBuild>))]
 [JsonSerializable(typeof(ArchNews.RssModel))]
 [JsonSerializable(typeof(List<ArchNews.RssModel>))]
+[JsonSerializable(typeof(List<AppImageDto>))]
+[JsonSerializable(typeof(AppImageDto))]
+[JsonSerializable(typeof(List<AppImageUpdateDto>))]
+[JsonSerializable(typeof(AppImageUpdateDto))]
 [JsonSerializable(typeof(ShellyConfig))]
 [JsonSerializable(typeof(List<FlatpakPackageDto>))]
 [JsonSerializable(typeof(FlatpakPackageDto))]

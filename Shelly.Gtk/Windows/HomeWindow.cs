@@ -1,5 +1,6 @@
 using System.Text;
 using Gtk;
+using Microsoft.VisualBasic.FileIO;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.Icons;
@@ -28,6 +29,7 @@ public class HomeWindow(
     private readonly CancellationTokenSource _cts = new();
     private ListBox? _updatesListBox;
     private List<RssModel> _archNewsItems = [];
+    private List<RssModel> _newArchNewsItems = [];
     private Label? _totalAurLabel;
     private Label? _percentAurLabel;
     private Label? _totalPackageLabel;
@@ -36,8 +38,12 @@ public class HomeWindow(
     private Label? _flatpakPercentLabel;
     private ListBox? _operationLogListBox;
     private Button _archNewsButton = null!;
+    private Widget? _activeSessionLogOverlay;
     private Overlay _overlay = null!;
     private uint _updateTimerId;
+    private const int MaxRawLineBytes = 50 * 1024 * 1024; // 50 MB
+    private GObject.SignalHandler<ListBox, ListBox.RowActivatedSignalArgs>? _logRowActivatedHandler;
+
 
     public Widget CreateWindow()
     {
@@ -125,12 +131,12 @@ public class HomeWindow(
             });
         };
 
+        _ = FindNewNews(_cts.Token);
 
         _operationLogListBox = (ListBox)builder.GetObject("OperationLogListBox")!;
         _operationLogListBox.OnRealize += (sender, args) => { _ = LoadOperationLog(_cts.Token); };
 
         _archNewsButton.OnClicked += (_, _) => OpenArchNewsOverlay();
-        _archNewsButton.OnRealize += (sender, args) => { _ = LoadArchNews(_cts.Token); };
 
         _ = LoadUpdatesPanel(_updatesListBox!, _cts.Token);
         _updateTimerId = GLib.Functions.TimeoutAdd(200, 180000, () =>
@@ -185,6 +191,84 @@ public class HomeWindow(
         else
         {
             foreach (var item in _archNewsItems)
+            {
+                var row = new ListBoxRow();
+                var vbox = Box.New(Orientation.Vertical, 5);
+                vbox.MarginStart = 10;
+                vbox.MarginEnd = 10;
+                vbox.MarginTop = 10;
+                vbox.MarginBottom = 10;
+
+                var newsTitle = Label.New(item.Title);
+                newsTitle.AddCssClass("title-4");
+                newsTitle.Xalign = 0;
+                newsTitle.Wrap = true;
+                vbox.Append(newsTitle);
+
+                if (!string.IsNullOrEmpty(item.PubDate))
+                {
+                    var dateLabel = Label.New(item.PubDate);
+                    dateLabel.AddCssClass("caption");
+                    dateLabel.AddCssClass("dim-label");
+                    dateLabel.Xalign = 0;
+                    vbox.Append(dateLabel);
+                }
+
+                if (!string.IsNullOrEmpty(item.Description))
+                {
+                    var descLabel = Label.New(item.Description);
+                    descLabel.Xalign = 0;
+                    descLabel.Wrap = true;
+                    descLabel.Lines = 3;
+                    descLabel.Ellipsize = Pango.EllipsizeMode.End;
+                    vbox.Append(descLabel);
+                }
+
+                row.SetChild(vbox);
+                listBox.Append(row);
+            }
+        }
+    }
+
+    private async void ShowNewNews()
+    {
+        var container = new Box();
+        container.SetOrientation(Orientation.Vertical);
+        container.SetSpacing(10);
+        container.SetMarginBottom(10);
+        container.SetMarginEnd(10);
+        container.SetMarginStart(10);
+        container.SetMarginTop(10);
+
+        var titleLabel = Label.New("New Arch Linux News");
+        titleLabel.AddCssClass("title-1");
+        titleLabel.Xalign = 0;
+        container.Append(titleLabel);
+
+        var listBox = new ListBox();
+        listBox.SetSelectionMode(SelectionMode.None);
+        listBox.AddCssClass("rich-list");
+
+        var scrolledWindow = new ScrolledWindow();
+        scrolledWindow.SetVexpand(true);
+        scrolledWindow.HscrollbarPolicy = PolicyType.Never;
+        scrolledWindow.SetChild(listBox);
+        container.Append(scrolledWindow);
+
+        var args = new GenericDialogEventArgs(container);
+        GenericOverlay.ShowGenericOverlay(_overlay, container, args, 700, 500);
+
+        if (_newArchNewsItems.Count == 0)
+        {
+            var placeholder = Label.New("No news available");
+            placeholder.AddCssClass("dim-label");
+            placeholder.Halign = Align.Center;
+            placeholder.MarginTop = 20;
+            listBox.Append(placeholder);
+        }
+        else
+        {
+            foreach (var item in _newArchNewsItems)
             {
                 var row = new ListBoxRow();
                 var vbox = Box.New(Orientation.Vertical, 5);
@@ -283,8 +367,34 @@ public class HomeWindow(
                 }
             }
 
-            await privilegedOperationService.UpgradeAllAsync();
+            var upgradeResult = await privilegedOperationService.UpgradeAllAsync();
             await ReloadHomePageData();
+
+            if (upgradeResult.NeedsReboot)
+            {
+                var rebootArgs = new GenericQuestionEventArgs(
+                    "Reboot Required",
+                    "A full system reboot is required for updates to take effect.\n\nWould you like to reboot now?",
+                    true
+                );
+                genericQuestionService.RaiseQuestion(rebootArgs);
+                if (await rebootArgs.ResponseTask)
+                {
+                    System.Diagnostics.Process.Start("systemctl", "reboot");
+                }
+            }
+            else if (upgradeResult.FailedServiceRestarts.Count > 0)
+            {
+                var failureList = string.Join("\n", upgradeResult.FailedServiceRestarts
+                    .Select(f => $"  • {f.Service}: {f.Error}"));
+                var failArgs = new GenericQuestionEventArgs(
+                    "Service Restart Failures",
+                    $"The following services failed to restart automatically:\n{failureList}",
+                    false
+                );
+                genericQuestionService.RaiseQuestion(failArgs);
+                await failArgs.ResponseTask;
+            }
         }
         catch (Exception e)
         {
@@ -628,8 +738,7 @@ public class HomeWindow(
     {
         label.SetText(packages.Count.ToString());
     }
-
-
+    
     private async Task LoadUpdatesPanel(ListBox listBox, CancellationToken ct)
     {
         try
@@ -639,7 +748,6 @@ public class HomeWindow(
 
             GLib.Functions.IdleAdd(0, () =>
             {
-                // Clear existing rows
                 while (listBox.GetFirstChild() is { } child)
                     listBox.Remove(child);
 
@@ -710,6 +818,26 @@ public class HomeWindow(
         }
     }
 
+    private async Task FindNewNews(CancellationToken ct)
+    {
+        try
+        {
+            var items = await archNewsService.FindNewNewsAsync(ct);
+            ct.ThrowIfCancellationRequested();
+
+            if (items.Count is > 0 and < 10)
+            {
+                _newArchNewsItems = items;
+                ShowNewNews();
+                _ = LoadArchNews(_cts.Token); //load news to refresh status so we dont reprompt
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to load Arch News: {e.Message}");
+        }
+    }
+
     private async Task LoadArchNews(CancellationToken ct)
     {
         try
@@ -755,7 +883,7 @@ public class HomeWindow(
                 foreach (var entry in entries)
                 {
                     var row = new ListBoxRow();
-                    row.SetActivatable(false);
+                    row.SetActivatable(true);
 
                     var hbox = Box.New(Orientation.Horizontal, 10);
                     hbox.MarginStart = 5;
@@ -794,7 +922,13 @@ public class HomeWindow(
                     row.SetChild(hbox);
                     _operationLogListBox.Append(row);
                 }
+                
+                if (_logRowActivatedHandler is not null)
+                    _operationLogListBox.OnRowActivated -= _logRowActivatedHandler;
 
+                _logRowActivatedHandler = (sender, args) => OnLogRowActivated(args.Row, entries);
+                _operationLogListBox.OnRowActivated += _logRowActivatedHandler;
+                
                 return false;
             });
         }
@@ -803,7 +937,114 @@ public class HomeWindow(
             Console.WriteLine($"Failed to load operation log: {e.Message}");
         }
     }
+    
+    private async void OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries)
+    {
+        var index = row.GetIndex();
+        if (index < 0 || index >= entries.Count) return;
 
+        var entry = entries[index];
+
+        if (_activeSessionLogOverlay is { } oldBox && oldBox.GetParent() == _overlay)
+        {
+            try { _overlay.RemoveOverlay(oldBox); } catch { }
+            oldBox.Unparent();
+            oldBox.Dispose();
+            _activeSessionLogOverlay = null;
+        }
+
+        var lines = await operationLogService.GetSessionExcerptAsync(entry, MaxRawLineBytes);
+
+        if (lines.Count == 0)
+        {
+            genericQuestionService.RaiseToastMessage(
+                new ToastMessageEventArgs("Session log is too large to display")
+            );
+            return;
+        }
+
+        var container = new Box();
+        container.SetOrientation(Orientation.Vertical);
+        container.SetSpacing(10);
+        container.SetMarginTop(10);
+        container.SetMarginBottom(10);
+        container.SetMarginStart(10);
+        container.SetMarginEnd(10);
+
+        var titleLabel = Label.New("Session Log");
+        titleLabel.AddCssClass("title-1");
+        titleLabel.Xalign = 0;
+        container.Append(titleLabel);
+
+        var listBox = new ListBox();
+        listBox.SetSelectionMode(SelectionMode.Multiple);
+
+        var scrolledWindow = new ScrolledWindow();
+        scrolledWindow.SetVexpand(true);
+        scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
+        scrolledWindow.SetChild(listBox);
+
+        container.Append(scrolledWindow);
+        
+        int batchSize = 200;
+        int currentIndex = 0;
+
+        void AppendNextBatch()
+        {
+            int end = Math.Min(currentIndex + batchSize, lines.Count);
+
+            for (int i = currentIndex; i < end; i++)
+            {
+                var rowItem = new ListBoxRow();
+
+                var label = Label.New(lines[i]);
+                label.Xalign = 0;
+                label.Wrap = true;
+                label.Selectable = true;
+
+                rowItem.SetChild(label);
+                listBox.Append(rowItem);
+            }
+
+            currentIndex = end;
+        }
+
+        AppendNextBatch();
+
+        var vadj = scrolledWindow.Vadjustment;
+        vadj.OnValueChanged += (_, _) =>
+        {
+            if (vadj.Value + vadj.PageSize >= vadj.Upper - 50)
+            {
+                if (currentIndex < lines.Count)
+                {
+                    AppendNextBatch();
+                }
+            }
+        };
+        
+        var copyButton = Button.NewWithLabel("Copy Log");
+        copyButton.Halign = Align.Start;
+
+        copyButton.OnClicked += (_, _) =>
+        {
+            var text = string.Join("\n", lines);
+
+            var clipboard = Gdk.Display.GetDefault().GetClipboard();
+            clipboard.SetText(text);
+
+            genericQuestionService.RaiseToastMessage(
+                new ToastMessageEventArgs("Log copied to clipboard")
+            );
+        };
+
+        container.Append(copyButton);
+
+        var args = new GenericDialogEventArgs(container);
+        GenericOverlay.ShowGenericOverlay(_overlay, container, args, 700, 500);
+
+        _activeSessionLogOverlay = container;
+    }    
     private static string GetIconForCommand(string command)
     {
         if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
@@ -836,6 +1077,7 @@ public class HomeWindow(
             GLib.Functions.SourceRemove(_updateTimerId);
             _updateTimerId = 0;
         }
+
         _cts.Cancel();
         _cts.Dispose();
     }

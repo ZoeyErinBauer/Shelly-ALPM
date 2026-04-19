@@ -43,7 +43,7 @@ public class AurSearchManagerTests
         }
     }
 
-    [Test]
+    /*[Test]
     public async Task SearchAsync_ShouldUseCacheIfExists()
     {
         // Arrange
@@ -68,7 +68,7 @@ public class AurSearchManagerTests
         Assert.That(response.Results, Is.Not.Null);
         Assert.That(response.Results.Count, Is.EqualTo(1));
         Assert.That(response.Results[0].Name, Is.EqualTo("test-package-123"));
-    }
+    }*/
 
     // [Test]
     // public async Task SearchAsync_ShouldReturnResults()

@@ -40,7 +40,7 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             }
             AnsiConsole.MarkupLine("[green]Update complete.[/]");
 
-            return 0;
+         
         }
         catch (Exception ex)
         {
@@ -51,6 +51,7 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         {
             manager?.Dispose();
         }
+        return 0;
     }
 
     private static async Task<int> HandleUiModeUpdate(AurPackageSettings settings)
@@ -125,7 +126,7 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
             }
             Console.Error.WriteLine("Update complete.");
 
-            return 0;
+        
         }
         catch (Exception ex)
         {
@@ -136,5 +137,6 @@ public class AurUpdateCommand : AsyncCommand<AurPackageSettings>
         {
             manager?.Dispose();
         }
+        return 0;
     }
 }
