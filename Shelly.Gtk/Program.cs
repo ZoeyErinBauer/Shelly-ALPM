@@ -276,10 +276,38 @@ sealed class Program
             AddAction("remove-flatpak", () => NavigateTo<FlatpakRemove>("RemoveFlatpakButton"));
             AddAction("manage-appimage", () => NavigateTo<AppImage>("ManageAppImageButton"));
 
-            var initialHomeWindow = serviceProvider.GetRequiredService<HomeWindow>();
-            contentArea.Append(initialHomeWindow.CreateWindow());
-            currentPage = initialHomeWindow;
-            UpdateSelectedButton("HomeButton");
+            var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
+
+            if (!initialConfig.NewInstallInitSettings)
+            {
+                var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
+                var setupWidget = setupWindow.CreateWindow();
+                
+                mainOverlay.AddOverlay(setupWidget);
+                currentPage = setupWindow;
+
+                setupWindow.SetupFinished += (_, _) =>
+                {
+                    GLib.Functions.IdleAdd(0, () =>
+                    {
+                        mainOverlay.RemoveOverlay(setupWidget);
+                        setupWindow.Dispose();
+
+                        var homeWindow = serviceProvider.GetRequiredService<HomeWindow>();
+                        contentArea.Append(homeWindow.CreateWindow());
+                        currentPage = homeWindow;
+                        UpdateSelectedButton("HomeButton");
+                        return false;
+                    });
+                };
+            }
+            else
+            {
+                var initialHomeWindow = serviceProvider.GetRequiredService<HomeWindow>();
+                contentArea.Append(initialHomeWindow.CreateWindow());
+                currentPage = initialHomeWindow;
+                UpdateSelectedButton("HomeButton");
+            }
 
             // Navigate to requested page from CLI args
             if (_requestedPage != null)
@@ -316,7 +344,6 @@ sealed class Program
                 }
             }
 
-            var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
             var lockoutDialog = serviceProvider.GetRequiredService<LockoutDialog>();
 
             var keyController = EventControllerKey.New();

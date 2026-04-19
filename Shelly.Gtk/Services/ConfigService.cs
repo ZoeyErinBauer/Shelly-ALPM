@@ -42,6 +42,8 @@ public class ConfigService : IConfigService
         CallCliConfigSet(nameof(config.DaysOfWeek), string.Join(",", config.DaysOfWeek));
         CallCliConfigSet(nameof(config.Time), config.Time?.ToString() ?? "");
         CallCliConfigSet(nameof(config.WebViewEnabled), config.WebViewEnabled.ToString());
+        CallCliConfigSet(nameof(config.ShellyIconsEnabled), config.ShellyIconsEnabled.ToString());
+        CallCliConfigSet(nameof(config.NewInstallInitSettings), config.NewInstallInitSettings.ToString());
         CallCliConfigSet(nameof(config.FileSizeDisplay), config.FileSizeDisplay);
         CallCliConfigSet(nameof(config.DefaultExecution), config.DefaultExecution);
         CallCliConfigSet(nameof(config.ParallelDownloadCount), config.ParallelDownloadCount.ToString());
