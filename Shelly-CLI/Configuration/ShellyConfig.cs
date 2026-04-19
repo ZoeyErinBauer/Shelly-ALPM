@@ -32,4 +32,5 @@ public class ShellyConfig
     public bool WebViewEnabled { get; set; } = false;
     public bool ShellyIconsEnabled { get; set; } = true;
     public bool AppImageEnabled { get; set; } = false;
+    public bool NewInstallInitSettings { get; set; } = false;
 }
