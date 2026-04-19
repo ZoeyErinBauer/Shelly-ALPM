@@ -1,5 +1,3 @@
-using GLib.Internal;
-using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -7,7 +5,6 @@ using Shelly.Gtk.Services.Icons;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
-using Shelly.Gtk.Windows.Dialog;
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -30,9 +27,6 @@ public class PackageUpdate(
     private FilterListModel _filterListModel = null!;
     private CustomFilter _filter = null!;
     private string _searchText = string.Empty;
-
-    private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
-        _checkBinding = [];
 
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
@@ -104,11 +98,16 @@ public class PackageUpdate(
             {
                 if (pkgObj.IsSelected)
                 {
-                    _ = ConfirmPartialUpdateAsync(() => pkgObj.ToggleSelection());
+                    _ = ConfirmPartialUpdateAsync(() =>
+                    {
+                        pkgObj.ToggleSelection();
+                        _updateButton.SetSensitive(AnySelected());
+                    });
                 }
                 else
                 {
                     pkgObj.ToggleSelection();
+                    _updateButton.SetSensitive(AnySelected());
                 }
             }
         };
@@ -371,27 +370,15 @@ public class PackageUpdate(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
-        };
 
-        _checkFactory.OnBind += (_, args) =>
-        {
-            if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
-
-            checkButton.SetActive(pkgObj.IsSelected);
-            checkButton.OnToggled += OnToggled;
-
-            pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
-
-            return;
-
-            void OnToggled(CheckButton s, EventArgs e)
+            check.OnToggled += (s, _) =>
             {
+                if (listItem.GetItem() is not AlpmUpdateGObject pkgObj) return;
+
                 if (_suppressToggleConfirmation)
                 {
                     pkgObj.IsSelected = s.GetActive();
+                    _updateButton.SetSensitive(AnySelected());
                     return;
                 }
 
@@ -403,33 +390,44 @@ public class PackageUpdate(
                         _suppressToggleConfirmation = true;
                         s.SetActive(false);
                         _suppressToggleConfirmation = false;
+                        _updateButton.SetSensitive(AnySelected());
                     });
                 }
                 else
                 {
                     pkgObj.IsSelected = true;
+                    _updateButton.SetSensitive(AnySelected());
                 }
-            }
+            };
+        };
+
+        _checkFactory.OnBind += (_, args) =>
+        {
+            if (args.Object is not ColumnViewCell listItem) return;
+            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
+                listItem.GetChild() is not CheckButton checkButton) return;
+
+            checkButton.SetActive(pkgObj.IsSelected);
+
+            pkgObj.OnSelectionToggled += OnExternalToggle;
+            return;
 
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
                 {
                     checkButton.SetActive(pkgObj.IsSelected);
+                    _updateButton.SetSensitive(AnySelected());
                 }
             }
         };
 
-        _checkFactory.OnUnbind += (_, args) =>
+        _checkFactory.OnUnbind += (_, _) => { };
+
+        _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmUpdateGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
-            if (_checkBinding.Remove(listItem, out var handlers))
-            {
-                pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
-                checkButton.OnToggled -= handlers.OnToggled;
-            }
+            listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
 
@@ -554,6 +552,7 @@ public class PackageUpdate(
                 }
 
                 _noPackagesLabel.Visible = packages.Count == 0;
+                _updateButton.SetSensitive(AnySelected());
                 return false;
             });
         }
@@ -709,12 +708,25 @@ public class PackageUpdate(
         return packageName.PadRight(width);
     }
 
+    private bool AnySelected()
+    {
+        for (uint i = 0; i < _listStore.GetNItems(); i++)
+        {
+            var item = _listStore.GetObject(i);
+            if (item is AlpmUpdateGObject { IsSelected: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();
         _packageGObjectRefs.Clear();
-        _checkBinding.Clear();
     }
 }

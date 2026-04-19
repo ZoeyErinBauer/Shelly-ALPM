@@ -375,6 +375,13 @@ public class PackageManagement(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
+
+            check.OnToggled += (s, e) =>
+            {
+                if (listItem.GetItem() is not AlpmPackageGObject current) return;
+                current.IsSelected = s.GetActive();
+                _removeButton.SetSensitive(AnySelected());
+            };
         };
 
         _checkFactory.OnBind += (_, args) =>
@@ -384,19 +391,11 @@ public class PackageManagement(
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
-            checkButton.OnToggled += OnToggled;
-
+            
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            _checkBinding[listItem] = (OnToggled, OnExternalToggle);
-
+            
             return;
-
-            void OnToggled(CheckButton s, EventArgs e)
-            {
-                pkgObj.IsSelected = s.GetActive();
-                _removeButton.SetSensitive(AnySelected());
-            }
-
+            
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -406,16 +405,14 @@ public class PackageManagement(
             }
         };
 
-        _checkFactory.OnUnbind += (_, args) =>
+        _checkFactory.OnUnbind += (_, _) => { };
+
+        _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not CheckButton checkButton) return;
-            if (_checkBinding.Remove(listItem, out var handlers))
-            {
-                pkgObj.OnSelectionToggled -= handlers.OnExternalToggle;
-                checkButton.OnToggled -= handlers.OnToggled;
-            }
+            listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
 
