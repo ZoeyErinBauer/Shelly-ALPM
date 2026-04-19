@@ -26,7 +26,7 @@ public class HomeWindow(
     MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
-    private Box _logBox = null!;
+    private Box? _logBox;
     private readonly CancellationTokenSource _cts = new();
     private ListBox? _updatesListBox;
     private List<RssModel> _archNewsItems = [];
@@ -989,7 +989,7 @@ public class HomeWindow(
 
         _logBox.Append(scrolledWindow);
         
-        int batchSize = 200;
+        int batchSize = 100;
         int currentIndex = 0;
 
         void AppendNextBatch()
@@ -1082,11 +1082,11 @@ public class HomeWindow(
             _updateTimerId = 0;
         }
 
+        _logBox?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _logEntries?.Clear();
         _logEntries = null;
-        _logBox.Dispose();
         _args = null!;
 
     }
