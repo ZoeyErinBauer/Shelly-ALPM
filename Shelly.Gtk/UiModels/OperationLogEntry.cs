@@ -14,6 +14,5 @@ public class OperationLogEntry
     public int StartLine { get; set; }
     public int EndLine { get; set; }
     
-    public string SessionId => Timestamp.ToString("yyyyMMdd_HHmmss");
 
 }

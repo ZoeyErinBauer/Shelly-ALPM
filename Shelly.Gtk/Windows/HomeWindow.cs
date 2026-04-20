@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using System.Text;
 using Gtk;
 using Microsoft.VisualBasic.FileIO;
@@ -26,10 +27,13 @@ public class HomeWindow(
     MetaSearch metaSearch) : IShellyWindow
 {
     private Box _box = null!;
+    private Box? _logBox;
     private readonly CancellationTokenSource _cts = new();
     private ListBox? _updatesListBox;
     private List<RssModel> _archNewsItems = [];
     private List<RssModel> _newArchNewsItems = [];
+    private List<OperationLogEntry>? _logEntries = [];
+    private List<string> _logLines = [];
     private Label? _totalAurLabel;
     private Label? _percentAurLabel;
     private Label? _totalPackageLabel;
@@ -40,9 +44,13 @@ public class HomeWindow(
     private Button _archNewsButton = null!;
     private Widget? _activeSessionLogOverlay;
     private Overlay _overlay = null!;
+    private GenericDialogEventArgs _args;
     private uint _updateTimerId;
     private const int MaxRawLineBytes = 50 * 1024 * 1024; // 50 MB
     private GObject.SignalHandler<ListBox, ListBox.RowActivatedSignalArgs>? _logRowActivatedHandler;
+    GObject.SignalHandler<Adjustment>? _vadjHandler;
+    GObject.SignalHandler<Adjustment>? _clickHandler;
+
 
 
     public Widget CreateWindow()
@@ -857,7 +865,7 @@ public class HomeWindow(
     {
         try
         {
-            var entries = await operationLogService.GetRecentOperationsAsync(8);
+            _logEntries  = await operationLogService.GetRecentOperationsAsync(8);
             ct.ThrowIfCancellationRequested();
 
             GLib.Functions.IdleAdd(0, () =>
@@ -867,7 +875,7 @@ public class HomeWindow(
                 while (_operationLogListBox.GetFirstChild() is { } child)
                     _operationLogListBox.Remove(child);
 
-                if (entries.Count == 0)
+                if (_logEntries.Count == 0)
                 {
                     var placeholder = Label.New("No recent activity");
                     placeholder.AddCssClass("dim-label");
@@ -880,7 +888,7 @@ public class HomeWindow(
                     return false;
                 }
 
-                foreach (var entry in entries)
+                foreach (var entry in _logEntries)
                 {
                     var row = new ListBoxRow();
                     row.SetActivatable(true);
@@ -926,7 +934,7 @@ public class HomeWindow(
                 if (_logRowActivatedHandler is not null)
                     _operationLogListBox.OnRowActivated -= _logRowActivatedHandler;
 
-                _logRowActivatedHandler = (sender, args) => OnLogRowActivated(args.Row, entries);
+                _logRowActivatedHandler = (sender, args) => OnLogRowActivated(args.Row, _logEntries);
                 _operationLogListBox.OnRowActivated += _logRowActivatedHandler;
                 
                 return false;
@@ -938,24 +946,16 @@ public class HomeWindow(
         }
     }
     
-    private async void OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries)
+    private async Task OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries) 
     {
         var index = row.GetIndex();
         if (index < 0 || index >= entries.Count) return;
 
         var entry = entries[index];
+        
+        _logLines = await operationLogService.GetSessionExcerptAsync(entry, MaxRawLineBytes);
 
-        if (_activeSessionLogOverlay is { } oldBox && oldBox.GetParent() == _overlay)
-        {
-            try { _overlay.RemoveOverlay(oldBox); } catch { }
-            oldBox.Unparent();
-            oldBox.Dispose();
-            _activeSessionLogOverlay = null;
-        }
-
-        var lines = await operationLogService.GetSessionExcerptAsync(entry, MaxRawLineBytes);
-
-        if (lines.Count == 0)
+        if (_logLines.Count == 0)
         {
             genericQuestionService.RaiseToastMessage(
                 new ToastMessageEventArgs("Session log is too large to display")
@@ -963,88 +963,70 @@ public class HomeWindow(
             return;
         }
 
-        var container = new Box();
-        container.SetOrientation(Orientation.Vertical);
-        container.SetSpacing(10);
-        container.SetMarginTop(10);
-        container.SetMarginBottom(10);
-        container.SetMarginStart(10);
-        container.SetMarginEnd(10);
-
-        var titleLabel = Label.New("Session Log");
-        titleLabel.AddCssClass("title-1");
-        titleLabel.Xalign = 0;
-        container.Append(titleLabel);
-
-        var listBox = new ListBox();
-        listBox.SetSelectionMode(SelectionMode.Multiple);
-
-        var scrolledWindow = new ScrolledWindow();
-        scrolledWindow.SetVexpand(true);
-        scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
-        scrolledWindow.SetChild(listBox);
-
-        container.Append(scrolledWindow);
-        
-        int batchSize = 200;
-        int currentIndex = 0;
-
-        void AppendNextBatch()
+        GLib.Functions.IdleAdd(0, () =>
         {
-            int end = Math.Min(currentIndex + batchSize, lines.Count);
-
-            for (int i = currentIndex; i < end; i++)
+            try
             {
-                var rowItem = new ListBoxRow();
+                var fullLogText = string.Join("\n", _logLines);
 
-                var label = Label.New(lines[i]);
-                label.Xalign = 0;
-                label.Wrap = true;
-                label.Selectable = true;
+                _logBox = new Box();
+                _logBox.SetOrientation(Orientation.Vertical);
+                _logBox.SetSpacing(10);
+                _logBox.SetMarginTop(10);
+                _logBox.SetMarginBottom(10);
+                _logBox.SetMarginStart(10);
+                _logBox.SetMarginEnd(10);
 
-                rowItem.SetChild(label);
-                listBox.Append(rowItem);
-            }
+                var titleLabel = Label.New("Session Log");
+                titleLabel.AddCssClass("title-1");
+                titleLabel.Xalign = 0;
+                _logBox.Append(titleLabel);
 
-            currentIndex = end;
-        }
+                var textView = new TextView();
+                textView.Editable = false;
+                textView.WrapMode = WrapMode.WordChar;
 
-        AppendNextBatch();
+                var buffer = textView.Buffer;
+                
+                buffer?.SetText(fullLogText, -1);
 
-        var vadj = scrolledWindow.Vadjustment;
-        vadj.OnValueChanged += (_, _) =>
-        {
-            if (vadj.Value + vadj.PageSize >= vadj.Upper - 50)
-            {
-                if (currentIndex < lines.Count)
+                var scrolledWindow = new ScrolledWindow();
+                scrolledWindow.SetVexpand(true);
+                scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
+                scrolledWindow.SetChild(textView);
+                _logBox.Append(scrolledWindow);
+
+                var copyButton = Button.NewWithLabel("Copy Log");
+                copyButton.Halign = Align.Start;
+
+                copyButton.OnClicked += (_, _) =>
                 {
-                    AppendNextBatch();
-                }
+                    var text = fullLogText; 
+
+                    var clipboard = Gdk.Display.GetDefault().GetClipboard();
+                    clipboard.SetText(text);
+
+                    genericQuestionService.RaiseToastMessage(
+                        new ToastMessageEventArgs("Log copied to clipboard")
+                    );
+                };
+
+                _logBox.Append(copyButton);
+
+                _args = new GenericDialogEventArgs(_logBox);
+                GenericOverlay.ShowGenericOverlay(_overlay, _logBox, _args, 700, 500);
+
+                _activeSessionLogOverlay = _logBox;
             }
-        };
-        
-        var copyButton = Button.NewWithLabel("Copy Log");
-        copyButton.Halign = Align.Start;
+            catch (Exception e)
+            {
+            }
 
-        copyButton.OnClicked += (_, _) =>
-        {
-            var text = string.Join("\n", lines);
-
-            var clipboard = Gdk.Display.GetDefault().GetClipboard();
-            clipboard.SetText(text);
-
-            genericQuestionService.RaiseToastMessage(
-                new ToastMessageEventArgs("Log copied to clipboard")
-            );
-        };
-
-        container.Append(copyButton);
-
-        var args = new GenericDialogEventArgs(container);
-        GenericOverlay.ShowGenericOverlay(_overlay, container, args, 700, 500);
-
-        _activeSessionLogOverlay = container;
-    }    
+            return false;
+        });
+    }
+    
+    
     private static string GetIconForCommand(string command)
     {
         if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
@@ -1078,7 +1060,14 @@ public class HomeWindow(
             _updateTimerId = 0;
         }
 
+        _logBox?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
+        _logEntries?.Clear();
+        _logEntries = null;
+        _logLines.Clear();
+        _logLines = null;
+        _args = null!;
+
     }
 }
