@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using System.Text;
 using Gtk;
 using Microsoft.VisualBasic.FileIO;
@@ -46,6 +47,9 @@ public class HomeWindow(
     private uint _updateTimerId;
     private const int MaxRawLineBytes = 50 * 1024 * 1024; // 50 MB
     private GObject.SignalHandler<ListBox, ListBox.RowActivatedSignalArgs>? _logRowActivatedHandler;
+    GObject.SignalHandler<Adjustment>? _vadjHandler;
+    GObject.SignalHandler<Adjustment>? _clickHandler;
+
 
 
     public Widget CreateWindow()
@@ -966,89 +970,70 @@ public class HomeWindow(
             return;
         }
 
-        _logBox = new Box();
-        _logBox.SetOrientation(Orientation.Vertical);
-        _logBox.SetSpacing(10);
-        _logBox.SetMarginTop(10);
-        _logBox.SetMarginBottom(10);
-        _logBox.SetMarginStart(10);
-        _logBox.SetMarginEnd(10);
-
-        var titleLabel = Label.New("Session Log");
-        titleLabel.AddCssClass("title-1");
-        titleLabel.Xalign = 0;
-        _logBox.Append(titleLabel);
-
-        var listBox = new ListBox();
-        listBox.SetSelectionMode(SelectionMode.Multiple);
-
-        var scrolledWindow = new ScrolledWindow();
-        scrolledWindow.SetVexpand(true);
-        scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
-        scrolledWindow.SetChild(listBox);
-
-        _logBox.Append(scrolledWindow);
-        
-        int batchSize = 100;
-        int currentIndex = 0;
-
-        void AppendNextBatch()
+        GLib.Functions.IdleAdd(0, () =>
         {
-            int end = Math.Min(currentIndex + batchSize, lines.Count);
-
-            for (int i = currentIndex; i < end; i++)
+            try
             {
-                var rowItem = new ListBoxRow();
+                var fullLogText = string.Join("\n", lines);
 
-                var label = Label.New(lines[i]);
-                label.Xalign = 0;
-                label.Wrap = true;
-                label.Selectable = true;
+                _logBox = new Box();
+                _logBox.SetOrientation(Orientation.Vertical);
+                _logBox.SetSpacing(10);
+                _logBox.SetMarginTop(10);
+                _logBox.SetMarginBottom(10);
+                _logBox.SetMarginStart(10);
+                _logBox.SetMarginEnd(10);
 
-                rowItem.SetChild(label);
-                listBox.Append(rowItem);
-            }
+                var titleLabel = Label.New("Session Log");
+                titleLabel.AddCssClass("title-1");
+                titleLabel.Xalign = 0;
+                _logBox.Append(titleLabel);
 
-            currentIndex = end;
-        }
+                var textView = new TextView();
+                textView.Editable = false;
+                textView.WrapMode = WrapMode.WordChar;
 
-        AppendNextBatch();
+                var buffer = textView.Buffer;
+                
+                buffer?.SetText(fullLogText, -1);
 
-        var vadj = scrolledWindow.Vadjustment;
-        vadj.OnValueChanged += (_, _) =>
-        {
-            if (vadj.Value + vadj.PageSize >= vadj.Upper - 50)
-            {
-                if (currentIndex < lines.Count)
+                var scrolledWindow = new ScrolledWindow();
+                scrolledWindow.SetVexpand(true);
+                scrolledWindow.HscrollbarPolicy = PolicyType.Automatic;
+                scrolledWindow.SetChild(textView);
+                _logBox.Append(scrolledWindow);
+
+                var copyButton = Button.NewWithLabel("Copy Log");
+                copyButton.Halign = Align.Start;
+
+                copyButton.OnClicked += (_, _) =>
                 {
-                    AppendNextBatch();
-                }
+                    var text = fullLogText; 
+
+                    var clipboard = Gdk.Display.GetDefault().GetClipboard();
+                    clipboard.SetText(text);
+
+                    genericQuestionService.RaiseToastMessage(
+                        new ToastMessageEventArgs("Log copied to clipboard")
+                    );
+                };
+
+                _logBox.Append(copyButton);
+
+                _args = new GenericDialogEventArgs(_logBox);
+                GenericOverlay.ShowGenericOverlay(_overlay, _logBox, _args, 700, 500);
+
+                _activeSessionLogOverlay = _logBox;
             }
-        };
-        
-        var copyButton = Button.NewWithLabel("Copy Log");
-        copyButton.Halign = Align.Start;
+            catch (Exception e)
+            {
+                // Here to not throw anything in case something goes wrong.
+            }
 
-        copyButton.OnClicked += (_, _) =>
-        {
-            var text = string.Join("\n", lines);
-
-            var clipboard = Gdk.Display.GetDefault().GetClipboard();
-            clipboard.SetText(text);
-
-            genericQuestionService.RaiseToastMessage(
-                new ToastMessageEventArgs("Log copied to clipboard")
-            );
-        };
-
-        _logBox.Append(copyButton);
-
-        _args = new GenericDialogEventArgs(_logBox);
-        GenericOverlay.ShowGenericOverlay(_overlay, _logBox, _args, 700, 500);
-
-        _activeSessionLogOverlay = _logBox;
-        
-    }    
+            return false;
+        });
+    }
+    
     private static string GetIconForCommand(string command)
     {
         if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
