@@ -27,6 +27,9 @@ public class ShellyFileLogger : TextWriter
     ];
     private static readonly Regex BoxBorder = new(@"^[\s┌┐└┘─│╔╗╚╝═║]+$", RegexOptions.Compiled);
     private static readonly Regex BoxContent = new(@"│([^│]*)│?", RegexOptions.Compiled);
+    private static readonly Regex PrefixNoise = new(@"\[Shelly\](?:\[(?:DEBUG|DEBUG_LOG|ALPM.*?|Shelly)\])*", RegexOptions.Compiled);
+    private static readonly Regex DuplicateTag = new(@"\[(ERR|OUT)\]\s*\[Shelly\]", RegexOptions.Compiled);
+
     
     private const string LogPath = "/var/log/shelly.log";
     private const string RotatedLogPath = "/var/log/shelly.log.1";
@@ -84,7 +87,12 @@ public class ShellyFileLogger : TextWriter
             _tuiFrameBuffer.Add(clean);
             return;
         }
+
+        clean = DuplicateTag.Replace(clean, "[$1]");
+        clean = PrefixNoise.Replace(clean, "");
+
         if (NoisePatterns.Any(p => p.IsMatch(clean))) return;
+
         WriteToLog(clean);
     }
     
