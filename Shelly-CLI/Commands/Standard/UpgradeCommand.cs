@@ -1,7 +1,8 @@
+using System.Diagnostics;
 using PackageManager.Alpm;
+using PackageManager.Flatpak;
 using PackageManager.Utilities;
 using Shelly_CLI.Commands.Aur;
-using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Configuration;
 using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
@@ -44,20 +45,20 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             (SizeDisplay)Parse(typeof(SizeDisplay),
                 config.FileSizeDisplay);
 
-        
+
         var table = new Table().Border(TableBorder.None);
-        
-      
+
+
         table.AddColumn(new TableColumn($"[bold green]Package ({packagesNeedingUpdate.Count})[/]").LeftAligned());
         table.AddColumn(new TableColumn("[bold green]Old Version[/]").LeftAligned());
         table.AddColumn(new TableColumn("[bold green]New Version[/]").LeftAligned());
         table.AddColumn(new TableColumn("[bold green]Net Change[/]").RightAligned());
         table.AddColumn(new TableColumn("[bold green]Download Size[/]").RightAligned());
-        
+
         long totalDownloadSize = 0;
         long totalNetChange = 0;
         long totalInstalledSize = 0;
-        
+
         foreach (var pkg in packagesNeedingUpdate)
         {
             long netChangeBytes = pkg.SizeDifference;
@@ -66,20 +67,21 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             totalNetChange += netChangeBytes;
 
             table.AddRow(
-                $"[green]{Markup.Escape(pkg.Name)}[/]", 
-                $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]", 
-                $"[green]{Markup.Escape(pkg.NewVersion)}[/]", 
-                $"[green]{FormatSize(parsed, netChangeBytes)}[/]", 
-                $"[green]{FormatSize(parsed, pkg.DownloadSize)}[/]" 
+                $"[green]{Markup.Escape(pkg.Name)}[/]",
+                $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]",
+                $"[green]{Markup.Escape(pkg.NewVersion)}[/]",
+                $"[green]{FormatSize(parsed, netChangeBytes)}[/]",
+                $"[green]{FormatSize(parsed, pkg.DownloadSize)}[/]"
             );
         }
+
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {FormatSize(parsed, totalDownloadSize),10}");
         AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {FormatSize(parsed, totalNetChange),10}");
         AnsiConsole.WriteLine();
 
-        
+
         string FormatSize(SizeDisplay size, double bytes)
         {
             return size switch
@@ -93,7 +95,6 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 
         if (!settings.NoConfirm)
         {
-           
             if (!AnsiConsole.Confirm("[bold green]:: Proceed with installation?[/]"))
             {
                 AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
@@ -109,6 +110,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             AnsiConsole.MarkupLine("[red]System upgrade failed. See errors above.[/]");
             return 1;
         }
+
         AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         if (settings.Aur || settings.All)
         {
@@ -122,9 +124,10 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 
         if (settings.Flatpak || settings.All)
         {
-            var flatpakCommand = new FlatpakUpgrade();
-            flatpakCommand.Execute(context);
+            var flatpakResult = ExecuteFlatpakUpdate();
+            AnsiConsole.MarkupLine($"[yellow]{flatpakResult.EscapeMarkup()}[/]");
         }
+
 
         var (needsReboot, services) = RestartManager.CheckForRequiredRestarts();
         if (needsReboot)
@@ -205,10 +208,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         };
 
-        manager.HookRun += (_, args) =>
-        {
-            Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}");
-        };
+        manager.HookRun += (_, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
 
         bool hadError = false;
         manager.ErrorEvent += (_, e) =>
@@ -224,6 +224,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             await Console.Error.WriteLineAsync("System upgrade failed.");
             return 1;
         }
+
         if (settings.Aur || settings.All)
         {
             var aurCommand = new AurUpgradeCommand();
@@ -236,8 +237,11 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 
         if (settings.Flatpak || settings.All)
         {
-            var flatpakCommand = new FlatpakUpgrade();
-            flatpakCommand.Execute(context);
+            var flatpakResult = ExecuteFlatpakUpdate();
+            if (!string.IsNullOrEmpty(flatpakResult))
+            {
+                await Console.Error.WriteLineAsync(flatpakResult);
+            }
         }
 
         var (needsReboot, services) = RestartManager.CheckForRequiredRestarts();
@@ -255,5 +259,32 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         await Console.Error.WriteLineAsync("System upgraded successfully!");
         manager.Dispose();
         return 0;
+    }
+
+    //Execture as non-root so flatpaks upgrade correctly.
+    private static string ExecuteFlatpakUpdate()
+    {
+        var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
+        
+        var exe = Environment.ProcessPath ?? Environment.GetCommandLineArgs()[0];
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "sudo",
+            Arguments = $"-u {sudoUser} {exe} flatpak upgrade",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null) return "Failed to start non-root Flatpak update process.";
+
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        return process.ExitCode != 0 ? $"Flatpak update failed (Exit {process.ExitCode}): {error}" : output;
     }
 }
