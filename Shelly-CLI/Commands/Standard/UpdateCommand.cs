@@ -20,6 +20,7 @@ public class UpdateCommand : Command<PackageSettings>
             return 1;
         }
 
+        RootElevator.EnsureRootExectuion();
         var packageList = settings.Packages.ToList();
 
         AnsiConsole.MarkupLine(

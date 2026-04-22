@@ -28,6 +28,8 @@ public static class SplitOutput
 
         var consoleLines = new List<string>();
         var progressLines = new List<string>();
+        var pendingPacfiles = new List<PendingPacfile>();
+        var pacfileLock = new object();
         var maxVisibleLines = Console.WindowHeight - 4; // adjust as needed
         var visible = consoleLines
             .Skip(Math.Max(0, consoleLines.Count - maxVisibleLines))
@@ -144,6 +146,11 @@ public static class SplitOutput
                 consoleLines.Add($"Pacnew stored @ {e.FileLocation.EscapeMarkup()}.pacnew");
             }
 
+            lock (pacfileLock)
+            {
+                pendingPacfiles.Add(new PendingPacfile(PacfileKind.Pacnew, null, e.FileLocation + ".pacnew", DateTime.UtcNow));
+            }
+
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
         };
         
@@ -152,6 +159,11 @@ public static class SplitOutput
             lock (renderLock)
             {
                 consoleLines.Add($"Pacsave stored @ {e.FileLocation.EscapeMarkup()}.pacsave");
+            }
+
+            lock (pacfileLock)
+            {
+                pendingPacfiles.Add(new PendingPacfile(PacfileKind.Pacsave, e.OldPackage, e.FileLocation + ".pacsave", DateTime.UtcNow));
             }
 
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
@@ -233,6 +245,16 @@ public static class SplitOutput
                 try { await ticker; } catch { }
             }
         });
+
+        try
+        {
+            await PacfileFlusher.FlushAsync(pendingPacfiles, pacfileLock);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]warning:[/] failed to store pacfiles: {ex.Message.EscapeMarkup()}");
+        }
+
         return result;
     }
 }

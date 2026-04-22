@@ -2144,12 +2144,12 @@ public class AlpmManager(string configPath = "/etc/pacman.conf") : IDisposable, 
                     var fileLocation = pacsaveEvent.File != IntPtr.Zero
                         ? Marshal.PtrToStringUTF8(pacsaveEvent.File)
                         : null;
-
+                    
                     string? pkgNameOld = null;
                     if (pacsaveEvent.OldPkg != IntPtr.Zero)
                     {
                         IntPtr namePtr = AlpmReference.GetPkgName(pacsaveEvent.OldPkg);
-                        oldPkgName = namePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(namePtr) : null;
+                        pkgNameOld = namePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(namePtr) : null;
                     }
 
                     Console.Error.WriteLine($"[ALPM] .pacsave file created: {fileLocation}");

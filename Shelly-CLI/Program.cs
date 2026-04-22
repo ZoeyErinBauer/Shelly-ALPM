@@ -6,6 +6,7 @@ using Shelly_CLI.Commands.Config;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Keyring;
 using Shelly_CLI.Commands.Standard;
+using Shelly_CLI.Commands.Standard.Pacfile;
 using Shelly_CLI.Commands.Utility;
 using Shelly_CLI.Configuration;
 using Shelly.Writers;
@@ -192,6 +193,13 @@ public class Program
                 .WithExample("purify")
                 .WithExample("purify", "--dry-run")
                 .WithExample("purify", "--no-confirm");
+
+            config.AddCommand<PacfileCommand>("pacfile")
+                .WithDescription("Manage stored pacfiles")
+                .WithExample("pacfile")
+                .WithExample("pacfile", "mypacfile")
+                .WithExample("pacfile", "mypacfile", "--delete")
+                .WithExample("pacfile", "--json");
 
             config.AddBranch("keyring", keyring =>
             {

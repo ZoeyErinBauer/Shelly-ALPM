@@ -20,6 +20,7 @@ complete -c shelly -n __fish_use_subcommand -a upgrade -d "Perform a full system
 complete -c shelly -n __fish_use_subcommand -a downgrade -d "Downgrade a package"
 complete -c shelly -n __fish_use_subcommand -a news -d "Shows Arch news you haven't seen before"
 complete -c shelly -n __fish_use_subcommand -a purify -d "Find and remove corrupted packages"
+complete -c shelly -n __fish_use_subcommand -a pacfile -d "Manage stored pacfiles"
 complete -c shelly -n __fish_use_subcommand -a keyring -d "Manage pacman keyring"
 complete -c shelly -n __fish_use_subcommand -a aur -d "Manage AUR packages"
 complete -c shelly -n __fish_use_subcommand -a flatpak -d "Manage flatpak"
@@ -116,6 +117,10 @@ complete -c shelly -n "__fish_seen_subcommand_from news" -s a -l all -d "Show al
 # --- purify (CorruptedPackagesSettings) ---
 complete -c shelly -n "__fish_seen_subcommand_from purify" -s n -l no-confirm -d "Skip confirmation prompts"
 complete -c shelly -n "__fish_seen_subcommand_from purify" -s d -l dry-run -d "Show what would be removed without removing"
+
+# --- pacfile (PacfileSettings) ---
+complete -c shelly -n "__fish_seen_subcommand_from pacfile" -s d -l delete -d "Delete the specified pacfiles"
+complete -c shelly -n "__fish_seen_subcommand_from pacfile" -s j -l json -d "Output results in JSON format"
 
 # =====================
 # keyring subcommands

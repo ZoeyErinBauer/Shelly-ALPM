@@ -30,6 +30,8 @@ public static class AurSplitOutput
 
         var consoleLines = new List<string>();
         var progressLines = new List<string>();
+        var pendingPacfiles = new List<PendingPacfile>();
+        var pacfileLock = new object();
         var maxVisibleLines = Console.WindowHeight - 4;
 
         var layout = new Layout("Columns")
@@ -364,6 +366,11 @@ public static class AurSplitOutput
                 consoleLines.Add($"Pacnew stored @ {e.FileLocation.EscapeMarkup()}.pacnew");
             }
 
+            lock (pacfileLock)
+            {
+                pendingPacfiles.Add(new PendingPacfile(PacfileKind.Pacnew, null, e.FileLocation + ".pacnew", DateTime.UtcNow));
+            }
+
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
         };
 
@@ -372,6 +379,11 @@ public static class AurSplitOutput
             lock (renderLock)
             {
                 consoleLines.Add($"Pacsave stored @ {e.FileLocation.EscapeMarkup()}.pacsave");
+            }
+
+            lock (pacfileLock)
+            {
+                pendingPacfiles.Add(new PendingPacfile(PacfileKind.Pacsave, e.OldPackage, e.FileLocation + ".pacsave", DateTime.UtcNow));
             }
 
             SplitOutputHelpers.UpdatePanel(layout, "Console", consoleLines, maxVisibleLines, renderLock, liveCtx);
@@ -430,6 +442,16 @@ public static class AurSplitOutput
                 try { await ticker; } catch { }
             }
         });
+
+        try
+        {
+            await PacfileFlusher.FlushAsync(pendingPacfiles, pacfileLock);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]warning:[/] failed to store pacfiles: {ex.Message.EscapeMarkup()}");
+        }
+
         return !hadError;
     }
 }

@@ -37,6 +37,8 @@
             <Type Name="Shelly_CLI.Commands.Standard.DowngradePackageCommandSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.CorruptedPackages" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Standard.CorruptedPackagesSettings" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.Pacfile.PacfileCommand" Dynamic="Required All"/>
+            <Type Name="Shelly_CLI.Commands.Standard.Pacfile.PacfileSettings" Dynamic="Required All"/>
             <!-- Keyring commands -->
             <Type Name="Shelly_CLI.Commands.Keyring.KeyringSettings" Dynamic="Required All"/>
             <Type Name="Shelly_CLI.Commands.Keyring.KeyringInitCommand" Dynamic="Required All"/>

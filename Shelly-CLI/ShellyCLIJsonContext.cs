@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using PackageManager.AppImage;
 using PackageManager.Alpm;
+using PackageManager.Alpm.Pacfile;
 using PackageManager.Aur.Models;
 using PackageManager.Flatpak;
 using Shelly_CLI.Commands.Aur;
@@ -34,6 +35,8 @@ namespace Shelly_CLI;
 [JsonSerializable(typeof(FlatpakPackageDto))]
 [JsonSerializable(typeof(List<FlatpakRemoteDto>))]
 [JsonSerializable(typeof(FlatpakRemoteDto))]
+[JsonSerializable(typeof(List<PacfileRecord>))]
+[JsonSerializable(typeof(PacfileRecord))]
 internal partial class ShellyCLIJsonContext : JsonSerializerContext
 {
 }
