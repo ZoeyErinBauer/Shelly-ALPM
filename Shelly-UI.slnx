@@ -8,4 +8,5 @@
   <Project Path="Shelly-CLI.Tests/Shelly-CLI.Tests.csproj" />
   <Project Path="Shelly-Notifications/Shelly-Notifications.csproj" />
   <Project Path="Shelly.Gtk/Shelly.Gtk.csproj" />
+  <Project Path="Shelly.Keys/Shelly.Keys.csproj" />
 </Solution>
