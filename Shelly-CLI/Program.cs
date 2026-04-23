@@ -94,7 +94,8 @@ public class Program
 
             config.AddCommand<VersionCommand>("version")
                 .WithDescription("Display the application version")
-                .WithExample("version");
+                .WithExample("version")
+                .WithAlias("v");
 
             config.AddCommand<SyncCommand>("sync")
                 .WithDescription("Synchronize package databases")

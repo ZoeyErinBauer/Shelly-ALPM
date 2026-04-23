@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using PackageManager.Alpm;
@@ -17,8 +18,14 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
     //No Confirm is not implemented for default command by design
     public override async Task<int> ExecuteAsync(CommandContext context, [NotNull] DefaultCommandSettings settings)
     {
+        
+        if (settings.Version)
+        {
+            new VersionCommand().Execute(context);
+            return 0;
+        }
+        
         var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        ;
         var configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
         if (!File.Exists(configPath))
         {
