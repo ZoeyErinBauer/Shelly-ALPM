@@ -57,7 +57,7 @@ public static class AppRunner
         var process = Process.Start(new ProcessStartInfo
         {
             FileName = terminal,
-            Arguments = $"-e bash -c \"{command}\"",
+            Arguments = $"-e bash -c \"{command}; echo; read -p 'Press Enter to close...'\"",
             UseShellExecute = false,
         });
 
