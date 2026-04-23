@@ -16,6 +16,7 @@ namespace Shelly.Gtk.Windows;
 public class Settings(
     IConfigService configService,
     IPrivilegedOperationService privilegedOperationService,
+    IUnprivilegedOperationService unprivilegedOperationService,
     ILockoutService lockoutService,
     IGenericQuestionService genericQuestionService) : IShellyWindow
 {
@@ -114,6 +115,10 @@ public class Settings(
         var purifyCorruptionButton = (Button)builder.GetObject("purify_button")!;
         purifyCorruptionButton.TooltipText = "Remove corrupted packages";
         purifyCorruptionButton.OnClicked += async (s, e) => { await PurifyCorruption(); };
+
+        var viewPacfilesButton = (Button)builder.GetObject("view_pacfiles_button")!;
+        viewPacfilesButton.OnClicked += async (s, e) => { await ViewPacfilesAsync(); };
+
         var versionLabel = (Label)builder.GetObject("version_label")!;
         versionLabel.SetLabel(
             $"v{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "Unknown"}");
@@ -449,6 +454,99 @@ public class Settings(
         }
     }
 
+    private async Task ViewPacfilesAsync()
+    {
+        var pacfiles = await unprivilegedOperationService.GetPacFiles();
+        if (pacfiles.Count == 0)
+        {
+            genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs("No pacfiles found"));
+            return;
+        }
+
+        var pacfileBox = new Box();
+        pacfileBox.SetOrientation(Orientation.Vertical);
+        pacfileBox.SetSpacing(12);
+        pacfileBox.SetSizeRequest(600, -1);
+
+        var title = new Label();
+        title.SetText("Pacfiles Found");
+        title.AddCssClass("title-2");
+        title.SetHalign(Align.Center);
+        pacfileBox.Append(title);
+
+        var scroll = new ScrolledWindow();
+        scroll.HscrollbarPolicy = PolicyType.Never;
+        scroll.VscrollbarPolicy = PolicyType.Automatic;
+        scroll.SetOverlayScrolling(false);
+        scroll.SetSizeRequest(-1, 400);
+
+        var list = new Box();
+        list.SetOrientation(Orientation.Vertical);
+        list.SetSpacing(8);
+
+        foreach (var pacfile in pacfiles)
+        {
+            var itemBox = new Box();
+            itemBox.SetOrientation(Orientation.Vertical);
+            itemBox.SetSpacing(4);
+            itemBox.SetMarginBottom(16);
+
+            var headerBox = new Box();
+            headerBox.SetOrientation(Orientation.Horizontal);
+            headerBox.SetSpacing(8);
+
+            var nameLabel = new Label();
+            nameLabel.SetMarkup($"<b>{pacfile.Name}</b>");
+            nameLabel.SetHalign(Align.Start);
+            nameLabel.SetHexpand(true);
+            headerBox.Append(nameLabel);
+
+            var copyButton = Button.NewFromIconName("edit-copy-symbolic");
+            copyButton.SetTooltipText("Copy content");
+            copyButton.AddCssClass("flat");
+            copyButton.OnClicked += (_, _) =>
+            {
+                var clipboard = Gdk.Display.GetDefault().GetClipboard();
+                clipboard.SetText(pacfile.Text);
+                genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs("Copied to clipboard"));
+            };
+            headerBox.Append(copyButton);
+            
+            itemBox.Append(headerBox);
+
+            var textView = new TextView();
+            textView.Editable = false;
+            textView.CursorVisible = false;
+            textView.WrapMode = WrapMode.None;
+            textView.Monospace = true;
+          
+            var buffer = textView.Buffer;
+            if (buffer != null)
+            {
+                var lines = pacfile.Text.Split('\n');
+                var builder = new System.Text.StringBuilder();
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    builder.AppendLine($"{(i + 1).ToString().PadLeft(3)} | {lines[i]}");
+                }
+                buffer.SetText(builder.ToString(), -1);
+            }
+
+            var textScroll = new ScrolledWindow();
+            textScroll.SetSizeRequest(-1, 200);
+            textScroll.SetPolicy(PolicyType.Automatic, PolicyType.Automatic);
+            textScroll.SetChild(textView);
+            textScroll.AddCssClass("rounded-card");
+            
+            itemBox.Append(textScroll);
+            list.Append(itemBox);
+        }
+
+        scroll.SetChild(list);
+        pacfileBox.Append(scroll);
+        genericQuestionService.RaiseDialog(new GenericDialogEventArgs(pacfileBox));
+    }
+
     private async Task ShowAppChangelogAsync()
     {
         if (_parentOverlay is null)
@@ -547,6 +645,23 @@ public class Settings(
                 new ToastMessageEventArgs("Failed to load changelog"));
         }
     }
+
+    private async Task GetAnyShowPacfiles()
+    {
+        try
+        {
+            var result = await unprivilegedOperationService.GetPacFiles();
+            
+            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting pacfiles: {ex.Message}");
+            genericQuestionService.RaiseToastMessage(
+                new ToastMessageEventArgs("Failed to load pacfiles"));
+        }
+    }
+
 
     public void Dispose()
     {

@@ -233,7 +233,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path, "--system",
             "true");
     }
-    
+
     public async Task<UnprivilegedOperationResult> FlatpakInstallFromBundle(string path)
     {
         return await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
@@ -325,6 +325,36 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                     var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListRssModel);
                     return apps ?? [];
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing Arch News: {ex.Message}");
+        }
+
+        return [];
+    }
+
+    public async Task<List<PacfileRecord>> GetPacFiles()
+    {
+         var result = await ExecuteUnprivilegedCommandAsync("Fetch Pac files", "pacfile --json");
+        if (!result.Success || string.IsNullOrEmpty(result.Output))
+        {
+            return [];
+        }
+
+        try
+        {
+            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                var trimmedLine = StripBom(line.Trim());
+                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                {
+                    var pacFiles = JsonSerializer.Deserialize(trimmedLine,
+                        ShellyGtkJsonContext.Default.ListPacfileRecord);
+                    return pacFiles ?? [];
                 }
             }
         }

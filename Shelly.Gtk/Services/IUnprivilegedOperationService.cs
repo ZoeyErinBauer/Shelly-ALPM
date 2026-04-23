@@ -52,6 +52,8 @@ public interface IUnprivilegedOperationService
     Task<List<AppImageDto>> GetUpdatesAppImagesAsync();
     
     Task<List<RssModel>> GetArchNewsAsync(bool all = false);
+    
+    Task<List<PacfileRecord>> GetPacFiles();
 }
 
 public class UnprivilegedOperationResult

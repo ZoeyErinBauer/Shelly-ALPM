@@ -283,8 +283,7 @@
                                                 </child>
                                                 <child>
                                                     <object class="GtkEntry" id="UpdateUrlEntry">
-                                                        <property name="placeholder-text">e.g. owner/repo or
-                                                            https://...
+                                                        <property name="placeholder-text">e.g. repo or https://...
                                                         </property>
                                                     </object>
                                                 </child>

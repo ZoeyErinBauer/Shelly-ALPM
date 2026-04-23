@@ -46,6 +46,8 @@ namespace Shelly.Gtk;
 [JsonSerializable(typeof(List<FlatpakRemoteRefInfo>))]
 [JsonSerializable(typeof(FlatpakRemoteDto))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
+[JsonSerializable(typeof(List<PacfileRecord>))]
+[JsonSerializable(typeof(PacfileRecord))]
 internal partial class ShellyGtkJsonContext : JsonSerializerContext
 {
     
