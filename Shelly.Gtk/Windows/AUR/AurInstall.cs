@@ -97,6 +97,28 @@ public class AurInstall(
             }
         };
         _installButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
+        _installButton.CanFocus = true;
+        _installButton.ReceivesDefault = true;
+
+        var shortcutController = ShortcutController.New();
+        shortcutController.Scope = ShortcutScope.Global;
+        shortcutController.PropagationPhase = PropagationPhase.Capture;
+
+        var triggers = new[] { "Return", "KP_Enter", "space" };
+        foreach (var triggerStr in triggers)
+        {
+            var action = CallbackAction.New((_, _) =>
+            {
+                if (!_installButton.GetSensitive()) return false;
+                if (OverlayHelper.HasActiveOverlay(_box)) return false;
+                
+                Task.Run(async () => await InstallSelectedAsync());
+                return true;
+            });
+            shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
+        }
+        _box.AddController(shortcutController);
+
         _searchEntry.OnActivate += (_, _) => { _ = SearchAsync(_cts.Token); };
 
         _selectionModel.OnSelectionChanged += (_, _) =>

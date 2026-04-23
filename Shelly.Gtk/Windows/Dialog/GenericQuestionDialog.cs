@@ -77,22 +77,45 @@ public static class GenericQuestionDialog
         var yesButton = Button.NewWithLabel("Yes");
         yesButton.AddCssClass("suggested-action");
 
-        noButton.OnClicked += (s, args) =>
-        {
-            e.SetResponse(false);
-            parentOverlay.RemoveOverlay(background);
-        };
+        noButton.OnClicked += (s, args) => CloseAndRespond(false);
+        yesButton.OnClicked += (s, args) => CloseAndRespond(true);
 
-        yesButton.OnClicked += (s, args) =>
+        var shortcutController = ShortcutController.New();
+        shortcutController.Scope = ShortcutScope.Global;
+        shortcutController.PropagationPhase = PropagationPhase.Capture;
+        
+        foreach (var triggerStr in new[] { "Return", "KP_Enter", "space" })
         {
-            e.SetResponse(true);
-            parentOverlay.RemoveOverlay(background);
-        };
+            var action = CallbackAction.New((_, _) =>
+            {
+                CloseAndRespond(true);
+                return true;
+            });
+            shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
+        }
+        
+        {
+            var action = CallbackAction.New((_, _) =>
+            {
+                CloseAndRespond(false);
+                return true;
+            });
+            shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString("Escape"), action));
+        }
+
+        background.AddController(shortcutController);
 
         buttonBox.Append(yesButton);
         buttonBox.Append(noButton);
         box.Append(buttonBox);
 
         parentOverlay.AddOverlay(background);
+        return;
+
+        void CloseAndRespond(bool response)
+        {
+            e.SetResponse(response);
+            parentOverlay.RemoveOverlay(background);
+        }
     }
 }

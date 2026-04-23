@@ -135,6 +135,28 @@ public class FlatpakInstall(
         _listRemotes.SetModel(_remoteSelectionModel);
 
         _overlayInstallButton.OnClicked += (_, _) => { _ = InstallSelectedAsync(); };
+        _overlayInstallButton.CanFocus = true;
+        _overlayInstallButton.ReceivesDefault = true;
+
+        var shortcutController = ShortcutController.New();
+        shortcutController.Scope = ShortcutScope.Global;
+        shortcutController.PropagationPhase = PropagationPhase.Capture;
+
+        var triggers = new[] { "Return", "KP_Enter", "space" };
+        foreach (var triggerStr in triggers)
+        {
+            var action = CallbackAction.New((_, _) =>
+            {
+                if (!_overlay.GetVisible() || !_overlayInstallButton.GetSensitive()) return false;
+                if (OverlayHelper.HasActiveOverlay(box)) return false;
+                
+                Task.Run(async () => await InstallSelectedAsync());
+                return true;
+            });
+            shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
+        }
+        box.AddController(shortcutController);
+
         _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(); };
         _remoteRefBackButton.OnClicked += (_, _) => { _remoteRefOverlay.Hide(); };
         _installFromFlatpakRef.OnClicked += (_, _) => { _ = InstallFromFlatpakRef(); };

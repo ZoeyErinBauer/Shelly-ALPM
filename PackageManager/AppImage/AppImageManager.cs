@@ -41,7 +41,10 @@ public class AppImageManager
         var filePath = Path.GetFullPath(location);
         var appName = Path.GetFileNameWithoutExtension(filePath);
         var destAppImagePath = Path.Combine(InstallDirectory, $"{appName}.AppImage");
-
+        
+        if(!Directory.Exists(InstallDirectory))
+            Directory.CreateDirectory(InstallDirectory);
+        
         LogMessage($"Installing AppImage {appName}...");
         File.Copy(filePath, destAppImagePath, true);
         SetFilePermissions(destAppImagePath, "a+x");

@@ -68,6 +68,23 @@ public class LockoutDialog
             _closeButton.SetVisible(false);
             _closeButton.OnClicked += (_, _) => Hide();
             box.Append(_closeButton);
+
+            var shortcutController = ShortcutController.New();
+            shortcutController.Scope = ShortcutScope.Global;
+            shortcutController.PropagationPhase = PropagationPhase.Capture;
+
+            foreach (var triggerStr in new[] { "Return", "KP_Enter", "space", "Escape" })
+            {
+                var action = CallbackAction.New((_, _) =>
+                {
+                    if (!_operationComplete) return false;
+                    Hide();
+                    return true;
+                });
+                shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
+            }
+
+            _background.AddController(shortcutController);
         }
 
         _descriptionLabel!.SetText(description);
