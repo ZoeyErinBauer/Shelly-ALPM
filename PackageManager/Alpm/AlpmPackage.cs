@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using PackageManager.Alpm.Package;
 
 namespace PackageManager.Alpm;
 
@@ -202,6 +203,7 @@ public class AlpmPackage(IntPtr pkgPtr)
         Licenses = Licenses,
         OptDepends = OptDepends,
         Provides = Provides,
+        PackageFile = Repository == "local" ? Files : null,
     };
 
     public override string ToString()
@@ -234,4 +236,10 @@ public class AlpmPackage(IntPtr pkgPtr)
 
         return dependencies;
     }
+    
+    private AlpmPackageTreeDto? _fileTree;
+
+    public AlpmPackageTreeDto Files =>
+        _fileTree ??= AlpmPackageFileTreeBuilder.BuildTree(
+            AlpmFileListMarshaller.Enumerate(AlpmReference.GetPkgFiles(PackagePtr)));
 }

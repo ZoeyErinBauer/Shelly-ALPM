@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PackageManager.Alpm.Package;
 
 namespace PackageManager.Alpm;
 
@@ -29,6 +30,8 @@ public record AlpmPackageDto
 
     public List<string> Conflicts { get; init; } = [];
 
+    public AlpmPackageTreeDto? PackageFile { get; init; } = null;
+
     public string InstallReason { get; init; } = string.Empty;
 
     public DateTime? InstallDate { get; init; } = null;
@@ -40,5 +43,4 @@ public record AlpmPackageDto
     public List<string> RequiredBy { get; init; } = [];
 
     public List<string> OptionalFor { get; init; } = [];
-
 }
