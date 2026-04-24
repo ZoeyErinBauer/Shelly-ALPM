@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 using PackageManager.Alpm;
+using PackageManager.Utilities;
 using Shelly_CLI.Configuration;
 using Shelly_CLI.Utility;
 using Spectre.Console;
@@ -19,8 +20,7 @@ public class ListUpdatesCommand : Command<ListSettings>
         }
 
         using var manager = new AlpmManager();
-        var username = Environment.GetEnvironmentVariable("USER");
-        var dbPath = Path.Combine("/home", username, ".cache", "Shelly", "db");
+        var dbPath = XdgPaths.ShellyCache("db");
         Directory.CreateDirectory(dbPath);
         if (!settings.JsonOutput)
         {
@@ -98,8 +98,7 @@ public class ListUpdatesCommand : Command<ListSettings>
     private static int HandleUiModeListUpdates(ListSettings settings)
     {
         using var manager = new AlpmManager();
-        var username = Environment.GetEnvironmentVariable("USER");
-        var dbPath = Path.Combine("/home", username, ".cache", "Shelly", "db");
+        var dbPath = XdgPaths.ShellyCache("db");
         Directory.CreateDirectory(dbPath);
         manager.Initialize(false, int.Parse(ConfigManager.GetConfigValue("ParallelDownloadCount")!),true, dbPath, showHiddenPackages: settings.ShowHidden);
         manager.Sync();

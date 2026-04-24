@@ -225,9 +225,7 @@ public class AurPackageManager(string? configPath = null)
         foreach (var packageName in packageNames)
         {
             // Check if there's an existing PKGBUILD (cached from previous install)
-            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+            var tempPath = XdgPaths.ShellyCache(packageName);
             var cachedPkgbuildPath = System.IO.Path.Combine(tempPath, "PKGBUILD");
             string? oldPkgbuild = null;
 
@@ -312,9 +310,7 @@ public class AurPackageManager(string? configPath = null)
             return;
         }
 
-        var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        var home = $"/home/{user}";
-        var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+        var tempPath = XdgPaths.ShellyCache(packageName);
         var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
 
         var depends = pkgbuildInfo.ParsedDepends;
@@ -420,8 +416,7 @@ public class AurPackageManager(string? configPath = null)
 
             // Build the package using makepkg
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+            var tempPath = XdgPaths.ShellyCache(packageName);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -680,8 +675,7 @@ public class AurPackageManager(string? configPath = null)
             _vcsInfoStore.RemovePackage(packageName);
             // Clean up cache folder
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var cachePath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+            var cachePath = XdgPaths.ShellyCache(packageName);
 
             if (System.IO.Directory.Exists(cachePath))
             {
@@ -913,9 +907,7 @@ public class AurPackageManager(string? configPath = null)
         try
         {
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
-
+            var tempPath = XdgPaths.ShellyCache(packageName);
             // Remove existing directory if it exists
             if (System.IO.Directory.Exists(tempPath))
             {
@@ -993,9 +985,7 @@ public class AurPackageManager(string? configPath = null)
         try
         {
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
-
+            var tempPath = XdgPaths.ShellyCache(packageName);
             if (System.IO.Directory.Exists(System.IO.Path.Combine(tempPath, ".git")))
             {
                 // Already cloned — pull latest
@@ -1080,8 +1070,8 @@ public class AurPackageManager(string? configPath = null)
         try
         {
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var shellyCachePath = System.IO.Path.Combine(home, ".cache", "Shelly");
+            var home = XdgPaths.InvokingUserHome();
+            var shellyCachePath = XdgPaths.ShellyCache();
 
             // Get list of installed foreign (AUR) packages
             var foreignPackages = _alpm.GetForeignPackages().Select(p => p.Name).ToHashSet();
@@ -1280,9 +1270,7 @@ public class AurPackageManager(string? configPath = null)
                 continue;
             }
 
-            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", aurDep.Name);
+            var tempPath = XdgPaths.ShellyCache(aurDep.Name);
             var depPkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
 
             if (aurDep.Operator != null)
@@ -1313,10 +1301,7 @@ public class AurPackageManager(string? configPath = null)
 
         try
         {
-            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
-
+            var tempPath = XdgPaths.ShellyCache(packageName);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -1450,9 +1435,7 @@ public class AurPackageManager(string? configPath = null)
                 return;
             }
 
-            var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var home = $"/home/{user}";
-            var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+            var tempPath = XdgPaths.ShellyCache(packageName);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -1714,9 +1697,7 @@ public class AurPackageManager(string? configPath = null)
     /// </summary>
     private async Task<List<VcsSourceEntry>?> GetVcsSourceEntriesForPackage(string packageName)
     {
-        var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        var home = $"/home/{user}";
-        var cachePath = Path.Combine(home, ".cache", "Shelly", packageName);
+        var cachePath = XdgPaths.ShellyCache(packageName);
         var pkgbuildPath = Path.Combine(cachePath, "PKGBUILD");
 
         if (!File.Exists(pkgbuildPath))

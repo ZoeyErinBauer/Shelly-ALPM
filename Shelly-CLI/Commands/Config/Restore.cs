@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PackageManager.Utilities;
 using Shelly_CLI.Configuration;
 using Spectre.Console.Cli;
 
@@ -8,9 +9,7 @@ public class Restore : AsyncCommand
 {
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        ;
-        var configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
+        var configPath = XdgPaths.ShellyConfig("config.json");
         if (!File.Exists(configPath))
         {
             await CreateConfigFile(configPath);
