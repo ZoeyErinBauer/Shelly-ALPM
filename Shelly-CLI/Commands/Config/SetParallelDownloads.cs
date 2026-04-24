@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using PackageManager.Utilities;
 using Shelly_CLI.Configuration;
 using Spectre.Console.Cli;
 
@@ -9,9 +10,7 @@ public class SetParallelDownloads : Command<SetParallelDownloadsSettings>
 {
     public override int Execute(CommandContext context, [NotNull] SetParallelDownloadsSettings settings)
     {
-        var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        ;
-        var configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
+        var configPath = XdgPaths.ShellyConfig("config.json");
         Console.WriteLine(configPath);
         if (!File.Exists(configPath))
         {

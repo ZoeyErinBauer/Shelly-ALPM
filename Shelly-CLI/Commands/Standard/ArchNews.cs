@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using PackageManager.Alpm;
+using PackageManager.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -11,10 +12,7 @@ namespace Shelly_CLI.Commands.Standard;
 
 public class ArchNews : AsyncCommand<ArchNewsSettings>
 {
-    private static readonly string? Username = Environment.GetEnvironmentVariable("USER");
-
-    private static readonly string FeedFolder = Path.Combine("/home", Username ?? throw new InvalidOperationException(),
-        ".cache", "Shelly", "archNewsFeed");
+    private static readonly string FeedFolder = XdgPaths.ShellyCache("archNewsFeed");
 
     private static readonly string FeedPath = Path.Combine(FeedFolder, "Feed.json");
 

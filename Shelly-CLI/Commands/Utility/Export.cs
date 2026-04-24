@@ -5,6 +5,7 @@ using PackageManager;
 using PackageManager.Alpm;
 using PackageManager.Aur;
 using PackageManager.Flatpak;
+using PackageManager.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -14,20 +15,12 @@ public class Export : AsyncCommand<ExportSettings>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] ExportSettings settings)
     {
-        var username = Environment.GetEnvironmentVariable("USER");
-
-        if (username == "root" || string.IsNullOrEmpty(username))
-        {
-            throw new InvalidOperationException(
-                "Cannot determine non-root user for cache directory."
-            );
-        }
-        
         var time = DateTimeOffset.Now;
-        
+        var fileName = string.IsNullOrEmpty(settings.Name) ? $"{time:yyyyMMddHHmmss}_shelly.sync" : settings.Name + ".sync";
+
         var path = string.IsNullOrEmpty(settings.Output)
-            ? Path.Combine("/home", username, ".cache", "Shelly", string.IsNullOrEmpty(settings.Name) ? $"{time:yyyyMMddHHmmss}_shelly.sync" : settings.Name + ".sync")
-            : Path.Combine(settings.Output,  string.IsNullOrEmpty(settings.Name) ? $"{time:yyyyMMddHHmmss}_shelly.sync" : settings.Name + ".sync");
+            ? XdgPaths.ShellyCache(fileName)
+            : Path.Combine(settings.Output, fileName);
 
         //Alpm 
         using var manager = new AlpmManager();

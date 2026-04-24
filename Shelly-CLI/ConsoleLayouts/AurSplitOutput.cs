@@ -44,8 +44,30 @@ public static class AurSplitOutput
         object renderLock = new();
         bool hadError = false;
 
-        // Track package progress lines by package name for in-place updates
+        // Track package progress lines by package name for in-place updates.
+        // Kept separate from ALPM bar rows to avoid index desync when progressLines is rebuilt.
+        var packageProgressLines = new List<string>();
         var packageProgressIndex = new Dictionary<string, int>();
+
+        var rows = new Dictionary<string, BarState>(StringComparer.Ordinal);
+        var order = new List<string>();
+
+        string RenderLine(BarState r, int frame)
+        {
+            var bar = ProgressBarRenderer.Render(r.Pct, frame, style, barWidth);
+            return $"({r.Current}/{r.HowMany}) {r.ActionType} " +
+                   $"[bold]{r.Name.EscapeMarkup()}[/] {bar} {r.Pct,3}%";
+        }
+
+        void RebuildProgressLines(int frame)
+        {
+            progressLines.Clear();
+            progressLines.AddRange(packageProgressLines);
+            foreach (var key in order)
+            {
+                progressLines.Add(RenderLine(rows[key], frame));
+            }
+        }
 
         manager.PackageProgress += (sender, args) =>
         {
@@ -65,15 +87,18 @@ public static class AurSplitOutput
 
             lock (renderLock)
             {
-                if (packageProgressIndex.TryGetValue(args.PackageName, out var idx))
+                if (packageProgressIndex.TryGetValue(args.PackageName, out var idx)
+                    && idx < packageProgressLines.Count)
                 {
-                    progressLines[idx] = line;
+                    packageProgressLines[idx] = line;
                 }
                 else
                 {
-                    progressLines.Add(line);
-                    packageProgressIndex[args.PackageName] = progressLines.Count - 1;
+                    packageProgressLines.Add(line);
+                    packageProgressIndex[args.PackageName] = packageProgressLines.Count - 1;
                 }
+
+                RebuildProgressLines(frame: 0);
 
                 var visible = progressLines.Skip(Math.Max(0, progressLines.Count - maxVisibleLines)).ToList();
                 layout["Progress"].Update(
@@ -83,25 +108,6 @@ public static class AurSplitOutput
                 liveCtx?.Refresh();
             }
         };
-
-        var rows = new Dictionary<string, BarState>(StringComparer.Ordinal);
-        var order = new List<string>();
-
-        string RenderLine(BarState r, int frame)
-        {
-            var bar = ProgressBarRenderer.Render(r.Pct, frame, style, barWidth);
-            return $"({r.Current}/{r.HowMany}) {r.ActionType} " +
-                   $"[bold]{r.Name.EscapeMarkup()}[/] {bar} {r.Pct,3}%";
-        }
-
-        void RebuildProgressLines(int frame)
-        {
-            progressLines.Clear();
-            foreach (var key in order)
-            {
-                progressLines.Add(RenderLine(rows[key], frame));
-            }
-        }
 
         manager.Progress += (sender, e) =>
         {

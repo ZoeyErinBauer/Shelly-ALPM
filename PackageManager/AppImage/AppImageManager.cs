@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PackageManager.AppImage.Events.EventArgs;
+using PackageManager.Utilities;
 
 namespace PackageManager.AppImage;
 
@@ -193,7 +194,7 @@ public class AppImageManager
             return 1;
         }
 
-        var backupDir = Path.Combine(GetUserHomePath(), ".cache", "Shelly", update.Name);
+        var backupDir = XdgPaths.ShellyCache(update.Name);
         Directory.CreateDirectory(backupDir);
         var backupPath = Path.Combine(backupDir, $"{appImage.Name}-{appImage.Version}.AppImage.bak");
         var downloadPath = currentPath + ".rep";
@@ -904,17 +905,9 @@ public class AppImageManager
         }
     }
 
-    private static string GetUserHomePath()
-    {
-        var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
-        if (string.IsNullOrEmpty(sudoUser)) return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var userHome = $"/home/{sudoUser}";
-        return Directory.Exists(userHome) ? userHome : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-    }
+    private static string GetUserHomePath() => XdgPaths.InvokingUserHome();
 
-    private static readonly string LocalDbPath = Path.Combine(
-        GetUserHomePath(),
-        ".cache", "Shelly", "appimage-local-meta-store", "appimage-metadata.db");
+    private static readonly string LocalDbPath = XdgPaths.ShellyCache("appimage-local-meta-store", "appimage-metadata.db");
 
     private static Task EnsureDbDirectoryExists()
     {

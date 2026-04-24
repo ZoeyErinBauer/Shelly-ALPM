@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PackageManager.Aur.Models;
+using PackageManager.Utilities;
 
 namespace PackageManager.Aur;
 
@@ -15,9 +16,7 @@ public class VcsInfoStore
 
     public VcsInfoStore()
     {
-        var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        var home = $"/home/{user}";
-        _storePath = Path.Combine(home, ".local", "share", "Shelly", "vcs.json");
+        _storePath = XdgPaths.ShellyData("vcs.json");
     }
 
     public async Task Load()
