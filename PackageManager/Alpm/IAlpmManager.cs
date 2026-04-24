@@ -91,4 +91,6 @@ public interface IAlpmManager
     /// </summary>
     /// <returns>Names of corrupted pkgs removed</returns>
     List<string> RemoveCorruptedPackages(bool dryRun = false);
+    
+    
 }
