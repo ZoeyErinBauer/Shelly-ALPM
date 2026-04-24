@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PackageManager.Alpm;
 using PackageManager.Aur;
+using PackageManager.Utilities;
 using PackageManager.Aur.Models;
 using PackageManager.Flatpak;
 using Spectre.Console;
@@ -22,8 +23,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         List<AurUpdateDto> aurPackages = [];
         var flatPakManager = new FlatpakManager();
         List<FlatpakPackageDto> flatpakPackages = [];
-        var username = Environment.GetEnvironmentVariable("USER");
-        var dbPath = Path.Combine("/home", username!, ".cache", "Shelly", "db");
+        var dbPath = XdgPaths.ShellyCache("db");
         Directory.CreateDirectory(dbPath);
         AnsiConsole.WriteLine(dbPath);
         if (settings.JsonOutput)
@@ -144,8 +144,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         List<AurUpdateDto> aurPackages = [];
         var flatPakManager = new FlatpakManager();
         List<FlatpakPackageDto> flatpakPackages = [];
-        var username = Environment.GetEnvironmentVariable("USER");
-        var dbPath = Path.Combine("/home", username, ".cache", "Shelly", "db");
+        var dbPath = XdgPaths.ShellyCache("db");
         Directory.CreateDirectory(dbPath);
         Console.Error.WriteLine(dbPath);
         

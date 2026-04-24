@@ -4,6 +4,7 @@ using System.Text.Json;
 using PackageManager.Alpm;
 using PackageManager.Aur;
 using PackageManager.Aur.Models;
+using PackageManager.Utilities;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Commands.Flatpak;
 using Shelly_CLI.Commands.Standard;
@@ -25,8 +26,7 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
             return 0;
         }
         
-        var username = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        var configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
+        var configPath = XdgPaths.ShellyConfig("config.json");
         if (!File.Exists(configPath))
         {
             return 1;

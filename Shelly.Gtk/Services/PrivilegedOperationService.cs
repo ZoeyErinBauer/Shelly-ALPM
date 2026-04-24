@@ -493,11 +493,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         if (updateUrl != "" && updateType != AppImageUpdateType.None)
         {
-            return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", filePath, "-u",
+            return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-u",
                 updateUrl, "-t", updateType.ToString().ToLowerInvariant(), "-n");
         }
 
-        return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", filePath, "-n");
+        return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-n");
     }
 
     public async Task<OperationResult> AppImageUpgradeAsync()
@@ -507,14 +507,14 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
     public async Task<OperationResult> AppImageRemoveAsync(string name)
     {
-        return await ExecutePrivilegedCommandAsync("Remove AppImage's", "appimage", "remove", name, "-n");
+        return await ExecutePrivilegedCommandAsync("Remove AppImage's", "appimage", "remove", $"\"{name}\"", "-n");
     }
 
     public async Task<OperationResult> AppImageConfigureUpdatesAsync(string url, string name,
         AppImageUpdateType updateType)
     {
         return await ExecutePrivilegedCommandAsync("Set AppImage's Update Config", "appimage", "configure-updates",
-            name, "-u", url, "-t", updateType.ToString().ToLowerInvariant());
+            $"\"{name}\"", "-u", url, "-t", updateType.ToString().ToLowerInvariant());
     }
 
     public async Task<OperationResult> AppImageSyncApp(string name)

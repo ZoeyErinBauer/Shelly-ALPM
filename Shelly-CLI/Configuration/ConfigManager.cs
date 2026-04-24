@@ -1,22 +1,12 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
-
+using PackageManager.Utilities;
 namespace Shelly_CLI.Configuration;
 
 public static class ConfigManager
 {
-    public static string GetConfigPath()
-    {
-        if (Environment.GetEnvironmentVariable("USER") == "root")
-        {
-            var username = Environment.GetEnvironmentVariable("SUDO_USER");
-            return Path.Combine("/home", username!, ".config", "shelly", "config.json");
-        }
-
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "shelly", "config.json");
-    }
+    public static string GetConfigPath() => XdgPaths.ShellyConfig("config.json");
 
     public static ShellyConfig ReadConfig()
     {

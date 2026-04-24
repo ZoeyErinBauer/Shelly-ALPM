@@ -8,6 +8,7 @@ using Shelly_CLI.Commands.Keyring;
 using Shelly_CLI.Commands.Standard;
 using Shelly_CLI.Commands.Standard.Pacfile;
 using Shelly_CLI.Commands.Utility;
+using PackageManager.Utilities;
 using Shelly_CLI.Configuration;
 using Shelly.Writers;
 using Spectre.Console;
@@ -22,17 +23,7 @@ public class Program
     public static int Main(string[] args)
     {
         // Ensure default configuration exists in ~/.config/shelly/config.json
-        string configPath;
-        if (Environment.GetEnvironmentVariable("USER") == "root")
-        {
-            var username = Environment.GetEnvironmentVariable("SUDO_USER");
-            configPath = Path.Combine("/home", username, ".config", "shelly", "config.json");
-        }
-        else
-        {
-            configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "shelly", "config.json");
-        }
+        var configPath = XdgPaths.ShellyConfig("config.json");
 
         if (!File.Exists(configPath))
         {

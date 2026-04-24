@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PackageManager.AppImage.Events.EventArgs;
+using PackageManager.Utilities;
 
 namespace PackageManager.AppImage;
 
@@ -135,7 +136,7 @@ public class AppImageManager
                 foreach (var df in potentialDesktopFiles)
                 {
                     var content = await File.ReadAllLinesAsync(df);
-                    if (!content.Any(l => l.StartsWith("Exec=") && l.Contains(appImagePath))) continue;
+                    if (!content.Any(l => l.StartsWith("Exec=") && (l.Contains(appImagePath) || l.Contains($"\"{appImagePath}\"")))) continue;
                     File.Delete(df);
                     LogMessage($"Removed desktop entry: {df}");
                     UpdateDesktopDatabase(desktopDir);
@@ -143,9 +144,16 @@ public class AppImageManager
                 }
             }
 
-            const string iconDir = "/usr/share/icons/hicolor/scalable/apps";
-            if (Directory.Exists(iconDir))
+            string[] iconDirs =
             {
+                "/usr/share/icons/hicolor/scalable/apps",
+                "/usr/share/icons/hicolor/256x256/apps"
+            };
+
+            foreach (var iconDir in iconDirs)
+            {
+                if (!Directory.Exists(iconDir)) continue;
+                
                 var potentialIcons = Directory.GetFiles(iconDir, $"{cleanName}.*");
                 foreach (var icon in potentialIcons)
                 {
@@ -186,7 +194,7 @@ public class AppImageManager
             return 1;
         }
 
-        var backupDir = Path.Combine(GetUserHomePath(), ".cache", "Shelly", update.Name);
+        var backupDir = XdgPaths.ShellyCache(update.Name);
         Directory.CreateDirectory(backupDir);
         var backupPath = Path.Combine(backupDir, $"{appImage.Name}-{appImage.Version}.AppImage.bak");
         var downloadPath = currentPath + ".rep";
@@ -617,11 +625,16 @@ public class AppImageManager
             var finalIconPath = "application-x-executable";
             if (iconPath != null)
             {
-                const string iconDir = "/usr/share/icons/hicolor/scalable/apps";
+                var extension = Path.GetExtension(iconPath).ToLower();
+                if (string.IsNullOrEmpty(extension) || extension == ".diricon")
+                {
+                    extension = ".png";
+                }
+
+                var iconDir = extension == ".svg" ? "/usr/share/icons/hicolor/scalable/apps" : "/usr/share/icons/hicolor/256x256/apps";
+
                 Directory.CreateDirectory(iconDir);
 
-                var extension = Path.GetExtension(iconPath);
-                if (string.IsNullOrEmpty(extension) || extension == ".DirIcon") extension = ".svg";
                 destIconName = $"{CleanInvalidNames(appName).ToLower()}{extension}";
                 var destIconPath = Path.Combine(iconDir, destIconName);
 
@@ -647,7 +660,7 @@ public class AppImageManager
                     {
                         if (line.StartsWith("Exec="))
                         {
-                            patchedContent.AppendLine($"Exec={filePath}");
+                            patchedContent.AppendLine($"Exec=\"{filePath}\"");
                         }
                         else if (line.StartsWith("Icon="))
                         {
@@ -802,7 +815,7 @@ public class AppImageManager
         content.AppendLine("Type=Application");
         content.AppendLine($"Name={appName}");
         content.AppendLine($"Comment={comment ?? $"{appName} application"}");
-        content.AppendLine($"Exec={executablePath}");
+        content.AppendLine($"Exec=\"{executablePath}\"");
         content.AppendLine($"Icon={icon}");
         content.AppendLine($"Terminal={terminal.ToString().ToLower()}");
         content.AppendLine($"Categories={categories}");
@@ -892,17 +905,9 @@ public class AppImageManager
         }
     }
 
-    private static string GetUserHomePath()
-    {
-        var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
-        if (string.IsNullOrEmpty(sudoUser)) return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var userHome = $"/home/{sudoUser}";
-        return Directory.Exists(userHome) ? userHome : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-    }
+    private static string GetUserHomePath() => XdgPaths.InvokingUserHome();
 
-    private static readonly string LocalDbPath = Path.Combine(
-        GetUserHomePath(),
-        ".cache", "Shelly", "appimage-local-meta-store", "appimage-metadata.db");
+    private static readonly string LocalDbPath = XdgPaths.ShellyCache("appimage-local-meta-store", "appimage-metadata.db");
 
     private static Task EnsureDbDirectoryExists()
     {

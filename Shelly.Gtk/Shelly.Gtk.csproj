@@ -34,8 +34,10 @@
     <ItemGroup>
         <PackageReference Include="GirCore.Gtk-4.0" Version="0.7.0"/>
         <PackageReference Include="GirCore.GObject-2.0.Integration" Version="0.7.0"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+        <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.7" />
         <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
     </ItemGroup>
     <ItemGroup>
