@@ -46,6 +46,8 @@ public class AurInstall(
     private Button _installButton = null!;
     private CheckButton _chrootCheck = null!;
     private CheckButton _runChecksCheck = null!;
+    
+    private Label _searchForPackageLabel = null!;
 
     public Widget CreateWindow()
     {
@@ -80,6 +82,9 @@ public class AurInstall(
         _selectionModel.CanUnselect = true;
         _selectionModel.Autoselect = false;
         _columnView.SetModel(_selectionModel);
+        _searchForPackageLabel = (Label)builder.GetObject("search_overlay")!;
+        _searchForPackageLabel.Label_ = "<span size='large'>Search for AUR packages</span>";
+        _searchForPackageLabel.Visible = true;
 
         SetupColumns(_checkColumn, _nameColumn, _votesColumn, _popColumn, _versionColumn);
 
@@ -270,6 +275,7 @@ public class AurInstall(
         if (!string.IsNullOrWhiteSpace(_searchText))
         {
             var result = await privilegedOperationService.SearchAurPackagesAsync(_searchText);
+            _searchForPackageLabel.Visible = false;
             ct.ThrowIfCancellationRequested();
 
             Console.WriteLine($"[DEBUG_LOG] Search result: {result.Count}");
