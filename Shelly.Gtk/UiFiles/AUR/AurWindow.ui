@@ -65,45 +65,59 @@
                 <property name="margin-end">10</property>
                 <property name="margin-bottom">10</property>
                 <child>
-                    <object class="GtkScrolledWindow">
-                        <property name="hexpand">true</property>
-                        <property name="overlay-scrolling">false</property>
-                        <property name="vexpand">true</property>
-                        <style>
-                            <class name="rounded-card"/>
-                        </style>
+                    <object class="GtkOverlay">
                         <child>
-                            <object class="GtkColumnView" id="package_grid">
+                            <object class="GtkScrolledWindow">
                                 <property name="hexpand">true</property>
+                                <property name="overlay-scrolling">false</property>
                                 <property name="vexpand">true</property>
+                                <style>
+                                    <class name="rounded-card"/>
+                                </style>
                                 <child>
-                                    <object class="GtkColumnViewColumn" id="name_column">
-                                        <property name="title">Name</property>
-                                        <property name="expand">true</property>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkColumnViewColumn" id="votes_column">
-                                        <property name="title">Votes</property>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkColumnViewColumn" id="popularity_column">
-                                        <property name="title">Popularity</property>
-                                    </object>
-                                </child>
+                                    <object class="GtkColumnView" id="package_grid">
+                                        <property name="hexpand">true</property>
+                                        <property name="vexpand">true</property>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="name_column">
+                                                <property name="title">Name</property>
+                                                <property name="expand">true</property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="votes_column">
+                                                <property name="title">Votes</property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="popularity_column">
+                                                <property name="title">Popularity</property>
+                                            </object>
+                                        </child>
 
-                                <child>
-                                    <object class="GtkColumnViewColumn" id="version_column">
-                                        <property name="title">Version</property>
-                                        <property name="expand">true</property>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="version_column">
+                                                <property name="title">Version</property>
+                                                <property name="expand">true</property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkColumnViewColumn" id="check_column">
+                                                <property name="title"></property>
+                                            </object>
+                                        </child>
                                     </object>
                                 </child>
-                                <child>
-                                    <object class="GtkColumnViewColumn" id="check_column">
-                                        <property name="title"></property>
-                                    </object>
-                                </child>
+                            </object>
+                        </child>
+
+                        <child type="overlay">
+                            <object class="GtkLabel" id="search_overlay">
+                                <property name="halign">center</property>
+                                <property name="valign">center</property>
+                                <property name="opacity">0.5</property>
+                                <property name="visible">false</property>
+                                <property name="use-markup">true</property>
                             </object>
                         </child>
                     </object>
@@ -123,7 +137,6 @@
                                     <object class="GtkScrolledWindow">
                                         <property name="hscrollbar-policy">never</property>
                                         <property name="overlay-scrolling">true</property>
-
                                         <property name="propagate-natural-height">True</property>
                                         <property name="propagate-natural-width">False</property>
                                         <property name="vexpand">true</property>
