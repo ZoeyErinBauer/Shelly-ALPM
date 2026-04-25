@@ -21,6 +21,7 @@ depends=(
     'dbus'
     'glibc'
     'libarchive'
+    'dconf'
 )
 optdepends=(
     'flatpak: For supporting flatpak implementation.'
