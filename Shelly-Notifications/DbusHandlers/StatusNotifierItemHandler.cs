@@ -9,12 +9,12 @@ internal class StatusNotifierItemHandler(Connection connection, ConfigReader con
     
     public bool HandlesChildPaths => false;
 
-    private string _iconName = "shelly-shell-symbolic";
+    private string _iconName = configReader.LoadConfig().UseSymbolicTray ? "shelly-shell-symbolic" : "shelly-tray";
 
     public async Task SetUpdatesPending(bool pending)
     {
         var newIcon = pending ? "shelly-update" : "shelly-tray";
-        if (configReader.LoadConfig().TrayEnabled)
+        if (configReader.LoadConfig().UseSymbolicTray)
         {
             newIcon = pending ? "shelly-updates-symbolic" : "shelly-shell-symbolic";
         }
