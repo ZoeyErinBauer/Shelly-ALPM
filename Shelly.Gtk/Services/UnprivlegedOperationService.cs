@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using Shelly.Gtk.Enums;
+using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AppImage;
@@ -49,75 +49,22 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         return "shelly";
     }
 
+
     public async Task<List<FlatpakPackageDto>> ListFlatpakPackages()
     {
         var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list", "--json");
-
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
-        {
-            return [];
-        }
-
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
-                    return updates ?? [];
-                }
-            }
-
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
-            return allUpdates ?? [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
-            return [];
-        }
+        return ResultDeserializers.DeserializeCliResult<FlatpakPackageDto>(result,
+            ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
     }
 
     public async Task<List<FlatpakPackageDto>> ListFlatpakUpdates()
     {
         var result = await ExecuteUnprivilegedCommandAsync("List packages", "flatpak list-updates", "--json");
-
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
-        {
-            return [];
-        }
-
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
-                    return updates ?? [];
-                }
-            }
-
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
-            return allUpdates ?? [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
-            return [];
-        }
+        return ResultDeserializers.DeserializeCliResult<FlatpakPackageDto>(result,
+            ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
     }
 
-    public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
+    public async Task<OperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
     {
         var packageArgs = string.Join(" ", packages);
         return await ExecuteUnprivilegedCommandAsync("Remove packages", "flatpak remove", packageArgs);
@@ -129,46 +76,18 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             await ExecuteUnprivilegedCommandAsync("Get local appstream", ct, "flatpak get-remote-appstream", "all",
                 "--json");
 
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
-        {
-            return [];
-        }
-
-        return await Task.Run(() =>
-        {
-            try
-            {
-                var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
-                {
-                    var trimmedLine = StripBom(line.Trim());
-                    if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                    {
-                        var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                            ShellyGtkJsonContext.Default.ListAppstreamApp);
-                        return updates ?? [];
-                    }
-                }
-
-                var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                    ShellyGtkJsonContext.Default.ListAppstreamApp);
-                return allUpdates ?? [];
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
-                return [];
-            }
-        }, ct);
+        return await Task.Run(
+            () => ResultDeserializers.DeserializeCliResult<AppstreamApp>(result,
+                ShellyGtkJsonContext.Default.ListAppstreamApp), ct);
     }
 
 
-    public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
+    public async Task<OperationResult> UpdateFlatpakPackage(string package)
     {
         return await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
     }
 
-    public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool removeConfig)
+    public async Task<OperationResult> RemoveFlatpakPackage(string package, bool removeConfig)
     {
         if (removeConfig)
         {
@@ -178,7 +97,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
     }
 
-    public async Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package, bool user, string remote,
+    public async Task<OperationResult> InstallFlatpakPackage(string package, bool user, string remote,
         string branch, bool isRuntime = false)
     {
         if (user)
@@ -191,7 +110,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             "--branch", branch, isRuntime ? "--runtime" : "");
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakUpgrade()
+    public async Task<OperationResult> FlatpakUpgrade()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
         SendDbusMessage(result);
@@ -206,12 +125,12 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             ShellyGtkJsonContext.Default.ListFlatpakRemoteDto) ?? [];
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream()
+    public async Task<OperationResult> FlatpakSyncRemoteAppstream()
     {
         return await ExecuteUnprivilegedCommandAsync("Sync remote", "flatpak sync-remote-appstream");
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakRemoveRemote(string remoteName, string scope)
+    public async Task<OperationResult> FlatpakRemoveRemote(string remoteName, string scope)
     {
         if (scope == "user")
         {
@@ -223,7 +142,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             "true");
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakInsallFromRef(string path, string scope)
+    public async Task<OperationResult> FlatpakInsallFromRef(string path, string scope)
     {
         if (scope == "user")
         {
@@ -234,19 +153,19 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             "true");
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakInstallFromBundle(string path)
+    public async Task<OperationResult> FlatpakInstallFromBundle(string path)
     {
         return await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
             "--user",
             "false");
     }
 
-    public async Task<UnprivilegedOperationResult> RunFlatpakName(string name)
+    public async Task<OperationResult> RunFlatpakName(string name)
     {
         return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak run", name);
     }
 
-    public async Task<UnprivilegedOperationResult> FlatpakAddRemote(string remoteName, string scope, string url)
+    public async Task<OperationResult> FlatpakAddRemote(string remoteName, string scope, string url)
     {
         if (scope == "user")
         {
@@ -282,129 +201,37 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
     public async Task<List<AppImageDto>> GetInstallAppImagesAsync()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Get Installed AppImages", "appimage list --json");
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListAppImageDto);
-                    return apps ?? [];
-                }
-            }
-
-            return [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse installed AppImages JSON: {ex.Message}");
-            return [];
-        }
+        return ResultDeserializers.DeserializeCliResult<AppImageDto>(result,
+            ShellyGtkJsonContext.Default.ListAppImageDto);
     }
 
     public async Task<List<RssModel>> GetArchNewsAsync(bool all = false)
     {
         var args = all ? "news" + " --json" + " --all" : "news" + " --json";
         var result = await ExecuteUnprivilegedCommandAsync("Fetch Arch News", args, "--ui-mode");
-        if (!result.Success || string.IsNullOrEmpty(result.Output))
-        {
-            return [];
-        }
-
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListRssModel);
-                    return apps ?? [];
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deserializing Arch News: {ex.Message}");
-        }
-
-        return [];
+        return ResultDeserializers.DeserializeCliResult<RssModel>(result, ShellyGtkJsonContext.Default.ListRssModel);
     }
 
     public async Task<List<PacfileRecord>> GetPacFiles()
     {
-         var result = await ExecuteUnprivilegedCommandAsync("Fetch Pac files", "pacfile --json");
-        if (!result.Success || string.IsNullOrEmpty(result.Output))
-        {
-            return [];
-        }
-
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var pacFiles = JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListPacfileRecord);
-                    return pacFiles ?? [];
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deserializing Arch News: {ex.Message}");
-        }
-
-        return [];
+        var result = await ExecuteUnprivilegedCommandAsync("Fetch Pac files", "pacfile --json");
+        return ResultDeserializers.DeserializeCliResult<PacfileRecord>(result,
+            ShellyGtkJsonContext.Default.ListPacfileRecord);
     }
 
 
     public async Task<List<AppImageDto>> GetUpdatesAppImagesAsync()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Get AppImage Updates", "appimage list-updates --json");
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
-                {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                        ShellyGtkJsonContext.Default.ListAppImageUpdateDto);
-                    return updates?.Select(u => new AppImageDto
-                    {
-                        Name = u.Name,
-                        Version = u.Version,
-                        UpdateVersion = u.Version,
-                        UpdateURl = u.DownloadUrl,
-                        UpdateType = AppImageUpdateType.StaticUrl // Default or map if possible
-                    }).ToList() ?? [];
-                }
-            }
-
-            return [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse AppImage updates JSON: {ex.Message}");
-            return [];
-        }
+        return ResultDeserializers.DeserializeCliResult<AppImageDto>(result,
+            ShellyGtkJsonContext.Default.ListAppImageDto);
     }
 
     public async Task<List<AlpmPackageUpdateDto>> CheckForStandardApplicationUpdates(bool showHidden = false)
     {
         var args = showHidden ? "list-updates --json --show-hidden" : "list-updates --json";
         var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", args);
-
+        
         try
         {
             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -431,7 +258,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         }
     }
 
-    public async Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name)
+    public async Task<OperationResult> ExportSyncFile(string filePath, string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -444,7 +271,6 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
     public async Task<SyncModel> CheckForApplicationUpdates()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", "utility updates -a -l --json");
-        //SendDbusMessage(result);
         try
         {
             var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -470,55 +296,14 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
             return new SyncModel();
         }
     }
-
-    public async Task<List<FlatpakPackageDto>> SearchFlathubAsync(string query)
-    {
-        var result =
-            await ExecuteUnprivilegedCommandAsync("Search Flathub", "flatpak search", query, "--json", "--limit",
-                "100");
-
-        if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
-        {
-            return [];
-        }
-
-        try
-        {
-            var trimmedOutput = StripBom(result.Output.Trim());
-
-            if (trimmedOutput.StartsWith("{"))
-            {
-                var response = System.Text.Json.JsonSerializer.Deserialize(trimmedOutput,
-                    ShellyGtkJsonContext.Default.FlathubSearchResponse);
-
-                if (response?.Hits == null) return [];
-
-                return response.Hits.Select(hit => new FlatpakPackageDto
-                {
-                    Id = hit.AppId ?? hit.Id ?? string.Empty,
-                    Name = hit.Name ?? string.Empty,
-                    Summary = hit.Summary ?? string.Empty,
-                    Description = hit.Description ?? string.Empty,
-                    IconPath = hit.Icon
-                }).ToList();
-            }
-
-            return [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse Flathub search JSON: {ex.Message}");
-            return [];
-        }
-    }
-
-    private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
+    
+    private async Task<OperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)
     {
         return await ExecuteUnprivilegedCommandAsync(operationDescription, CancellationToken.None, args);
     }
 
-    private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
+    private async Task<OperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         CancellationToken ct, params string[] args)
     {
         var arguments = string.Join(" ", args);
@@ -604,7 +389,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
             var success = process.ExitCode == 0;
 
-            return new UnprivilegedOperationResult
+            return new OperationResult
             {
                 Success = success,
                 Output = outputBuilder.ToString(),
@@ -614,7 +399,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         }
         catch (Exception ex)
         {
-            return new UnprivilegedOperationResult
+            return new OperationResult
             {
                 Success = false,
                 Output = string.Empty,
@@ -633,7 +418,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         return input.TrimStart('\uFEFF');
     }
 
-    private void SendDbusMessage(UnprivilegedOperationResult result)
+    private void SendDbusMessage(OperationResult result)
     {
         if (result.Success)
         {

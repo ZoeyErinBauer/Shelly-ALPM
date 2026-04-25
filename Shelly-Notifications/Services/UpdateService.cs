@@ -58,7 +58,7 @@ public class UpdateService(DBusMenuHandler? menuHandler = null)
 
     private string _cliPath;
 
-    private async Task<UnprivilegedOperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
+    private async Task<OperationResult> ExecuteUnprivilegedCommandAsync(string operationDescription,
         params string[] args)
     {
         _cliPath = FindCliPath();
@@ -115,7 +115,7 @@ public class UpdateService(DBusMenuHandler? menuHandler = null)
 
             var success = process.ExitCode == 0;
 
-            return new UnprivilegedOperationResult
+            return new OperationResult
             {
                 Success = success,
                 Output = outputBuilder.ToString(),
@@ -125,7 +125,7 @@ public class UpdateService(DBusMenuHandler? menuHandler = null)
         }
         catch (Exception ex)
         {
-            return new UnprivilegedOperationResult
+            return new OperationResult
             {
                 Success = false,
                 Output = string.Empty,
@@ -202,7 +202,7 @@ public class UpdateService(DBusMenuHandler? menuHandler = null)
     }
 }
 
-public class UnprivilegedOperationResult
+public class OperationResult
 {
     public bool Success { get; init; }
     public string Output { get; init; } = string.Empty;
