@@ -1,11 +1,11 @@
 # Maintainer: Zoey Bauer <zoey.erin.bauer@gmail.com>
 # Maintainer: Caroline Snyder <hirpeng@gmail.com>
 pkgname=shelly-git
-pkgver=2.1.0
+pkgver=2.1.2
 pkgrel=1
 pkgdesc="Shelly: A Modern Arch Package Manager (git version)"
 arch=('x86_64')
-url="https://github.com/ZoeyErinBauer/Shelly-ALPM"
+url="https://github.com/Seafoam-Labs/Shelly-ALPM"
 license=('GPL-3.0-only')
 provides=('shelly')
 conflicts=('shelly' 'shelly-bin')
@@ -21,6 +21,7 @@ depends=(
     'dbus'
     'glibc'
     'libarchive'
+    'dconf'
 )
 optdepends=(
     'flatpak: For supporting flatpak implementation.'
@@ -29,7 +30,7 @@ optdepends=(
 )
 makedepends=('dotnet-sdk-10.0' 'git' 'clang')
 
-source=("${pkgname}::git+https://github.com/ZoeyErinBauer/Shelly-ALPM.git")
+source=("${pkgname}::git+https://github.com/Seafoam-Labs/Shelly-ALPM.git")
 
 sha256sums=('SKIP')
 

@@ -18,8 +18,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>2.1.0</Version>
-        <AssemblyVersion>2.1.0</AssemblyVersion>
+        <Version>2.1.2</Version>
+        <AssemblyVersion>2.1.2</AssemblyVersion>
         <AssemblyTitle>Shelly VALPM</AssemblyTitle>
         <Description>Shelly is a visual arch linux package manager</Description>
         <Company>Seafoam Labs</Company>
@@ -28,8 +28,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.6" />
-        <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="10.0.6" />
         <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
         <PackageReference Include="Tmds.DBus.SourceGenerator" Version="0.0.22">
             <PrivateAssets>all</PrivateAssets>

@@ -203,7 +203,7 @@ public class AlpmPackage(IntPtr pkgPtr)
         Licenses = Licenses,
         OptDepends = OptDepends,
         Provides = Provides,
-        PackageFile = Repository == "local" ? Files : null,
+        PackageFile = null // Commenting out till protobuff implementation  Repository == "local" ? Files : null,
     };
 
     public override string ToString()

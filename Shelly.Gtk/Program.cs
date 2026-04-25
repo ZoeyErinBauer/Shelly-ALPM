@@ -280,17 +280,24 @@ sealed class Program
 
             if (!initialConfig.NewInstallInitSettings)
             {
+                sidebarBox.Visible = false;
+                horizontalActionBar.Visible = false;
+
                 var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
                 var setupWidget = setupWindow.CreateWindow();
                 
-                mainOverlay.AddOverlay(setupWidget);
+                contentArea.Append(setupWidget);
                 currentPage = setupWindow;
 
                 setupWindow.SetupFinished += (_, _) =>
                 {
                     GLib.Functions.IdleAdd(0, () =>
                     {
-                        mainOverlay.RemoveOverlay(setupWidget);
+                        var updatedConfig = configService.LoadConfig();
+                        sidebarBox.Visible = !updatedConfig.UseOldMenu;
+                        horizontalActionBar.Visible = updatedConfig.UseOldMenu;
+
+                        contentArea.Remove(setupWidget);
                         setupWindow.Dispose();
 
                         var homeWindow = serviceProvider.GetRequiredService<HomeWindow>();
@@ -309,8 +316,8 @@ sealed class Program
                 UpdateSelectedButton("HomeButton");
             }
 
-            // Navigate to requested page from CLI args
-            if (_requestedPage != null)
+            // Navigate to requested page from CLI args (ignored during first-launch setup)
+            if (_requestedPage != null && currentPage is not SetupWindow)
             {
                 switch (_requestedPage)
                 {
@@ -503,6 +510,11 @@ sealed class Program
 
             void NavigateWithQuery<T>(string? query, string? buttonId = null) where T : IShellyWindow
             {
+                if (currentPage is SetupWindow)
+                {
+                    return;
+                }
+
                 if (buttonId != null)
                 {
                     UpdateSelectedButton(buttonId);

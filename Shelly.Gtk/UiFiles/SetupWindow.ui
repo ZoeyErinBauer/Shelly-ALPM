@@ -3,6 +3,10 @@
     <requires lib="gtk" version="4.0"/>
     <object class="GtkBox" id="SetupWindow">
         <property name="orientation">vertical</property>
+        <property name="hexpand">true</property>
+        <property name="vexpand">true</property>
+        <property name="halign">fill</property>
+        <property name="valign">fill</property>
         <style>
             <class name="background"/>
         </style>
