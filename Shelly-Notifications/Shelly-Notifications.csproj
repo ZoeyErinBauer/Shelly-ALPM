@@ -18,8 +18,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>2.1.0</Version>
-        <AssemblyVersion>2.1.0</AssemblyVersion>
+        <Version>2.1.1</Version>
+        <AssemblyVersion>2.1.1</AssemblyVersion>
         <AssemblyTitle>Shelly VALPM</AssemblyTitle>
         <Description>Shelly is a visual arch linux package manager</Description>
         <Company>Seafoam Labs</Company>
