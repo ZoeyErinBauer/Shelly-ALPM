@@ -7,43 +7,42 @@ namespace Shelly.Gtk.Services;
 
 public interface IUnprivilegedOperationService
 {
-    Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages);
+    Task<OperationResult> RemoveFlatpakPackage(IEnumerable<string> packages);
     Task<List<FlatpakPackageDto>> ListFlatpakPackages();
 
     Task<List<FlatpakPackageDto>> ListFlatpakUpdates();
 
     Task<List<AppstreamApp>> ListAppstreamFlatpak(CancellationToken ct = default);
 
-    Task<UnprivilegedOperationResult> FlatpakUpgrade();
+    Task<OperationResult> FlatpakUpgrade();
 
     Task<List<FlatpakRemoteDto>> FlatpakListRemotes();
 
-    Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package);
+    Task<OperationResult> UpdateFlatpakPackage(string package);
 
-    Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool config);
+    Task<OperationResult> RemoveFlatpakPackage(string package, bool config);
 
-    Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package, bool user,
+    Task<OperationResult> InstallFlatpakPackage(string package, bool user,
         string remote, string branch, bool isRuntime = false);
 
-    Task<UnprivilegedOperationResult> FlatpakSyncRemoteAppstream();
+    Task<OperationResult> FlatpakSyncRemoteAppstream();
 
-    Task<UnprivilegedOperationResult> FlatpakRemoveRemote(string remoteName, string scope);
+    Task<OperationResult> FlatpakRemoveRemote(string remoteName, string scope);
 
-    Task<UnprivilegedOperationResult> FlatpakAddRemote(string remoteName, string scope, string url);
+    Task<OperationResult> FlatpakAddRemote(string remoteName, string scope, string url);
     
-    Task<UnprivilegedOperationResult> RunFlatpakName(string name);
+    Task<OperationResult> RunFlatpakName(string name);
 
-    Task<UnprivilegedOperationResult> FlatpakInsallFromRef(string path, string scope);
+    Task<OperationResult> FlatpakInsallFromRef(string path, string scope);
 
-    Task<UnprivilegedOperationResult> FlatpakInstallFromBundle(string path);
+    Task<OperationResult> FlatpakInstallFromBundle(string path);
 
     Task<SyncModel> CheckForApplicationUpdates();
 
     Task<List<AlpmPackageUpdateDto>> CheckForStandardApplicationUpdates(bool showHidden = false);
 
-    Task<UnprivilegedOperationResult> ExportSyncFile(string filePath, string name);
-
-    Task<List<FlatpakPackageDto>> SearchFlathubAsync(string query);
+    Task<OperationResult> ExportSyncFile(string filePath, string name);
+    
 
     Task<ulong> GetFlatpakAppDataAsync(string remote, string app, string arch);
     
@@ -54,12 +53,4 @@ public interface IUnprivilegedOperationService
     Task<List<RssModel>> GetArchNewsAsync(bool all = false);
     
     Task<List<PacfileRecord>> GetPacFiles();
-}
-
-public class UnprivilegedOperationResult
-{
-    public bool Success { get; init; }
-    public string Output { get; init; } = string.Empty;
-    public string Error { get; init; } = string.Empty;
-    public int ExitCode { get; init; }
 }

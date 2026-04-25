@@ -926,7 +926,7 @@ public class FlatpakInstall(
 
         try
         {
-            UnprivilegedOperationResult result;
+            OperationResult result;
             lockoutService.Show($"Installing {_selectedPackage.Id}...");
             if (_selectedRemote.Contains("user"))
             {
@@ -983,7 +983,7 @@ public class FlatpakInstall(
 
         try
         {
-            UnprivilegedOperationResult result;
+            OperationResult result;
             lockoutService.Show($"Installing {id}...");
             if (_selectedRemote.Contains("user"))
             {
