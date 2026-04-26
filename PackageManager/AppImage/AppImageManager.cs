@@ -587,22 +587,25 @@ public class AppImageManager
 
             SetFilePermissions(filePath, "a+x");
 
-            var extractProcess = Process.Start(new ProcessStartInfo
-            {
-                FileName = filePath,
-                Arguments = "--appimage-extract",
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            });
-            await extractProcess!.WaitForExitAsync();
-
             var squashfsRoot = Path.Combine(workingDir, "squashfs-root");
-            if (!Directory.Exists(squashfsRoot))
+
+            try
             {
-                LogError("Failed to extract AppImage.");
+                var extractProcess = Process.Start(new ProcessStartInfo
+                {
+                    FileName = filePath,
+                    Arguments = "--appimage-extract",
+                    WorkingDirectory = workingDir,
+                    RedirectStandardOutput = false,
+                    RedirectStandardError = false,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                await extractProcess!.WaitForExitAsync();
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"Could not execute AppImage directly: {ex.Message}.");
                 return null;
             }
 
@@ -621,7 +624,7 @@ public class AppImageManager
             string? iconPath = null;
             if (!string.IsNullOrEmpty(iconName))
             {
-                iconPath = Directory.GetFiles(squashfsRoot, $"{iconName}.*", SearchOption.AllDirectories).FirstOrDefault();
+                iconPath = SafeGetFiles(squashfsRoot, $"{iconName}.*").FirstOrDefault();
             }
 
             if (iconPath == null)
@@ -812,6 +815,29 @@ public class AppImageManager
     {
         var extension = Path.GetExtension(filePath);
         return Task.FromResult(string.Equals(extension, ".AppImage", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static List<string> SafeGetFiles(string rootDir, string searchPattern)
+    {
+        var results = new List<string>();
+        try
+        {
+            results.AddRange(Directory.GetFiles(rootDir, searchPattern, SearchOption.TopDirectoryOnly));
+        }
+        catch { /* ignore access errors */ }
+
+        try
+        {
+            foreach (var dir in Directory.GetDirectories(rootDir))
+            {
+                var dirInfo = new DirectoryInfo(dir);
+                if (dirInfo.Attributes.HasFlag(FileAttributes.ReparsePoint)) continue;
+                results.AddRange(SafeGetFiles(dir, searchPattern));
+            }
+        }
+        catch { /* ignore access errors */ }
+
+        return results;
     }
 
     private void SetFilePermissions(string filePath, string permissions)
