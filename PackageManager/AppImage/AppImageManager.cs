@@ -605,7 +605,8 @@ public class AppImageManager
             }
             catch (Exception ex)
             {
-                LogWarning($"Could not execute AppImage directly: {ex.Message}. Attempting unsquashfs fallback.");
+                LogWarning($"Could not execute AppImage directly: {ex.Message}.");
+                return null;
             }
 
             var desktopFile = Directory.GetFiles(squashfsRoot, "*.desktop", SearchOption.TopDirectoryOnly).FirstOrDefault();
