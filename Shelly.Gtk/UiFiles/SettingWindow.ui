@@ -468,7 +468,13 @@
                     <child>
                       <object class="GtkLinkButton" id="github_link">
                         <property name="label">GitHub</property>
-                        <property name="uri">https://github.com/ZoeyErinBauer/Shelly-ALPM</property>
+                        <property name="uri">https://github.com/Seafoam-Labs/Shelly-ALPM</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLinkButton" id="fluxer_link">
+                        <property name="label">Community fluxer</property>
+                        <property name="uri">https://fluxer.gg/vOjrMXcE</property>
                       </object>
                     </child>
                     <child>
