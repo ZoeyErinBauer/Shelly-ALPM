@@ -12,18 +12,24 @@ public class PasswordDialog(ICredentialManager credentialManager)
         background.SetHalign(Align.Fill);
         background.SetValign(Align.Fill);
 
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetHexpand(true);
+        baseFrame.SetVexpand(true);
+        baseFrame.SetSizeRequest(400, -1);
+        baseFrame.SetMarginTop(20);
+        baseFrame.SetMarginBottom(20);
+        baseFrame.SetMarginStart(20);
+        baseFrame.SetMarginEnd(20);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+        background.Append(baseFrame);
+
         var box = Box.New(Orientation.Vertical, 12);
-        box.SetHalign(Align.Center);
-        box.SetValign(Align.Center);
-        box.SetHexpand(true);
-        box.SetVexpand(true);
-        box.SetSizeRequest(400, -1);
-        box.SetMarginTop(20);
-        box.SetMarginBottom(20);
-        box.SetMarginStart(20);
-        box.SetMarginEnd(20);
-        box.AddCssClass("dialog-overlay");
-        background.Append(box);
+        baseFrame.SetChild(box);
 
         var titleLabel = Label.New("Authentication Required");
         titleLabel.AddCssClass("title-4");

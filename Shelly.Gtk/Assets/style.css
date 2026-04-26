@@ -95,7 +95,6 @@ columnview header > button:checked {
 }
 
 .dialog-overlay {
-    background-color: @window_bg_color;
     border: 1px solid alpha(currentColor, 0.15);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -113,12 +112,10 @@ scrolledwindow > scrollbar {
 }
 
 .toast-message {
-    background-color: @window_bg_color;
     border: 1px solid alpha(currentColor, 0.15);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     padding: 10px 16px;
-    color: @window_fg_color;
 }
 
 .package-detail-expander {

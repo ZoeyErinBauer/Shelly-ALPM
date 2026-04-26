@@ -16,15 +16,21 @@ public static partial class ReleaseNotesDialog
     
     public static void ShowReleaseNotesDialog(Overlay parentOverlay, string markdown)
     {
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetSizeRequest(600, 500);
+        baseFrame.SetMarginTop(40);
+        baseFrame.SetMarginBottom(40);
+        baseFrame.SetMarginStart(40);
+        baseFrame.SetMarginEnd(40);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+
         var box = Box.New(Orientation.Vertical, 12);
-        box.SetHalign(Align.Center);
-        box.SetValign(Align.Center);
-        box.SetSizeRequest(600, 500);
-        box.SetMarginTop(40);
-        box.SetMarginBottom(40);
-        box.SetMarginStart(40);
-        box.SetMarginEnd(40);
-        box.AddCssClass("dialog-overlay");
+        baseFrame.SetChild(box);
 
         var titleLabel = Label.New("What's New");
         titleLabel.AddCssClass("title-2");
@@ -52,26 +58,32 @@ public static partial class ReleaseNotesDialog
         closeButton.AddCssClass("suggested-action");
         closeButton.OnClicked += (s, args) =>
         {
-            parentOverlay.RemoveOverlay(box);
+            parentOverlay.RemoveOverlay(baseFrame);
         };
 
         buttonBox.Append(closeButton);
         box.Append(buttonBox);
 
-        parentOverlay.AddOverlay(box);
+        parentOverlay.AddOverlay(baseFrame);
     }
 
     public static void ShowReleaseHistoryDialog(Overlay parentOverlay, List<ReleaseItem> releases)
     {
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetSizeRequest(700, 550);
+        baseFrame.SetMarginTop(40);
+        baseFrame.SetMarginBottom(40);
+        baseFrame.SetMarginStart(40);
+        baseFrame.SetMarginEnd(40);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+
         var box = Box.New(Orientation.Vertical, 12);
-        box.SetHalign(Align.Center);
-        box.SetValign(Align.Center);
-        box.SetSizeRequest(700, 550);
-        box.SetMarginTop(40);
-        box.SetMarginBottom(40);
-        box.SetMarginStart(40);
-        box.SetMarginEnd(40);
-        box.AddCssClass("dialog-overlay");
+        baseFrame.SetChild(box);
         
         var titleLabel = Label.New("Version History");
         titleLabel.AddCssClass("title-2");
@@ -102,13 +114,13 @@ public static partial class ReleaseNotesDialog
         closeButton.AddCssClass("suggested-action");
         closeButton.OnClicked += (s, args) =>
         {
-            parentOverlay.RemoveOverlay(box);
+            parentOverlay.RemoveOverlay(baseFrame);
         };
 
         buttonBox.Append(closeButton);
         box.Append(buttonBox);
 
-        parentOverlay.AddOverlay(box);
+        parentOverlay.AddOverlay(baseFrame);
         
     }
     

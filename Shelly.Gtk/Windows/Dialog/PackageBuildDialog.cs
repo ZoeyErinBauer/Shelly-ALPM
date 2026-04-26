@@ -7,15 +7,21 @@ public static class PackageBuildDialog
 {
     public static void ShowPackageBuildDialog(Overlay parentOverlay, PackageBuildEventArgs e)
     {
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetSizeRequest(600, 500);
+        baseFrame.SetMarginTop(20);
+        baseFrame.SetMarginBottom(20);
+        baseFrame.SetMarginStart(20);
+        baseFrame.SetMarginEnd(20);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+
         var box = Box.New(Orientation.Vertical, 12);
-        box.SetHalign(Align.Center);
-        box.SetValign(Align.Center);
-        box.SetSizeRequest(600, 500);
-        box.SetMarginTop(20);
-        box.SetMarginBottom(20);
-        box.SetMarginStart(20);
-        box.SetMarginEnd(20);
-        box.AddCssClass("dialog-overlay");
+        baseFrame.SetChild(box);
 
         var titleLabel = Label.New(e.Title);
         titleLabel.AddCssClass("title-4");
@@ -42,19 +48,19 @@ public static class PackageBuildDialog
         cancelButton.OnClicked += (s, args) =>
         {
             e.SetResponse(false);
-            parentOverlay.RemoveOverlay(box);
+            parentOverlay.RemoveOverlay(baseFrame);
         };
 
         confirmButton.OnClicked += (s, args) =>
         {
             e.SetResponse(true);
-            parentOverlay.RemoveOverlay(box);
+            parentOverlay.RemoveOverlay(baseFrame);
         };
 
         buttonBox.Append(confirmButton);
         buttonBox.Append(cancelButton);
         box.Append(buttonBox);
 
-        parentOverlay.AddOverlay(box);
+        parentOverlay.AddOverlay(baseFrame);
     }
 }

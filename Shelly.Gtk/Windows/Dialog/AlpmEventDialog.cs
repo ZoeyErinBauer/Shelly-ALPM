@@ -8,15 +8,21 @@ public class AlpmEventDialog
     public static void ShowAlpmEventDialog(Overlay parentOverlay, QuestionEventArgs e)
     {
 
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetSizeRequest(450, -1);
+        baseFrame.SetMarginTop(20);
+        baseFrame.SetMarginBottom(20);
+        baseFrame.SetMarginStart(20);
+        baseFrame.SetMarginEnd(20);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+
         var box = Box.New(Orientation.Vertical, 12);
-        box.SetHalign(Align.Center);
-        box.SetValign(Align.Center);
-        box.SetSizeRequest(450, -1);
-        box.SetMarginTop(20);
-        box.SetMarginBottom(20);
-        box.SetMarginStart(20);
-        box.SetMarginEnd(20);
-        box.AddCssClass("dialog-overlay");
+        baseFrame.SetChild(box);
 
         var titleLabel = Label.New(string.Empty);
         titleLabel.SetMarkup($"<b>{GetQuestionTitle(e.QuestionType)}</b>");
@@ -47,7 +53,7 @@ public class AlpmEventDialog
             selectButton.OnClicked += (s, args) =>
             {
                 e.SetResponse(combo.GetActive());
-                parentOverlay.RemoveOverlay(box);
+                parentOverlay.RemoveOverlay(baseFrame);
             };
             buttonBox.Append(selectButton);
         }
@@ -100,7 +106,7 @@ public class AlpmEventDialog
                     }
                 }
                 e.SetResponse(bitmask);
-                parentOverlay.RemoveOverlay(box);
+                parentOverlay.RemoveOverlay(baseFrame);
             };
             buttonBox.Append(confirmButton);
         }
@@ -110,7 +116,7 @@ public class AlpmEventDialog
             noButton.OnClicked += (s, args) =>
             {
                 e.SetResponse(0); 
-                parentOverlay.RemoveOverlay(box);
+                parentOverlay.RemoveOverlay(baseFrame);
             };
 
             var yesButton = Button.NewWithLabel("Yes");
@@ -118,7 +124,7 @@ public class AlpmEventDialog
             yesButton.OnClicked += (s, args) =>
             {
                 e.SetResponse(1); 
-                parentOverlay.RemoveOverlay(box);
+                parentOverlay.RemoveOverlay(baseFrame);
             };
 
             buttonBox.Append(yesButton);
@@ -127,7 +133,7 @@ public class AlpmEventDialog
         }
 
         box.Append(buttonBox);
-        parentOverlay.AddOverlay(box);
+        parentOverlay.AddOverlay(baseFrame);
     }
 
     private static string GetQuestionTitle(QuestionType type) => type switch

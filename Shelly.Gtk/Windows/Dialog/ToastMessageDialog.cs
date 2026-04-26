@@ -9,11 +9,16 @@ public static class ToastMessageDialog
     {
         GLib.Functions.IdleAdd(0, () =>
         {
+            var toastFrame = new Frame();
+            toastFrame.SetLabel(null);
+            toastFrame.AddCssClass("background");
+            toastFrame.AddCssClass("toast-message");
+            toastFrame.SetOverflow(Overflow.Hidden);
+            toastFrame.SetHalign(Align.Center);
+            toastFrame.SetValign(Align.End);
+            toastFrame.SetMarginBottom(40);
+
             var toastBox = Box.New(Orientation.Horizontal, 8);
-            toastBox.AddCssClass("toast-message");
-            toastBox.SetHalign(Align.Center);
-            toastBox.SetValign(Align.End);
-            toastBox.SetMarginBottom(40);
 
             var label = Label.New(e.Title);
             label.SetMarginTop(5);
@@ -22,14 +27,15 @@ public static class ToastMessageDialog
             label.SetMarginEnd(5);
 
             toastBox.Append(label);
+            toastFrame.SetChild(toastBox);
 
-            parentOverlay.AddOverlay(toastBox);
+            parentOverlay.AddOverlay(toastFrame);
 
             GLib.Functions.TimeoutAdd(0, (uint)3000, () =>
             {
-                if (toastBox.GetParent() != null)
+                if (toastFrame.GetParent() != null)
                 {
-                    parentOverlay.RemoveOverlay(toastBox);
+                    parentOverlay.RemoveOverlay(toastFrame);
                 }
                 return false;
             });

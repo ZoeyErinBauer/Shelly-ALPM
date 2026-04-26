@@ -13,18 +13,23 @@ public static class GenericOverlay
         backdrop.Vexpand = true;
         backdrop.AddCssClass("lockout-overlay");
 
+        var baseFrame = new Frame();
+        baseFrame.SetLabel(null);
+        baseFrame.SetHalign(Align.Center);
+        baseFrame.SetValign(Align.Center);
+        baseFrame.SetSizeRequest(width, height);
+        baseFrame.SetMarginTop(20);
+        baseFrame.SetMarginBottom(20);
+        baseFrame.SetMarginStart(20);
+        baseFrame.SetMarginEnd(20);
+        baseFrame.AddCssClass("background");
+        baseFrame.AddCssClass("dialog-overlay");
+        baseFrame.SetOverflow(Overflow.Hidden);
+
         var baseBox = new Box();
         baseBox.SetOrientation(Orientation.Vertical);
         baseBox.SetSpacing(12);
-        baseBox.AddCssClass("dialog-overlay");
-        
-        baseBox.SetHalign(Align.Center);
-        baseBox.SetValign(Align.Center);
-        baseBox.SetSizeRequest(width, height);
-        baseBox.SetMarginTop(20);
-        baseBox.SetMarginBottom(20);
-        baseBox.SetMarginStart(20);
-        baseBox.SetMarginEnd(20);
+        baseFrame.SetChild(baseBox);
 
         var grid = new Grid();
         grid.Hexpand = true;
@@ -47,18 +52,18 @@ public static class GenericOverlay
         var gestureClick = GestureClick.New();
         gestureClick.OnReleased += (_,  args) =>
         {
-            backdrop.TranslateCoordinates(baseBox, args.X, args.Y, out var x, out var y);
+            backdrop.TranslateCoordinates(baseFrame, args.X, args.Y, out var x, out var y);
 
             var insideCard = x >= 0 && y >= 0
-                           && x <= baseBox.GetAllocatedWidth()
-                           && y <= baseBox.GetAllocatedHeight();
+                           && x <= baseFrame.GetAllocatedWidth()
+                           && y <= baseFrame.GetAllocatedHeight();
 
             if (!insideCard)
                 Dismiss();
         };
 
         backdrop.AddController(gestureClick);
-        backdrop.Append(baseBox);
+        backdrop.Append(baseFrame);
 
         parentOverlay.AddOverlay(backdrop);
         _ = e.ResponseTask.ContinueWith(_ =>
