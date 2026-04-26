@@ -29,6 +29,8 @@ public record AlpmPackageDto
 
     public List<string> Conflicts { get; init; } = [];
 
+    public AlpmPackageTreeDto? PackageFile { get; init; } = null;
+
     public string InstallReason { get; init; } = string.Empty;
 
     public DateTime? InstallDate { get; init; } = null;

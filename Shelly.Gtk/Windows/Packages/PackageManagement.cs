@@ -274,6 +274,33 @@ public class PackageManagement(
         if (pkg.Groups.Count > 0)
             AddDetail("Groups", string.Join(", ", pkg.Groups));
 
+        
+        if (pkg.PackageFile is { Files.Count: > 0 })
+        {
+            var fileExpander = new Expander { Label = $"Package Files ({CountFiles(pkg.PackageFile)})" };
+            fileExpander.AddCssClass("package-detail-expander");
+            fileExpander.Hexpand = false;
+
+            var fileBox = Box.New(Orientation.Vertical, 2);
+            BuildFileTree(fileBox, pkg.PackageFile.Files, 0);
+
+            var scrolledWindow = ScrolledWindow.New();
+            scrolledWindow.SetChild(fileBox);
+            scrolledWindow.SetPolicy(PolicyType.Automatic, PolicyType.Automatic);
+            scrolledWindow.HeightRequest = 500;
+            scrolledWindow.WidthRequest = 500;
+
+            fileExpander.SetChild(scrolledWindow);
+
+            fileExpander.OnNotify += (_, args) =>
+            {
+                if (args.Pspec.GetName() == "expanded" && fileExpander.GetExpanded())
+                    ExpandAllExpanders(fileBox);
+            };
+
+            _detailBox.Append(fileExpander);
+        }
+
         if (configService.LoadConfig().WebViewEnabled)
         {
             if (pkg.Depends.Count > 0)
@@ -298,6 +325,63 @@ public class PackageManagement(
 
         _detailRevealer.SetRevealChild(true);
         return;
+
+        int CountFiles(AlpmPackageTreeDto node)
+        {
+            return node.Files.Count + node.Files.Sum(CountFiles);
+        }
+
+        void ExpandAllExpanders(Box container)
+        {
+            var child = container.GetFirstChild();
+            while (child != null)
+            {
+                if (child is Expander exp)
+                {
+                    exp.SetExpanded(true);
+                    if (exp.GetChild() is Box childBox)
+                        ExpandAllExpanders(childBox);
+                }
+                child = child.GetNextSibling();
+            }
+        }
+
+        void BuildFileTree(Box container, List<AlpmPackageTreeDto> nodes, int depth)
+        {
+            foreach (var node in nodes)
+            {
+                if (node.Files.Count > 0)
+                {
+                    var dirBox = Box.New(Orientation.Horizontal, 6);
+                    dirBox.MarginStart = depth * 16;
+                    var folderIcon = Image.NewFromIconName("folder-symbolic");
+                    var dirLabel = Label.New(node.Name);
+                    dirBox.Append(folderIcon);
+                    dirBox.Append(dirLabel);
+
+                    var dirExpander = new Expander { MarginStart = 0 };
+                    dirExpander.SetLabelWidget(dirBox);
+                    var childBox = Box.New(Orientation.Vertical, 2);
+                    BuildFileTree(childBox, node.Files, depth + 1);
+                    dirExpander.SetChild(childBox);
+                    container.Append(dirExpander);
+                }
+                else
+                {
+                    var fileBox = Box.New(Orientation.Horizontal, 6);
+                    fileBox.MarginStart = depth * 16;
+                    var fileIcon = Image.NewFromIconName("text-x-generic-symbolic");
+                    var fileLabel = Label.New(node.Name);
+                    fileLabel.Halign = Align.Start;
+                    fileLabel.Selectable = true;
+                    fileLabel.AddCssClass("dim-label");
+                    fileBox.Append(fileIcon);
+                    fileBox.Append(fileLabel);
+                    container.Append(fileBox);
+                }
+            }
+        }
+
 
         void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
         {

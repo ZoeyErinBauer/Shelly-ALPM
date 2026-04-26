@@ -20,6 +20,8 @@ namespace Shelly.Gtk;
 [JsonSerializable(typeof(AlpmPackageUpdateDto))]
 [JsonSerializable(typeof(List<AlpmPackageDto>))]
 [JsonSerializable(typeof(AlpmPackageDto))]
+[JsonSerializable(typeof(AlpmPackageTreeDto))]
+[JsonSerializable(typeof(List<AlpmPackageTreeDto>))]
 [JsonSerializable(typeof(List<AurPackageDto>))]
 [JsonSerializable(typeof(AurPackageDto))]
 [JsonSerializable(typeof(List<AurUpdateDto>))]

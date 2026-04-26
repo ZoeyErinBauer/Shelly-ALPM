@@ -61,7 +61,7 @@
                     <property name="spacing">12</property>
                     <child>
                       <object class="GtkLabel">
-                        <property name="label">Search above to query all avaliable sources (Packages, AUR, or Flatpak) that you have enabled</property>
+                        <property name="label">Search above to query all available sources (Packages, AUR, or Flatpak) that you have enabled</property>
                         <property name="wrap">true</property>
                         <property name="justify">center</property>
                         <style>

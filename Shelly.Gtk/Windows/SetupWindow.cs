@@ -47,7 +47,7 @@ public class SetupWindow(
         appimageCheck.Active = currentConfig.AppImageEnabled;
         trayCheck.Active = currentConfig.TrayEnabled;
         
-        finishButton.OnClicked += (_, _) =>
+        finishButton.OnClicked += async (_, _) =>
         {
             var config = configService.LoadConfig();
             config.AurEnabled = aurCheck.Active;
@@ -62,12 +62,12 @@ public class SetupWindow(
             if (!flatpakCheck.Active) return;
             try
             {
-                var result = privilegedOperationService.IsPackageInstalledOnMachine("flatpak").Result;
+                var result = await privilegedOperationService.IsPackageInstalledOnMachine("flatpak");
 
                 if (result) return;
 
                 lockoutService.Show("Installing flatpak...");
-                var instalResult = privilegedOperationService.InstallPackagesAsync(["flatpak"]).Result;
+                var instalResult = await privilegedOperationService.InstallPackagesAsync(["flatpak"]);
 
                 if (instalResult.Success)
                 {

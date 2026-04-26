@@ -9,12 +9,12 @@ internal class StatusNotifierItemHandler(Connection connection, ConfigReader con
     
     public bool HandlesChildPaths => false;
 
-    private string _iconName = "shelly-shell-symbolic";
+    private string _iconName = configReader.LoadConfig().UseSymbolicTray ? "shelly-shell-symbolic" : "shelly-tray";
 
     public async Task SetUpdatesPending(bool pending)
     {
         var newIcon = pending ? "shelly-update" : "shelly-tray";
-        if (configReader.LoadConfig().TrayEnabled)
+        if (configReader.LoadConfig().UseSymbolicTray)
         {
             newIcon = pending ? "shelly-updates-symbolic" : "shelly-shell-symbolic";
         }
@@ -96,7 +96,7 @@ internal class StatusNotifierItemHandler(Connection connection, ConfigReader con
                                 { "Title", (VariantValue)"Shelly Notifications" },
                                 { "Status", (VariantValue)"Active" },
                                 { "IconName", (VariantValue)_iconName },
-                                { "IconThemePath", (VariantValue)"/usr/share/icons/hicolor" },
+                                { "IconThemePath", (VariantValue)string.Empty },
                                 { "ItemIsMenu", (VariantValue)false },
                                 { "Menu", (VariantValue)new ObjectPath("/MenuBar") }
                             };
@@ -125,7 +125,7 @@ internal class StatusNotifierItemHandler(Connection connection, ConfigReader con
                                 case "Title": writer.WriteVariant("Shelly Notifications"); break;
                                 case "Status": writer.WriteVariant("Active"); break;
                                 case "IconName": writer.WriteVariant(_iconName); break;
-                                case "IconThemePath": writer.WriteVariant("/usr/share/icons/hicolor"); break;
+                                case "IconThemePath": writer.WriteVariant(string.Empty); break;
                                 case "ItemIsMenu": writer.WriteVariant(false); break;
                                 case "Menu": writer.WriteVariant(new ObjectPath("/MenuBar")); break;
                                 default:
