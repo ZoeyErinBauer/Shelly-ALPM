@@ -155,6 +155,32 @@ public class FlatpakInstall(
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+        var backTriggers = new[] { "Escape", "<Alt>Left" };
+        foreach (var triggerStr in backTriggers)
+        {
+            var action = CallbackAction.New((_, _) =>
+            {
+                if (_addRemoteOverlay.GetVisible())
+                {
+                    _addRemoteOverlay.Hide();
+                    _addRemoteOverlay.Dispose();
+                    return true;
+                }
+                if (_remoteRefOverlay.GetVisible())
+                {
+                    _remoteRefOverlay.Hide();
+                    return true;
+                }
+                if (_overlay.GetVisible())
+                {
+                    _overlay.SetVisible(false);
+                    return true;
+                }
+                return false;
+            });
+            shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
+        }
+
         box.AddController(shortcutController);
 
         _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(); };
