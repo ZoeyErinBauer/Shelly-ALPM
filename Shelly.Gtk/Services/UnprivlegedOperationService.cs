@@ -231,31 +231,8 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
     {
         var args = showHidden ? "list-updates --json --show-hidden" : "list-updates --json";
         var result = await ExecuteUnprivilegedCommandAsync("Get Available Updates", args);
-        
-        try
-        {
-            var lines = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                var trimmedLine = StripBom(line.Trim());
-                if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
-                {
-                    var updates =
-                        System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
-                            ShellyGtkJsonContext.Default.ListAlpmPackageUpdateDto);
-                    return updates ?? [];
-                }
-            }
-
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
-                ShellyGtkJsonContext.Default.ListAlpmPackageUpdateDto);
-            return allUpdates ?? [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse updates JSON: {ex.Message}");
-            return [];
-        }
+        return ResultDeserializers.DeserializeCliResult<AlpmPackageUpdateDto>(result,
+            ShellyGtkJsonContext.Default.ListAlpmPackageUpdateDto);
     }
 
     public async Task<OperationResult> ExportSyncFile(string filePath, string name)
