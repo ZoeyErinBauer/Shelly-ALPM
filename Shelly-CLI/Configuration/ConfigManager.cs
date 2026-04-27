@@ -31,11 +31,37 @@ public static class ConfigManager
             var configDir = Path.GetDirectoryName(configPath);
             if (!string.IsNullOrEmpty(configDir))
             {
-                Directory.CreateDirectory(configDir);
+                try
+                {
+                    Directory.CreateDirectory(configDir);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.Error.WriteLine($"Cannot create config dir '{configDir}': {ex.Message}");
+                    return new ShellyConfig();
+                }
+                catch (IOException ex)
+                {
+                    Console.Error.WriteLine($"Cannot create config dir '{configDir}': {ex.Message}");
+                    return new ShellyConfig();
+                }
             }
 
             var defaultConfig = new ShellyConfig();
-            WriteConfig(defaultConfig, configPath);
+            try
+            {
+                WriteConfig(defaultConfig, configPath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.Error.WriteLine($"Cannot write config '{configPath}': {ex.Message}");
+                return defaultConfig;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine($"Cannot write config '{configPath}': {ex.Message}");
+                return defaultConfig;
+            }
 
             if (IsRunningAsRoot() && !string.IsNullOrEmpty(configDir))
             {
