@@ -4,5 +4,6 @@ public enum PackageSortColumn
 {
     Name,
     Repo,
-    Version
+    Version,
+    Size
 }
