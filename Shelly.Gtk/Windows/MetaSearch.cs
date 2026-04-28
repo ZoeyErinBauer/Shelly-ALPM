@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using GObject.Internal;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -25,6 +26,7 @@ public class MetaSearch(
     private Button _installButton = null!;
     private Button _removeButton = null!;
     private string? _initialQuery;
+    private bool _ascending = true;
 
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
@@ -41,6 +43,7 @@ public class MetaSearch(
     private Dictionary<ColumnViewCell, EventHandler> _checkBinding = [];
     private Dictionary<ColumnViewCell, EventHandler> _installedBinding = [];
     private readonly List<MetaPackageGObject> _packageGObjectRefs = [];
+    private MetaPackageGObject _item;
 
     private Stack _searchStack = null!;
     private Spinner _searchSpinner = null!;
@@ -72,6 +75,22 @@ public class MetaSearch(
 
         SetupColumns(_checkColumn, _nameColumn, _repoColumn, _versionColumn, _descriptionColumn);
 
+        // Create sorters
+        _nameColumn.Sorter = new CustomSorter();
+        var viewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
+        
+        viewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn = viewSorter.GetPrimarySortColumn();
+
+            if (primaryColumn == _nameColumn)
+            {
+                var order = viewSorter.GetPrimarySortOrder();
+                SortByName(order);
+            }
+        };
+        
+        
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
@@ -92,7 +111,7 @@ public class MetaSearch(
         _searchStack = Stack.New();
         _searchStack.SetVexpand(true);
         _searchStack.AddNamed(spinnerBox, "loading");
-
+        
         // Move the ScrolledWindow (parent of _columnView) into the stack
         var scrolledWindow = (Widget)_columnView.GetParent()!;
         _box.Remove(scrolledWindow);
@@ -194,7 +213,7 @@ public class MetaSearch(
             if (_installedBinding.Remove(listItem, out var handler)) pkgObj.OnIsInstalledChanged -= handler;
         };
         nameColumn.SetFactory(_nameFactory);
-
+        
         _repoFactory = SignalListItemFactory.New();
         _repoFactory.OnSetup += (_, args) =>
         {
@@ -503,7 +522,38 @@ public class MetaSearch(
             UpdateButtonSensitivity();
         }
     }
+    
+    private void SortByName(SortType order)
+    {
+        if (order == SortType.Ascending)
+        {
+            _packageGObjectRefs.Sort((a, b) =>
+                string.Compare(
+                    a.Package.Name,
+                    b.Package.Name,
+                    StringComparison.OrdinalIgnoreCase
+                ));
+        }
+        else if (order == SortType.Descending)
+        {
+            _packageGObjectRefs.Sort((a, b) =>
+                string.Compare(
+                    b.Package.Name,
+                    a.Package.Name,
+                    StringComparison.OrdinalIgnoreCase
+                ));
+        }
+        ReloadStore();
+    }    
+    
+    private void ReloadStore()
+    {
+        _listStore.RemoveAll();
 
+        foreach (var item in _packageGObjectRefs)
+            _listStore.Append(item);
+    }
+    
     public void Dispose()
     {
         _cts.Cancel();
