@@ -1,6 +1,9 @@
 using System.Security.Cryptography;
+using GObject.Internal;
 using Gtk;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Enums;
+using static Shelly.Gtk.Helpers.GenericColumnViewSorter;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
@@ -38,10 +41,15 @@ public class MetaSearch(
     private ColumnViewColumn _versionColumn = null!;
     private ColumnViewColumn _descriptionColumn = null!;
 
+    private ColumnViewSorter _columnSorter = null!;
+    private SortType _primarySort;
+    private PackageSortColumn? _lastColumn;
+    private SortType _lastOrder;
+
     private Dictionary<ColumnViewCell, EventHandler> _checkBinding = [];
     private Dictionary<ColumnViewCell, EventHandler> _installedBinding = [];
     private readonly List<MetaPackageGObject> _packageGObjectRefs = [];
-
+    
     private Stack _searchStack = null!;
     private Spinner _searchSpinner = null!;
 
@@ -72,6 +80,40 @@ public class MetaSearch(
 
         SetupColumns(_checkColumn, _nameColumn, _repoColumn, _versionColumn, _descriptionColumn);
 
+        // Create sorters
+        _repoColumn.Sorter = new CustomSorter();
+        _versionColumn.Sorter = new CustomSorter();
+        _nameColumn.Sorter = new CustomSorter();
+        _columnSorter = (ColumnViewSorter)_columnView.GetSorter()!;
+        _columnSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn = _columnSorter.GetPrimarySortColumn()!;
+            var sortColumn = GetSortColumn(primaryColumn);
+
+            if (sortColumn is null)
+                return;
+            
+            if (_lastColumn == sortColumn.Value)
+            {
+                _lastOrder =
+                    _lastOrder == SortType.Ascending
+                        ? SortType.Descending
+                        : SortType.Ascending;
+            }
+            else
+            {
+                _lastColumn = sortColumn.Value;
+                _lastOrder = SortType.Ascending;
+            }
+            
+            Sort(
+                _listStore,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                _lastOrder
+            );
+        };
+        
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
@@ -92,7 +134,7 @@ public class MetaSearch(
         _searchStack = Stack.New();
         _searchStack.SetVexpand(true);
         _searchStack.AddNamed(spinnerBox, "loading");
-
+        
         // Move the ScrolledWindow (parent of _columnView) into the stack
         var scrolledWindow = (Widget)_columnView.GetParent()!;
         _box.Remove(scrolledWindow);
@@ -113,8 +155,22 @@ public class MetaSearch(
                 pkgObj.ToggleSelection();
             }
         };
-
+        
         return _box;
+    }
+    
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+
+        if (column == _repoColumn)
+            return PackageSortColumn.Repo;
+
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
     }
 
     private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn, ColumnViewColumn repoColumn,
@@ -194,7 +250,7 @@ public class MetaSearch(
             if (_installedBinding.Remove(listItem, out var handler)) pkgObj.OnIsInstalledChanged -= handler;
         };
         nameColumn.SetFactory(_nameFactory);
-
+        
         _repoFactory = SignalListItemFactory.New();
         _repoFactory.OnSetup += (_, args) =>
         {
@@ -349,7 +405,11 @@ public class MetaSearch(
                     _packageGObjectRefs.Add(pkgObj);
                     _listStore.Append(pkgObj);
                 }
-
+                
+                // Adding an initial sort to stop repo column from being loaded twice in the same state
+                _lastColumn = PackageSortColumn.Repo;
+                _lastOrder = SortType.Ascending;
+                
                 return false;
             });
         }
@@ -503,11 +563,13 @@ public class MetaSearch(
             UpdateButtonSensitivity();
         }
     }
-
+    
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
+        _columnSorter.Dispose();
+        _columnSorter = null!;
         _listStore.RemoveAll();
         _packageGObjectRefs.Clear();
         _checkBinding.Clear();
