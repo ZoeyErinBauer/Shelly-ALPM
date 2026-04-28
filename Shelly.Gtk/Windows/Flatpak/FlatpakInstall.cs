@@ -623,31 +623,30 @@ public class FlatpakInstall(
         hbox.Hexpand = false;
         hbox.Vexpand = false;
         hbox.Halign = Align.Start;
-
-
+        
         var icon = Image.New();
         icon.PixelSize = 64;
         icon.WidthRequest = 64;
         icon.HeightRequest = 64;
         icon.Valign = Align.Center;
         hbox.Append(icon);
-
-
+        
         var vbox = Box.New(Orientation.Vertical, 2);
         var nameBox = Box.New(Orientation.Horizontal, 4);
         nameBox.Halign = Align.Start;
         var nameLabel = Label.New(string.Empty);
         nameLabel.Halign = Align.Start;
+        nameLabel.SetWrap(true);
+        nameLabel.SetWrapMode(Pango.WrapMode.WordChar);
+        nameLabel.MaxWidthChars = 30;
         nameBox.Append(nameLabel);
-
-
+        
         var verifiedIcon = Image.NewFromIconName("security-high-symbolic");
         verifiedIcon.PixelSize = 14;
         verifiedIcon.Valign = Align.Center;
         verifiedIcon.TooltipText = "Verified";
         nameBox.Append(verifiedIcon);
-
-
+        
         var idLabel = Label.New(string.Empty);
         idLabel.SetText(string.Empty);
         idLabel.Halign = Align.Start;
