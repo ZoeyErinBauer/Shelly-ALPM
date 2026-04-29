@@ -88,7 +88,7 @@ public class AurInstall(
 
         SetupColumns(_checkColumn, _nameColumn, _votesColumn, _popColumn, _versionColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 

@@ -79,7 +79,7 @@ public class AurUpdate(
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
 
         _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
         _columnView.OnActivate += (_, _) =>

@@ -17,7 +17,9 @@ public class FlatpakInstall(
     ILockoutService lockoutService,
     IConfigService configService,
     IGenericQuestionService genericQuestionService,
-    IFlatHubApiService flatHubApiService) : IShellyWindow
+    IFlatHubApiService flatHubApiService,
+    FlatpakUpdate flatpakUpdate,
+    FlatpakRemove flatpakRemove) : IShellyWindow
 {
     private GridView? _gridView;
     private readonly CancellationTokenSource _cts = new();
@@ -84,6 +86,10 @@ public class FlatpakInstall(
 
     private readonly HttpClient _httpClient = new();
 
+    private Stack? _mainContentStack;
+    private Box? _installSidebarControls;
+    private string _activePage = "install";
+
     public Widget CreateWindow()
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/Flatpak/FlatpakInstallWindow.ui"), -1);
@@ -128,6 +134,38 @@ public class FlatpakInstall(
 
         _installFromFlatpakRef = (Button)builder.GetObject("install_from_flatpak_ref_button")!;
         _installFromFlatpakRefDropDown = (DropDown)builder.GetObject("install_from_flatpak_ref_dropdown")!;
+
+        _mainContentStack = (Stack)builder.GetObject("main_content_stack")!;
+        _installSidebarControls = (Box)builder.GetObject("install_sidebar_controls")!;
+
+        var updatePageBox = (Box)builder.GetObject("update_page_box")!;
+        var removePageBox = (Box)builder.GetObject("remove_page_box")!;
+        updatePageBox.Append(flatpakUpdate.CreateWindow());
+        removePageBox.Append(flatpakRemove.CreateWindow());
+
+        var sectionNavList = (ListBox)builder.GetObject("section_nav_list")!;
+        var navInstallRow = (ListBoxRow)builder.GetObject("nav_install_row")!;
+        sectionNavList.SelectRow(navInstallRow);
+        sectionNavList.OnRowSelected += (_, args) =>
+        {
+            if (args.Row is null) return;
+            searchEntry.SetText(string.Empty);
+            switch (args.Row.GetIndex())
+            {
+                case 0:
+                    _activePage = "install";
+                    _mainContentStack.SetVisibleChild((Widget)builder.GetObject("list_overlay")!);
+                    break;
+                case 1:
+                    _activePage = "update";
+                    _mainContentStack.SetVisibleChild(updatePageBox);
+                    break;
+                case 2:
+                    _activePage = "remove";
+                    _mainContentStack.SetVisibleChild(removePageBox);
+                    break;
+            }
+        };
 
         _remoteListStore = Gio.ListStore.New(FlatpakRemoteGObject.GetGType());
         _remoteSelectionModel = new SingleSelection { Model = _remoteListStore };
@@ -369,22 +407,49 @@ public class FlatpakInstall(
                 if (ct.IsCancellationRequested) return;
                 GLib.Functions.IdleAdd(0, () =>
                 {
-                    _searchText = searchEntry.GetText();
-                    ApplyFilter();
+                    var text = searchEntry.GetText();
+                    if (_activePage == "update")
+                    {
+                        flatpakUpdate.SetSearch(text);
+                    }
+                    else if (_activePage == "remove")
+                    {
+                        flatpakRemove.SetSearch(text);
+                    }
+                    else
+                    {
+                        _searchText = text;
+                        ApplyFilter();
+                    }
                     return false;
                 });
             }, ct);
         };
 
-        _categoryListBox.OnRowSelected += (_, args) =>
+        void NavigateToInstallPage(int index)
         {
-            if (args.Row is null) return;
-            _selectedCategory = (FlatpakCategories)args.Row.GetIndex();
+            _selectedCategory = (FlatpakCategories)index;
             _overlay.SetVisible(false);
             _remoteRefOverlay.SetVisible(false);
             _addRemoteOverlay.SetVisible(false);
 
+            _activePage = "install";
+            _mainContentStack.SetVisibleChild((Widget)builder.GetObject("list_overlay")!);
+            sectionNavList.SelectRow(navInstallRow);
+
             ApplyFilter();
+        }
+
+        _categoryListBox.OnRowSelected += (_, args) =>
+        {
+            if (args.Row is null) return;
+            NavigateToInstallPage(args.Row.GetIndex());
+        };
+
+        _categoryListBox.OnRowActivated += (_, args) =>
+        {
+            if (args.Row is null) return;
+            NavigateToInstallPage(args.Row.GetIndex());
         };
 
         _gridView.OnActivate += (_, _) =>

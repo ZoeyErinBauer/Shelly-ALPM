@@ -34,6 +34,7 @@ public class Settings(
     };
 
     public event Action? NavigationToHomeRequested;
+    public event Action<ShellyConfig>? ConfigChanged;
 
     public Widget CreateWindow()
     {
@@ -384,6 +385,7 @@ public class Settings(
     private void SaveConfig()
     {
         configService.SaveConfig(_config);
+        ConfigChanged?.Invoke(_config);
     }
 
     private async Task ForceSyncAsync()

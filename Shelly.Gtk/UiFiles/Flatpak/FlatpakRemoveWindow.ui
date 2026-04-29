@@ -21,23 +21,6 @@
             </style>
           </object>
         </child>
-        <child>
-          <object class="GtkBox">
-            <property name="hexpand">true</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSearchEntry" id="search_entry">
-            <property name="width-request">200</property>
-            <property name="placeholder-text">Search packages...</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton" id="reload_button">
-            <property name="icon-name">view-refresh-symbolic</property>
-            <property name="tooltip-text">Reload</property>
-          </object>
-        </child>
       </object>
     </child>
     <child>

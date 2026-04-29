@@ -95,7 +95,7 @@ public class PackageInstall(
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
@@ -588,6 +588,9 @@ public class PackageInstall(
 
                 // ReSharper disable once CoVariantArrayConversion
                 _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(), (uint)batch.Count);
+
+                if (_listStore.GetNItems() > 0 && _selectionModel.GetSelected() == uint.MaxValue)
+                    _selectionModel.SetSelected(0);
 
                 return queue.Count > 0;
             });
