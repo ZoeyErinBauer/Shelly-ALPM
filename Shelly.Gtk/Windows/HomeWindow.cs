@@ -45,12 +45,12 @@ public class HomeWindow(
     private Widget? _activeSessionLogOverlay;
     private Overlay _overlay = null!;
     private GenericDialogEventArgs _args;
+    private Label? _availableUpdatesLabel;
     private uint _updateTimerId;
     private const int MaxRawLineBytes = 50 * 1024 * 1024; // 50 MB
     private GObject.SignalHandler<ListBox, ListBox.RowActivatedSignalArgs>? _logRowActivatedHandler;
     GObject.SignalHandler<Adjustment>? _vadjHandler;
     GObject.SignalHandler<Adjustment>? _clickHandler;
-
 
 
     public Widget CreateWindow()
@@ -66,6 +66,7 @@ public class HomeWindow(
         var metaSearchContainer = (Box)builder.GetObject("MetaSearchContainer")!;
         var searchPromptOverlay = (Box)builder.GetObject("SearchPromptOverlay")!;
 
+        _availableUpdatesLabel = (Label)builder.GetObject("AvailableUpdateLabel")!;
         if (configService.LoadConfig().ShellyIconsEnabled)
         {
             Task.Run(async () =>
@@ -746,12 +747,15 @@ public class HomeWindow(
     {
         label.SetText(packages.Count.ToString());
     }
-    
+
     private async Task LoadUpdatesPanel(ListBox listBox, CancellationToken ct)
     {
         try
         {
             var updates = await unprivilegedOperationService.CheckForApplicationUpdates();
+            var count = updates.Packages.Count + updates.Flatpaks.Count + updates.Aur.Count;
+            _availableUpdatesLabel!.SetText($"Available Updates ({count.ToString()})");
+
             ct.ThrowIfCancellationRequested();
 
             GLib.Functions.IdleAdd(0, () =>
@@ -865,7 +869,7 @@ public class HomeWindow(
     {
         try
         {
-            _logEntries  = await operationLogService.GetRecentOperationsAsync(8);
+            _logEntries = await operationLogService.GetRecentOperationsAsync(8);
             ct.ThrowIfCancellationRequested();
 
             GLib.Functions.IdleAdd(0, () =>
@@ -930,13 +934,13 @@ public class HomeWindow(
                     row.SetChild(hbox);
                     _operationLogListBox.Append(row);
                 }
-                
+
                 if (_logRowActivatedHandler is not null)
                     _operationLogListBox.OnRowActivated -= _logRowActivatedHandler;
 
                 _logRowActivatedHandler = (sender, args) => OnLogRowActivated(args.Row, _logEntries);
                 _operationLogListBox.OnRowActivated += _logRowActivatedHandler;
-                
+
                 return false;
             });
         }
@@ -945,14 +949,14 @@ public class HomeWindow(
             Console.WriteLine($"Failed to load operation log: {e.Message}");
         }
     }
-    
-    private async Task OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries) 
+
+    private async Task OnLogRowActivated(ListBoxRow row, List<OperationLogEntry> entries)
     {
         var index = row.GetIndex();
         if (index < 0 || index >= entries.Count) return;
 
         var entry = entries[index];
-        
+
         _logLines = await operationLogService.GetSessionExcerptAsync(entry, MaxRawLineBytes);
 
         if (_logLines.Count == 0)
@@ -987,7 +991,7 @@ public class HomeWindow(
                 textView.WrapMode = WrapMode.WordChar;
 
                 var buffer = textView.Buffer;
-                
+
                 buffer?.SetText(fullLogText, -1);
 
                 var scrolledWindow = new ScrolledWindow();
@@ -1001,7 +1005,7 @@ public class HomeWindow(
 
                 copyButton.OnClicked += (_, _) =>
                 {
-                    var text = fullLogText; 
+                    var text = fullLogText;
 
                     var clipboard = Gdk.Display.GetDefault().GetClipboard();
                     clipboard.SetText(text);
@@ -1025,8 +1029,8 @@ public class HomeWindow(
             return false;
         });
     }
-    
-    
+
+
     private static string GetIconForCommand(string command)
     {
         if (command.Contains("sync", StringComparison.OrdinalIgnoreCase))
@@ -1068,6 +1072,5 @@ public class HomeWindow(
         _logLines.Clear();
         _logLines = null;
         _args = null!;
-
     }
 }
