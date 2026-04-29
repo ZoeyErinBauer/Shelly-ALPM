@@ -445,21 +445,35 @@ public class MetaSearch(
 
         if (selected.Count == 0) return;
 
+        bool installFailed = false;
+
         try
         {
             lockoutService.Show($"Installing...");
-
             var standard = selected.Where(x => x.PackageType == PackageType.STANDARD).Select(x => x.Name).ToList();
             var aur = selected.Where(x => x.PackageType == PackageType.AUR).Select(x => x.Name).ToList();
             var flatpak = selected.Where(x => x.PackageType == PackageType.FLATPAK).Select(x => x.Id).ToList();
 
-            if (standard.Count > 0) await privilegedOperationService.InstallPackagesAsync(standard);
-            if (aur.Count > 0) await privilegedOperationService.InstallAurPackagesAsync(aur);
+            if (standard.Count > 0)
+            {
+                var optResult = await privilegedOperationService.InstallPackagesAsync(standard);
+                installFailed = !optResult.Success;
+            }
+
+            if (aur.Count > 0)
+            {
+                var optResult = await privilegedOperationService.InstallAurPackagesAsync(aur);
+                installFailed = !optResult.Success;
+            }
+
             if (flatpak.Count > 0)
             {
                 foreach (var pkg in selected.Where(x => x.PackageType == PackageType.FLATPAK))
                 {
-                    await unprivilegedOperationService.InstallFlatpakPackage(pkg.Id, false, pkg.Repository, "stable");
+                    var optResult =
+                        await unprivilegedOperationService.InstallFlatpakPackage(pkg.Id, false, pkg.Repository,
+                            "stable");
+                    installFailed = !optResult.Success;
                 }
             }
 
@@ -478,10 +492,20 @@ public class MetaSearch(
         finally
         {
             lockoutService.Hide();
+            ToastMessageEventArgs args;
+            if (installFailed)
+            {
+                args = new ToastMessageEventArgs(
+                    $"Install for {selected.Count} package(s) was unsuccessful."
+                );
+            }
+            else
+            {
+                args = new ToastMessageEventArgs(
+                    $"Installed {selected.Count} Package(s)"
+                );
+            }
 
-            var args = new ToastMessageEventArgs(
-                $"Installed {selected.Count} Package(s)"
-            );
             genericQuestionService.RaiseToastMessage(args);
 
             UpdateButtonSensitivity();
