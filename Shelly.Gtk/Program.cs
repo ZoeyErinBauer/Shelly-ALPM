@@ -499,119 +499,37 @@ sealed class Program
                 });
             };
 
+            var historyMenuButton = (MenuButton)mainBuilder.GetObject("history_menu_button")!;
+            var historyListBox = (ListBox)mainBuilder.GetObject("history_list_box")!;
+            var historyPopoverTitle = (Label)mainBuilder.GetObject("history_popover_title")!;
+
+            BottomBarExtensions.SetupHistoryButton(
+                historyMenuButton,
+                historyListBox,
+                historyPopoverTitle,
+                serviceProvider,
+                genericQuestionService,
+                mainOverlay);
+
             var updatesMenuButton = (MenuButton)mainBuilder.GetObject("updates_menu_button")!;
             var updatesListBox = (ListBox)mainBuilder.GetObject("updates_list_box")!;
             var updatesPopoverTitle = (Label)mainBuilder.GetObject("updates_popover_title")!;
+            var packageUpdateNotifier = serviceProvider.GetRequiredService<IPackageUpdateNotifier>();
 
-            LoadUpdates();
-            updatesMenuButton.OnActivate += (_, _) => LoadUpdates();
-            var updateTimer = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(TimeSpan.FromMinutes(5));
-                    GLib.Functions.IdleAdd(0, () =>
-                    {
-                        LoadUpdates();
-                        return false;
-                    });
-                }
-            });
-            GC.KeepAlive(updateTimer);
+            BottomBarExtensions.SetupUpdatesButton(
+                updatesMenuButton,
+                updatesListBox,
+                updatesPopoverTitle,
+                serviceProvider,
+                packageUpdateNotifier);
 
             var upgradeAllButton = (Button)mainBuilder.GetObject("upgrade_all_button")!;
             upgradeAllButton.OnClicked += async (_, _) => { await UpgradeAllAsync(); };
-
             return;
-
-            void LoadUpdates()
-            {
-                while (updatesListBox.GetFirstChild() is { } ch)
-                    updatesListBox.Remove(ch);
-                var loadingRow = new ListBoxRow();
-                var loadingLabel = Label.New("Loading...");
-                loadingLabel.Halign = Align.Center;
-                loadingLabel.AddCssClass("dim-label");
-                loadingLabel.MarginTop = 8;
-                loadingLabel.MarginBottom = 8;
-                loadingRow.SetActivatable(false);
-                loadingRow.SetChild(loadingLabel);
-                updatesListBox.Append(loadingRow);
-
-                Task.Run(async () =>
-                {
-                    var unprivilegedOps = serviceProvider.GetRequiredService<IUnprivilegedOperationService>();
-                    var updates = await unprivilegedOps.CheckForApplicationUpdates();
-                    var count = updates.Packages.Count + updates.Aur.Count + updates.Flatpaks.Count;
-                    GLib.Functions.IdleAdd(0, () =>
-                    {
-                        updatesPopoverTitle.SetText($"Available Updates ({count})");
-                        updatesMenuButton.SetLabel($"Updates ({count})");
-
-                        while (updatesListBox.GetFirstChild() is { } child)
-                            updatesListBox.Remove(child);
-
-                        foreach (var pkg in updates.Packages)
-                        {
-                            var row = new ListBoxRow();
-                            var label = Label.New($"{pkg.Name}: {pkg.OldVersion} → {pkg.Version}");
-                            label.Halign = Align.Start;
-                            label.Wrap = true;
-                            label.MarginStart = 8;
-                            label.MarginEnd = 8;
-                            label.MarginTop = 4;
-                            label.MarginBottom = 4;
-                            row.SetChild(label);
-                            updatesListBox.Append(row);
-                        }
-
-                        foreach (var pkg in updates.Aur)
-                        {
-                            var row = new ListBoxRow();
-                            var label = Label.New($"[AUR] {pkg.Name}: {pkg.OldVersion} → {pkg.Version}");
-                            label.Halign = Align.Start;
-                            label.Wrap = true;
-                            label.MarginStart = 8;
-                            label.MarginEnd = 8;
-                            label.MarginTop = 4;
-                            label.MarginBottom = 4;
-                            row.SetChild(label);
-                            updatesListBox.Append(row);
-                        }
-
-                        foreach (var pkg in updates.Flatpaks)
-                        {
-                            var row = new ListBoxRow();
-                            var label = Label.New($"[Flatpak] {pkg.Name ?? pkg.Id}: {pkg.Version}");
-                            label.Halign = Align.Start;
-                            label.Wrap = true;
-                            label.MarginStart = 8;
-                            label.MarginEnd = 8;
-                            label.MarginTop = 4;
-                            label.MarginBottom = 4;
-                            row.SetChild(label);
-                            updatesListBox.Append(row);
-                        }
-
-                        if (count != 0) return false;
-                        {
-                            var row = new ListBoxRow();
-                            var label = Label.New("All packages are up to date");
-                            label.Halign = Align.Center;
-                            label.AddCssClass("dim-label");
-                            label.MarginTop = 8;
-                            label.MarginBottom = 8;
-                            row.SetChild(label);
-                            updatesListBox.Append(row);
-                        }
-
-                        return false;
-                    });
-                });
-            }
 
             async Task UpgradeAllAsync()
             {
+                upgradeAllButton.Sensitive = false;
                 var unprivilegedOperationService = serviceProvider.GetRequiredService<IUnprivilegedOperationService>();
                 var privilegedOperationService = serviceProvider.GetRequiredService<IPrivilegedOperationService>();
                 try
@@ -626,18 +544,11 @@ sealed class Program
                         return;
                     }
 
-                    var standardPackagesNeedingUpdate = packagesNeedingUpdate.Packages;
-                    if (standardPackagesNeedingUpdate.Count == 0)
-                    {
-                        var toastArgs = new ToastMessageEventArgs("Standard Packages is already up to date");
-                        genericQuestionService.RaiseToastMessage(toastArgs);
-                    }
-
                     if (!configService.LoadConfig().NoConfirm)
                     {
                         var confirmArgs = new GenericQuestionEventArgs(
                             "Upgrade All Packages?",
-                            BuildUpgradeConfirmationMessage(standardPackagesNeedingUpdate),
+                            BottomBarExtensions.BuildUpgradeConfirmationMessage(packagesNeedingUpdate),
                             true
                         );
 
@@ -701,6 +612,7 @@ sealed class Program
                 finally
                 {
                     lockoutService.Hide();
+                    upgradeAllButton.Sensitive = true;
                 }
             }
 
@@ -791,33 +703,5 @@ sealed class Program
         };
 
         return application.Run(args);
-    }
-
-    private static string BuildUpgradeConfirmationMessage(IEnumerable<SyncPackageModel> packages)
-    {
-        var packageList = packages.ToList();
-        if (packageList.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        const int maxPackageColumnWidth = 28;
-        var packageColumnWidth = Math.Min(
-            maxPackageColumnWidth,
-            packageList.Max(package => package.Name.Length));
-
-        return string.Join(Environment.NewLine, packageList.Select(package =>
-            $"{FormatPackageName(package.Name, packageColumnWidth)}  {package.OldVersion} -> {package.Version}"));
-    }
-
-    private static string FormatPackageName(string packageName, int width)
-    {
-        if (packageName.Length > width)
-        {
-            var truncatedWidth = Math.Max(1, width - 1);
-            packageName = packageName[..truncatedWidth] + "…";
-        }
-
-        return packageName.PadRight(width);
     }
 }

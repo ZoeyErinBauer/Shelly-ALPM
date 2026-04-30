@@ -10,7 +10,7 @@ using Shelly.Gtk.UiModels.PackageManagerObjects;
 
 namespace Shelly.Gtk.Services;
 
-public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOperationService
+public class UnprivilegedOperationService(ITrayDbus trayDbus, IPackageUpdateNotifier packageUpdateNotifier) : IUnprivilegedOperationService
 {
     private readonly string _cliPath = FindCliPath();
 
@@ -638,6 +638,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         if (result.Success)
         {
             _ = Task.Run(trayDbus.UpdatesMadeInUiAsync);
+            packageUpdateNotifier.NotifyPackagesUpdated();
         }
     }
 }

@@ -25,6 +25,7 @@ public static class ServiceBuilder
         collection.AddSingleton<IIconResolverService, IconResolverService>();
         collection.AddSingleton<IArchNewsService, ArchNewsService>();
         collection.AddSingleton<IOperationLogService, OperationLogService>();
+        collection.AddSingleton<IPackageUpdateNotifier, PackageUpdateNotifier>();
         collection.AddSingleton<IIConDownloadService, IconDownloadService>();
         collection.AddScoped<IUpdateService, GitHubUpdateService>();
         collection.AddScoped<ITrayDbus, TrayDBus>();

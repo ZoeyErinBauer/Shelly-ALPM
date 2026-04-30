@@ -15,16 +15,19 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly IConfigService _configService;
     private readonly ILockoutService _lockoutService;
     private readonly ITrayDbus _trayDbus;
+    private readonly IPackageUpdateNotifier _packageUpdateNotifier;
     private bool _usedPassword = false;
 
     public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
-        IConfigService configService, ILockoutService lockoutService, ITrayDbus trayDbus)
+        IConfigService configService, ILockoutService lockoutService, ITrayDbus trayDbus,
+        IPackageUpdateNotifier packageUpdateNotifier)
     {
         _credentialManager = credentialManager;
         _alpmEventService = alpmEventService;
         _configService = configService;
         _lockoutService = lockoutService;
         _trayDbus = trayDbus;
+        _packageUpdateNotifier = packageUpdateNotifier;
         _cliPath = FindCliPath();
     }
 
@@ -542,6 +545,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         if (result.Success)
         {
             _ = Task.Run(() => _trayDbus.UpdatesMadeInUiAsync());
+            _packageUpdateNotifier.NotifyPackagesUpdated();
         }
     }
 

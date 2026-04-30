@@ -17,7 +17,7 @@
                         <property name="halign">start</property>
                         <property name="label">Remove Aur Package(s)</property>
                         <style>
-                            <class name="suggested-action"/>
+                            <class name="destructive-action"/>
                         </style>
                     </object>
                 </child>

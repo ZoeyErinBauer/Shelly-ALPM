@@ -8,6 +8,8 @@ public class SyncModel
     public List<SyncPackageModel> Packages { get; set; } = [];
     public List<SyncAurModel> Aur { get; set; } = [];
     public List<SyncFlatpakModel> Flatpaks { get; set; } = [];
+    
+    public int TotalPackageCount => Packages.Count + Aur.Count + Flatpaks.Count;
 }
 
 public class SyncPackageModel

@@ -14,17 +14,18 @@
                         <property name="spacing">5</property>
                         <property name="margin-bottom">10</property>
                         <property name="margin-top">8</property>
+                        <property name="margin-start">10</property>
                         <property name="margin-end">10</property>
+                        <property name="hexpand">false</property>
+                        <property name="width-request">180</property>
                         <child>
                             <object class="GtkBox">
                                 <property name="orientation">horizontal</property>
                                 <property name="spacing">5</property>
-                                <property name="margin-start">10</property>
                                 <property name="margin-bottom">4</property>
                                 <child>
                                     <object class="GtkSearchEntry" id="search_entry">
-                                        <property name="hexpand">false</property>
-                                        <property name="width-request">120</property>
+                                        <property name="hexpand">true</property>
                                         <property name="placeholder-text">Search packages...</property>
                                     </object>
                                 </child>
@@ -41,9 +42,6 @@
                             <object class="GtkListBox" id="section_nav_list">
                                 <property name="selection-mode">single</property>
                                 <property name="width-request">160</property>
-                                <style>
-                                    <class name="navigation-sidebar"/>
-                                </style>
                                 <child>
                                     <object class="GtkListBoxRow" id="nav_install_row">
                                         <child>
@@ -133,9 +131,6 @@
                                                 <property name="selection-mode">single</property>
                                                 <property name="width-request">160</property>
                                                 <property name="vexpand">true</property>
-                                                <style>
-                                                    <class name="navigation-sidebar"/>
-                                                </style>
                                             </object>
                                         </child>
                                     </object>

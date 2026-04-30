@@ -64,10 +64,6 @@
                 <attribute name="action">app.cacheclean</attribute>
             </item>
             <item>
-                <attribute name="label">History</attribute>
-                <attribute name="action">app.preferences</attribute>
-            </item>
-            <item>
                 <attribute name="label">Arch News</attribute>
                 <attribute name="action">app.news</attribute>
             </item>
@@ -174,12 +170,58 @@
                                 </child>
                                 <child>
                                     <object class="GtkBox">
+                                        <property name="halign">end</property>
                                         <property name="orientation">horizontal</property>
                                         <property name="spacing">10</property>
                                         <property name="margin-bottom">10</property>
                                         <property name="margin-end">10</property>
                                         <property name="margin-start">10</property>
                                         <property name="margin-top">10</property>
+                                        <child>
+                                            <object class="GtkMenuButton" id="history_menu_button">
+                                                <property name="label">History</property>
+                                                <property name="icon-name">document-open-recent-symbolic</property>
+                                                <property name="always-show-arrow">true</property>
+                                                <property name="popover">
+                                                    <object class="GtkPopover" id="history_popover">
+                                                        <property name="autohide">true</property>
+                                                        <property name="child">
+                                                            <object class="GtkBox" id="history_popover_box">
+                                                                <property name="orientation">vertical</property>
+                                                                <property name="spacing">0</property>
+                                                                <property name="width-request">320</property>
+                                                                <child>
+                                                                    <object class="GtkLabel" id="history_popover_title">
+                                                                        <property name="label">Recent Operations</property>
+                                                                        <property name="margin-top">10</property>
+                                                                        <property name="margin-bottom">6</property>
+                                                                        <property name="margin-start">10</property>
+                                                                        <property name="margin-end">10</property>
+                                                                        <attributes>
+                                                                            <attribute name="weight" value="bold"/>
+                                                                        </attributes>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkScrolledWindow">
+                                                                        <property name="hscrollbar-policy">never</property>
+                                                                        <property name="vscrollbar-policy">automatic</property>
+                                                                        <property name="max-content-height">400</property>
+                                                                        <property name="propagate-natural-height">true</property>
+                                                                        <property name="child">
+                                                                            <object class="GtkListBox" id="history_list_box">
+                                                                                <property name="selection-mode">single</property>
+                                                                                <property name="show-separators">true</property>
+                                                                            </object>
+                                                                        </property>
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </property>
+                                                    </object>
+                                                </property>
+                                            </object>
+                                        </child>
                                         <child>
                                             <object class="GtkMenuButton" id="updates_menu_button">
                                                 <property name="label">Updates</property>
