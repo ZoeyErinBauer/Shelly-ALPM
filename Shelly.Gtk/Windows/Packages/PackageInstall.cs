@@ -7,6 +7,7 @@ using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 using Shelly.Gtk.Windows.Dialog;
+using Shelly.Utilities;
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -256,7 +257,7 @@ public class PackageInstall(
 
         AddDetail("Version", pkg.Version);
         AddDetail("Repository", pkg.Repository);
-        AddDetail("Size", SizeHelpers.FormatSize(pkg.InstalledSize));
+        AddDetail("Size", SizeHelper.FormatSize(pkg.InstalledSize));
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -502,7 +503,7 @@ public class PackageInstall(
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
-            label.SetText(SizeHelpers.FormatSize(pkg.InstalledSize));
+            label.SetText(SizeHelper.FormatSize(pkg.InstalledSize));
             label.Halign = Align.End;
         };
         sizeColumn.SetFactory(_sizeFactory);

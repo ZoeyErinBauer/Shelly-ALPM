@@ -1,3 +1,5 @@
+using Shelly.Utilities;
+
 namespace Shelly_CLI.Configuration;
 
 public class ShellyConfig

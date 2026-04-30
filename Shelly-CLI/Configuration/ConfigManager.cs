@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using PackageManager.Utilities;
+using Shelly.Utilities;
+
 namespace Shelly_CLI.Configuration;
 
 public static class ConfigManager

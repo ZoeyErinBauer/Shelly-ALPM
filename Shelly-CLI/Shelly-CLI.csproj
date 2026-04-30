@@ -31,6 +31,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\PackageManager\PackageManager.csproj" />
+        <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
     </ItemGroup>
 
     <ItemGroup>

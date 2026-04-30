@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using PackageManager.Flatpak;
-using Spectre.Console;
+using Shelly.Utilities;
 using Spectre.Console.Cli;
 
 namespace Shelly_CLI.Commands.Flatpak;
@@ -22,25 +22,10 @@ public class GetAppRemoteInfo : Command<FlatpakInstallSize>
             writer.Flush();
         }
         else
-            Console.Write("Download Size:" + FormatSize(result.DownloadSize) +
-                          " Install Size:" + FormatSize(result.InstalledSize));
+            Console.Write("Download Size:" + SizeHelper.FormatSize((long)result.DownloadSize) +
+                          " Install Size:" + SizeHelper.FormatSize((long)result.InstalledSize));
 
         return 0;
-    }
-
-    private static string FormatSize(ulong bytes)
-    {
-        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
-        var i = 0;
-        double dblSByte = bytes;
-        while (i < suffixes.Length && bytes >= 1024)
-        {
-            dblSByte = bytes / 1024.0;
-            i++;
-            bytes /= 1024;
-        }
-
-        return $"{dblSByte:0.##} {suffixes[i]}";
     }
 }
 

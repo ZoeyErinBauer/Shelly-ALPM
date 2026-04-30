@@ -43,12 +43,4 @@ public static class CacheCleanHelper
 
         return new CacheEntry(pkgname, version, arch, filePath, fileSize);
     }
-
-    public static string FormatSize(long bytes) => bytes switch
-    {
-        >= 1L << 30 => $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GiB",
-        >= 1L << 20 => $"{bytes / (1024.0 * 1024.0):F2} MiB",
-        >= 1L << 10 => $"{bytes / 1024.0:F2} KiB",
-        _ => $"{bytes} B"
-    };
 }
