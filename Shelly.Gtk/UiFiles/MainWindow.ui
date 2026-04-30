@@ -71,10 +71,10 @@
                 <attribute name="label">Settings</attribute>
                 <attribute name="action">app.preferences</attribute>
             </item>
-            <item>
+            <!--<item>
                 <attribute name="label">About</attribute>
                 <attribute name="action">app.about</attribute>
-            </item>
+            </item>-->
         </section>
     </menu>
     <object class="GtkApplicationWindow" id="MainWindow">
