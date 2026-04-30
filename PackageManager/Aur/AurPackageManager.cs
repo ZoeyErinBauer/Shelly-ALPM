@@ -313,7 +313,8 @@ public class AurPackageManager(string? configPath = null)
             return;
         }
 
-        var tempPath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var tempPath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
 
         var depends = pkgbuildInfo.ParsedDepends;
@@ -1719,7 +1720,8 @@ public class AurPackageManager(string? configPath = null)
     /// </summary>
     private async Task<List<VcsSourceEntry>?> GetVcsSourceEntriesForPackage(string packageName)
     {
-        var cachePath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var cachePath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildPath = Path.Combine(cachePath, "PKGBUILD");
 
         if (!File.Exists(pkgbuildPath))
@@ -1816,7 +1818,7 @@ public class AurPackageManager(string? configPath = null)
         }
     }
 
-    private static readonly string[] VcsSuffixes = ["-git"];
+    private static readonly string[] VcsSuffixes = ["-git", "-svn", "-hg", "-bzr", "-darcs", "-cvs"];
 
     private static bool IsVcsPackage(string packageName)
     {
