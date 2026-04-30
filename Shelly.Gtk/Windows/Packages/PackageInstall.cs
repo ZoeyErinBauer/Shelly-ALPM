@@ -143,12 +143,13 @@ public class PackageInstall(
             {
                 if (!_installButton.GetSensitive()) return false;
                 if (OverlayHelper.HasActiveOverlay(_overlay)) return false;
-                
+
                 Task.Run(async () => await InstallSelectedAsync());
                 return true;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+
         _overlay.AddController(shortcutController);
 
         _localInstallButton.OnClicked += (_, _) => { _ = InstallLocalPackage(); };
@@ -399,7 +400,7 @@ public class PackageInstall(
             if (args.Object is not ColumnViewCell listItem) return;
             var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
             listItem.SetChild(check);
-            
+
             check.OnToggled += (s, e) =>
             {
                 if (listItem.GetItem() is not AlpmPackageGObject current) return;
@@ -407,7 +408,7 @@ public class PackageInstall(
                 _installButton.SetSensitive(AnySelected());
             };
         };
-        
+
         _checkFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
@@ -419,7 +420,7 @@ public class PackageInstall(
             pkgObj.OnSelectionToggled += OnExternalToggle;
 
             return;
-            
+
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -428,7 +429,7 @@ public class PackageInstall(
                 }
             }
         };
-        
+
         _checkFactory.OnUnbind += (_, args) => { };
 
         _checkFactory.OnTeardown += (_, args) =>
@@ -538,7 +539,7 @@ public class PackageInstall(
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
-            
+
             label.SetText(pkg.Repository);
             label.Halign = Align.End;
             label.SetMarginEnd(10);
@@ -582,8 +583,9 @@ public class PackageInstall(
                 while (queue.Count > 0 && count < batchSize)
                 {
                     var dequeued = queue.Dequeue();
-                    var pkgObj = new AlpmPackageGObject()
-                        { Package = dequeued, IsInstalled = _installedPackageNames.Contains(dequeued.Name) };
+                    var pkgObj = AlpmPackageGObject.NewWithProperties([]);
+                    pkgObj.Package = dequeued;
+                    pkgObj.IsInstalled = _installedPackageNames.Contains(dequeued.Name);
                     _packageGObjectRefs.Add(pkgObj);
                     batch.Add(pkgObj);
                     count++;

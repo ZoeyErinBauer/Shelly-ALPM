@@ -230,6 +230,7 @@
                                                 <property name="popover">
                                                     <object class="GtkPopover" id="updates_popover">
                                                         <property name="autohide">true</property>
+                                                        <property name="position">top</property>
                                                         <property name="child">
                                                             <object class="GtkBox" id="updates_popover_box">
                                                                 <property name="orientation">vertical</property>

@@ -187,12 +187,13 @@ public class FlatpakInstall(
             {
                 if (!_overlay.GetVisible() || !_overlayInstallButton.GetSensitive()) return false;
                 if (OverlayHelper.HasActiveOverlay(box)) return false;
-                
+
                 Task.Run(async () => await InstallSelectedAsync());
                 return true;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+
         var backTriggers = new[] { "Escape", "<Alt>Left" };
         foreach (var triggerStr in backTriggers)
         {
@@ -204,16 +205,19 @@ public class FlatpakInstall(
                     _addRemoteOverlay.Dispose();
                     return true;
                 }
+
                 if (_remoteRefOverlay.GetVisible())
                 {
                     _remoteRefOverlay.Hide();
                     return true;
                 }
+
                 if (_overlay.GetVisible())
                 {
                     _overlay.SetVisible(false);
                     return true;
                 }
+
                 return false;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
@@ -421,6 +425,7 @@ public class FlatpakInstall(
                         _searchText = text;
                         ApplyFilter();
                     }
+
                     return false;
                 });
             }, ct);
@@ -688,14 +693,14 @@ public class FlatpakInstall(
         hbox.Hexpand = false;
         hbox.Vexpand = false;
         hbox.Halign = Align.Start;
-        
+
         var icon = Image.New();
         icon.PixelSize = 64;
         icon.WidthRequest = 64;
         icon.HeightRequest = 64;
         icon.Valign = Align.Center;
         hbox.Append(icon);
-        
+
         var vbox = Box.New(Orientation.Vertical, 2);
         var nameBox = Box.New(Orientation.Horizontal, 4);
         nameBox.Halign = Align.Start;
@@ -705,13 +710,13 @@ public class FlatpakInstall(
         nameLabel.SetWrapMode(Pango.WrapMode.WordChar);
         nameLabel.MaxWidthChars = 30;
         nameBox.Append(nameLabel);
-        
+
         var verifiedIcon = Image.NewFromIconName("security-high-symbolic");
         verifiedIcon.PixelSize = 14;
         verifiedIcon.Valign = Align.Center;
         verifiedIcon.TooltipText = "Verified";
         nameBox.Append(verifiedIcon);
-        
+
         var idLabel = Label.New(string.Empty);
         idLabel.SetText(string.Empty);
         idLabel.Halign = Align.Start;
@@ -839,7 +844,9 @@ public class FlatpakInstall(
                     if (ct.IsCancellationRequested) return false;
                     foreach (var pkg in currentBatch)
                     {
-                        _listStore!.Append(new FlatpakGObject { Package = pkg });
+                        var o = FlatpakGObject.NewWithProperties([]);
+                        o.Package = pkg;
+                        _listStore!.Append(o);
                     }
 
                     return false;
@@ -1351,7 +1358,12 @@ public class FlatpakInstall(
         {
             if (_cts.Token.IsCancellationRequested) return false;
             _remoteListStore.RemoveAll();
-            foreach (var obj in remotes.Select(remote => new FlatpakRemoteGObject { Remote = remote }))
+            foreach (var obj in remotes.Select(remote =>
+                     {
+                         var o = FlatpakRemoteGObject.NewWithProperties([]);
+                         o.Remote = remote;
+                         return o;
+                     }))
             {
                 _remoteListStore.Append(obj);
             }

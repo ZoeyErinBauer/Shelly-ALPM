@@ -344,7 +344,12 @@ public class MetaSearch(
             {
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
-                foreach (var pkgObj in models.Select(model => new MetaPackageGObject { Package = model }))
+                foreach (var pkgObj in models.Select(model =>
+                         {
+                             var o = MetaPackageGObject.NewWithProperties([]);
+                             o.Package = model;
+                             return o;
+                         }))
                 {
                     _packageGObjectRefs.Add(pkgObj);
                     _listStore.Append(pkgObj);

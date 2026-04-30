@@ -275,7 +275,7 @@ public class PackageManagement(
         if (pkg.Groups.Count > 0)
             AddDetail("Groups", string.Join(", ", pkg.Groups));
 
-        
+
         if (pkg.PackageFile is { Files.Count: > 0 })
         {
             var fileExpander = new Expander { Label = $"Package Files ({CountFiles(pkg.PackageFile)})" };
@@ -343,6 +343,7 @@ public class PackageManagement(
                     if (exp.GetChild() is Box childBox)
                         ExpandAllExpanders(childBox);
                 }
+
                 child = child.GetNextSibling();
             }
         }
@@ -476,11 +477,11 @@ public class PackageManagement(
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
-            
+
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            
+
             return;
-            
+
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -500,7 +501,7 @@ public class PackageManagement(
             listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
-        
+
         _nameFactory = SignalListItemFactory.New();
         _nameFactory.OnSetup += (_, args) =>
         {
@@ -618,7 +619,8 @@ public class PackageManagement(
                 _packageGObjectRefs.Clear();
                 foreach (var package in _packages)
                 {
-                    var pkgObj = new AlpmPackageGObject { Package = package };
+                    var pkgObj = AlpmPackageGObject.NewWithProperties([]);
+                    pkgObj.Package = package;
                     _packageGObjectRefs.Add(pkgObj);
                     _listStore.Append(pkgObj);
                 }

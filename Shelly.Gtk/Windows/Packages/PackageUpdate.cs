@@ -203,6 +203,7 @@ public class PackageUpdate(
         {
             iconImage.SetFromIconName("package-x-generic");
         }
+
         headerBox.Append(iconImage);
 
         var nameLabel = Label.New(pkg.Name);
@@ -539,7 +540,8 @@ public class PackageUpdate(
     {
         try
         {
-            var packages = await unprivilegedOperationService.CheckForStandardApplicationUpdates(_showHiddenCheck.Active);
+            var packages =
+                await unprivilegedOperationService.CheckForStandardApplicationUpdates(_showHiddenCheck.Active);
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
             _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
             GLib.Functions.IdleAdd(0, () =>
@@ -548,7 +550,8 @@ public class PackageUpdate(
                 _packageGObjectRefs.Clear();
                 foreach (var package in packages)
                 {
-                    var pkgObj = new AlpmUpdateGObject { Package = package };
+                    var pkgObj = AlpmUpdateGObject.NewWithProperties([]);
+                    pkgObj.Package = package;
                     _packageGObjectRefs.Add(pkgObj);
                     _listStore.Append(pkgObj);
                 }

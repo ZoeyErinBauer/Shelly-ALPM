@@ -224,10 +224,12 @@ public class AurRemove(
             {
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in packages.Select(dto => new AurPackageGObject
+                foreach (var gobject in packages.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurPackageGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -289,6 +291,7 @@ public class AurRemove(
                     );
                     genericQuestionService.RaiseToastMessage(args);
                 }
+
                 await LoadDataAsync();
             }
             catch (Exception e)
@@ -299,8 +302,6 @@ public class AurRemove(
             {
                 lockoutService.Hide();
             }
-
-           
         }
     }
 

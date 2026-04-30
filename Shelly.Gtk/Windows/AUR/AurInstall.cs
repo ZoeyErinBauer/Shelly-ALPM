@@ -46,7 +46,7 @@ public class AurInstall(
     private Button _installButton = null!;
     private CheckButton _chrootCheck = null!;
     private CheckButton _runChecksCheck = null!;
-    
+
     private Label _searchForPackageLabel = null!;
 
     public Widget CreateWindow()
@@ -70,7 +70,7 @@ public class AurInstall(
 
         _detailBox = (Box)builder.GetObject("detail_box")!;
         _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
-        
+
         _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         _versionColumn.Resizable = true;
         _installButton = (Button)builder.GetObject("install_button")!;
@@ -116,12 +116,13 @@ public class AurInstall(
             {
                 if (!_installButton.GetSensitive()) return false;
                 if (OverlayHelper.HasActiveOverlay(_box)) return false;
-                
+
                 Task.Run(async () => await InstallSelectedAsync());
                 return true;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+
         _box.AddController(shortcutController);
 
         _searchEntry.OnActivate += (_, _) => { _ = SearchAsync(_cts.Token); };
@@ -140,7 +141,7 @@ public class AurInstall(
                 _currentDetailPkg = null;
             }
         };
-        
+
         return _box;
     }
 
@@ -285,10 +286,12 @@ public class AurInstall(
             {
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in result.Select(dto => new AurPackageGObject
+                foreach (var gobject in result.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurPackageGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -355,7 +358,8 @@ public class AurInstall(
                     }
                 }
 
-                result = await privilegedOperationService.InstallAurPackagesAsync(selectedPackages, _chrootCheck.GetActive(), _runChecksCheck.GetActive());
+                result = await privilegedOperationService.InstallAurPackagesAsync(selectedPackages,
+                    _chrootCheck.GetActive(), _runChecksCheck.GetActive());
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
@@ -445,7 +449,7 @@ public class AurInstall(
             return false;
         }
     }
-    
+
     private bool AnySelected()
     {
         for (uint i = 0; i < _listStore.GetNItems(); i++)
@@ -457,8 +461,8 @@ public class AurInstall(
 
         return false;
     }
-    
-     private void ShowPackageDetails(AurPackageGObject pkgObj)
+
+    private void ShowPackageDetails(AurPackageGObject pkgObj)
 
     {
         if (pkgObj.Package == null) return;
@@ -514,9 +518,9 @@ public class AurInstall(
         headerBox.MarginTop = 8;
 
         var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
-      
-            iconImage.SetFromIconName("package-x-generic");
-        
+
+        iconImage.SetFromIconName("package-x-generic");
+
         headerBox.Append(iconImage);
 
         var nameLabel = Label.New(pkg.Name);
@@ -545,10 +549,11 @@ public class AurInstall(
             AddDetail("Popularity", pkg.Popularity.ToString("F2"));
         if (pkg.OutOfDate != null)
             AddDetail("Out of Date", DateTimeOffset.FromUnixTimeSeconds(pkg.OutOfDate.Value).ToString("yyyy-MM-dd"));
-        
+
         AddDetail("Maintainer", pkg.Maintainer ?? "Orphaned");
         AddDetail("Last Modified", DateTimeOffset.FromUnixTimeSeconds(pkg.LastModified).ToString("yyyy-MM-dd HH:mm"));
-        AddDetail("First Submitted", DateTimeOffset.FromUnixTimeSeconds(pkg.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
+        AddDetail("First Submitted",
+            DateTimeOffset.FromUnixTimeSeconds(pkg.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -603,7 +608,7 @@ public class AurInstall(
         {
             AddChipList("Keywords", pkg.Keywords);
         }
-        
+
 
         if (pkg.Provides?.Count > 0)
             AddChipList("Provides", pkg.Provides);
@@ -652,7 +657,7 @@ public class AurInstall(
                 RowSpacing = 6,
                 Halign = Align.Start,
                 Valign = Align.Start,
-                MaxChildrenPerLine = isOptional ? 1u : 10u, 
+                MaxChildrenPerLine = isOptional ? 1u : 10u,
                 MinChildrenPerLine = 1
             };
 
@@ -670,6 +675,7 @@ public class AurInstall(
                     chip.WrapMode = Pango.WrapMode.WordChar;
                     chip.Xalign = 0;
                 }
+
                 flowBox.Append(chip);
             }
 

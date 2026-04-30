@@ -6,7 +6,7 @@ namespace Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 [Subclass<GObject.Object>]
 public partial class MetaPackageGObject
 {
-    public MetaPackageModel? Package { get; init; }
+    public MetaPackageModel? Package { get; set; }
     public bool IsSelected { get; set; }
 
     public bool IsInstalled

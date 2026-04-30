@@ -231,10 +231,12 @@ public class AurUpdate(
             {
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in packages.Select(dto => new AurUpdateGObject()
+                foreach (var gobject in packages.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurUpdateGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -302,8 +304,10 @@ public class AurUpdate(
                     }
                 }
 
-                var result = await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages, _runChecksCheck.GetActive());
-                
+                var result =
+                    await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages,
+                        _runChecksCheck.GetActive());
+
                 if (result.Success)
                     genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs(
                         $"Updated {selectedPackages.Count} Package(s)"));
@@ -415,7 +419,7 @@ public class AurUpdate(
         _detailBox.Append(separator);
 
         AddDetail("Version", pkg.Version);
-      
+
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -442,7 +446,6 @@ public class AurUpdate(
         }
 
         _detailRevealer.SetRevealChild(true);
-        
     }
 
     public void Dispose()
