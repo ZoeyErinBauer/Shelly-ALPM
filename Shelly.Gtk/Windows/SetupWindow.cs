@@ -55,6 +55,7 @@ public class SetupWindow(
             config.AppImageEnabled = appimageCheck.Active;
             config.TrayEnabled = trayCheck.Active;
             config.NewInstallInitSettings = true;
+            config.NewInstall = false;
 
             configService.SaveConfig(config);
             SetupFinished?.Invoke(this, EventArgs.Empty);

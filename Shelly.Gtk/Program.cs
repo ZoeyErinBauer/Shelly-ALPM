@@ -305,6 +305,21 @@ sealed class Program
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
             };
 
+            var dirtyService = serviceProvider.GetRequiredService<IDirtyService>();
+            dirtyService.Dirtied += (_, e) =>
+            {
+                if (!e.Matches(DirtyScopes.Config)) return;
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    var c = configService.LoadConfig();
+                    settingsStack.GetPage(aurPageBox).Visible = c.AurEnabled;
+                    settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
+                    settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
+                    dirtyService.Clear(DirtyScopes.Config);
+                    return false;
+                });
+            };
+
             var previousPage = settingsStack.GetVisibleChildName();
 
             settingsStack.OnNotify += (_, notifySignalArgs) =>
@@ -441,7 +456,7 @@ sealed class Program
 
             window.Show();
 
-            if (!initialConfig.NewInstallInitSettings)
+            if (initialConfig.NewInstall && !initialConfig.NewInstallInitSettings)
             {
                 var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
                 var setupWidget = setupWindow.CreateWindow();
@@ -474,7 +489,6 @@ sealed class Program
                 else
                 {
                     var config = configService.LoadConfig();
-                    config.NewInstall = false;
                     config.CurrentVersion = assemblyVersion;
                     configService.SaveConfig(config);
                 }
