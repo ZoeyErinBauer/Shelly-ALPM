@@ -46,7 +46,7 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
         {
             RootElevator.EnsureRootExectuion();
             var standard = SearchStandard(settings.SearchString);
-            var aur = SearchAur(settings.SearchString);
+            var aur = await SearchAur(settings.SearchString);
             var selection = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title($"[yellow]Found {standard.Count + aur.Count} packages please select one to install[/]")
@@ -64,17 +64,17 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
             var repo = selectionArray[2].Trim();
             if (repo == "AUR")
             {
-                new Aur.AurInstallCommand().ExecuteAsync(context, new AurInstallSettings()
+                await new Aur.AurInstallCommand().ExecuteAsync(context, new AurInstallSettings()
                 {
                     Packages = [name]
-                }).Wait();
+                });
             }
             else
             {
-                new InstallCommand().ExecuteAsync(context, new InstallPackageSettings()
+                await new InstallCommand().ExecuteAsync(context, new InstallPackageSettings()
                 {
                     Packages = [name]
-                }).Wait();
+                });
             }
             
             return 0;
@@ -85,13 +85,13 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
                 config.DefaultExecution);
         return parsed switch
         {
-            Shelly_CLI.Configuration.DefaultCommand.UpgradeStandard => new UpgradeCommand().ExecuteAsync(context,
-                new UpgradeSettings()).Result,
+            Shelly_CLI.Configuration.DefaultCommand.UpgradeStandard => await new UpgradeCommand().ExecuteAsync(context,
+                new UpgradeSettings()),
             Shelly_CLI.Configuration.DefaultCommand.UpgradeFlatpak => new FlatpakUpgrade().Execute(context),
             Shelly_CLI.Configuration.DefaultCommand.UpgradeAur => await new AurUpgradeCommand().ExecuteAsync(context,
                 new AurUpgradeSettings()),
-            Shelly_CLI.Configuration.DefaultCommand.UpgradeAll => new UpgradeCommand().ExecuteAsync(context,
-                new UpgradeSettings { All = true }).Result,
+            Shelly_CLI.Configuration.DefaultCommand.UpgradeAll => await new UpgradeCommand().ExecuteAsync(context,
+                new UpgradeSettings { All = true }),
             Shelly_CLI.Configuration.DefaultCommand.Sync => new SyncCommand().Execute(context, new SyncSettings()),
             Shelly_CLI.Configuration.DefaultCommand.SyncForce => new SyncCommand().Execute(context,
                 new SyncSettings { Force = true }),
@@ -116,11 +116,11 @@ public class DefaultCommand : AsyncCommand<DefaultCommandSettings>
         return packages;
     }
 
-    private List<AurPackageDto> SearchAur(string filter)
+    private async Task<List<AurPackageDto>> SearchAur(string filter)
     {
         var manager = new AurPackageManager();
-        manager.Initialize().Wait();
-        var packages = manager.SearchPackages(filter).Result;
+        await manager.Initialize();
+        var packages = await manager.SearchPackages(filter);
         packages = packages.Select(x => new { Package = x, Score = StringMatching.PartialRatio(filter, x.Name) })
             .Where(x => x.Score >= 75)
             .OrderByDescending(x => x.Score)

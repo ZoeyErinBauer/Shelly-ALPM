@@ -27,7 +27,7 @@ public class PackageManagement(
     private DirtySubscription? _sub;
     public string[] ListensTo => [DirtyScopes.Native, DirtyScopes.NativeInstalled];
     private Box _box = null!;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
@@ -168,8 +168,8 @@ public class PackageManagement(
             ApplyFilter();
         };
         _removeButton.OnClicked += (_, _) => { _ = RemoveSelectedAsync(); };
-        _refreshButton.OnClicked += (_, _) => { _ = LoadDataAsync(); };
-        _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+        _refreshButton.OnClicked += (_, _) => { Reload(); };
+        _showHiddenCheck.OnToggled += (_, _) => { Reload(); };
         _groupDropDown.OnNotify += (_, args) =>
         {
             if (args.Pspec.GetName() == "selected")
@@ -185,7 +185,13 @@ public class PackageManagement(
         return _box;
     }
 
-    public void Reload() => _ = LoadDataAsync(_cts.Token);
+    public void Reload()
+    {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+        _ = LoadDataAsync(_cts.Token);
+    }
 
     private void ShowPackageDetails(AlpmPackageGObject pkgObj)
     {
@@ -669,18 +675,25 @@ public class PackageManagement(
     {
         try
         {
-            _installedPackageNames.Clear();
             _packages = await privilegedOperationService.GetInstalledPackagesAsync(_showHiddenCheck.Active);
             _groups = _packages.SelectMany(x => x.Groups).Distinct().ToList();
             _groups.Insert(0, "Any");
             _installedPackageNames = new HashSet<string>(_packages.Select(x => x.Name));
-            _groupsStringList = StringList.New(_groups.ToArray());
-            _groupDropDown.SetModel(_groupsStringList);
             ct.ThrowIfCancellationRequested();
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested) return false;
+
+                _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
+                _filterListModel.SetFilter(_filter);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+
+                _groupsStringList = StringList.New(_groups.ToArray());
+                _groupDropDown.SetModel(_groupsStringList);
+
                 foreach (var package in _packages)
                 {
                     var pkgObj = AlpmPackageGObject.NewWithProperties([]);

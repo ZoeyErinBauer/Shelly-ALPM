@@ -23,7 +23,7 @@ public class PackageUpdate(
 {
     private DirtySubscription? _sub;
     public string[] ListensTo => [DirtyScopes.NativeUpdates, DirtyScopes.NativeInstalled, DirtyScopes.News];
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
     private bool _suppressToggleConfirmation;
     private Box _box = null!;
     private ColumnView _columnView = null!;
@@ -172,8 +172,8 @@ public class PackageUpdate(
             }
         };
         _updateButton.OnClicked += (_, _) => { _ = UpdateSelectedAsync(); };
-        _refreshButton.OnClicked += (_, _) => { _ = LoadDataAsync(); };
-        _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(); };
+        _refreshButton.OnClicked += (_, _) => { Reload(); };
+        _showHiddenCheck.OnToggled += (_, _) => { Reload(); };
 
         _sub = DirtySubscription.Attach(dirtyService, this);
         return _box;
@@ -188,7 +188,13 @@ public class PackageUpdate(
     }
 
 
-    public void Reload() => _ = LoadDataAsync();
+    public void Reload()
+    {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+        _ = LoadDataAsync(_cts.Token);
+    }
 
     private void ShowPackageDetails(AlpmUpdateGObject pkgObj)
     {
@@ -592,7 +598,7 @@ public class PackageUpdate(
         return pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
-    private async Task LoadDataAsync()
+    private async Task LoadDataAsync(CancellationToken ct = default)
     {
         try
         {
@@ -600,10 +606,18 @@ public class PackageUpdate(
                 await unprivilegedOperationService.CheckForStandardApplicationUpdates(_showHiddenCheck.Active);
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
             _installedPackageNames = new HashSet<string>(installedPackages.Select(x => x.Name));
+            ct.ThrowIfCancellationRequested();
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested) return false;
+
+                _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
+                _filterListModel.SetFilter(_filter);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+
                 foreach (var package in packages)
                 {
                     var pkgObj = AlpmUpdateGObject.NewWithProperties([]);
@@ -616,6 +630,9 @@ public class PackageUpdate(
                 _updateButton.SetSensitive(AnySelected());
                 return false;
             });
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception e)
         {
@@ -697,7 +714,7 @@ public class PackageUpdate(
                 else
                     upgradeResult = await privilegedOperationService.UpdatePackagesAsync(selectedPackages);
 
-                await LoadDataAsync();
+                await LoadDataAsync(_cts.Token);
 
                 if (upgradeResult.NeedsReboot)
                 {
