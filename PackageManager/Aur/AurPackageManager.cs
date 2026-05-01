@@ -313,7 +313,8 @@ public class AurPackageManager(string? configPath = null)
             return;
         }
 
-        var tempPath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var tempPath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
 
         var depends = pkgbuildInfo.ParsedDepends;
@@ -1042,6 +1043,8 @@ public class AurPackageManager(string? configPath = null)
                 remoteOk = rgc == 0 && string.Equals(rgout.Trim(), expectedRemote, StringComparison.Ordinal);
             }
 
+            var needsClone = false;
+
             if (hasGit && remoteOk)
             {
                 var (pc, _, perr) = await RunProcessAsync(
@@ -1049,11 +1052,16 @@ public class AurPackageManager(string? configPath = null)
                 if (pc != 0)
                 {
                     await Console.Error.WriteLineAsync(
-                        $"[Shelly] git pull failed for {pkgbase}: {perr.Trim()}");
-                    return false;
+                        $"[Shelly] git pull failed for {pkgbase} (likely divergent history). Attempting fresh clone...");
+                    needsClone = true;
                 }
             }
             else
+            {
+                needsClone = true;
+            }
+
+            if (needsClone)
             {
                 if (!await RemoveCacheDirAsync(user, tempPath))
                 {
@@ -1719,7 +1727,8 @@ public class AurPackageManager(string? configPath = null)
     /// </summary>
     private async Task<List<VcsSourceEntry>?> GetVcsSourceEntriesForPackage(string packageName)
     {
-        var cachePath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var cachePath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildPath = Path.Combine(cachePath, "PKGBUILD");
 
         if (!File.Exists(pkgbuildPath))
@@ -1816,7 +1825,7 @@ public class AurPackageManager(string? configPath = null)
         }
     }
 
-    private static readonly string[] VcsSuffixes = ["-git"];
+    private static readonly string[] VcsSuffixes = ["-git", "-svn", "-hg", "-bzr", "-darcs", "-cvs"];
 
     private static bool IsVcsPackage(string packageName)
     {

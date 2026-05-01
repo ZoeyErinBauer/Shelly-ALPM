@@ -531,6 +531,11 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Delete corrupted packages", "purify");
     }
 
+    public async Task<OperationResult> FixXdgPermissionsAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Fix Shelly folder ownership", "fix-permissions");
+    }
+
     public async Task<OperationResult> FlatpakInstallFromBundle(string path)
     {
         return await ExecutePrivilegedCommandAsync("Install Flatpak Bundle", "flatpak", "install-bundle", path,

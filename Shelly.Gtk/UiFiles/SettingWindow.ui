@@ -414,6 +414,16 @@
                               </object>
                             </child>
                             <child>
+                              <object class="GtkButton" id="fix_permissions_button">
+                                <property name="label">Fix Permissions</property>
+                                <property name="tooltip-text">Restores correct user ownership of Shelly configuration and cache folders if they were accidentally created by root.</property>
+                                <property name="margin-top">10</property>
+                                <style>
+                                  <class name="suggested-action"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
                               <object class="GtkButton" id="purify_button">
                                 <property name="label">Purify Packages</property>
                                   <property name="margin-top">10</property>
