@@ -86,7 +86,7 @@ public class PackageUpdate(
         _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
         _detailBox = (Box)builder.GetObject("detail_box")!;
         _listStore = Gio.ListStore.New(AlpmUpdateGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
@@ -589,13 +589,10 @@ public class PackageUpdate(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AlpmUpdateGObject pkgObj || pkgObj.Package == null)
+        if (obj is not AlpmUpdateGObject { Package: { } pkg })
             return false;
 
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
-
-        return pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false;
+        return PackageSearch.MatchesName(pkg.Name, _searchText);
     }
 
     private async Task LoadDataAsync(CancellationToken ct = default)

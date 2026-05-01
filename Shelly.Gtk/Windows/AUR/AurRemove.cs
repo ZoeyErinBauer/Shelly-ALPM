@@ -71,7 +71,7 @@ public class AurRemove(
         _cascadeDeleteCheck = (CheckButton)builder.GetObject("cascade_delete_check")!;
         _showHiddenCheck = (CheckButton)builder.GetObject("show_hidden_check")!;
         _listStore = Gio.ListStore.New(AurPackageGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
@@ -163,11 +163,10 @@ public class AurRemove(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AurPackageGObject pkgObj || pkgObj.Package == null)
+        if (obj is not AurPackageGObject { Package: { } pkg })
             return false;
 
-        return string.IsNullOrWhiteSpace(_searchText) ||
-               pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return PackageSearch.MatchesName(pkg.Name, _searchText);
     }
 
     private void ApplyFilter()

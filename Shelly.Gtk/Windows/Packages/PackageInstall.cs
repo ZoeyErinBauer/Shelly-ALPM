@@ -94,7 +94,7 @@ public class PackageInstall(
         _showHiddenCheck = (CheckButton)_builder.GetObject("show_hidden_check")!;
 
         _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
@@ -674,18 +674,13 @@ public class PackageInstall(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null) return false;
-
-        if (_selectedGroup != "Any" && !(pkgObj.Package?.Groups.Contains(_selectedGroup) ?? false))
-        {
+        if (obj is not AlpmPackageGObject { Package: { } pkg })
             return false;
-        }
 
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
+        if (!PackageSearch.MatchesGroup(pkg.Groups, _selectedGroup))
+            return false;
 
-        return (pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-               (pkgObj.Package?.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+        return PackageSearch.MatchesNameOrDescription(pkg.Name, pkg.Description, _searchText);
     }
 
 

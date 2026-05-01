@@ -92,7 +92,7 @@ public class PackageManagement(
         _removeButton.SetSensitive(false);
 
         _listStore = Gio.ListStore.New(AlpmPackageGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
@@ -654,21 +654,13 @@ public class PackageManagement(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is AlpmPackageGObject { Package: not null } pkgObj)
-        {
-            if (_selectedGroup != "Any" && !(pkgObj.Package?.Groups.Contains(_selectedGroup) ?? false))
-            {
-                return false;
-            }
+        if (obj is not AlpmPackageGObject { Package: { } pkg })
+            return false;
 
-            if (string.IsNullOrWhiteSpace(_searchText))
-                return true;
+        if (!PackageSearch.MatchesGroup(pkg.Groups, _selectedGroup))
+            return false;
 
-            return (pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                   (pkgObj.Package?.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
-        }
-
-        return false;
+        return PackageSearch.MatchesNameOrDescription(pkg.Name, pkg.Description, _searchText);
     }
 
     private async Task LoadDataAsync(CancellationToken ct = default)
