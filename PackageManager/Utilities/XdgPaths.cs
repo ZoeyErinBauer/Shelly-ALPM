@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -19,6 +20,51 @@ public static class XdgPaths
 
     public static string ShellyConfig(params string[] parts) =>
         Path.Combine([ConfigHome(), "shelly", .. parts]);
+
+    /// <summary>
+    /// Creates the directory if it doesn't exist and, when the current process is running as
+    /// root via sudo, transfers ownership of the directory back to the invoking user so files
+    /// written underneath remain accessible to non-root sessions.
+    /// </summary>
+    public static void EnsureDirectory(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        Directory.CreateDirectory(path);
+        FixOwnershipIfRoot(path);
+    }
+
+    /// <summary>
+    /// If the current process is running as root and SUDO_USER is set, recursively chown the
+    /// given path back to the invoking user. No-op otherwise.
+    /// </summary>
+    public static void FixOwnershipIfRoot(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        if (Environment.GetEnvironmentVariable("USER") != "root") return;
+
+        var user = Environment.GetEnvironmentVariable("SUDO_USER");
+        if (string.IsNullOrEmpty(user) || user == "root") return;
+
+        try
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "chown",
+                    Arguments = $"-R {user}:{user} \"{path}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            process.WaitForExit(5000);
+        }
+        catch
+        {
+            // best-effort
+        }
+    }
 
     public static string InvokingUserHome()
     {
