@@ -119,7 +119,11 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             {
                 NoConfirm = settings.NoConfirm
             };
-            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+            var aurResult = await aurCommand.ExecuteAsync(context, aurSettings);
+            if (aurResult != 0)
+            {
+                AnsiConsole.MarkupLine("[red]AUR upgrade failed.[/]");
+            }
         }
 
         if (settings.Flatpak || settings.All)
@@ -232,7 +236,11 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             {
                 NoConfirm = settings.NoConfirm,
             };
-            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+            var aurResult = await aurCommand.ExecuteAsync(context, aurSettings);
+            if (aurResult != 0)
+            {
+                await Console.Error.WriteLineAsync("AUR upgrade failed.");
+            }
         }
 
         if (settings.Flatpak || settings.All)
