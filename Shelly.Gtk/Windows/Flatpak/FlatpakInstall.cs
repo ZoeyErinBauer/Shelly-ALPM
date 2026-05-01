@@ -235,7 +235,7 @@ public class FlatpakInstall(
         _installFromFlatpakRef.OnClicked += (_, _) => { _ = InstallFromFlatpakRef(); };
 
         _listStore = Gio.ListStore.New(FlatpakGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _gridView.SetModel(_selectionModel);
@@ -571,23 +571,24 @@ public class FlatpakInstall(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not FlatpakGObject pkgObj || pkgObj.Package == null) return false;
+        if (obj is not FlatpakGObject { Package: { } pkg }) return false;
 
+        var id = pkg.Id ?? string.Empty;
         switch (_selectedCategory)
         {
             case FlatpakCategories.AllApplications:
                 break;
             case FlatpakCategories.Recommended:
-                if (!_trendingApps.Contains(pkgObj.Package.Id)) return false;
+                if (!_trendingApps.Contains(id)) return false;
                 break;
             case FlatpakCategories.MostWanted:
-                if (!_popularApps.Contains(pkgObj.Package.Id)) return false;
+                if (!_popularApps.Contains(id)) return false;
                 break;
             case FlatpakCategories.RecentlyAdded:
-                if (!_recentlyAddedApps.Contains(pkgObj.Package.Id)) return false;
+                if (!_recentlyAddedApps.Contains(id)) return false;
                 break;
             case FlatpakCategories.RecentlyUpdated:
-                if (!_recentlyUpdatedApps.Contains(pkgObj.Package.Id)) return false;
+                if (!_recentlyUpdatedApps.Contains(id)) return false;
                 break;
             case FlatpakCategories.AudioVideo:
             case FlatpakCategories.Development:
@@ -602,17 +603,15 @@ public class FlatpakInstall(
             default:
             {
                 var categoryName = _selectedCategory.ToString();
-                var result = pkgObj.Package.Categories.Contains(categoryName, StringComparer.OrdinalIgnoreCase);
+                var categories = pkg.Categories;
+                var result = categories is not null &&
+                             categories.Contains(categoryName, StringComparer.OrdinalIgnoreCase);
                 if (!result) return false;
                 break;
             }
         }
 
-        if (string.IsNullOrWhiteSpace(_searchText))
-            return true;
-
-        return pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-               pkgObj.Package.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return PackageSearch.MatchesNameOrDescription(pkg.Name, pkg.Description, _searchText);
     }
 
     private void SetUrlLinks(Dictionary<string, string>? urls)

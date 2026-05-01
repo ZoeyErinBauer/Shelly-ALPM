@@ -74,7 +74,7 @@ public class AurUpdate(
         _updateButton.SetSensitive(false);
 
         _listStore = Gio.ListStore.New(AurUpdateGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
@@ -124,11 +124,10 @@ public class AurUpdate(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AurUpdateGObject pkgObj || pkgObj.Package == null)
+        if (obj is not AurUpdateGObject { Package: { } pkg })
             return false;
 
-        return string.IsNullOrWhiteSpace(_searchText) ||
-               pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return PackageSearch.MatchesName(pkg.Name, _searchText);
     }
 
     private void ApplyFilter()
