@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Shelly.Gtk.UiModels;
 
 public class FlatpakRemoteRefInfo

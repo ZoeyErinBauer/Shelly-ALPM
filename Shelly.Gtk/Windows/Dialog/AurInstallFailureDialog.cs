@@ -49,7 +49,7 @@ public static class AurInstallFailureDialog
             summaryLabel.SetHalign(Align.Fill);
             summaryLabel.SetXalign(0);
 
-            var scrolledWindow = new ScrolledWindow();
+            var scrolledWindow = ScrolledWindow.New();
             scrolledWindow.SetPolicy(PolicyType.Never, PolicyType.Automatic);
             scrolledWindow.SetMaxContentHeight(180);
             scrolledWindow.SetPropagateNaturalHeight(true);

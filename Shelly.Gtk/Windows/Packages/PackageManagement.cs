@@ -7,6 +7,9 @@ using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 
+// ReSharper disable NotAccessedField.Local
+// ReSharper disable CollectionNeverUpdated.Local
+
 // ReSharper disable CollectionNeverQueried.Local
 
 namespace Shelly.Gtk.Windows.Packages;
@@ -16,8 +19,11 @@ public class PackageManagement(
     ILockoutService lockoutService,
     IConfigService configService,
     IGenericQuestionService genericQuestionService,
-    IIconResolverService iconResolverService) : IShellyWindow
+    IIconResolverService iconResolverService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.Native, DirtyScopes.NativeInstalled];
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
@@ -93,8 +99,9 @@ public class PackageManagement(
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
         _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
         _columnView.OnActivate += (_, _) =>
@@ -127,7 +134,7 @@ public class PackageManagement(
         _removeButton.OnClicked += (_, _) => { _ = RemoveSelectedAsync(); };
         _refreshButton.OnClicked += (_, _) => { _ = LoadDataAsync(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
-        _groupDropDown.OnNotify += (sender, args) =>
+        _groupDropDown.OnNotify += (_, args) =>
         {
             if (args.Pspec.GetName() == "selected")
             {
@@ -138,8 +145,11 @@ public class PackageManagement(
             }
         };
 
+        _sub = DirtySubscription.Attach(dirtyService, this);
         return _box;
     }
+
+    public void Reload() => _ = LoadDataAsync(_cts.Token);
 
     private void ShowPackageDetails(AlpmPackageGObject pkgObj)
     {
@@ -195,7 +205,10 @@ public class PackageManagement(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
         var iconPath = iconResolverService.GetIconPath(pkg.Name);
         if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
         {
@@ -274,10 +287,10 @@ public class PackageManagement(
         if (pkg.Groups.Count > 0)
             AddDetail("Groups", string.Join(", ", pkg.Groups));
 
-        
+
         if (pkg.PackageFile is { Files.Count: > 0 })
         {
-            var fileExpander = new Expander { Label = $"Package Files ({CountFiles(pkg.PackageFile)})" };
+            var fileExpander = Expander.New($"Package Files ({CountFiles(pkg.PackageFile)})");
             fileExpander.AddCssClass("package-detail-expander");
             fileExpander.Hexpand = false;
 
@@ -342,6 +355,7 @@ public class PackageManagement(
                     if (exp.GetChild() is Box childBox)
                         ExpandAllExpanders(childBox);
                 }
+
                 child = child.GetNextSibling();
             }
         }
@@ -359,7 +373,8 @@ public class PackageManagement(
                     dirBox.Append(folderIcon);
                     dirBox.Append(dirLabel);
 
-                    var dirExpander = new Expander { MarginStart = 0 };
+                    var dirExpander = Expander.New(null);
+                    dirExpander.MarginStart = 0;
                     dirExpander.SetLabelWidget(dirBox);
                     var childBox = Box.New(Orientation.Vertical, 2);
                     BuildFileTree(childBox, node.Files, depth + 1);
@@ -385,24 +400,23 @@ public class PackageManagement(
 
         void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
         {
-            var expander = new Expander { Label = $"{label} ({items.Count})" };
+            var expander = Expander.New($"{label} ({items.Count})");
             expander.AddCssClass("package-detail-expander");
             expander.Hexpand = false;
 
-            var flowBox = new FlowBox
-            {
-                MarginStart = 0,
-                MarginTop = 0,
-                MarginBottom = 0,
-                MarginEnd = 0,
-                SelectionMode = SelectionMode.None,
-                ColumnSpacing = 6,
-                RowSpacing = 6,
-                Halign = Align.Start,
-                Valign = Align.Start,
-                MaxChildrenPerLine = isOptional ? 1u : 10u,
-                MinChildrenPerLine = 1
-            };
+            var flowBox = FlowBox.New();
+            flowBox.MarginStart = 0;
+            flowBox.MarginTop = 0;
+            flowBox.MarginBottom = 0;
+            flowBox.MarginEnd = 0;
+            flowBox.SelectionMode = SelectionMode.None;
+            flowBox.ColumnSpacing = 6;
+            flowBox.RowSpacing = 6;
+            flowBox.Halign = Align.Start;
+            flowBox.Valign = Align.Start;
+            flowBox.MaxChildrenPerLine = isOptional ? 1u : 10u;
+            flowBox.MinChildrenPerLine = 1;
+
 
             foreach (var item in items)
             {
@@ -457,10 +471,12 @@ public class PackageManagement(
         _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
 
-            check.OnToggled += (s, e) =>
+            check.OnToggled += (s, _) =>
             {
                 if (listItem.GetItem() is not AlpmPackageGObject current) return;
                 current.IsSelected = s.GetActive();
@@ -475,11 +491,11 @@ public class PackageManagement(
                 listItem.GetChild() is not CheckButton checkButton) return;
 
             checkButton.SetActive(pkgObj.IsSelected);
-            
+
             pkgObj.OnSelectionToggled += OnExternalToggle;
-            
+
             return;
-            
+
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -494,8 +510,8 @@ public class PackageManagement(
         _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
+            if (listItem.GetItem() is not AlpmPackageGObject ||
+                listItem.GetChild() is not CheckButton ) return;
             listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
@@ -505,7 +521,9 @@ public class PackageManagement(
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var box = Box.New(Orientation.Horizontal, 6);
-            var packageIcon = new Image { PixelSize = 24 };
+            
+            var packageIcon = Image.New();
+            packageIcon.PixelSize = 24;
             var label = Label.New(string.Empty);
             var installedIcon = Image.NewFromIconName("object-select-symbolic");
 
@@ -527,8 +545,7 @@ public class PackageManagement(
             var iconPath = iconResolverService.GetIconPath(pkg.Name);
             if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
             {
-                var texture = Gdk.Texture.NewFromFilename(iconPath);
-                packageIcon.SetFromPaintable(texture);
+                packageIcon.SetFromFile(iconPath);
                 packageIcon.Visible = true;
             }
             else
@@ -575,6 +592,7 @@ public class PackageManagement(
                 listItem.GetChild() is not Label label) return;
             label.SetText(pkg.Version);
             label.Halign = Align.End;
+            label.SetMarginEnd(10);
         };
 
         versionColumn.SetFactory(_versionFactory);
@@ -582,9 +600,9 @@ public class PackageManagement(
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is AlpmPackageGObject pkgObj && pkgObj.Package != null)
+        if (obj is AlpmPackageGObject { Package: not null } pkgObj)
         {
-            if (_selectedGroup != "Any" && !(pkgObj.Package.Groups?.Contains(_selectedGroup) ?? false))
+            if (_selectedGroup != "Any" && !(pkgObj.Package?.Groups.Contains(_selectedGroup) ?? false))
             {
                 return false;
             }
@@ -592,8 +610,8 @@ public class PackageManagement(
             if (string.IsNullOrWhiteSpace(_searchText))
                 return true;
 
-            return (pkgObj.Package.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                   (pkgObj.Package.Description?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+            return (pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (pkgObj.Package?.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
         }
 
         return false;
@@ -617,7 +635,8 @@ public class PackageManagement(
                 _packageGObjectRefs.Clear();
                 foreach (var package in _packages)
                 {
-                    var pkgObj = new AlpmPackageGObject { Package = package };
+                    var pkgObj = AlpmPackageGObject.NewWithProperties([]);
+                    pkgObj.Package = package;
                     _packageGObjectRefs.Add(pkgObj);
                     _listStore.Append(pkgObj);
                 }
@@ -701,6 +720,7 @@ public class PackageManagement(
 
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
 

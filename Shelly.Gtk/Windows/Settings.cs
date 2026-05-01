@@ -4,8 +4,6 @@ using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using GLib;
 using Shelly.Gtk.Windows.Dialog;
 using DateTime = System.DateTime;
 using TimeSpan = System.TimeSpan;
@@ -18,13 +16,16 @@ public class Settings(
     IPrivilegedOperationService privilegedOperationService,
     IUnprivilegedOperationService unprivilegedOperationService,
     ILockoutService lockoutService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
     private Box _box = null!;
     private ShellyConfig _config = null!;
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.Config];
     private Overlay? _parentOverlay;
-    private static List<ReleaseNotesDialog.ReleaseItem>? _cachedReleaseList = null!;
-    private static string? _cachedLatestVersion = null!;
+    private static List<ReleaseNotesDialog.ReleaseItem>? _cachedReleaseList;
+    private static string? _cachedLatestVersion;
     private static DateTime _lastVersionCheck = DateTime.MinValue;
     private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromMinutes(5);
 
@@ -33,7 +34,8 @@ public class Settings(
         DefaultRequestHeaders = { UserAgent = { new("Shelly-ALPM", null) } }
     };
 
-    public event Action? NavigationToHomeRequested;
+    public event Action? NavigationToPackages;
+    public event Action<ShellyConfig>? ConfigChanged;
 
     public Widget CreateWindow()
     {
@@ -51,13 +53,12 @@ public class Settings(
         SetupSwitch("no_confirm_switch", _config.NoConfirm, (v) => _config.NoConfirm = v, builder);
         SetupSwitch("webview_switch", _config.WebViewEnabled, (v) => _config.WebViewEnabled = v, builder);
         SetupSwitch("shelly_icons_switch", _config.ShellyIconsEnabled, (v) => _config.ShellyIconsEnabled = v, builder);
-        SetupSwitch("menu_navigation", _config.UseOldMenu, (v) => _config.UseOldMenu = v, builder);
         SetupSwitch("appimage_switch", _config.AppImageEnabled, (v) => _config.AppImageEnabled = v, builder);
         SetupSwitch("symbolic_tray_switch", _config.UseSymbolicTray, (v) => _config.UseSymbolicTray = v, builder);
 
         var parallelDownloadsSpin = (SpinButton)builder.GetObject("parallel_downloads_spin")!;
         parallelDownloadsSpin.Value = _config.ParallelDownloadCount;
-        parallelDownloadsSpin.OnValueChanged += (s, e) =>
+        parallelDownloadsSpin.OnValueChanged += (_, _) =>
         {
             _config.ParallelDownloadCount = (int)parallelDownloadsSpin.Value;
             SaveConfig();
@@ -65,7 +66,7 @@ public class Settings(
 
         var traySpin = (SpinButton)builder.GetObject("tray_interval_spin")!;
         traySpin.Value = _config.TrayCheckIntervalHours;
-        traySpin.OnValueChanged += (s, e) =>
+        traySpin.OnValueChanged += (_, _) =>
         {
             _config.TrayCheckIntervalHours = (int)traySpin.Value;
             SaveConfig();
@@ -88,39 +89,41 @@ public class Settings(
             minuteSpin.Value = _config.Time.Value.Minute;
         }
 
-        hourSpin.OnValueChanged += (s, e) =>
+        hourSpin.OnValueChanged += (_,_) =>
         {
             _config.Time = new TimeOnly((int)hourSpin.Value, (int)minuteSpin.Value);
             SaveConfig();
         };
 
-        minuteSpin.OnValueChanged += (s, e) =>
+        minuteSpin.OnValueChanged += (_,_) =>
         {
             _config.Time = new TimeOnly((int)hourSpin.Value, (int)minuteSpin.Value);
             SaveConfig();
         };
 
         var syncButton = (Button)builder.GetObject("sync_button")!;
-        syncButton.OnClicked += (s, e) => { _ = ForceSyncAsync(); };
+        syncButton.OnClicked += (_,_) => { _ = ForceSyncAsync(); };
 
         var saveButton = (Button)builder.GetObject("save_button")!;
-        saveButton.OnClicked += (s, e) => { NavigationToHomeRequested?.Invoke(); };
+        saveButton.OnClicked += (_,_) => { OnSaveClicked(); };
 
         var removeLockButton = (Button)builder.GetObject("rm_db_lock_button")!;
-        removeLockButton.OnClicked += (s, e) => { _ = RemoveDbLockAsync(); };
+        removeLockButton.OnClicked += (_,_) => { _ = RemoveDbLockAsync(); };
+
+        _sub = DirtySubscription.Attach(dirtyService, this);
 
         var viewChangelogButton = (Button)builder.GetObject("changelog_button")!;
-        viewChangelogButton.OnClicked += async (s, e) => { await ShowAppChangelogAsync(); };
+        viewChangelogButton.OnClicked += async (_,_) => { await ShowAppChangelogAsync(); };
 
         var purifyCorruptionButton = (Button)builder.GetObject("purify_button")!;
         purifyCorruptionButton.TooltipText = "Remove corrupted packages";
-        purifyCorruptionButton.OnClicked += async (s, e) => { await PurifyCorruption(); };
+        purifyCorruptionButton.OnClicked += async (_,_) => { await PurifyCorruption(); };
 
         var fixPermissionsButton = (Button)builder.GetObject("fix_permissions_button")!;
         fixPermissionsButton.OnClicked += async (s, e) => { await FixXdgPermissionsAsync(); };
 
         var viewPacfilesButton = (Button)builder.GetObject("view_pacfiles_button")!;
-        viewPacfilesButton.OnClicked += async (s, e) => { await ViewPacfilesAsync(); };
+        viewPacfilesButton.OnClicked += async (_,_) => { await ViewPacfilesAsync(); };
 
         var versionLabel = (Label)builder.GetObject("version_label")!;
         versionLabel.SetLabel(
@@ -129,12 +132,18 @@ public class Settings(
 
         return _box;
     }
+    
+    private void OnSaveClicked()
+    {
+        SaveConfig();
+        NavigationToPackages?.Invoke();
+    }
 
     private void SetupSwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
     {
         var sw = (Switch)builder.GetObject(id)!;
         sw.Active = initialValue;
-        sw.OnStateSet += (s, e) =>
+        sw.OnStateSet += (_,e) =>
         {
             updateAction(e.State);
             SaveConfig();
@@ -177,7 +186,7 @@ public class Settings(
         trayIntervalBox.Visible = initialValue && !weeklyScheduleSwitch.Active;
         weeklyScheduleBox.Visible = initialValue && weeklyScheduleSwitch.Active;
 
-        sw.OnStateSet += (s, e) =>
+        sw.OnStateSet += (_, e) =>
         {
             if (e.State)
             {
@@ -215,7 +224,7 @@ public class Settings(
             weeklyScheduleBox.Visible = initialValue;
         }
 
-        sw.OnStateSet += (s, e) =>
+        sw.OnStateSet += (_, e) =>
         {
             if (traySwitch.Active)
             {
@@ -235,7 +244,7 @@ public class Settings(
         var checkbox = (CheckButton)builder.GetObject(id)!;
         checkbox.Active = _config.DaysOfWeek.Contains(day);
 
-        checkbox.OnToggled += (s, e) =>
+        checkbox.OnToggled += (_, _) =>
         {
             if (checkbox.Active)
             {
@@ -268,18 +277,6 @@ public class Settings(
 
             _ = HandleFlatpakMissingAsync(sw, updateAction);
             return true;
-        };
-    }
-
-    private void SetupAppImageSwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
-    {
-        var sw = (Switch)builder.GetObject(id)!;
-        sw.Active = initialValue;
-        sw.OnStateSet += (s, e) =>
-        {
-            updateAction(e.State);
-            SaveConfig();
-            return false;
         };
     }
 
@@ -387,6 +384,7 @@ public class Settings(
     private void SaveConfig()
     {
         configService.SaveConfig(_config);
+        ConfigChanged?.Invoke(_config);
     }
 
     private async Task ForceSyncAsync()
@@ -451,27 +449,27 @@ public class Settings(
         var result = await privilegedOperationService.PurifyCorruptionAsync();
         if (result.Success)
         {
-            var purifyBox = new Box();
+            var purifyBox = Box.NewWithProperties([]);
             purifyBox.SetOrientation(Orientation.Vertical);
             purifyBox.SetSpacing(12);
             purifyBox.SetSizeRequest(500, -1);
-            var title = new Label();
+            var title = Label.NewWithProperties([]);
             title.SetText("Purified Corruption");
             title.AddCssClass("title-2");
             title.SetHalign(Align.Center);
             purifyBox.Append(title);
-            var scroll = new ScrolledWindow();
+            var scroll = ScrolledWindow.NewWithProperties([]);
             scroll.HscrollbarPolicy = PolicyType.Never;
             scroll.VscrollbarPolicy = PolicyType.Automatic;
             scroll.SetOverlayScrolling(false);
             scroll.SetSizeRequest(-1, 400);
-            var list = new Box();
+            var list = Box.NewWithProperties([]);
             list.SetOrientation(Orientation.Vertical);
             list.SetSpacing(8);
             var output = result.Output != "\n" ? result.Output.Split(",").ToList() : ["No corrupted packages found"];
             foreach (var pkg in output)
             {
-                var text = new Label();
+                var text = Label.NewWithProperties([]);
                 text.SetText(pkg);
                 text.AddCssClass("text");
                 list.Append(text);
@@ -492,39 +490,39 @@ public class Settings(
             return;
         }
 
-        var pacfileBox = new Box();
+        var pacfileBox = Box.NewWithProperties([]);
         pacfileBox.SetOrientation(Orientation.Vertical);
         pacfileBox.SetSpacing(12);
         pacfileBox.SetSizeRequest(600, -1);
 
-        var title = new Label();
+        var title = Label.NewWithProperties([]);
         title.SetText("Pacfiles Found");
         title.AddCssClass("title-2");
         title.SetHalign(Align.Center);
         pacfileBox.Append(title);
 
-        var scroll = new ScrolledWindow();
+        var scroll = ScrolledWindow.NewWithProperties([]);
         scroll.HscrollbarPolicy = PolicyType.Never;
         scroll.VscrollbarPolicy = PolicyType.Automatic;
         scroll.SetOverlayScrolling(false);
         scroll.SetSizeRequest(-1, 400);
 
-        var list = new Box();
+        var list = Box.NewWithProperties([]);
         list.SetOrientation(Orientation.Vertical);
         list.SetSpacing(8);
 
         foreach (var pacfile in pacfiles)
         {
-            var itemBox = new Box();
+            var itemBox = Box.NewWithProperties([]);
             itemBox.SetOrientation(Orientation.Vertical);
             itemBox.SetSpacing(4);
             itemBox.SetMarginBottom(16);
 
-            var headerBox = new Box();
+            var headerBox = Box.NewWithProperties([]);
             headerBox.SetOrientation(Orientation.Horizontal);
             headerBox.SetSpacing(8);
 
-            var nameLabel = new Label();
+            var nameLabel = Label.NewWithProperties([]);
             nameLabel.SetMarkup($"<b>{pacfile.Name}</b>");
             nameLabel.SetHalign(Align.Start);
             nameLabel.SetHexpand(true);
@@ -535,7 +533,7 @@ public class Settings(
             copyButton.AddCssClass("flat");
             copyButton.OnClicked += (_, _) =>
             {
-                var clipboard = Gdk.Display.GetDefault().GetClipboard();
+                var clipboard = Gdk.Display.GetDefault()!.GetClipboard();
                 clipboard.SetText(pacfile.Text);
                 genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs("Copied to clipboard"));
             };
@@ -543,7 +541,7 @@ public class Settings(
             
             itemBox.Append(headerBox);
 
-            var textView = new TextView();
+            var textView = TextView.NewWithProperties([]);
             textView.Editable = false;
             textView.CursorVisible = false;
             textView.WrapMode = WrapMode.None;
@@ -561,7 +559,7 @@ public class Settings(
                 buffer.SetText(builder.ToString(), -1);
             }
 
-            var textScroll = new ScrolledWindow();
+            var textScroll = ScrolledWindow.NewWithProperties([]);
             textScroll.SetSizeRequest(-1, 200);
             textScroll.SetPolicy(PolicyType.Automatic, PolicyType.Automatic);
             textScroll.SetChild(textView);
@@ -674,25 +672,16 @@ public class Settings(
                 new ToastMessageEventArgs("Failed to load changelog"));
         }
     }
-
-    private async Task GetAnyShowPacfiles()
+    
+    public void Reload()
     {
-        try
-        {
-            var result = await unprivilegedOperationService.GetPacFiles();
-            
-            
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error getting pacfiles: {ex.Message}");
-            genericQuestionService.RaiseToastMessage(
-                new ToastMessageEventArgs("Failed to load pacfiles"));
-        }
+        // Refresh internal config snapshot. Visible switches retain their current
+        // state to avoid re-entrant SaveConfig loops; navigating away/back rebuilds the page.
+        _config = configService.LoadConfig();
     }
-
 
     public void Dispose()
     {
+        _sub?.Dispose();
     }
 }

@@ -21,15 +21,16 @@ public static class ServiceBuilder
         collection.AddSingleton<IAlpmEventService, AlpmEventService>();
         collection.AddSingleton<IConfigService, ConfigService>();
         collection.AddSingleton<IGenericQuestionService, GenericQuestionService>();
+        collection.AddSingleton<IDirtyService, DirtyService>();
         collection.AddSingleton<ILockoutService, LockoutService>();
         collection.AddSingleton<IIconResolverService, IconResolverService>();
         collection.AddSingleton<IArchNewsService, ArchNewsService>();
         collection.AddSingleton<IOperationLogService, OperationLogService>();
+        collection.AddSingleton<IPackageUpdateNotifier, PackageUpdateNotifier>();
         collection.AddSingleton<IIConDownloadService, IconDownloadService>();
         collection.AddScoped<IUpdateService, GitHubUpdateService>();
         collection.AddScoped<ITrayDbus, TrayDBus>();
         collection.AddScoped<IFlatHubApiService, FlatHubApiService>();
-        collection.AddTransient<HomeWindow>();
         collection.AddTransient<FlatpakRemove>();
         collection.AddTransient<AurInstall>();
         collection.AddTransient<AurUpdate>();

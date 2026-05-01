@@ -9,8 +9,7 @@ public static class ToastMessageDialog
     {
         GLib.Functions.IdleAdd(0, () =>
         {
-            var toastFrame = new Frame();
-            toastFrame.SetLabel(null);
+            var toastFrame = Frame.New(null);
             toastFrame.AddCssClass("background");
             toastFrame.AddCssClass("toast-message");
             toastFrame.SetOverflow(Overflow.Hidden);
@@ -31,12 +30,13 @@ public static class ToastMessageDialog
 
             parentOverlay.AddOverlay(toastFrame);
 
-            GLib.Functions.TimeoutAdd(0, (uint)3000, () =>
+            GLib.Functions.TimeoutAdd(0, 3000, () =>
             {
                 if (toastFrame.GetParent() != null)
                 {
                     parentOverlay.RemoveOverlay(toastFrame);
                 }
+
                 return false;
             });
 

@@ -4,6 +4,7 @@ using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AUR.GObjects;
+// ReSharper disable NotAccessedField.Local
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -13,8 +14,11 @@ public class AurUpdate(
     IPrivilegedOperationService privilegedOperationService,
     ILockoutService lockoutService,
     IConfigService configService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.AurUpdates, DirtyScopes.AurInstalled];
     private Box _box = null!;
     private readonly CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
@@ -79,7 +83,7 @@ public class AurUpdate(
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
 
         _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
         _columnView.OnActivate += (_, _) =>
@@ -97,6 +101,7 @@ public class AurUpdate(
         };
         _updateButton.OnClicked += (_, _) => { _ = RemovePackagesAsync(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+        _sub = DirtySubscription.Attach(dirtyService, this);
 
         _selectionModel.OnSelectionChanged += (_, _) =>
         {
@@ -137,7 +142,9 @@ public class AurUpdate(
         _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
         };
 
@@ -231,10 +238,12 @@ public class AurUpdate(
             {
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in packages.Select(dto => new AurUpdateGObject()
+                foreach (var gobject in packages.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurUpdateGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -302,8 +311,10 @@ public class AurUpdate(
                     }
                 }
 
-                var result = await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages, _runChecksCheck.GetActive());
-                
+                var result =
+                    await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages,
+                        _runChecksCheck.GetActive());
+
                 if (result.Success)
                     genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs(
                         $"Updated {selectedPackages.Count} Package(s)"));
@@ -389,8 +400,11 @@ public class AurUpdate(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
-
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
+        
         iconImage.SetFromIconName("package-x-generic");
 
         headerBox.Append(iconImage);
@@ -415,7 +429,7 @@ public class AurUpdate(
         _detailBox.Append(separator);
 
         AddDetail("Version", pkg.Version);
-      
+
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -442,11 +456,13 @@ public class AurUpdate(
         }
 
         _detailRevealer.SetRevealChild(true);
-        
     }
+
+    public void Reload() => _ = LoadDataAsync(_cts.Token);
 
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();

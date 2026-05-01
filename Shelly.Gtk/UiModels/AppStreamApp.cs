@@ -1,7 +1,6 @@
 namespace Shelly.Gtk.UiModels;
 
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 /// <summary>
 /// Represents an application from Flatpak appstream metadata
@@ -22,17 +21,17 @@ public class AppstreamApp
 
     public string DeveloperName { get; set; } = string.Empty;
 
-   
+
     public List<string> Categories { get; set; } = new();
 
     public List<string> Keywords { get; set; } = new();
 
     public List<AppstreamIcon> Icons { get; set; } = new();
 
- 
+
     public List<AppstreamScreenshot> Screenshots { get; set; } = new();
 
-  
+
     public List<AppstreamRelease> Releases { get; set; } = new();
 
     public Dictionary<string, string> Urls { get; set; } = new();
@@ -60,16 +59,15 @@ public class AppstreamApp
 /// </summary>
 public class AppstreamIcon
 {
- 
     public string Type { get; set; } = string.Empty;
 
-    
+
     public string Url { get; set; } = string.Empty;
 
-  
+
     public int Width { get; set; }
 
-  
+
     public int Height { get; set; }
 
     public int Scale { get; set; } = 1;
@@ -80,12 +78,11 @@ public class AppstreamIcon
 /// </summary>
 public class AppstreamScreenshot
 {
-    
     public string Caption { get; set; } = string.Empty;
 
     public bool IsDefault { get; set; }
 
-  
+
     public List<AppstreamImage> Images { get; set; } = new();
 }
 
@@ -94,10 +91,9 @@ public class AppstreamScreenshot
 /// </summary>
 public class AppstreamImage
 {
-   
     public string Type { get; set; } = string.Empty;
 
-   
+
     public string Url { get; set; } = string.Empty;
 
     public int Width { get; set; }
@@ -110,13 +106,12 @@ public class AppstreamImage
 /// </summary>
 public class AppstreamRelease
 {
-    
     public string Version { get; set; } = string.Empty;
 
-   
+
     public string Type { get; set; } = string.Empty;
 
     public long Timestamp { get; set; }
-    
+
     public string Description { get; set; } = string.Empty;
 }

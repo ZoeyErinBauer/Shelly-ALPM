@@ -1,4 +1,3 @@
-using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -7,6 +6,8 @@ using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 using Shelly.Gtk.Windows.Dialog;
+
+// ReSharper disable NotAccessedField.Local
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -18,9 +19,12 @@ public class PackageInstall(
     ILockoutService lockoutService,
     IConfigService configService,
     IGenericQuestionService genericQuestionService,
-    IIconResolverService iconResolverService)
-    : IShellyWindow
+    IIconResolverService iconResolverService,
+    IDirtyService dirtyService)
+    : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.NativeInstalled];
     private Overlay _overlay = null!;
     private readonly CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
@@ -95,9 +99,10 @@ public class PackageInstall(
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
+        ColumnViewHelper.AlignColumnHeader(_columnView, 4, Align.End);
 
         _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
         _columnView.OnActivate += (_, _) =>
@@ -142,18 +147,19 @@ public class PackageInstall(
             {
                 if (!_installButton.GetSensitive()) return false;
                 if (OverlayHelper.HasActiveOverlay(_overlay)) return false;
-                
+
                 Task.Run(async () => await InstallSelectedAsync());
                 return true;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+
         _overlay.AddController(shortcutController);
 
         _localInstallButton.OnClicked += (_, _) => { _ = InstallLocalPackage(); };
         _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
 
-        _groupDropDown.OnNotify += (sender, args) =>
+        _groupDropDown.OnNotify += (_, args) =>
         {
             if (args.Pspec.GetName() == "selected")
             {
@@ -165,8 +171,11 @@ public class PackageInstall(
                 }
             }
         };
+        _sub = DirtySubscription.Attach(dirtyService, this);
         return _overlay;
     }
+
+    public void Reload() => _ = LoadDataAsync(_cts.Token);
 
     private void ShowPackageDetails(AlpmPackageGObject pkgObj)
     {
@@ -222,7 +231,12 @@ public class PackageInstall(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
+
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
+
         var iconPath = iconResolverService.GetIconPath(pkg.Name);
         if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
         {
@@ -328,20 +342,18 @@ public class PackageInstall(
 
         void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
         {
-            var expander = new Expander { Label = $"{label} ({items.Count})" };
+            var expander = Expander.New($"{label} ({items.Count})");
             expander.AddCssClass("package-detail-expander");
             expander.Hexpand = false;
 
-            var flowBox = new FlowBox
-            {
-                SelectionMode = SelectionMode.None,
-                ColumnSpacing = 6,
-                RowSpacing = 6,
-                Halign = Align.Start,
-                Valign = Align.Start,
-                MaxChildrenPerLine = isOptional ? 1u : 10u,
-                MinChildrenPerLine = 1
-            };
+            var flowBox = FlowBox.New();
+            flowBox.SelectionMode = SelectionMode.None;
+            flowBox.ColumnSpacing = 6;
+            flowBox.RowSpacing = 6;
+            flowBox.Halign = Align.Start;
+            flowBox.Valign = Align.Start;
+            flowBox.MaxChildrenPerLine = isOptional ? 1u : 10u;
+            flowBox.MinChildrenPerLine = 1;
 
             foreach (var item in items)
             {
@@ -396,17 +408,19 @@ public class PackageInstall(
         _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
-            
-            check.OnToggled += (s, e) =>
+
+            check.OnToggled += (s, _) =>
             {
                 if (listItem.GetItem() is not AlpmPackageGObject current) return;
                 current.IsSelected = s.GetActive();
                 _installButton.SetSensitive(AnySelected());
             };
         };
-        
+
         _checkFactory.OnBind += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
@@ -418,7 +432,7 @@ public class PackageInstall(
             pkgObj.OnSelectionToggled += OnExternalToggle;
 
             return;
-            
+
             void OnExternalToggle(object? s, EventArgs e)
             {
                 if (listItem.GetItem() == pkgObj)
@@ -427,22 +441,15 @@ public class PackageInstall(
                 }
             }
         };
-        
-        _checkFactory.OnUnbind += (_, args) => { };
+
+        _checkFactory.OnUnbind += (_, _) => { };
 
         _checkFactory.OnTeardown += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
+            if (listItem.GetItem() is not AlpmPackageGObject ||
+                listItem.GetChild() is not CheckButton) return;
             listItem.SetChild(null);
-        };
-
-        _checkFactory.OnUnbind += (_, args) =>
-        {
-            if (args.Object is not ColumnViewCell listItem) return;
-            if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
-                listItem.GetChild() is not CheckButton checkButton) return;
         };
 
         checkColumn.SetFactory(_checkFactory);
@@ -452,7 +459,8 @@ public class PackageInstall(
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var box = Box.New(Orientation.Horizontal, 6);
-            var packageIcon = new Image { PixelSize = 24 };
+            var packageIcon = Image.New();
+            packageIcon.PixelSize = 24;
             var label = Label.New(string.Empty);
             var installedIcon = Image.NewFromIconName("object-select-symbolic");
 
@@ -524,7 +532,7 @@ public class PackageInstall(
         };
         versionColumn.SetFactory(_versionFactory);
 
-        _repositoryFactory = new SignalListItemFactory();
+        _repositoryFactory = SignalListItemFactory.New();
         _repositoryFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
@@ -537,8 +545,10 @@ public class PackageInstall(
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
+
             label.SetText(pkg.Repository);
             label.Halign = Align.End;
+            label.SetMarginEnd(10);
         };
         repositoryColumn.SetFactory(_repositoryFactory);
     }
@@ -563,7 +573,7 @@ public class PackageInstall(
 
             ct.ThrowIfCancellationRequested();
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
-            _installedPackageNames = new HashSet<string>(installedPackages?.Select(x => x.Name) ?? []);
+            _installedPackageNames = new HashSet<string>(installedPackages.Select(x => x.Name));
             var queue = new Queue<AlpmPackageDto>(_packages);
 
             GLib.Functions.IdleAdd(0, () =>
@@ -579,8 +589,9 @@ public class PackageInstall(
                 while (queue.Count > 0 && count < batchSize)
                 {
                     var dequeued = queue.Dequeue();
-                    var pkgObj = new AlpmPackageGObject()
-                        { Package = dequeued, IsInstalled = _installedPackageNames.Contains(dequeued.Name) };
+                    var pkgObj = AlpmPackageGObject.NewWithProperties([]);
+                    pkgObj.Package = dequeued;
+                    pkgObj.IsInstalled = _installedPackageNames.Contains(dequeued.Name);
                     _packageGObjectRefs.Add(pkgObj);
                     batch.Add(pkgObj);
                     count++;
@@ -588,6 +599,9 @@ public class PackageInstall(
 
                 // ReSharper disable once CoVariantArrayConversion
                 _listStore.Splice(_listStore.GetNItems(), 0, batch.ToArray(), (uint)batch.Count);
+
+                if (_listStore.GetNItems() > 0 && _selectionModel.GetSelected() == uint.MaxValue)
+                    _selectionModel.SetSelected(0);
 
                 return queue.Count > 0;
             });
@@ -610,7 +624,7 @@ public class PackageInstall(
     {
         if (obj is not AlpmPackageGObject pkgObj || pkgObj.Package == null) return false;
 
-        if (_selectedGroup != "Any" && !(pkgObj.Package.Groups?.Contains(_selectedGroup) ?? false))
+        if (_selectedGroup != "Any" && !(pkgObj.Package?.Groups.Contains(_selectedGroup) ?? false))
         {
             return false;
         }
@@ -618,8 +632,8 @@ public class PackageInstall(
         if (string.IsNullOrWhiteSpace(_searchText))
             return true;
 
-        return (pkgObj.Package.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-               (pkgObj.Package.Description?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+        return (pkgObj.Package?.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (pkgObj.Package?.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
 
@@ -810,6 +824,7 @@ public class PackageInstall(
 
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();

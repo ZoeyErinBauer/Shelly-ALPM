@@ -13,6 +13,18 @@ public class ConfigService : IConfigService
     private static readonly string ConfigPath = Path.Combine(ConfigFolder, "config.json");
 
     private ShellyConfig? _config = null;
+    private readonly IDirtyService dirtyService;
+    private bool _suppressInvalidate;
+
+    public ConfigService(IDirtyService dirtyService)
+    {
+        this.dirtyService = dirtyService;
+        dirtyService.Dirtied += (_, e) =>
+        {
+            if (_suppressInvalidate) return;
+            if (e.Matches(DirtyScopes.Config)) _config = null;
+        };
+    }
 
     public event EventHandler<ShellyConfig>? ConfigSaved;
 
@@ -50,6 +62,9 @@ public class ConfigService : IConfigService
         CallCliConfigSet(nameof(config.UseSymbolicTray), config.UseSymbolicTray.ToString());
 
         ConfigSaved?.Invoke(this, config);
+        _suppressInvalidate = true;
+        try { dirtyService.MarkDirty(DirtyScopes.Config); }
+        finally { _suppressInvalidate = false; }
     }
 
     public ShellyConfig LoadConfig()

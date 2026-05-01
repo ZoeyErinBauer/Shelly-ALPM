@@ -1,5 +1,4 @@
 using Gtk;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Shelly.Gtk.Windows.Dialog;
@@ -16,8 +15,7 @@ public static partial class ReleaseNotesDialog
     
     public static void ShowReleaseNotesDialog(Overlay parentOverlay, string markdown)
     {
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(600, 500);
@@ -44,7 +42,7 @@ public static partial class ReleaseNotesDialog
 
         ParseMarkdown(contentBox, markdown);
 
-        var scrolledWindow = new ScrolledWindow();
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetPolicy(PolicyType.Never, PolicyType.Automatic);
         scrolledWindow.SetVexpand(true);
         scrolledWindow.SetChild(contentBox);
@@ -56,7 +54,7 @@ public static partial class ReleaseNotesDialog
 
         var closeButton = Button.NewWithLabel("Close");
         closeButton.AddCssClass("suggested-action");
-        closeButton.OnClicked += (s, args) =>
+        closeButton.OnClicked += (_, _) =>
         {
             parentOverlay.RemoveOverlay(baseFrame);
         };
@@ -69,8 +67,7 @@ public static partial class ReleaseNotesDialog
 
     public static void ShowReleaseHistoryDialog(Overlay parentOverlay, List<ReleaseItem> releases)
     {
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(700, 550);
@@ -100,7 +97,7 @@ public static partial class ReleaseNotesDialog
             contentBox.Append(BuildReleaseCard(release));
         }
 
-        var scrolledWindow = new ScrolledWindow();
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetPolicy(PolicyType.Never, PolicyType.Automatic);
         scrolledWindow.SetVexpand(true);
         scrolledWindow.SetChild(contentBox);
@@ -112,7 +109,7 @@ public static partial class ReleaseNotesDialog
         
         var closeButton = Button.NewWithLabel("Close");
         closeButton.AddCssClass("suggested-action");
-        closeButton.OnClicked += (s, args) =>
+        closeButton.OnClicked += (_,_) =>
         {
             parentOverlay.RemoveOverlay(baseFrame);
         };

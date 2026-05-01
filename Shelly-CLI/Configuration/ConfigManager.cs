@@ -331,6 +331,11 @@ public static class ConfigManager
                 config.NewInstall = newInstall.GetBoolean();
             }
 
+            if (root.TryGetProperty("NewInstallInitSettings", out var initSettings))
+            {
+                config.NewInstallInitSettings = initSettings.GetBoolean();
+            }
+
             if (root.TryGetProperty("CurrentVersion", out var version) && version.ValueKind == JsonValueKind.String)
             {
                 config.CurrentVersion = version.GetString() ?? "0.0.0";

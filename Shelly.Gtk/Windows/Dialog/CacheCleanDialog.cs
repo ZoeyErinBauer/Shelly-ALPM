@@ -12,9 +12,7 @@ public static class CacheCleanDialog
         Action<int, bool> onClean,
         Action onCancel)
     {
-        var container = new Box();
-        container.SetOrientation(Orientation.Vertical);
-        container.SetSpacing(10);
+        var container = Box.New(Orientation.Vertical, 10);
         container.SetMarginBottom(10);
         container.SetMarginEnd(10);
         container.SetMarginStart(10);
@@ -33,9 +31,7 @@ public static class CacheCleanDialog
         infoLabel.Wrap = true;
         container.Append(infoLabel);
 
-        var controlsBox = new Box();
-        controlsBox.SetOrientation(Orientation.Horizontal);
-        controlsBox.SetSpacing(10);
+        var controlsBox = Box.New(Orientation.Horizontal, 10);
         controlsBox.SetValign(Align.Center);
 
         var keepLabel = Label.New("Keep versions:");
@@ -50,11 +46,11 @@ public static class CacheCleanDialog
 
         container.Append(controlsBox);
 
-        var candidateListBox = new ListBox();
+        var candidateListBox = ListBox.New();
         candidateListBox.SetSelectionMode(SelectionMode.None);
         candidateListBox.AddCssClass("rich-list");
 
-        var scrolledWindow = new ScrolledWindow();
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetVexpand(true);
         scrolledWindow.SetSizeRequest(-1, 250);
         scrolledWindow.HscrollbarPolicy = PolicyType.Never;
@@ -66,21 +62,19 @@ public static class CacheCleanDialog
         summaryLabel.AddCssClass("dim-label");
         container.Append(summaryLabel);
 
-        RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel, cacheDir);
+        RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel);
 
         keepSpin.OnValueChanged += (_, _) =>
         {
-            RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel, cacheDir);
+            RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel);
         };
 
         uninstalledCheck.OnToggled += (_, _) =>
         {
-            RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel, cacheDir);
+            RefreshCandidates(entries, (int)keepSpin.Value, uninstalledCheck.Active, candidateListBox, summaryLabel);
         };
 
-        var buttonBox = new Box();
-        buttonBox.SetOrientation(Orientation.Horizontal);
-        buttonBox.SetSpacing(10);
+        var buttonBox = Box.New(Orientation.Horizontal, 10);
         buttonBox.SetHalign(Align.End);
 
         var cancelButton = Button.NewWithLabel("Cancel");
@@ -102,13 +96,12 @@ public static class CacheCleanDialog
         int keep,
         bool uninstalledOnly,
         ListBox listBox,
-        Label summaryLabel,
-        string cacheDir)
+        Label summaryLabel)
     {
         while (listBox.GetFirstChild() is { } child)
             listBox.Remove(child);
 
-        var candidates = ComputeCandidates(allEntries, keep, uninstalledOnly, cacheDir);
+        var candidates = ComputeCandidates(allEntries, keep, uninstalledOnly);
 
         if (candidates.Count == 0)
         {
@@ -118,7 +111,7 @@ public static class CacheCleanDialog
 
         foreach (var entry in candidates)
         {
-            var row = new ListBoxRow();
+            var row = ListBoxRow.New();
             var hbox = Box.New(Orientation.Horizontal, 10);
             hbox.MarginStart = 10;
             hbox.MarginEnd = 10;
@@ -146,8 +139,7 @@ public static class CacheCleanDialog
     private static List<CacheFileEntry> ComputeCandidates(
         List<CacheFileEntry> allEntries,
         int keep,
-        bool uninstalledOnly,
-        string cacheDir)
+        bool uninstalledOnly)
     {
         var grouped = allEntries.GroupBy(e => e.Name).ToDictionary(g => g.Key, g => g.ToList());
         var candidates = new List<CacheFileEntry>();
@@ -158,11 +150,9 @@ public static class CacheCleanDialog
             candidates.AddRange(pkgEntries.Take(Math.Max(0, pkgEntries.Count - keep)));
         }
 
-        if (uninstalledOnly)
-        {
-            var installedNames = GetInstalledPackageNames();
-            candidates = candidates.Where(c => !installedNames.Contains(c.Name)).ToList();
-        }
+        if (!uninstalledOnly) return candidates;
+        var installedNames = GetInstalledPackageNames();
+        candidates = candidates.Where(c => !installedNames.Contains(c.Name)).ToList();
 
         return candidates;
     }
@@ -243,7 +233,7 @@ public static class CacheCleanDialog
         var version = $"{pkgver}-{pkgrel}";
         var fileSize = new FileInfo(filePath).Length;
 
-        return new CacheFileEntry(name, version, arch, filePath, fileSize);
+        return new CacheFileEntry(name, version, arch, fileSize);
     }
 
     private static string FormatSize(long bytes) => bytes switch
@@ -254,5 +244,5 @@ public static class CacheCleanDialog
         _ => $"{bytes} B"
     };
 
-    private record CacheFileEntry(string Name, string Version, string Arch, string FullPath, long FileSize);
+    private record CacheFileEntry(string Name, string Version, string Arch, long FileSize);
 }

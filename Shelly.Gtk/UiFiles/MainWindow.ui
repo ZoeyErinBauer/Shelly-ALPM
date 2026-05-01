@@ -57,585 +57,226 @@
             </item>
         </section>
     </menu>
+    <menu id="MainMenu">
+        <section>
+            <item>
+                <attribute name="label">Cache Cleaner</attribute>
+                <attribute name="action">app.cacheclean</attribute>
+            </item>
+            <item>
+                <attribute name="label">Arch News</attribute>
+                <attribute name="action">app.news</attribute>
+            </item>
+            <item>
+                <attribute name="label">Settings</attribute>
+                <attribute name="action">app.preferences</attribute>
+            </item>
+            <!--<item>
+                <attribute name="label">About</attribute>
+                <attribute name="action">app.about</attribute>
+            </item>-->
+        </section>
+    </menu>
     <object class="GtkApplicationWindow" id="MainWindow">
-   <property name="default-height">600</property>
-                          <property name="default-width">800</property>
+        <property name="default-height">600</property>
+        <property name="default-width">800</property>
         <property name="title">Shelly</property>
+        <property name="decorated">true</property>
         <child>
             <object class="GtkOverlay" id="MainOverlay">
                 <property name="child">
                     <object class="GtkBox" id="MainBox">
                         <property name="orientation">horizontal</property>
-                       
-                        <child>
-                            <object class="GtkBox" id="SidebarBox">
-                                <property name="orientation">vertical</property>
-                                <property name="width-request">180</property>
-                                <property name="hexpand">false</property>
-                                <property name="spacing">4</property>
-                                <style>
-                                    <class name="sidebar"/>
-                                </style>
-                                <child>
-                                    <object class="GtkButton" id="CollapseButton">
-                                        <property name="tooltip-text">Collapse</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">format-justify-fill-symbolic</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="CollapseLabel">
-                                                        <property name="label">Collapse</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkButton" id="HomeButton">
-                                        <property name="tooltip-text">Home</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">user-home-symbolic</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="HomeLabel">
-                                                        <property name="label">Home</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkLabel" id="PackagesHeader">
-                                        <property name="label">Packages</property>
-                                        <property name="margin-top">6</property>
-                                        <property name="margin-bottom">2</property>
-                                        <property name="halign">start</property>
-                                        <style>
-                                            <class name="heading"/>
-                                        </style>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkButton" id="InstallPackagesButton">
-                                        <property name="tooltip-text">Install Package(s)</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">system-software-install-symbolic</property>
-                                                        <property name="pixel-size">16</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="InstallPackagesLabel">
-                                                        <property name="label">Install</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkButton" id="UpdatePackagesButton">
-                                        <property name="tooltip-text">Update Package(s)</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">emblem-synchronizing-symbolic</property>
-                                                        <property name="pixel-size">16</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="UpdatePackagesLabel">
-                                                        <property name="label">Update</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkButton" id="ManagePackagesButton">
-                                        <property name="tooltip-text">Manage Package(s)</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">view-list-symbolic</property>
-                                                        <property name="pixel-size">16</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="ManagePackagesLabel">
-                                                        <property name="label">Manage</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-
-                                <child>
-                                    <object class="GtkBox" id="AurBox">
-                                        <property name="orientation">vertical</property>
-                                        <property name="spacing">4</property>
-                                        <property name="halign">fill</property>
-                                        <child>
-                                            <object class="GtkLabel" id="AurHeader">
-                                                <property name="label">AUR</property>
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">2</property>
-                                                <property name="halign">start</property>
-                                                <style>
-                                                    <class name="heading"/>
-                                                </style>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="InstallAurButton">
-                                                <property name="tooltip-text">Install AUR</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">arch-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="InstallAurLabel">
-                                                                <property name="label">Install</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="UpdateAurButton">
-                                                <property name="tooltip-text">Update AUR</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">emblem-synchronizing-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="UpdateAurLabel">
-                                                                <property name="label">Update</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="RemoveAurButton">
-                                                <property name="tooltip-text">Remove AUR</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">edit-delete-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="RemoveAurLabel">
-                                                                <property name="label">Remove</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-
-                                <child>
-                                    <object class="GtkBox" id="FlatpakBox">
-                                        <property name="orientation">vertical</property>
-                                        <property name="spacing">4</property>
-                                        <property name="halign">fill</property>
-                                        <child>
-                                            <object class="GtkLabel" id="FlatpakHeader">
-                                                <property name="label">Flatpak</property>
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">2</property>
-                                                <property name="halign">start</property>
-                                                <style>
-                                                    <class name="heading"/>
-                                                </style>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="InstallFlatpakButton">
-                                                <property name="tooltip-text">Install Flatpak</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">flatpak-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="InstallFlatpakLabel">
-                                                                <property name="label">Install</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="UpdateFlatpakButton">
-                                                <property name="tooltip-text">Update Flatpak</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">emblem-synchronizing-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="UpdateFlatpakLabel">
-                                                                <property name="label">Update</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="RemoveFlatpakButton">
-                                                <property name="tooltip-text">Remove Flatpak</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">edit-delete-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="RemoveFlatpakLabel">
-                                                                <property name="label">Remove</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkBox" id="AppImageBox">
-                                        <property name="orientation">vertical</property>
-                                        <property name="spacing">4</property>
-                                        <property name="halign">fill</property>
-                                        <child>
-                                            <object class="GtkLabel" id="AppImageHeader">
-                                                <property name="label">AppImage</property>
-                                                <property name="margin-top">6</property>
-                                                <property name="margin-bottom">2</property>
-                                                <property name="halign">start</property>
-                                                <style>
-                                                    <class name="heading"/>
-                                                </style>
-                                            </object>
-                                        </child>
-                                        <child>
-                                            <object class="GtkButton" id="ManageAppImageButton">
-                                                <property name="tooltip-text">Manage AppImage(s)</property>
-                                                <style>
-                                                    <class name="nav-button"/>
-                                                </style>
-                                                <child>
-                                                    <object class="GtkBox">
-                                                        <property name="spacing">8</property>
-                                                        <property name="halign">start</property>
-                                                        <child>
-                                                            <object class="GtkImage">
-                                                                <property name="icon-name">application-x-executable-symbolic</property>
-                                                                <property name="pixel-size">16</property>
-                                                            </object>
-                                                        </child>
-                                                        <child>
-                                                            <object class="GtkLabel" id="ManageAppImageLabel">
-                                                                <property name="label">Manage</property>
-                                                                <property name="xalign">0</property>
-                                                                <property name="hexpand">true</property>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkBox">
-                                        <property name="vexpand">true</property>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkButton" id="SettingsButton">
-                                        <property name="tooltip-text">Settings</property>
-                                        <style>
-                                            <class name="nav-button"/>
-                                        </style>
-                                        <child>
-                                            <object class="GtkBox">
-                                                <property name="spacing">8</property>
-                                                <property name="halign">start</property>
-                                                <child>
-                                                    <object class="GtkImage">
-                                                        <property name="icon-name">preferences-system-symbolic</property>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkLabel" id="SettingsLabel">
-                                                        <property name="label">Settings</property>
-                                                        <property name="xalign">0</property>
-                                                        <property name="hexpand">true</property>
-                                                    </object>
-                                                </child>
-                                            </object>
-                                        </child>
-                                    </object>
-                                </child>
-                            </object>
-                        </child>
                         <child>
                             <object class="GtkBox" id="ContentWrapper">
                                 <property name="orientation">vertical</property>
                                 <property name="hexpand">true</property>
                                 <property name="vexpand">true</property>
                                 <child>
-                                    <object class="GtkActionBar" id="HorizontalActionBar">
-                                        <child>
-                                            <object class="GtkButton" id="HomeButtonHorizontal">
-                                                <property name="icon-name">user-home-symbolic</property>
-                                            </object>
-                                        </child>
-                                        <child type="center">
-                                            <object class="GtkBox" id="MenuBox">
-                                                <property name="orientation">horizontal</property>
-                                                <property name="spacing">4</property>
-                                                <child>
-                                                    <object class="GtkMenuButton" id="PackagesMenuButton">
-                                                        <property name="menu-model">PackagesMenu</property>
-                                                        <child>
-                                                            <object class="GtkBox">
-                                                                <property name="orientation">horizontal</property>
-                                                                <property name="spacing">8</property>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">package-x-generic-symbolic</property>
-                                                                        <property name="pixel-size">16</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel">
-                                                                        <property name="label">Packages</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">pan-down-symbolic</property>
-                                                                        <property name="pixel-size">12</property>
-                                                                    </object>
-                                                                </child>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkMenuButton" id="AurMenuButton">
-                                                        <property name="menu-model">AurMenu</property>
-                                                        <style>
-                                                        </style>
-                                                        <child>
-                                                            <object class="GtkBox">
-                                                                <property name="orientation">horizontal</property>
-                                                                <property name="spacing">8</property>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">arch-symbolic</property>
-                                                                        <property name="pixel-size">18</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel">
-                                                                        <property name="label">AUR</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">pan-down-symbolic</property>
-                                                                        <property name="pixel-size">12</property>
-                                                                    </object>
-                                                                </child>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkMenuButton" id="FlatpakMenuButton">
-                                                        <property name="menu-model">FlatpakMenu</property>
-                                                        <child>
-                                                            <object class="GtkBox">
-                                                                <property name="orientation">horizontal</property>
-                                                                <property name="spacing">8</property>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">flatpak-symbolic</property>
-                                                                        <property name="pixel-size">16</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel">
-                                                                        <property name="label">Flatpak</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">pan-down-symbolic</property>
-                                                                        <property name="pixel-size">12</property>
-                                                                    </object>
-                                                                </child>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
-                                                <child>
-                                                    <object class="GtkMenuButton" id="AppImageMenuButton">
-                                                        <property name="menu-model">AppImageMenu</property>
-                                                        <child>
-                                                            <object class="GtkBox">
-                                                                <property name="orientation">horizontal</property>
-                                                                <property name="spacing">8</property>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">application-x-executable-symbolic</property>
-                                                                        <property name="pixel-size">16</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkLabel">
-                                                                        <property name="label">AppImage</property>
-                                                                    </object>
-                                                                </child>
-                                                                <child>
-                                                                    <object class="GtkImage">
-                                                                        <property name="icon-name">pan-down-symbolic</property>
-                                                                        <property name="pixel-size">12</property>
-                                                                    </object>
-                                                                </child>
-                                                            </object>
-                                                        </child>
-                                                    </object>
-                                                </child>
+                                    <object class="GtkHeaderBar">
+                                        <property name="show-title-buttons">false</property>
+                                        <child type="title">
+                                            <object class="GtkStackSwitcher" id="MainStackSwitcher">
+                                                <property name="stack">settings_stack</property>
                                             </object>
                                         </child>
                                         <child type="end">
-                                            <object class="GtkButton" id="SettingsButtonHorizontal">
-                                                <property name="icon-name">preferences-system-symbolic</property>
+                                            <object class="GtkMenuButton">
+                                                <property name="icon-name">open-menu-symbolic</property>
+                                                <property name="menu-model">MainMenu</property>
                                             </object>
                                         </child>
                                     </object>
                                 </child>
                                 <child>
-                                    <!-- This is where different pages will be inserted -->
-                                    <object class="GtkBox" id="ContentArea">
+                                    <object class="GtkStack" id="settings_stack">
                                         <property name="hexpand">true</property>
                                         <property name="vexpand">true</property>
+                                        <child>
+                                            <object class="GtkStackPage">
+                                                <property name="name">packages_page</property>
+                                                <property name="title">Packages</property>
+                                                <property name="child">
+                                                    <object class="GtkBox" id="packages_page_box">
+                                                        <property name="orientation">vertical</property>
+                                                        <property name="hexpand">true</property>
+                                                        <property name="vexpand">true</property>
+                                                    </object>
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkStackPage">
+                                                <property name="name">aur_page</property>
+                                                <property name="title">AUR</property>
+                                                <property name="child">
+                                                    <object class="GtkBox" id="aur_page_box">
+                                                        <property name="orientation">vertical</property>
+                                                        <property name="hexpand">true</property>
+                                                        <property name="vexpand">true</property>
+                                                    </object>
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkStackPage">
+                                                <property name="name">flatpak_page</property>
+                                                <property name="title">Flatpak</property>
+                                                <property name="child">
+                                                    <object class="GtkBox" id="flatpak_page_box" />
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkStackPage">
+                                                <property name="name">appimage_page</property>
+                                                <property name="title">AppImage</property>
+                                                <property name="child">
+                                                    <object class="GtkBox" id="appimage_page_box" />
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkStackPage">
+                                                <property name="name">settings_page</property>
+                                                <property name="title">Settings</property>
+                                                <property name="visible">false</property>
+                                                <property name="child">
+                                                    <object class="GtkBox" id="settings_page_box" />
+                                                </property>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkBox">
+                                        <property name="halign">end</property>
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">10</property>
+                                        <property name="margin-bottom">10</property>
+                                        <property name="margin-end">10</property>
+                                        <property name="margin-start">10</property>
+                                        <property name="margin-top">10</property>
+                                        <child>
+                                            <object class="GtkMenuButton" id="history_menu_button">
+                                                <property name="label">History</property>
+                                                <property name="icon-name">document-open-recent-symbolic</property>
+                                                <property name="always-show-arrow">true</property>
+                                                <property name="popover">
+                                                    <object class="GtkPopover" id="history_popover">
+                                                        <property name="autohide">true</property>
+                                                        <property name="child">
+                                                            <object class="GtkBox" id="history_popover_box">
+                                                                <property name="orientation">vertical</property>
+                                                                <property name="spacing">0</property>
+                                                                <property name="width-request">320</property>
+                                                                <child>
+                                                                    <object class="GtkLabel" id="history_popover_title">
+                                                                        <property name="label">Recent Operations</property>
+                                                                        <property name="margin-top">10</property>
+                                                                        <property name="margin-bottom">6</property>
+                                                                        <property name="margin-start">10</property>
+                                                                        <property name="margin-end">10</property>
+                                                                        <attributes>
+                                                                            <attribute name="weight" value="bold"/>
+                                                                        </attributes>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkScrolledWindow">
+                                                                        <property name="hscrollbar-policy">never</property>
+                                                                        <property name="vscrollbar-policy">automatic</property>
+                                                                        <property name="max-content-height">400</property>
+                                                                        <property name="propagate-natural-height">true</property>
+                                                                        <property name="child">
+                                                                            <object class="GtkListBox" id="history_list_box">
+                                                                                <property name="selection-mode">single</property>
+                                                                                <property name="show-separators">true</property>
+                                                                            </object>
+                                                                        </property>
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </property>
+                                                    </object>
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkMenuButton" id="updates_menu_button">
+                                                <property name="label">Updates</property>
+                                                <property name="icon-name">software-update-available-symbolic</property>
+                                                <property name="always-show-arrow">true</property>
+                                                <property name="direction">up</property>
+                                                <property name="popover">
+                                                    <object class="GtkPopover" id="updates_popover">
+                                                        <property name="autohide">true</property>
+                                                        <property name="position">top</property>
+                                                        <property name="child">
+                                                            <object class="GtkBox" id="updates_popover_box">
+                                                                <property name="orientation">vertical</property>
+                                                                <property name="spacing">0</property>
+                                                                <property name="width-request">320</property>
+                                                                <child>
+                                                                    <object class="GtkLabel" id="updates_popover_title">
+                                                                        <property name="label">Available Updates</property>
+                                                                        <property name="margin-top">10</property>
+                                                                        <property name="margin-bottom">6</property>
+                                                                        <property name="margin-start">10</property>
+                                                                        <property name="margin-end">10</property>
+                                                                        <attributes>
+                                                                            <attribute name="weight" value="bold"/>
+                                                                        </attributes>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkScrolledWindow">
+                                                                        <property name="hscrollbar-policy">never</property>
+                                                                        <property name="vscrollbar-policy">automatic</property>
+                                                                        <property name="max-content-height">400</property>
+                                                                        <property name="propagate-natural-height">true</property>
+                                                                        <property name="child">
+                                                                            <object class="GtkListBox" id="updates_list_box">
+                                                                                <property name="selection-mode">none</property>
+                                                                                <property name="show-separators">true</property>
+                                                                            </object>
+                                                                        </property>
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </property>
+                                                    </object>
+                                                </property>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkButton" id="upgrade_all_button">
+                                                <property name="label">Upgrade All</property>
+                                                <style>
+                                                    <class name="suggested-action"/>
+                                                </style>
+                                            </object>
+                                        </child>
                                     </object>
                                 </child>
                             </object>

@@ -7,8 +7,7 @@ public static class PackageBuildDialog
 {
     public static void ShowPackageBuildDialog(Overlay parentOverlay, PackageBuildEventArgs e)
     {
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(600, 500);
@@ -32,7 +31,7 @@ public static class PackageBuildDialog
         pkgBuildLabel.SetXalign(0);
         pkgBuildLabel.AddCssClass("monospace");
 
-        var scrolledWindow = new ScrolledWindow();
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetPolicy(PolicyType.Automatic, PolicyType.Automatic);
         scrolledWindow.SetVexpand(true);
         scrolledWindow.SetChild(pkgBuildLabel);
@@ -45,13 +44,13 @@ public static class PackageBuildDialog
         var confirmButton = Button.NewWithLabel("Confirm");
         confirmButton.AddCssClass("suggested-action");
 
-        cancelButton.OnClicked += (s, args) =>
+        cancelButton.OnClicked += (_,_) =>
         {
             e.SetResponse(false);
             parentOverlay.RemoveOverlay(baseFrame);
         };
 
-        confirmButton.OnClicked += (s, args) =>
+        confirmButton.OnClicked += (_,_) =>
         {
             e.SetResponse(true);
             parentOverlay.RemoveOverlay(baseFrame);

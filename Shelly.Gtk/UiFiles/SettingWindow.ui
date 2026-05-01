@@ -266,21 +266,6 @@
                                 <property name="orientation">horizontal</property>
                                 <child>
                                   <object class="GtkLabel">
-                                    <property name="label">Change Menu Navigation</property>
-                                    <property name="hexpand">true</property>
-                                    <property name="halign">start</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkSwitch" id="menu_navigation"/>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="orientation">horizontal</property>
-                                <child>
-                                  <object class="GtkLabel">
                                     <property name="label">Icons Enabled</property>
                                     <property name="hexpand">true</property>
                                     <property name="halign">start</property>
