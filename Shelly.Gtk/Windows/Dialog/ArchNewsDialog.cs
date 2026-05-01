@@ -4,7 +4,7 @@ using Shelly.Gtk.UiModels;
 
 namespace Shelly.Gtk.Windows.Dialog;
 
-public class ArchNewsDialog(IArchNewsService archNewsService, Overlay _overlay)
+public class ArchNewsDialog(IArchNewsService archNewsService, Overlay overlay)
 {
     private List<RssModel> _archNewsItems = [];
 
@@ -17,9 +17,7 @@ public class ArchNewsDialog(IArchNewsService archNewsService, Overlay _overlay)
                 await LoadArchNews();
             }
 
-            var container = new Box();
-            container.SetOrientation(Orientation.Vertical);
-            container.SetSpacing(10);
+            var container = Box.New(Orientation.Vertical, 10);
             container.SetMarginBottom(10);
             container.SetMarginEnd(10);
             container.SetMarginStart(10);
@@ -30,18 +28,18 @@ public class ArchNewsDialog(IArchNewsService archNewsService, Overlay _overlay)
             titleLabel.Xalign = 0;
             container.Append(titleLabel);
 
-            var listBox = new ListBox();
+            var listBox = ListBox.New();
             listBox.SetSelectionMode(SelectionMode.None);
             listBox.AddCssClass("rich-list");
 
-            var scrolledWindow = new ScrolledWindow();
+            var scrolledWindow = ScrolledWindow.New();
             scrolledWindow.SetVexpand(true);
             scrolledWindow.HscrollbarPolicy = PolicyType.Never;
             scrolledWindow.SetChild(listBox);
             container.Append(scrolledWindow);
 
             var args = new GenericDialogEventArgs(container);
-            GenericOverlay.ShowGenericOverlay(_overlay, container, args, 700, 500);
+            GenericOverlay.ShowGenericOverlay(overlay, container, args, 700, 500);
 
             if (_archNewsItems.Count == 0)
             {
@@ -55,7 +53,7 @@ public class ArchNewsDialog(IArchNewsService archNewsService, Overlay _overlay)
             {
                 foreach (var item in _archNewsItems)
                 {
-                    var row = new ListBoxRow();
+                    var row = ListBoxRow.New();
                     var vbox = Box.New(Orientation.Vertical, 5);
                     vbox.MarginStart = 10;
                     vbox.MarginEnd = 10;

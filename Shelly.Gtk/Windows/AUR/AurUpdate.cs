@@ -4,6 +4,7 @@ using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AUR.GObjects;
+// ReSharper disable NotAccessedField.Local
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -137,7 +138,9 @@ public class AurUpdate(
         _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
         };
 
@@ -393,8 +396,11 @@ public class AurUpdate(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
-
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
+        
         iconImage.SetFromIconName("package-x-generic");
 
         headerBox.Append(iconImage);
