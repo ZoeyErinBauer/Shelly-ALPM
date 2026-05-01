@@ -441,6 +441,24 @@ sealed class Program
 
             window.Show();
 
+            if (!initialConfig.NewInstallInitSettings)
+            {
+                var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
+                var setupWidget = setupWindow.CreateWindow();
+
+                mainOverlay.AddOverlay(setupWidget);
+
+                setupWindow.SetupFinished += (_, _) =>
+                {
+                    GLib.Functions.IdleAdd(0, () =>
+                    {
+                        mainOverlay.RemoveOverlay(setupWidget);
+                        setupWindow.Dispose();
+                        return false;
+                    });
+                };
+            }
+
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
             if (assemblyVersion != configService.LoadConfig().CurrentVersion)
             {
