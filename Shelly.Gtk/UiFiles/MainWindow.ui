@@ -227,6 +227,7 @@
                                                 <property name="label">Updates</property>
                                                 <property name="icon-name">software-update-available-symbolic</property>
                                                 <property name="always-show-arrow">true</property>
+                                                <property name="direction">up</property>
                                                 <property name="popover">
                                                     <object class="GtkPopover" id="updates_popover">
                                                         <property name="autohide">true</property>
