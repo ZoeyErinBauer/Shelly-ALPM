@@ -116,6 +116,9 @@ public class Settings(
         purifyCorruptionButton.TooltipText = "Remove corrupted packages";
         purifyCorruptionButton.OnClicked += async (s, e) => { await PurifyCorruption(); };
 
+        var fixPermissionsButton = (Button)builder.GetObject("fix_permissions_button")!;
+        fixPermissionsButton.OnClicked += async (s, e) => { await FixXdgPermissionsAsync(); };
+
         var viewPacfilesButton = (Button)builder.GetObject("view_pacfiles_button")!;
         viewPacfilesButton.OnClicked += async (s, e) => { await ViewPacfilesAsync(); };
 
@@ -414,6 +417,32 @@ public class Settings(
         else
         {
             Console.Error.WriteLine($"Failed to remove database lock: {result.Error}");
+        }
+    }
+
+    private async Task FixXdgPermissionsAsync()
+    {
+        try
+        {
+            var result = await privilegedOperationService.FixXdgPermissionsAsync();
+
+            if (result.Success)
+            {
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs("Shelly folder ownership restored"));
+            }
+            else
+            {
+                Console.Error.WriteLine($"Failed to fix Shelly folder ownership: {result.Error}");
+                genericQuestionService.RaiseToastMessage(
+                    new ToastMessageEventArgs("Failed to fix folder permissions"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fixing Shelly folder permissions: {ex.Message}");
+            genericQuestionService.RaiseToastMessage(
+                new ToastMessageEventArgs("Error fixing folder permissions"));
         }
     }
 
