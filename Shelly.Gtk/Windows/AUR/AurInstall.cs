@@ -23,7 +23,7 @@ public class AurInstall(
     private DirtySubscription? _sub;
     public string[] ListensTo => [DirtyScopes.AurInstalled, DirtyScopes.Config];
     private Box _box = null!;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
@@ -292,6 +292,8 @@ public class AurInstall(
             result = result.OrderByDescending(x => x.NumVotes).ToList();
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested) return false;
+
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
                 foreach (var gobject in result.Select(dto =>
@@ -691,6 +693,9 @@ public class AurInstall(
 
     public void Reload()
     {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
         if (!string.IsNullOrEmpty(_searchText))
             _ = SearchAsync(_cts.Token);
     }

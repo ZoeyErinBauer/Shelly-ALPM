@@ -555,16 +555,6 @@ public class PackageInstall(
 
     private async Task LoadDataAsync(CancellationToken ct = default)
     {
-        GLib.Functions.IdleAdd(0, () =>
-        {
-            _listStore.RemoveAll();
-            _packageGObjectRefs.Clear();
-            _detailRevealer.SetRevealChild(false);
-            _currentDetailPkg = null;
-            _installedPackageNames.Clear();
-            return false;
-        });
-
         try
         {
             _packages = await privilegedOperationService.GetAvailablePackagesAsync(_showHiddenCheck.Active);
@@ -575,13 +565,25 @@ public class PackageInstall(
             var installedPackages = await privilegedOperationService.GetInstalledPackagesAsync();
             _installedPackageNames = new HashSet<string>(installedPackages.Select(x => x.Name));
             var queue = new Queue<AlpmPackageDto>(_packages);
+            var firstBatch = true;
 
             GLib.Functions.IdleAdd(0, () =>
             {
-                _groupsStringList = StringList.New(_groups.ToArray());
-                _groupDropDown.SetModel(_groupsStringList);
-
                 if (ct.IsCancellationRequested) return false;
+
+                if (firstBatch)
+                {
+                    firstBatch = false;
+                    _filterListModel.SetFilter(null);
+                    _listStore.RemoveAll();
+                    _packageGObjectRefs.Clear();
+                    _filterListModel.SetFilter(_filter);
+                    _detailRevealer.SetRevealChild(false);
+                    _currentDetailPkg = null;
+
+                    _groupsStringList = StringList.New(_groups.ToArray());
+                    _groupDropDown.SetModel(_groupsStringList);
+                }
 
                 const int batchSize = 1000;
                 var count = 0;
