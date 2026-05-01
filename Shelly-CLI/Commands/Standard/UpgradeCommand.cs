@@ -23,7 +23,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 
         RootElevator.EnsureRootExectuion();
         var archNews = new ArchNews();
-        archNews.ExecuteAsync(context, new ArchNewsSettings()).GetAwaiter().GetResult();
+        await archNews.ExecuteAsync(context, new ArchNewsSettings());
 
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
