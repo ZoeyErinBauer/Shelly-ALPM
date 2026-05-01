@@ -304,6 +304,14 @@ sealed class Program
                 settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
             };
+            settingsWindow.NavigationToPackages += () =>
+            {
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    settingsStack.SetVisibleChildName("packages_page");
+                    return false;
+                });
+            };
 
             var dirtyService = serviceProvider.GetRequiredService<IDirtyService>();
             dirtyService.Dirtied += (_, e) =>

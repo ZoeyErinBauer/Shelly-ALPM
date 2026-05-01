@@ -34,7 +34,7 @@ public class Settings(
         DefaultRequestHeaders = { UserAgent = { new("Shelly-ALPM", null) } }
     };
 
-    public event Action? NavigationToHomeRequested;
+    public event Action? NavigationToPackages;
     public event Action<ShellyConfig>? ConfigChanged;
 
     public Widget CreateWindow()
@@ -53,7 +53,6 @@ public class Settings(
         SetupSwitch("no_confirm_switch", _config.NoConfirm, (v) => _config.NoConfirm = v, builder);
         SetupSwitch("webview_switch", _config.WebViewEnabled, (v) => _config.WebViewEnabled = v, builder);
         SetupSwitch("shelly_icons_switch", _config.ShellyIconsEnabled, (v) => _config.ShellyIconsEnabled = v, builder);
-        SetupSwitch("menu_navigation", _config.UseOldMenu, (v) => _config.UseOldMenu = v, builder);
         SetupSwitch("appimage_switch", _config.AppImageEnabled, (v) => _config.AppImageEnabled = v, builder);
         SetupSwitch("symbolic_tray_switch", _config.UseSymbolicTray, (v) => _config.UseSymbolicTray = v, builder);
 
@@ -106,7 +105,7 @@ public class Settings(
         syncButton.OnClicked += (_,_) => { _ = ForceSyncAsync(); };
 
         var saveButton = (Button)builder.GetObject("save_button")!;
-        saveButton.OnClicked += (_,_) => { NavigationToHomeRequested?.Invoke(); };
+        saveButton.OnClicked += (_,_) => { OnSaveClicked(); };
 
         var removeLockButton = (Button)builder.GetObject("rm_db_lock_button")!;
         removeLockButton.OnClicked += (_,_) => { _ = RemoveDbLockAsync(); };
@@ -132,6 +131,12 @@ public class Settings(
 
 
         return _box;
+    }
+    
+    private void OnSaveClicked()
+    {
+        SaveConfig();
+        NavigationToPackages?.Invoke();
     }
 
     private void SetupSwitch(string id, bool initialValue, Action<bool> updateAction, Builder builder)
