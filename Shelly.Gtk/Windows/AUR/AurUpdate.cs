@@ -20,7 +20,7 @@ public class AurUpdate(
     private DirtySubscription? _sub;
     public string[] ListensTo => [DirtyScopes.AurUpdates, DirtyScopes.AurInstalled];
     private Box _box = null!;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
@@ -236,8 +236,15 @@ public class AurUpdate(
 
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested) return false;
+
+                _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
                 _packageGObjectRefs.Clear();
+                _filterListModel.SetFilter(_filter);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+
                 foreach (var gobject in packages.Select(dto =>
                          {
                              var o = AurUpdateGObject.NewWithProperties([]);
@@ -321,7 +328,7 @@ public class AurUpdate(
                 else
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
 
-                await LoadDataAsync();
+                await LoadDataAsync(_cts.Token);
             }
             catch (Exception e)
             {
@@ -458,7 +465,13 @@ public class AurUpdate(
         _detailRevealer.SetRevealChild(true);
     }
 
-    public void Reload() => _ = LoadDataAsync(_cts.Token);
+    public void Reload()
+    {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+        _ = LoadDataAsync(_cts.Token);
+    }
 
     public void Dispose()
     {
