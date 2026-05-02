@@ -227,7 +227,7 @@ sealed class Program
             var configService = serviceProvider.GetRequiredService<IConfigService>();
             var initialConfig = configService.LoadConfig();
 
-            List<IShellyWindow> currentPackagesWindows;
+            List<IShellyWindow> currentPackagesWindows = [];
             List<IShellyWindow> currentAurWindows = [];
             IShellyWindow? currentFlatpakWindow = null;
             IShellyWindow? currentAppImageWindow = null;
@@ -298,8 +298,6 @@ sealed class Program
                 currentShellySearchWindow = w;
             }
 
-            LoadPackagesPage();
-
             var settingsWindow = serviceProvider.GetRequiredService<Settings>();
             settingsPageBox.Append(settingsWindow.CreateWindow());
 
@@ -307,6 +305,20 @@ sealed class Program
             settingsStack.GetPage(flatpakPageBox).Visible = initialConfig.FlatPackEnabled;
             settingsStack.GetPage(appImagePageBox).Visible = initialConfig.AppImageEnabled;
             settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
+
+            string initialPageName;
+            if (initialConfig.ShellySearchEnabled)
+            {
+                LoadShellySearchPage();
+                settingsStack.SetVisibleChildName("shelly_search_page");
+                initialPageName = "shelly_search_page";
+            }
+            else
+            {
+                LoadPackagesPage();
+                settingsStack.SetVisibleChildName("packages_page");
+                initialPageName = "packages_page";
+            }
 
             settingsWindow.ConfigChanged += (config) =>
             {
@@ -340,7 +352,7 @@ sealed class Program
                 });
             };
 
-            var previousPage = settingsStack.GetVisibleChildName();
+            var previousPage = initialPageName;
 
             settingsStack.OnNotify += (_, notifySignalArgs) =>
             {
