@@ -44,6 +44,7 @@ public class ShellySearch(
 
     private Stack _searchStack = null!;
     private Spinner _searchSpinner = null!;
+    private SearchEntry _searchEntry = null!;
 
     public Widget CreateWindow() => CreateWindow(null);
 
@@ -64,6 +65,16 @@ public class ShellySearch(
         _repoColumn = (ColumnViewColumn)builder.GetObject("repo_column")!;
         _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         _descriptionColumn = (ColumnViewColumn)builder.GetObject("description_column")!;
+        _searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
+
+        if (!string.IsNullOrEmpty(_initialQuery))
+            _searchEntry.SetText(_initialQuery);
+
+        _searchEntry.OnActivate += (_, _) =>
+        {
+            _initialQuery = _searchEntry.GetText();
+            _ = LoadDataAsync();
+        };
 
         _listStore = Gio.ListStore.New(MetaPackageGObject.GetGType());
         _selectionModel = SingleSelection.New(_listStore);

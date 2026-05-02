@@ -15,6 +15,12 @@
         <property name="hexpand">true</property>
         <property name="spacing">5</property>
         <child>
+          <object class="GtkSearchEntry" id="search_entry">
+            <property name="hexpand">true</property>
+            <property name="placeholder-text">Search packages…</property>
+          </object>
+        </child>
+        <child>
           <object class="GtkButton" id="install_button">
             <property name="label">Install Package(s)</property>
             <style>
