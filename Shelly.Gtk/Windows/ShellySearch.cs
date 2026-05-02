@@ -177,8 +177,7 @@ public class ShellySearch(
             var label = Label.New(null);
             label.Halign = Align.Start;
             label.MarginStart = 6;
-            label.Wrap = true;
-            label.WrapMode = Pango.WrapMode.WordChar;
+            label.Ellipsize = Pango.EllipsizeMode.End;
             label.Xalign = 0;
             var installedIcon = Image.NewFromIconName("object-select-symbolic");
             box.Append(label);
@@ -256,12 +255,16 @@ public class ShellySearch(
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var label = Label.New(null);
-            label.Halign = Align.Start;
+            label.Halign = Align.Fill;
+            label.Hexpand = true;
             label.MarginStart = 6;
             label.Wrap = true;
-            label.WrapMode = Pango.WrapMode.Word;
-            label.NaturalWrapMode = 
+            label.WrapMode = Pango.WrapMode.WordChar;
+            label.NaturalWrapMode = NaturalWrapMode.Word;
+            label.MaxWidthChars = 1;
+            label.WidthChars = 0;
             label.Xalign = 0;
+            label.WidthRequest = 1;
             listItem.SetChild(label);
         };
         _descriptionFactory.OnBind += (_, args) =>

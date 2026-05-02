@@ -42,6 +42,9 @@
       <object class="GtkScrolledWindow">
         <property name="overlay-scrolling">false</property>
         <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
+        <property name="hscrollbar-policy">never</property>
+        <property name="propagate-natural-width">false</property>
         <child>
           <object class="GtkColumnView" id="package_grid">
             <child>
@@ -57,6 +60,8 @@
             <child>
               <object class="GtkColumnViewColumn" id="description_column">
                 <property name="expand">true</property>
+                <property name="resizable">true</property>
+                <property name="fixed-width">400</property>
                 <property name="title">Description</property>
               </object>
             </child>
