@@ -68,6 +68,8 @@
             <child>
               <object class="GtkColumnViewColumn" id="version_column">
                 <property name="title">Version</property>
+                <property name="fixed-width">120</property>
+                <property name="resizable">true</property>
               </object>
             </child>
             <child>

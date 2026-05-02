@@ -238,8 +238,8 @@ public class ShellySearch(
             var label = Label.New(null);
             label.Halign = Align.End;
             label.MarginStart = 6;
-            label.Wrap = true;
-            label.WrapMode = Pango.WrapMode.WordChar;
+            label.Ellipsize = Pango.EllipsizeMode.End;
+            label.Xalign = 1;
             listItem.SetChild(label);
         };
         _versionFactory.OnBind += (_, args) =>
