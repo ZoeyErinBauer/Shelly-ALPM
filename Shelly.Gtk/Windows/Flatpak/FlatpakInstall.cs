@@ -68,7 +68,6 @@ public class FlatpakInstall(
 
     private Box _remoteRefOverlay = null!;
     private Box _addRemoteOverlay = null!;
-    private Button _remoteRefButton = null!;
     private Button _remoteRefBackButton = null!;
     private Button _addRemoteButton = null!;
     private Button _addRemoteBackButton = null!;
@@ -126,7 +125,6 @@ public class FlatpakInstall(
         _overlayCloseButton = (Button)builder.GetObject("overlay_back_button")!;
         _overlayInstallButton = (Button)builder.GetObject("overlay_install_button")!;
         _versionHistoryButton = (Button)builder.GetObject("version_history_button")!;
-        _remoteRefButton = (Button)builder.GetObject("remote_ref_management")!;
         _remoteRefBackButton = (Button)builder.GetObject("overlay_remote_back_button")!;
         _addRemoteButton = (Button)builder.GetObject("overlay_add_remote_button")!;
         _addRemoteBackButton = (Button)builder.GetObject("overlay_add_remote_back_button")!;
@@ -169,6 +167,9 @@ public class FlatpakInstall(
                     _activePage = "remove";
                     _mainContentStack.SetVisibleChild(removePageBox);
                     break;
+                case 3:
+                    Task.Run(BuildAndShowRemoteRef);
+                    break;
             }
         };
 
@@ -204,16 +205,16 @@ public class FlatpakInstall(
         {
             var action = CallbackAction.New((_, _) =>
             {
-                if (_addRemoteOverlay.GetVisible())
+                var visibleChild = _mainContentStack?.GetVisibleChild();
+                if (visibleChild == _addRemoteOverlay)
                 {
-                    _addRemoteOverlay.Hide();
-                    _addRemoteOverlay.Dispose();
+                    _mainContentStack!.SetVisibleChild(_remoteRefOverlay);
                     return true;
                 }
 
-                if (_remoteRefOverlay.GetVisible())
+                if (visibleChild == _remoteRefOverlay)
                 {
-                    _remoteRefOverlay.Hide();
+                    _mainContentStack!.SetVisibleChild((Widget)builder.GetObject("list_overlay")!);
                     return true;
                 }
 
@@ -229,9 +230,8 @@ public class FlatpakInstall(
         }
 
         box.AddController(shortcutController);
-
-        _remoteRefButton.OnClicked += (_, _) => { _ = BuildAndShowRemoteRef(); };
-        _remoteRefBackButton.OnClicked += (_, _) => { _remoteRefOverlay.Hide(); };
+        
+        _remoteRefBackButton.OnClicked += (_, _) => { _mainContentStack?.SetVisibleChild((Widget)builder.GetObject("list_overlay")!); };
         _installFromFlatpakRef.OnClicked += (_, _) => { _ = InstallFromFlatpakRef(); };
 
         _listStore = Gio.ListStore.New(FlatpakGObject.GetGType());
@@ -257,13 +257,12 @@ public class FlatpakInstall(
         {
             _addRemoteNameEntry.SetText(string.Empty);
             _addRemoteUrlEntry.SetText(string.Empty);
-            _addRemoteOverlay.Show();
+            _mainContentStack?.SetVisibleChild(_addRemoteOverlay);
         };
 
         _addRemoteBackButton.OnClicked += (_, _) =>
         {
-            _addRemoteOverlay.Hide();
-            _addRemoteOverlay.Dispose();
+            _mainContentStack?.SetVisibleChild(_remoteRefOverlay);
         };
 
         _addRemoteConfirmButton.OnClicked += (_, _) =>
@@ -296,7 +295,7 @@ public class FlatpakInstall(
             genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs($"Added Remote: {name}"));
             _ = RefreshRemotesList();
             _ = LoadDataAsync();
-            _addRemoteOverlay.Hide();
+            _mainContentStack?.SetVisibleChild(_remoteRefOverlay);
         };
 
         _deleteRemoteButton.OnClicked += (_, _) =>
@@ -437,9 +436,6 @@ public class FlatpakInstall(
         {
             _selectedCategory = (FlatpakCategories)index;
             _overlay.SetVisible(false);
-            _remoteRefOverlay.SetVisible(false);
-            _addRemoteOverlay.SetVisible(false);
-
             _activePage = "install";
             _mainContentStack.SetVisibleChild((Widget)builder.GetObject("list_overlay")!);
             sectionNavList.SelectRow(navInstallRow);
@@ -1347,7 +1343,7 @@ public class FlatpakInstall(
         });
     }
 
-    private async Task BuildAndShowRemoteRef()
+    private Task BuildAndShowRemoteRef()
     {
         if (_remoteFactory == null)
         {
@@ -1357,9 +1353,14 @@ public class FlatpakInstall(
             _listRemotes.SetFactory(_remoteFactory);
         }
 
-        await RefreshRemotesList();
+        RefreshRemotesList().Wait();
 
-        _remoteRefOverlay.Show();
+        GLib.Functions.IdleAdd(0, () =>
+        {
+            _mainContentStack?.SetVisibleChild(_remoteRefOverlay);
+            return false;
+        });
+        return Task.CompletedTask;
     }
 
 
@@ -1371,7 +1372,6 @@ public class FlatpakInstall(
         _searchDebounce.Cancel();
         _searchDebounce.Dispose();
         _httpClient.Dispose();
-        _remoteRefOverlay.Dispose();
         _addRemoteOverlay.Dispose();
         _overlay?.Dispose();
         _allPackages.Clear();
