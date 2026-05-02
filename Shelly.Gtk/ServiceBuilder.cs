@@ -40,7 +40,7 @@ public static class ServiceBuilder
         collection.AddTransient<PackageManagement>();
         collection.AddTransient<PackageUpdate>();
         collection.AddTransient<PackageInstall>();
-        collection.AddTransient<MetaSearch>();
+        collection.AddTransient<ShellySearch>();
         collection.AddTransient<Settings>();
         collection.AddTransient<PasswordDialog>();
         collection.AddSingleton<LockoutDialog>();

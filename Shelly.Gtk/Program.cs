@@ -190,7 +190,7 @@ sealed class Program
             var aurPageBox = (Box)mainBuilder.GetObject("aur_page_box")!;
             var flatpakPageBox = (Box)mainBuilder.GetObject("flatpak_page_box")!;
             var appImagePageBox = (Box)mainBuilder.GetObject("appimage_page_box")!;
-            var metaSearchPageBox = (Box)mainBuilder.GetObject("metasearch_page_box")!;
+            var shellySearchPageBox = (Box)mainBuilder.GetObject("shelly_search_page_box")!;
             var settingsPageBox = (Box)mainBuilder.GetObject("settings_page_box")!;
 
             var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
@@ -231,7 +231,7 @@ sealed class Program
             List<IShellyWindow> currentAurWindows = [];
             IShellyWindow? currentFlatpakWindow = null;
             IShellyWindow? currentAppImageWindow = null;
-            IShellyWindow? currentMetaSearchWindow = null;
+            IShellyWindow? currentShellySearchWindow = null;
 
             void UnloadPage(Box pageBox, IEnumerable<IShellyWindow> windows)
             {
@@ -291,11 +291,11 @@ sealed class Program
                 currentAppImageWindow = w;
             }
 
-            void LoadMetaSearchPage()
+            void LoadShellySearchPage()
             {
-                var w = serviceProvider.GetRequiredService<MetaSearch>();
-                metaSearchPageBox.Append(w.CreateWindow());
-                currentMetaSearchWindow = w;
+                var w = serviceProvider.GetRequiredService<ShellySearch>();
+                shellySearchPageBox.Append(w.CreateWindow());
+                currentShellySearchWindow = w;
             }
 
             LoadPackagesPage();
@@ -306,14 +306,14 @@ sealed class Program
             settingsStack.GetPage(aurPageBox).Visible = initialConfig.AurEnabled;
             settingsStack.GetPage(flatpakPageBox).Visible = initialConfig.FlatPackEnabled;
             settingsStack.GetPage(appImagePageBox).Visible = initialConfig.AppImageEnabled;
-            settingsStack.GetPage(metaSearchPageBox).Visible = initialConfig.MetaSearchEnabled;
+            settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
 
             settingsWindow.ConfigChanged += (config) =>
             {
                 settingsStack.GetPage(aurPageBox).Visible = config.AurEnabled;
                 settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
-                settingsStack.GetPage(metaSearchPageBox).Visible = config.MetaSearchEnabled;
+                settingsStack.GetPage(shellySearchPageBox).Visible = config.ShellySearchEnabled;
             };
             settingsWindow.NavigationToPackages += () =>
             {
@@ -334,7 +334,7 @@ sealed class Program
                     settingsStack.GetPage(aurPageBox).Visible = c.AurEnabled;
                     settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
                     settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
-                    settingsStack.GetPage(metaSearchPageBox).Visible = c.MetaSearchEnabled;
+                    settingsStack.GetPage(shellySearchPageBox).Visible = c.ShellySearchEnabled;
                     dirtyService.Clear(DirtyScopes.Config);
                     return false;
                 });
@@ -374,11 +374,11 @@ sealed class Program
                         }
 
                         break;
-                    case "metasearch_page":
-                        if (currentMetaSearchWindow != null)
+                    case "shelly_search_page":
+                        if (currentShellySearchWindow != null)
                         {
-                            UnloadPage(metaSearchPageBox, [currentMetaSearchWindow]);
-                            currentMetaSearchWindow = null;
+                            UnloadPage(shellySearchPageBox, [currentShellySearchWindow]);
+                            currentShellySearchWindow = null;
                         }
 
                         break;
@@ -390,7 +390,7 @@ sealed class Program
                     case "aur_page": LoadAurPage(); break;
                     case "flatpak_page": LoadFlatpakPage(); break;
                     case "appimage_page": LoadAppImagePage(); break;
-                    case "metasearch_page": LoadMetaSearchPage(); break;
+                    case "shelly_search_page": LoadShellySearchPage(); break;
                 }
 
                 previousPage = currentPage;

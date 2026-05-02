@@ -335,13 +335,13 @@
                                 <property name="orientation">horizontal</property>
                                 <child>
                                   <object class="GtkLabel">
-                                    <property name="label">Enable MetaSearch</property>
+                                    <property name="label">Enable Shelly Search</property>
                                     <property name="hexpand">true</property>
                                     <property name="halign">start</property>
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkSwitch" id="metasearch_switch"/>
+                                  <object class="GtkSwitch" id="shelly_search_switch"/>
                                 </child>
                               </object>
                             </child>

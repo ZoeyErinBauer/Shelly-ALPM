@@ -30,7 +30,7 @@ paru -S shelly
 When you Open shelly you will start on the home page. This Page has three major screens to reference.
 
 Arch News - Sharing the ten most recent articles from https://archlinux.org/news/ allowing you to stay up to date on Arch updates.
-Meta Search - Search all enabled sources (Flatpak, Aur and Packages) in 1 place.
+Shelly Search - Search all enabled sources (Flatpak, Aur and Packages) in 1 place.
 Package Dashboard - A listing of all installs in 3 standard supported formats: AUR, Packages, and Flatpak. Underneath it has the percentage of installs currently up to date.
 
 You can return to the home page at any time by clicking the house in the top left. Finally the search function here will search all sources rather than specifically Packages, AUR, or Flatpak.

@@ -55,7 +55,7 @@ public class Settings(
         SetupSwitch("shelly_icons_switch", _config.ShellyIconsEnabled, (v) => _config.ShellyIconsEnabled = v, builder);
         SetupSwitch("appimage_switch", _config.AppImageEnabled, (v) => _config.AppImageEnabled = v, builder);
         SetupSwitch("symbolic_tray_switch", _config.UseSymbolicTray, (v) => _config.UseSymbolicTray = v, builder);
-        SetupSwitch("metasearch_switch", _config.MetaSearchEnabled, (v) => _config.MetaSearchEnabled = v, builder);
+        SetupSwitch("shelly_search_switch", _config.ShellySearchEnabled, (v) => _config.ShellySearchEnabled = v, builder);
 
         var parallelDownloadsSpin = (SpinButton)builder.GetObject("parallel_downloads_spin")!;
         parallelDownloadsSpin.Value = _config.ParallelDownloadCount;

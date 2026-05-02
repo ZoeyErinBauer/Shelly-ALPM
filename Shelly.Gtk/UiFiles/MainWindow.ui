@@ -158,10 +158,10 @@
                                         </child>
                                         <child>
                                             <object class="GtkStackPage">
-                                                <property name="name">metasearch_page</property>
-                                                <property name="title">MetaSearch</property>
+                                                <property name="name">shelly_search_page</property>
+                                                <property name="title">Shelly Search</property>
                                                 <property name="child">
-                                                    <object class="GtkBox" id="metasearch_page_box">
+                                                    <object class="GtkBox" id="shelly_search_page_box">
                                                         <property name="orientation">vertical</property>
                                                         <property name="hexpand">true</property>
                                                         <property name="vexpand">true</property>

@@ -13,7 +13,7 @@ public class ShellyConfig
     public string? Culture { get; set; }
     public bool DarkMode { get; set; } = true;
     public bool AurEnabled { get; set; } = false;
-    public bool MetaSearchEnabled { get; set; } = false;
+    public bool ShellySearchEnabled { get; set; } = false;
     public bool AurWarningConfirmed { get; set; } = false;
     public bool FlatPackEnabled { get; set; } = false;
     public bool ConsoleEnabled { get; set; } = false;

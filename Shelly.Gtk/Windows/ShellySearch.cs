@@ -10,7 +10,7 @@ using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 
 namespace Shelly.Gtk.Windows;
 
-public class MetaSearch(
+public class ShellySearch(
     IPrivilegedOperationService privilegedOperationService,
     IUnprivilegedOperationService unprivilegedOperationService,
     IConfigService configService,
@@ -50,9 +50,9 @@ public class MetaSearch(
     public Widget CreateWindow(string? initialQuery)
     {
         _initialQuery = initialQuery;
-        var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/MetaSearchWindow.ui"), -1);
+        var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/ShellySearchWindow.ui"), -1);
 
-        _box = (Box)builder.GetObject("MetaSearchWindow")!;
+        _box = (Box)builder.GetObject("ShellySearchWindow")!;
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
         _installButton = (Button)builder.GetObject("install_button")!;
         _installButton.SetSensitive(false);
