@@ -60,7 +60,7 @@ public class PackageManagement(
     private ColumnViewColumn _nameColumn = null!;
     private ColumnViewColumn _sizeColumn = null!;
     private ColumnViewColumn _versionColumn = null!;
-    
+
     private ColumnViewSorter _columnViewSorter = null!;
 
 
@@ -108,22 +108,22 @@ public class PackageManagement(
         // Creating sorter
         _nameColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
         _versionColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
-        
+
         _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
 
         _columnViewSorter.OnChanged += (_, _) =>
         {
             var primaryColumn =
                 _columnViewSorter.GetPrimarySortColumn();
-            
+
             if (primaryColumn is null)
                 return;
-            
+
             var sortColumn = GetSortColumn(primaryColumn);
-            
+
             var order =
                 _columnViewSorter.GetPrimarySortOrder();
-            
+
             if (sortColumn is null)
                 return;
 
@@ -133,10 +133,10 @@ public class PackageManagement(
                 _packageGObjectRefs,
                 sortColumn.Value,
                 order
-            );        
-        };        
+            );
+        };
 
-        
+
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
@@ -558,7 +558,7 @@ public class PackageManagement(
         {
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmPackageGObject ||
-                listItem.GetChild() is not CheckButton ) return;
+                listItem.GetChild() is not CheckButton) return;
             listItem.SetChild(null);
         };
         checkColumn.SetFactory(_checkFactory);
@@ -568,15 +568,14 @@ public class PackageManagement(
         {
             if (args.Object is not ColumnViewCell listItem) return;
             var box = Box.New(Orientation.Horizontal, 6);
-            
+
             var packageIcon = Image.New();
             packageIcon.PixelSize = 24;
             var label = Label.New(string.Empty);
-            var installedIcon = Image.NewFromIconName("object-select-symbolic");
-
+            
             box.Append(packageIcon);
             box.Append(label);
-            box.Append(installedIcon);
+
             listItem.SetChild(box);
         };
         _nameFactory.OnBind += (_, args) =>
@@ -589,8 +588,7 @@ public class PackageManagement(
 
             var packageIcon = (Image)box.GetFirstChild()!;
             var label = (Label)packageIcon.GetNextSibling()!;
-            var installedIcon = (Image)label.GetNextSibling()!;
-
+            
             var iconPath = iconResolverService.GetIconPath(pkg.Name);
             if (!string.IsNullOrEmpty(iconPath) && iconPath != "Unavailable" && File.Exists(iconPath))
             {
@@ -605,8 +603,6 @@ public class PackageManagement(
 
             label.SetText(pkg.Name);
             label.Halign = Align.Start;
-            installedIcon.Visible = pkgObj.IsInstalled;
-            installedIcon.TooltipText = "Installed";
         };
         nameColumn.SetFactory(_nameFactory);
 
@@ -648,12 +644,12 @@ public class PackageManagement(
 
         versionColumn.SetFactory(_versionFactory);
     }
-    
+
     private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
     {
         if (column == _nameColumn)
             return PackageSortColumn.Name;
-        
+
         if (column == _versionColumn)
             return PackageSortColumn.Version;
 
@@ -688,7 +684,12 @@ public class PackageManagement(
 
                 _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
-                foreach (var r in _packageGObjectRefs) { r.Index = -1; r.Dispose(); }
+                foreach (var r in _packageGObjectRefs)
+                {
+                    r.Index = -1;
+                    r.Dispose();
+                }
+
                 _packageGObjectRefs.Clear();
                 _packageData.Clear();
                 _packageData.TrimExcess();
@@ -757,7 +758,8 @@ public class PackageManagement(
             try
             {
                 lockoutService.Show($"Removing...");
-                var result = await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
+                var result = await privilegedOperationService.RemovePackagesAsync(selectedPackages,
+                    _cascadeDeleteCheck.Active,
                     _removeConfigsCheck.Active);
                 if (result.Success)
                 {
@@ -766,6 +768,7 @@ public class PackageManagement(
                     );
                     genericQuestionService.RaiseToastMessage(args);
                 }
+
                 Reload();
             }
             catch (Exception e)
@@ -798,7 +801,12 @@ public class PackageManagement(
         _cts.Dispose();
 
         _listStore.RemoveAll();
-        foreach (var r in _packageGObjectRefs) { r.Index = -1; r.Dispose(); }
+        foreach (var r in _packageGObjectRefs)
+        {
+            r.Index = -1;
+            r.Dispose();
+        }
+
         _packageGObjectRefs.Clear();
         _packageData.Clear();
         _checkBinding.Clear();
