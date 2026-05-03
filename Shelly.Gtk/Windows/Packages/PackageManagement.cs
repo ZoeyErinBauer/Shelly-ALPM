@@ -708,8 +708,15 @@ public class PackageManagement(
             try
             {
                 lockoutService.Show($"Removing...");
-                await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
+                var result = await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
                     _removeConfigsCheck.Active);
+                if (result.Success)
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Removed {selectedPackages.Count} Package(s)"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                }
                 Reload();
             }
             catch (Exception e)
@@ -719,12 +726,6 @@ public class PackageManagement(
             finally
             {
                 lockoutService.Hide();
-
-                var args = new ToastMessageEventArgs(
-                    $"Removed {selectedPackages.Count} Package(s)"
-                );
-
-                genericQuestionService.RaiseToastMessage(args);
             }
         }
     }
