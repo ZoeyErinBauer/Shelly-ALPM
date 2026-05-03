@@ -97,7 +97,7 @@ public class PackageManagement(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
-        _selectionModel.Autoselect = false;
+        _selectionModel.Autoselect = true;
         _columnView.SetModel(_selectionModel);
         _groupDropDown = (DropDown)builder.GetObject("grouping_selection")!;
         _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
@@ -757,8 +757,15 @@ public class PackageManagement(
             try
             {
                 lockoutService.Show($"Removing...");
-                await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
+                var result = await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
                     _removeConfigsCheck.Active);
+                if (result.Success)
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Removed {selectedPackages.Count} Package(s)"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                }
                 Reload();
             }
             catch (Exception e)
@@ -768,12 +775,6 @@ public class PackageManagement(
             finally
             {
                 lockoutService.Hide();
-
-                var args = new ToastMessageEventArgs(
-                    $"Removed {selectedPackages.Count} Package(s)"
-                );
-
-                genericQuestionService.RaiseToastMessage(args);
             }
         }
     }

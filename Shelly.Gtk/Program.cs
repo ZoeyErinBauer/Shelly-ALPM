@@ -1,4 +1,4 @@
-using System.Runtime;
+using Shelly.Gtk.Enums;
 using System.Reflection;
 using Gtk;
 using Microsoft.Extensions.DependencyInjection;
@@ -183,8 +183,7 @@ sealed class Program
             var menuBuilder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/MainMenu.ui"), -1);
             var appMenu = (Gio.Menu)menuBuilder.GetObject("AppMenu")!;
             application.Menubar = appMenu;
-
-            var mainBox = (Box)mainBuilder.GetObject("MainBox")!;
+            
             var settingsStack = (Stack)mainBuilder.GetObject("settings_stack")!;
             var packagesPageBox = (Box)mainBuilder.GetObject("packages_page_box")!;
             var aurPageBox = (Box)mainBuilder.GetObject("aur_page_box")!;
@@ -306,19 +305,41 @@ sealed class Program
             settingsStack.GetPage(appImagePageBox).Visible = initialConfig.AppImageEnabled;
             settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
 
+            var initialPageEnum = initialConfig.DefaultPageDropDown;
+            
+            // Safeguard: if the saved default page is disabled, fall back to packages
+            if (initialPageEnum == ShellyTabs.Aur && !initialConfig.AurEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.Flatpak && !initialConfig.FlatPackEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.AppImage && !initialConfig.AppImageEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.ShellySearch && !initialConfig.ShellySearchEnabled) initialPageEnum = ShellyTabs.Packages;
+
             string initialPageName;
-            if (initialConfig.ShellySearchEnabled)
+            switch (initialPageEnum)
             {
-                LoadShellySearchPage();
-                settingsStack.SetVisibleChildName("shelly_search_page");
-                initialPageName = "shelly_search_page";
+                case ShellyTabs.Aur:
+                    LoadAurPage();
+                    initialPageName = "aur_page";
+                    break;
+                case ShellyTabs.Flatpak:
+                    LoadFlatpakPage();
+                    initialPageName = "flatpak_page";
+                    break;
+                case ShellyTabs.AppImage:
+                    LoadAppImagePage();
+                    initialPageName = "appimage_page";
+                    break;
+                case ShellyTabs.ShellySearch:
+                    LoadShellySearchPage();
+                    initialPageName = "shelly_search_page";
+                    break;
+                case ShellyTabs.Packages:
+                default:
+                    LoadPackagesPage();
+                    initialPageName = "packages_page";
+                    break;
             }
-            else
-            {
-                LoadPackagesPage();
-                settingsStack.SetVisibleChildName("packages_page");
-                initialPageName = "packages_page";
-            }
+            
+            settingsStack.SetVisibleChildName(initialPageName);
 
             settingsWindow.ConfigChanged += (config) =>
             {
@@ -687,91 +708,6 @@ sealed class Program
                     lockoutService.Hide();
                     upgradeAllButton.Sensitive = true;
                 }
-            }
-
-            void AddAction(string name, Action onActivate)
-            {
-                var action = Gio.SimpleAction.New(name, null);
-                action.OnActivate += (_, _) => { onActivate(); };
-                application.AddAction(action);
-            }
-
-            bool ShouldHandleNavigationShortcut()
-            {
-                if (lockoutDialog.IsVisible)
-                {
-                    return false;
-                }
-
-                if (HasBlockingOverlay())
-                {
-                    return false;
-                }
-
-                var focus = window.GetFocus();
-                if (focus == null)
-                {
-                    return true;
-                }
-
-                if (!IsDescendantOf(focus, mainBox))
-                {
-                    return false;
-                }
-
-                return !IsEditableWidget(focus);
-            }
-
-            bool HasBlockingOverlay()
-            {
-                for (Widget? child = mainOverlay.GetFirstChild(); child != null; child = child.GetNextSibling())
-                {
-                    if (child == mainBox || !child.Visible)
-                    {
-                        continue;
-                    }
-
-                    if (child.HasCssClass("toast-message"))
-                    {
-                        continue;
-                    }
-
-                    return true;
-                }
-
-                return false;
-            }
-
-
-            static bool IsEditableWidget(Widget? widget)
-            {
-                while (widget != null)
-                {
-                    if (widget is Entry or SearchEntry or PasswordEntry or TextView or SpinButton)
-                    {
-                        return true;
-                    }
-
-                    widget = widget.GetParent();
-                }
-
-                return false;
-            }
-
-            static bool IsDescendantOf(Widget widget, Widget ancestor)
-            {
-                Widget? current = widget;
-                while (current != null)
-                {
-                    if (current == ancestor)
-                    {
-                        return true;
-                    }
-
-                    current = current.GetParent();
-                }
-
-                return false;
             }
         };
 

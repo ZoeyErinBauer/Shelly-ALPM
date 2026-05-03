@@ -1,3 +1,4 @@
+using Shelly.Gtk.Enums;
 using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
@@ -130,8 +131,86 @@ public class Settings(
         versionLabel.SetLabel(
             $"v{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "Unknown"}");
 
+        var defaultPageDropDown = (DropDown)builder.GetObject("default_page_drop")!;
+        PopulateDefaultPageDropDown(defaultPageDropDown);
+
+        defaultPageDropDown.OnNotify += (_, args) =>
+        {
+            if (args.Pspec.GetName() != "selected") return;
+            if (_isPopulatingDropDown) return;
+            if (_availablePages.Count == 0) return;
+            var selectedIndex = defaultPageDropDown.Selected;
+            if (selectedIndex < _availablePages.Count)
+            {
+                var selectedPage = _availablePages[(int)selectedIndex];
+                _config.DefaultPageDropDown = selectedPage;
+                SaveConfig();
+            }
+        };
+
+        ConfigChanged += (config) =>
+        {
+            PopulateDefaultPageDropDown(defaultPageDropDown);
+        };
 
         return _box;
+    }
+
+    private List<ShellyTabs> _availablePages = [];
+    private bool _isPopulatingDropDown;
+    private void PopulateDefaultPageDropDown(DropDown dropDown)
+    {
+        _isPopulatingDropDown = true;
+        try
+        {
+            var pages = new List<string>();
+            _availablePages = [];
+
+            pages.Add("Packages");
+            _availablePages.Add(ShellyTabs.Packages);
+
+            if (_config.AurEnabled)
+            {
+                pages.Add("AUR");
+                _availablePages.Add(ShellyTabs.Aur);
+            }
+
+            if (_config.FlatPackEnabled)
+            {
+                pages.Add("Flatpak");
+                _availablePages.Add(ShellyTabs.Flatpak);
+            }
+
+            if (_config.AppImageEnabled)
+            {
+                pages.Add("AppImage");
+                _availablePages.Add(ShellyTabs.AppImage);
+            }
+
+            if (_config.ShellySearchEnabled)
+            {
+                pages.Add("Shelly Search");
+                _availablePages.Add(ShellyTabs.ShellySearch);
+            }
+
+            var stringList = StringList.New(pages.ToArray());
+            dropDown.SetModel(stringList);
+
+            var currentIndex = _availablePages.IndexOf(_config.DefaultPageDropDown);
+            if (currentIndex != -1)
+            {
+                dropDown.Selected = (uint)currentIndex;
+            }
+            else
+            {
+                dropDown.Selected = 0; // Fallback to Packages
+                _config.DefaultPageDropDown = ShellyTabs.Packages;
+            }
+        }
+        finally
+        {
+            _isPopulatingDropDown = false;
+        }
     }
     
     private void OnSaveClicked()

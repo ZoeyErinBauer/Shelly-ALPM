@@ -1,7 +1,9 @@
+using Shelly_CLI.Enums;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using PackageManager.Utilities;
+
 namespace Shelly_CLI.Configuration;
 
 public static class ConfigManager
@@ -168,7 +170,17 @@ public static class ConfigManager
                     {
                         return false;
                     }
+
                     convertedValue = parsed.ToString();
+                }
+                else if (property.Name == nameof(ShellyConfig.DefaultPageDropDown))
+                {
+                    if (!Enum.TryParse<ShellyTabs>(value, true, out var parsed))
+                    {
+                        return false;
+                    }
+
+                    convertedValue = parsed;
                 }
                 else
                 {
@@ -385,6 +397,11 @@ public static class ConfigManager
             {
                 if (TimeOnly.TryParse(time.GetString(), out var t))
                     config.Time = t;
+            }
+
+            if (root.TryGetProperty("DefaultPageDropDown", out var defaultPage))
+            {
+                config.DefaultPageDropDown = (ShellyTabs)defaultPage.GetInt32();
             }
 
             SaveConfig(config);

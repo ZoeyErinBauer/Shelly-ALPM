@@ -89,7 +89,7 @@ public class AurInstall(
         _listStore = Gio.ListStore.New(AurPackageGObject.GetGType());
         _selectionModel = SingleSelection.New(_listStore);
         _selectionModel.CanUnselect = true;
-        _selectionModel.Autoselect = false;
+        _selectionModel.Autoselect = true;
         _columnView.SetModel(_selectionModel);
         _searchForPackageLabel = (Label)builder.GetObject("search_overlay")!;
         _searchForPackageLabel.Label_ = "<span size='large'>Search for AUR packages</span>";

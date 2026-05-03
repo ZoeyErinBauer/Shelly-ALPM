@@ -98,7 +98,7 @@ public class PackageInstall(
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
-        _selectionModel.Autoselect = false;
+        _selectionModel.Autoselect = true;
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);

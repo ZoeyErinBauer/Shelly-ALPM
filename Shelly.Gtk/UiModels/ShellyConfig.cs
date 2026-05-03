@@ -59,6 +59,8 @@ public class ShellyConfig
     
     public bool UseSymbolicTray { get; set; } = true;
     
+    public ShellyTabs DefaultPageDropDown { get; set; } = ShellyTabs.Packages;
+    
     // Existing CLI settings (included for unified config compatibility)
     public string FileSizeDisplay { get; set; } = "Bytes";
     public string DefaultExecution { get; set; } = "UpgradeAll";
