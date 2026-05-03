@@ -1,5 +1,7 @@
 using Gtk;
+using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
+using static Shelly.Gtk.Helpers.PackageColumnViewSorter;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.Icons;
 using Shelly.Gtk.UiModels;
@@ -56,6 +58,7 @@ public class PackageInstall(
     private ColumnViewColumn _sizeColumn = null!;
     private ColumnViewColumn _versionColumn = null!;
     private ColumnViewColumn _repositoryColumn = null!;
+    private ColumnViewSorter _columnViewSorter = null!;
     private DropDown _groupDropDown = null!;
     private CheckButton _upgradeCheck = null!;
     private CheckButton _showHiddenCheck = null!;
@@ -100,7 +103,40 @@ public class PackageInstall(
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
+        
+        // Creating sorter
+        _nameColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
+        _repositoryColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
+        _versionColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
+        
+        _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
 
+        _columnViewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn =
+                _columnViewSorter.GetPrimarySortColumn();
+            
+            if (primaryColumn is null)
+                return;
+            
+            var sortColumn = GetSortColumn(primaryColumn);
+            
+            var order =
+                _columnViewSorter.GetPrimarySortOrder();
+            
+            if (sortColumn is null)
+                return;
+
+            Sort(
+                _listStore,
+                _packageData,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                order
+            );
+            
+        };        
+        
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
@@ -177,6 +213,20 @@ public class PackageInstall(
         return _overlay;
     }
 
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+
+        if (column == _repositoryColumn)
+            return PackageSortColumn.Repo;
+
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
+    }
+    
     public void Reload()
     {
         var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());

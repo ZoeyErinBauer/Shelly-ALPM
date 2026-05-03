@@ -3,6 +3,8 @@ using Gtk;
 using Shelly.Gtk.Helpers;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.Icons;
+using Shelly.Gtk.Enums;
+using static Shelly.Gtk.Helpers.PackageColumnViewSorter;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
@@ -59,6 +61,9 @@ public class PackageManagement(
     private ColumnViewColumn _nameColumn = null!;
     private ColumnViewColumn _sizeColumn = null!;
     private ColumnViewColumn _versionColumn = null!;
+    
+    private ColumnViewSorter _columnViewSorter = null!;
+
 
     private Revealer _detailRevealer = null!;
     private Box _detailBox = null!;
@@ -101,6 +106,38 @@ public class PackageManagement(
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn);
 
+        // Creating sorter
+        _nameColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
+        _versionColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
+        
+        _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
+
+        _columnViewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn =
+                _columnViewSorter.GetPrimarySortColumn();
+            
+            if (primaryColumn is null)
+                return;
+            
+            var sortColumn = GetSortColumn(primaryColumn);
+            
+            var order =
+                _columnViewSorter.GetPrimarySortOrder();
+            
+            if (sortColumn is null)
+                return;
+
+            Sort(
+                _listStore,
+                _packageData,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                order
+            );        
+        };        
+
+        
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
@@ -612,6 +649,18 @@ public class PackageManagement(
 
         versionColumn.SetFactory(_versionFactory);
     }
+    
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+        
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
+    }
+
 
     private bool FilterPackage(GObject.Object obj)
     {
@@ -709,8 +758,15 @@ public class PackageManagement(
             try
             {
                 lockoutService.Show($"Removing...");
-                await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
+                var result = await privilegedOperationService.RemovePackagesAsync(selectedPackages, _cascadeDeleteCheck.Active,
                     _removeConfigsCheck.Active);
+                if (result.Success)
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Removed {selectedPackages.Count} Package(s)"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                }
                 Reload();
             }
             catch (Exception e)
@@ -720,12 +776,6 @@ public class PackageManagement(
             finally
             {
                 lockoutService.Hide();
-
-                var args = new ToastMessageEventArgs(
-                    $"Removed {selectedPackages.Count} Package(s)"
-                );
-
-                genericQuestionService.RaiseToastMessage(args);
             }
         }
     }

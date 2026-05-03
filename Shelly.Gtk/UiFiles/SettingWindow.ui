@@ -325,6 +325,66 @@
                                                             </object>
                                                         </child>
                                                         <child>
+                                                            <object class="GtkBox">
+                                                                <property name="orientation">horizontal</property>
+
+                                                                <child>
+                                                                    <object class="GtkLabel">
+                                                                        <property name="label">Both tray icons must be set for use, if not it will default to standard shelly icons. Changing tray icons requires a restart of shelly-notifications.</property>
+                                                                        <property name="hexpand">true</property>
+                                                                        <property name="halign">start</property>
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </child>
+                                                        <child>
+                                                            <object class="GtkBox">
+                                                                <property name="orientation">horizontal</property>
+                                                                
+                                                                <child>
+                                                                    <object class="GtkLabel">
+                                                                        <property name="label">Tray Icon</property>
+                                                                        <property name="hexpand">true</property>
+                                                                        <property name="halign">start</property>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkButton" id="tray_icon_button">
+                                                                        <property name="label">Select File</property>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkButton" id="tray_icon_clear_button">
+                                                                        <property name="label">Clear</property>
+                                                                        <property name="margin-start">5</property>    
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </child>
+                                                        <child>
+                                                            <object class="GtkBox">
+                                                                <property name="orientation">horizontal</property>
+                                                                <child>
+                                                                    <object class="GtkLabel">
+                                                                        <property name="label">Tray Updates Icon</property>
+                                                                        <property name="hexpand">true</property>
+                                                                        <property name="halign">start</property>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkButton" id="tray_updates_icon_button">
+                                                                        <property name="label">Select File</property>
+                                                                    </object>
+                                                                </child>
+                                                                <child>
+                                                                    <object class="GtkButton" id="tray_updates_icon_clear_button">
+                                                                        <property name="label">Clear</property>
+                                                                        <property name="margin-start">5</property>
+                                                                    </object>
+                                                                </child>
+                                                            </object>
+                                                        </child>
+                                                        <child>
                                                             <object class="GtkBox" id="default_page_box">
                                                                 <property name="orientation">horizontal</property>
                                                                 <child>

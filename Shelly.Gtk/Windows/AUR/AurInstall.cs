@@ -2,6 +2,8 @@ using System.Globalization;
 using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Enums;
+using static Shelly.Gtk.Helpers.AurColumnViewSorter;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AUR.GObjects;
@@ -35,6 +37,7 @@ public class AurInstall(
     private SignalListItemFactory _votesFactory = null!;
     private SignalListItemFactory _popFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
+    private ColumnViewSorter _columnViewSorter = null!;
     private Box _detailBox = null!;
     private AurPackageGObject? _currentDetailPkg;
     private Revealer _detailRevealer = null!;
@@ -94,6 +97,36 @@ public class AurInstall(
 
         SetupColumns(_checkColumn, _nameColumn, _votesColumn, _popColumn, _versionColumn);
 
+        // Creating sorter
+        _nameColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        _versionColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        
+        _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
+
+        _columnViewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn =
+                _columnViewSorter.GetPrimarySortColumn();
+            
+            if (primaryColumn is null)
+                return;
+            
+            var sortColumn = GetSortColumn(primaryColumn);
+            
+            var order =
+                _columnViewSorter.GetPrimarySortOrder();
+            
+            if (sortColumn is null)
+                return;
+
+            Sort(
+                _listStore,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                order
+            );
+        };        
+        
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
@@ -151,6 +184,18 @@ public class AurInstall(
 
         return _box;
     }
+    
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+        
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
+    }
+
 
     private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn,
         ColumnViewColumn votesColumn, ColumnViewColumn popColumn, ColumnViewColumn versionColumn)

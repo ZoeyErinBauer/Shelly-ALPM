@@ -38,6 +38,9 @@ public class ShellyConfig
     public bool AppImageEnabled { get; set; } = false;
     public bool NewInstallInitSettings { get; set; } = false;
     public bool UseSymbolicTray { get; set; } = true;
+
+    public string? TrayIconPath { get; set; }
+    public string? TrayUpdatesIconPath { get; set; }
     
     public ShellyTabs DefaultPageDropDown { get; set; } = ShellyTabs.Packages;
     
