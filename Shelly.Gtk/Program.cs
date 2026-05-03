@@ -9,6 +9,7 @@ using Shelly.Gtk.Windows.AUR;
 using Shelly.Gtk.Windows.Dialog;
 using Shelly.Gtk.Windows.Flatpak;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Services.Icons;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.Windows.Packages;
 using Settings = Shelly.Gtk.Windows.Settings;
@@ -183,6 +184,11 @@ sealed class Program
             var menuBuilder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/MainMenu.ui"), -1);
             var appMenu = (Gio.Menu)menuBuilder.GetObject("AppMenu")!;
             application.Menubar = appMenu;
+
+            Task.Run(async () =>
+            {
+                await serviceProvider.GetRequiredService<IIConDownloadService>().DownloadAndUnpackIcons();
+            });
             
             var settingsStack = (Stack)mainBuilder.GetObject("settings_stack")!;
             var packagesPageBox = (Box)mainBuilder.GetObject("packages_page_box")!;
