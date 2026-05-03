@@ -15,8 +15,7 @@ public static class GenericQuestionDialog
         background.SetHexpand(true);
         background.SetVexpand(true);
 
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(e.UseMonospaceMessage ? 720 : 400, -1);
@@ -68,7 +67,7 @@ public static class GenericQuestionDialog
             messageWidget = messageLabel;
         }
 
-        var scrolledWindow = new ScrolledWindow();
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetPolicy(PolicyType.Never, PolicyType.Automatic);
         scrolledWindow.SetMaxContentHeight(300);
         scrolledWindow.SetPropagateNaturalHeight(true);
@@ -83,8 +82,8 @@ public static class GenericQuestionDialog
         var yesButton = Button.NewWithLabel("Yes");
         yesButton.AddCssClass("suggested-action");
 
-        noButton.OnClicked += (s, args) => CloseAndRespond(false);
-        yesButton.OnClicked += (s, args) => CloseAndRespond(true);
+        noButton.OnClicked += (_,_) => CloseAndRespond(false);
+        yesButton.OnClicked += (_,_) => CloseAndRespond(true);
 
         var shortcutController = ShortcutController.New();
         shortcutController.Scope = ShortcutScope.Global;

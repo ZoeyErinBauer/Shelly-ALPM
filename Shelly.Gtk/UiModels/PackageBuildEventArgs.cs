@@ -1,5 +1,3 @@
-using Gtk;
-
 namespace Shelly.Gtk.UiModels;
 
 public class PackageBuildEventArgs(string title, string pkgBuild) : EventArgs

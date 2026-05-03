@@ -13,6 +13,8 @@ public class ShellyConfig
 
     public bool AurEnabled { get; set; } = false;
     
+    public bool ShellySearchEnabled { get; set; } = false;
+    
     public bool AurWarningConfirmed { get; set; } = false;
     
     public bool FlatPackEnabled { get; set; } = false;
@@ -56,6 +58,8 @@ public class ShellyConfig
     public bool NewInstallInitSettings { get; set; } = false;
     
     public bool UseSymbolicTray { get; set; } = true;
+    
+    public ShellyTabs DefaultPageDropDown { get; set; } = ShellyTabs.Packages;
     
     // Existing CLI settings (included for unified config compatibility)
     public string FileSizeDisplay { get; set; } = "Bytes";

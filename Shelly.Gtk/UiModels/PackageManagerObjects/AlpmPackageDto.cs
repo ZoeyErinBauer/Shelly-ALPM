@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Shelly.Gtk.UiModels.PackageManagerObjects;
 
 public record AlpmPackageDto

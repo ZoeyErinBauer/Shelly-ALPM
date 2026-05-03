@@ -1,3 +1,4 @@
+using Shelly_CLI.Enums;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
@@ -170,7 +171,17 @@ public static class ConfigManager
                     {
                         return false;
                     }
+
                     convertedValue = parsed.ToString();
+                }
+                else if (property.Name == nameof(ShellyConfig.DefaultPageDropDown))
+                {
+                    if (!Enum.TryParse<ShellyTabs>(value, true, out var parsed))
+                    {
+                        return false;
+                    }
+
+                    convertedValue = parsed;
                 }
                 else
                 {
@@ -269,6 +280,16 @@ public static class ConfigManager
                 config.AurEnabled = aurEnabled.GetBoolean();
             }
 
+            if (root.TryGetProperty("ShellySearchEnabled", out var shellySearchEnabled))
+            {
+                config.ShellySearchEnabled = shellySearchEnabled.GetBoolean();
+            }
+            else if (root.TryGetProperty("MetaSearchEnabled", out var metaSearchEnabled))
+            {
+                // Backward compatibility: previously named MetaSearchEnabled
+                config.ShellySearchEnabled = metaSearchEnabled.GetBoolean();
+            }
+
             if (root.TryGetProperty("AurWarningConfirmed", out var aurWarning))
             {
                 config.AurWarningConfirmed = aurWarning.GetBoolean();
@@ -333,6 +354,11 @@ public static class ConfigManager
                 config.NewInstall = newInstall.GetBoolean();
             }
 
+            if (root.TryGetProperty("NewInstallInitSettings", out var initSettings))
+            {
+                config.NewInstallInitSettings = initSettings.GetBoolean();
+            }
+
             if (root.TryGetProperty("CurrentVersion", out var version) && version.ValueKind == JsonValueKind.String)
             {
                 config.CurrentVersion = version.GetString() ?? "0.0.0";
@@ -372,6 +398,11 @@ public static class ConfigManager
             {
                 if (TimeOnly.TryParse(time.GetString(), out var t))
                     config.Time = t;
+            }
+
+            if (root.TryGetProperty("DefaultPageDropDown", out var defaultPage))
+            {
+                config.DefaultPageDropDown = (ShellyTabs)defaultPage.GetInt32();
             }
 
             SaveConfig(config);

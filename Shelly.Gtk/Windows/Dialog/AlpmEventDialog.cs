@@ -8,8 +8,7 @@ public class AlpmEventDialog
     public static void ShowAlpmEventDialog(Overlay parentOverlay, QuestionEventArgs e)
     {
 
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(450, -1);
@@ -50,7 +49,7 @@ public class AlpmEventDialog
             box.Append(combo);
 
             var selectButton = Button.NewWithLabel("Select");
-            selectButton.OnClicked += (s, args) =>
+            selectButton.OnClicked += (_,_) =>
             {
                 e.SetResponse(combo.GetActive());
                 parentOverlay.RemoveOverlay(baseFrame);
@@ -84,7 +83,7 @@ public class AlpmEventDialog
 
             // Wire up "Select All" toggle
             selectAllCheck.SetActive(true);
-            selectAllCheck.OnToggled += (s, args) =>
+            selectAllCheck.OnToggled += (_,_) =>
             {
                 var active = selectAllCheck.GetActive();
                 foreach (var cb in checkButtons)
@@ -95,7 +94,7 @@ public class AlpmEventDialog
 
             var confirmButton = Button.NewWithLabel("Confirm");
             confirmButton.SetCssClasses(["suggested-action"]);
-            confirmButton.OnClicked += (s, args) =>
+            confirmButton.OnClicked += (_,_) =>
             {
                 int bitmask = 0;
                 for (int i = 0; i < checkButtons.Count; i++)
@@ -113,7 +112,7 @@ public class AlpmEventDialog
         else
         {
             var noButton = Button.NewWithLabel("No");
-            noButton.OnClicked += (s, args) =>
+            noButton.OnClicked += (_,_) =>
             {
                 e.SetResponse(0); 
                 parentOverlay.RemoveOverlay(baseFrame);
@@ -121,7 +120,7 @@ public class AlpmEventDialog
 
             var yesButton = Button.NewWithLabel("Yes");
             yesButton.SetCssClasses(["suggested-action"]);
-            yesButton.OnClicked += (s, args) =>
+            yesButton.OnClicked += (_,_) =>
             {
                 e.SetResponse(1); 
                 parentOverlay.RemoveOverlay(baseFrame);

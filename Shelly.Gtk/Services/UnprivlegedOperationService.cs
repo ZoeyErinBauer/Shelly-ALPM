@@ -6,11 +6,14 @@ using Shelly.Gtk.Services.TrayServices;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AppImage;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
+// ReSharper disable UnusedParameter.Local
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
 
 
 namespace Shelly.Gtk.Services;
 
-public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOperationService
+public class UnprivilegedOperationService(ITrayDbus trayDbus, IPackageUpdateNotifier packageUpdateNotifier, IDirtyService dirtyService) : IUnprivilegedOperationService
 {
     private readonly string _cliPath = FindCliPath();
 
@@ -66,13 +69,13 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                    var updates = JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
 
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+            var allUpdates = JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
                 ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
@@ -100,13 +103,13 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                    var updates = JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
                     return updates ?? [];
                 }
             }
 
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+            var allUpdates = JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
                 ShellyGtkJsonContext.Default.ListFlatpakPackageDto);
             return allUpdates ?? [];
         }
@@ -119,6 +122,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(IEnumerable<string> packages)
     {
+        // dirty marked in the per-package overload
         var packageArgs = string.Join(" ", packages);
         return await ExecuteUnprivilegedCommandAsync("Remove packages", "flatpak remove", packageArgs);
     }
@@ -144,13 +148,13 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                     var trimmedLine = StripBom(line.Trim());
                     if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                     {
-                        var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        var updates = JsonSerializer.Deserialize(trimmedLine,
                             ShellyGtkJsonContext.Default.ListAppstreamApp);
                         return updates ?? [];
                     }
                 }
 
-                var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+                var allUpdates = JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
                     ShellyGtkJsonContext.Default.ListAppstreamApp);
                 return allUpdates ?? [];
             }
@@ -165,36 +169,49 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
     public async Task<UnprivilegedOperationResult> UpdateFlatpakPackage(string package)
     {
-        return await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
+        var result = await ExecuteUnprivilegedCommandAsync("Update package", "flatpak update", package);
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     public async Task<UnprivilegedOperationResult> RemoveFlatpakPackage(string package, bool removeConfig)
     {
+        UnprivilegedOperationResult result;
         if (removeConfig)
         {
-            return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package, "-c");
+            result = await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package, "-c");
         }
-
-        return await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
+        else
+        {
+            result = await ExecuteUnprivilegedCommandAsync("Remove package", "flatpak uninstall", package);
+        }
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     public async Task<UnprivilegedOperationResult> InstallFlatpakPackage(string package, bool user, string remote,
         string branch, bool isRuntime = false)
     {
+        UnprivilegedOperationResult result;
         if (user)
         {
-            return await ExecuteUnprivilegedCommandAsync("Install package", "flatpak install", package, "--user",
+            result = await ExecuteUnprivilegedCommandAsync("Install package", "flatpak install", package, "--user",
                 "--remote", remote, "--branch", branch, isRuntime ? "--runtime" : "");
         }
-
-        return await ExecuteUnprivilegedCommandAsync("Install package", "flatpak install", package, "--remote", remote,
-            "--branch", branch, isRuntime ? "--runtime" : "");
+        else
+        {
+            result = await ExecuteUnprivilegedCommandAsync("Install package", "flatpak install", package, "--remote", remote,
+                "--branch", branch, isRuntime ? "--runtime" : "");
+        }
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     public async Task<UnprivilegedOperationResult> FlatpakUpgrade()
     {
         var result = await ExecuteUnprivilegedCommandAsync("Upgrade flatpak", "flatpak upgrade");
         SendDbusMessage(result);
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
         return result;
     }
 
@@ -225,20 +242,27 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
     public async Task<UnprivilegedOperationResult> FlatpakInsallFromRef(string path, string scope)
     {
+        UnprivilegedOperationResult result;
         if (scope == "user")
         {
-            return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path);
+            result = await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path);
         }
-
-        return await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path, "--system",
-            "true");
+        else
+        {
+            result = await ExecuteUnprivilegedCommandAsync("Remove Remote", "flatpak install-ref-file", path, "--system",
+                "true");
+        }
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     public async Task<UnprivilegedOperationResult> FlatpakInstallFromBundle(string path)
     {
-        return await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
+        var result = await ExecuteUnprivilegedCommandAsync("Install Flatpak Bundle", "flatpak install-bundle", path,
             "--user",
             "false");
+        if (result.Success) dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     public async Task<UnprivilegedOperationResult> RunFlatpakName(string name)
@@ -290,7 +314,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                    var apps = JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListAppImageDto);
                     return apps ?? [];
                 }
@@ -322,7 +346,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var apps = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                    var apps = JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListRssModel);
                     return apps ?? [];
                 }
@@ -378,7 +402,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 var trimmedLine = StripBom(line.Trim());
                 if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                 {
-                    var updates = System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                    var updates = JsonSerializer.Deserialize(trimmedLine,
                         ShellyGtkJsonContext.Default.ListAppImageUpdateDto);
                     return updates?.Select(u => new AppImageDto
                     {
@@ -414,13 +438,13 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
                 {
                     var updates =
-                        System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        JsonSerializer.Deserialize(trimmedLine,
                             ShellyGtkJsonContext.Default.ListAlpmPackageUpdateDto);
                     return updates ?? [];
                 }
             }
 
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+            var allUpdates = JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
                 ShellyGtkJsonContext.Default.ListAlpmPackageUpdateDto);
             return allUpdates ?? [];
         }
@@ -454,13 +478,13 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
                 if (trimmedLine.StartsWith("{") && trimmedLine.EndsWith("}"))
                 {
                     var updates =
-                        System.Text.Json.JsonSerializer.Deserialize(trimmedLine,
+                        JsonSerializer.Deserialize(trimmedLine,
                             ShellyGtkJsonContext.Default.SyncModel);
                     return updates ?? new SyncModel();
                 }
             }
 
-            var allUpdates = System.Text.Json.JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
+            var allUpdates = JsonSerializer.Deserialize(StripBom(result.Output.Trim()),
                 ShellyGtkJsonContext.Default.SyncModel);
             return allUpdates ?? new SyncModel();
         }
@@ -488,7 +512,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
 
             if (trimmedOutput.StartsWith("{"))
             {
-                var response = System.Text.Json.JsonSerializer.Deserialize(trimmedOutput,
+                var response = JsonSerializer.Deserialize(trimmedOutput,
                     ShellyGtkJsonContext.Default.FlathubSearchResponse);
 
                 if (response?.Hits == null) return [];
@@ -638,6 +662,7 @@ public class UnprivilegedOperationService(ITrayDbus trayDbus) : IUnprivilegedOpe
         if (result.Success)
         {
             _ = Task.Run(trayDbus.UpdatesMadeInUiAsync);
+            packageUpdateNotifier.NotifyPackagesUpdated();
         }
     }
 }

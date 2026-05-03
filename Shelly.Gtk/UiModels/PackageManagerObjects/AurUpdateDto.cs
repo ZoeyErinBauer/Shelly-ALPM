@@ -1,6 +1,6 @@
 namespace Shelly.Gtk.UiModels.PackageManagerObjects;
 
-public record AurUpdateDto()
+public record AurUpdateDto
 {
     public string Name { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;

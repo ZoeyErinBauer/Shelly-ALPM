@@ -13,6 +13,18 @@ public class ConfigService : IConfigService
     private static readonly string ConfigPath = Path.Combine(ConfigFolder, "config.json");
 
     private ShellyConfig? _config = null;
+    private readonly IDirtyService dirtyService;
+    private bool _suppressInvalidate;
+
+    public ConfigService(IDirtyService dirtyService)
+    {
+        this.dirtyService = dirtyService;
+        dirtyService.Dirtied += (_, e) =>
+        {
+            if (_suppressInvalidate) return;
+            if (e.Matches(DirtyScopes.Config)) _config = null;
+        };
+    }
 
     public event EventHandler<ShellyConfig>? ConfigSaved;
 
@@ -24,6 +36,7 @@ public class ConfigService : IConfigService
         CallCliConfigSet(nameof(config.Culture), config.Culture ?? "");
         CallCliConfigSet(nameof(config.DarkMode), config.DarkMode.ToString());
         CallCliConfigSet(nameof(config.AurEnabled), config.AurEnabled.ToString());
+        CallCliConfigSet(nameof(config.ShellySearchEnabled), config.ShellySearchEnabled.ToString());
         CallCliConfigSet(nameof(config.AurWarningConfirmed), config.AurWarningConfirmed.ToString());
         CallCliConfigSet(nameof(config.FlatPackEnabled), config.FlatPackEnabled.ToString());
         CallCliConfigSet(nameof(config.AppImageEnabled), config.AppImageEnabled.ToString());
@@ -48,8 +61,12 @@ public class ConfigService : IConfigService
         CallCliConfigSet(nameof(config.DefaultExecution), config.DefaultExecution);
         CallCliConfigSet(nameof(config.ParallelDownloadCount), config.ParallelDownloadCount.ToString());
         CallCliConfigSet(nameof(config.UseSymbolicTray), config.UseSymbolicTray.ToString());
+        CallCliConfigSet(nameof(config.DefaultPageDropDown), config.DefaultPageDropDown.ToString());
 
         ConfigSaved?.Invoke(this, config);
+        _suppressInvalidate = true;
+        try { dirtyService.MarkDirty(DirtyScopes.Config); }
+        finally { _suppressInvalidate = false; }
     }
 
     public ShellyConfig LoadConfig()
@@ -66,6 +83,13 @@ public class ConfigService : IConfigService
             var json = File.ReadAllText(ConfigPath);
             Console.WriteLine(ConfigPath);
             _config = JsonSerializer.Deserialize(json, ShellyGtkJsonContext.Default.ShellyConfig) ?? new ShellyConfig();
+
+            // Safeguard: if DefaultView is ShellySearch but ShellySearch is disabled, fall back to packages.
+            if (_config.DefaultView == nameof(Shelly.Gtk.Enums.DefaultViewEnum.ShellySearch) && !_config.ShellySearchEnabled)
+            {
+                _config.DefaultView = nameof(Shelly.Gtk.Enums.DefaultViewEnum.HomeScreen);
+            }
+
             return _config;
         }
         catch

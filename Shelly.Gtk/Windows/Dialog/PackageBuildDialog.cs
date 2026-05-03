@@ -1,4 +1,5 @@
 using Gtk;
+using Pango;
 using Shelly.Gtk.UiModels;
 
 namespace Shelly.Gtk.Windows.Dialog;
@@ -7,8 +8,7 @@ public static class PackageBuildDialog
 {
     public static void ShowPackageBuildDialog(Overlay parentOverlay, PackageBuildEventArgs e)
     {
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(600, 500);
@@ -27,15 +27,27 @@ public static class PackageBuildDialog
         titleLabel.AddCssClass("title-4");
         box.Append(titleLabel);
 
-        var pkgBuildLabel = Label.New(e.PkgBuild);
-        pkgBuildLabel.SetWrap(false);
-        pkgBuildLabel.SetXalign(0);
-        pkgBuildLabel.AddCssClass("monospace");
 
-        var scrolledWindow = new ScrolledWindow();
+        var messageBox = Box.New(Orientation.Vertical, 2);
+        messageBox.SetHalign(Align.Fill);
+        messageBox.SetHexpand(true);
+
+        foreach (var line in e.PkgBuild.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var lineLabel = Label.New(string.Empty);
+            lineLabel.SetHalign(Align.Fill);
+            lineLabel.SetHexpand(true);
+            lineLabel.SetXalign(0);
+            lineLabel.SetJustify(Justification.Left);
+            lineLabel.SetMarkup($"<tt>{GLib.Markup.EscapeText(line)}</tt>");
+            messageBox.Append(lineLabel);
+        }
+
+
+        var scrolledWindow = ScrolledWindow.New();
         scrolledWindow.SetPolicy(PolicyType.Automatic, PolicyType.Automatic);
         scrolledWindow.SetVexpand(true);
-        scrolledWindow.SetChild(pkgBuildLabel);
+        scrolledWindow.SetChild(messageBox);
         box.Append(scrolledWindow);
 
         var buttonBox = Box.New(Orientation.Horizontal, 8);
@@ -45,13 +57,13 @@ public static class PackageBuildDialog
         var confirmButton = Button.NewWithLabel("Confirm");
         confirmButton.AddCssClass("suggested-action");
 
-        cancelButton.OnClicked += (s, args) =>
+        cancelButton.OnClicked += (_, _) =>
         {
             e.SetResponse(false);
             parentOverlay.RemoveOverlay(baseFrame);
         };
 
-        confirmButton.OnClicked += (s, args) =>
+        confirmButton.OnClicked += (_, _) =>
         {
             e.SetResponse(true);
             parentOverlay.RemoveOverlay(baseFrame);

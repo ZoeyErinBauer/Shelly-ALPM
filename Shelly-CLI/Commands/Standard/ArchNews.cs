@@ -86,10 +86,11 @@ public class ArchNews : AsyncCommand<ArchNewsSettings>
 
     private static void CacheFeed(List<RssModel> feed)
     {
-        if (!Directory.Exists(FeedFolder)) Directory.CreateDirectory(FeedFolder);
+        XdgPaths.EnsureDirectory(FeedFolder);
 
         var json = JsonSerializer.Serialize(feed, ShellyCLIJsonContext.Default.ListRssModel);
         File.WriteAllText(FeedPath, json);
+        XdgPaths.FixOwnershipIfRoot(FeedPath);
     }
 
     private static List<RssModel> LoadCachedFeed()

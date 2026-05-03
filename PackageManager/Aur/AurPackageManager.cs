@@ -1043,6 +1043,8 @@ public class AurPackageManager(string? configPath = null)
                 remoteOk = rgc == 0 && string.Equals(rgout.Trim(), expectedRemote, StringComparison.Ordinal);
             }
 
+            var needsClone = false;
+
             if (hasGit && remoteOk)
             {
                 var (pc, _, perr) = await RunProcessAsync(
@@ -1050,11 +1052,16 @@ public class AurPackageManager(string? configPath = null)
                 if (pc != 0)
                 {
                     await Console.Error.WriteLineAsync(
-                        $"[Shelly] git pull failed for {pkgbase}: {perr.Trim()}");
-                    return false;
+                        $"[Shelly] git pull failed for {pkgbase} (likely divergent history). Attempting fresh clone...");
+                    needsClone = true;
                 }
             }
             else
+            {
+                needsClone = true;
+            }
+
+            if (needsClone)
             {
                 if (!await RemoveCacheDirAsync(user, tempPath))
                 {

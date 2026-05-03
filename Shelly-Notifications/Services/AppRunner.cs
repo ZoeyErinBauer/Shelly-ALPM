@@ -33,13 +33,32 @@ public static class AppRunner
         }
 
         Console.WriteLine($"[Shell-Notifications][AppRunner] Launching {targetPath}");
-        Process.Start(new ProcessStartInfo
+        var psi = new ProcessStartInfo
         {
             FileName = targetPath,
             Arguments = args,
             UseShellExecute = false,
             CreateNoWindow = true,
-        });
+        };
+        
+        string[] envKeys =
+        [
+            "HOME", "USER", "DISPLAY", "WAYLAND_DISPLAY",
+            "XDG_RUNTIME_DIR", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
+            "XDG_DATA_DIRS", "XDG_CONFIG_DIRS", "XDG_CONFIG_HOME",
+            "DBUS_SESSION_BUS_ADDRESS",
+            "GTK_THEME", "GTK_APPLICATION_PREFER_DARK_THEME",
+            "GSETTINGS_BACKEND", "DCONF_PROFILE",
+        ];
+
+        foreach (var key in envKeys)
+        {
+            var value = Environment.GetEnvironmentVariable(key);
+            if (!string.IsNullOrEmpty(value))
+                psi.Environment[key] = value;
+        }
+
+        Process.Start(psi);
     }
 
     public static async Task SpawnTerminalWithCommandAsync(string command)

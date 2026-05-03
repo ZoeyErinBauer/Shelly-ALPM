@@ -186,6 +186,10 @@ public class Program
                 .WithExample("purify", "--dry-run")
                 .WithExample("purify", "--no-confirm");
 
+            config.AddCommand<FixPermissions>("fix-permissions")
+                .WithDescription("Restore user ownership of Shelly XDG directories (config/cache/data)")
+                .WithExample("fix-permissions");
+
             config.AddCommand<PacfileCommand>("pacfile")
                 .WithDescription("Manage stored pacfiles")
                 .WithExample("pacfile")

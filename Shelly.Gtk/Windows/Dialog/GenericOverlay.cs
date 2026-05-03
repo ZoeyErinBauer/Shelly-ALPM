@@ -7,14 +7,12 @@ public static class GenericOverlay
 {
     public static void ShowGenericOverlay(Overlay parentOverlay, Widget content, GenericDialogEventArgs e, int width = 400, int height = -1)
     {
-        var backdrop = new Box();
-        backdrop.SetOrientation(Orientation.Horizontal);
+        var backdrop = Box.New(Orientation.Horizontal, 0);
         backdrop.Hexpand = true;
         backdrop.Vexpand = true;
         backdrop.AddCssClass("lockout-overlay");
 
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetSizeRequest(width, height);
@@ -26,18 +24,16 @@ public static class GenericOverlay
         baseFrame.AddCssClass("dialog-overlay");
         baseFrame.SetOverflow(Overflow.Hidden);
 
-        var baseBox = new Box();
-        baseBox.SetOrientation(Orientation.Vertical);
-        baseBox.SetSpacing(12);
+        var baseBox = Box.New(Orientation.Vertical, 12);
         baseFrame.SetChild(baseBox);
 
-        var grid = new Grid();
+        var grid = Grid.New();
         grid.Hexpand = true;
 
-        var spacer = new Box();
+        var spacer = Box.NewWithProperties([]);
         spacer.Hexpand = true;
 
-        var closeButton = new Button();
+        var closeButton = Button.New();
         closeButton.SetHalign(Align.End);
         closeButton.SetIconName("window-close-symbolic");
 

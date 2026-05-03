@@ -12,8 +12,11 @@ public class FlatpakUpdate(
     IUnprivilegedOperationService unprivilegedOperationService,
     ILockoutService lockoutService,
     IConfigService configService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.FlatpakUpdates, DirtyScopes.FlatpakInstalled];
     private ListView? _listView;
     private readonly CancellationTokenSource _cts = new();
     private Gio.ListStore? _listStore;
@@ -31,8 +34,6 @@ public class FlatpakUpdate(
 
         _listView = (ListView)builder.GetObject("installed_flatpaks")!;
         var removeButton = (Button)builder.GetObject("update_button")!;
-        var reloadButton = (Button)builder.GetObject("reload_button")!;
-        var searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
 
         _listStore = Gio.ListStore.New(StringObject.GetGType());
         _selectionModel = SingleSelection.New(_listStore);
@@ -45,15 +46,12 @@ public class FlatpakUpdate(
 
         _listView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
         removeButton.OnClicked += (_, _) => { _ = UpdateAllCommand(); };
-        reloadButton.OnClicked += (_, _) => { _ = LoadDataAsync(); };
-        searchEntry.OnSearchChanged += (_, _) =>
-        {
-            _searchText = searchEntry.GetText();
-            ApplyFilter();
-        };
 
+        _sub = DirtySubscription.Attach(dirtyService, this);
         return box;
     }
+
+    public void Reload() => _ = LoadDataAsync(_cts.Token);
 
     private static void OnSetup(SignalListItemFactory sender, SignalListItemFactory.SetupSignalArgs args)
     {
@@ -122,12 +120,12 @@ public class FlatpakUpdate(
         var permissionExpander = (Expander)hbox.GetNextSibling()!;
         var permissionVbox = (Box)permissionExpander.GetChild()!;
 
-        var path = "";
+        string path;
         if (_userOnly)
         {
             var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             path =
-                Path.Combine(userHome, ".local/share/flatpak/appstream", package.Remote ?? "",
+                Path.Combine(userHome, ".local/share/flatpak/appstream", package.Remote,
                     "x86_64/active/icons/64x64", $"{package.Id}.png");
         }
         else
@@ -199,6 +197,12 @@ public class FlatpakUpdate(
         }
     }
 
+    public void SetSearch(string text)
+    {
+        _searchText = text;
+        ApplyFilter();
+    }
+
     private void ApplyFilter()
     {
         if (_listStore == null) return;
@@ -237,7 +241,7 @@ public class FlatpakUpdate(
 
         try
         {
-            lockoutService.Show("Updating Flatpak packages...", 0, true);
+            lockoutService.Show("Updating Flatpak packages...");
             var result = await unprivilegedOperationService.FlatpakUpgrade();
 
             if (!result.Success)
@@ -261,6 +265,7 @@ public class FlatpakUpdate(
 
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _listStore?.RemoveAll();

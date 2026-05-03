@@ -23,7 +23,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
 
         RootElevator.EnsureRootExectuion();
         var archNews = new ArchNews();
-        archNews.ExecuteAsync(context, new ArchNewsSettings()).GetAwaiter().GetResult();
+        await archNews.ExecuteAsync(context, new ArchNewsSettings());
 
         AnsiConsole.MarkupLine("[yellow]Performing full system upgrade...[/]");
 
@@ -36,70 +36,73 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
         if (packagesNeedingUpdate.Count == 0)
         {
-            AnsiConsole.MarkupLine("[green]System is up to date![/]");
-            return 0;
+            AnsiConsole.MarkupLine("[green]Standard Packages are up to date![/]");
         }
 
-        var config = ConfigManager.ReadConfig();
-        var sizeDisplay =
-            (SizeDisplay)Parse(typeof(SizeDisplay),
-                config.FileSizeDisplay);
-
-
-        var table = new Table().Border(TableBorder.None);
-
-
-        table.AddColumn(new TableColumn($"[bold green]Package ({packagesNeedingUpdate.Count})[/]").LeftAligned());
-        table.AddColumn(new TableColumn("[bold green]Old Version[/]").LeftAligned());
-        table.AddColumn(new TableColumn("[bold green]New Version[/]").LeftAligned());
-        table.AddColumn(new TableColumn("[bold green]Net Change[/]").RightAligned());
-        table.AddColumn(new TableColumn("[bold green]Download Size[/]").RightAligned());
-
-        long totalDownloadSize = 0;
-        long totalNetChange = 0;
-        long totalInstalledSize = 0;
-
-        foreach (var pkg in packagesNeedingUpdate)
+        if (packagesNeedingUpdate.Count > 0)
         {
-            long netChangeBytes = pkg.SizeDifference;
+            var config = ConfigManager.ReadConfig();
+            var sizeDisplay =
+                (SizeDisplay)Parse(typeof(SizeDisplay),
+                    config.FileSizeDisplay);
 
-            totalDownloadSize += pkg.DownloadSize;
-            totalNetChange += netChangeBytes;
 
-            table.AddRow(
-                $"[green]{Markup.Escape(pkg.Name)}[/]",
-                $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]",
-                $"[green]{Markup.Escape(pkg.NewVersion)}[/]",
-                $"[green]{SizeHelper.FormatSize(netChangeBytes, sizeDisplay)}[/]",
-                $"[green]{SizeHelper.FormatSize(pkg.DownloadSize, sizeDisplay)}[/]"
-            );
-        }
+            var table = new Table().Border(TableBorder.None);
 
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {SizeHelper.FormatSize(totalDownloadSize, sizeDisplay),10}");
-        AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {SizeHelper.FormatSize(totalNetChange, sizeDisplay),10}");
-        AnsiConsole.WriteLine();
 
-        if (!settings.NoConfirm)
-        {
-            if (!AnsiConsole.Confirm("[bold green]:: Proceed with installation?[/]"))
+            table.AddColumn(new TableColumn($"[bold green]Package ({packagesNeedingUpdate.Count})[/]").LeftAligned());
+            table.AddColumn(new TableColumn("[bold green]Old Version[/]").LeftAligned());
+            table.AddColumn(new TableColumn("[bold green]New Version[/]").LeftAligned());
+            table.AddColumn(new TableColumn("[bold green]Net Change[/]").RightAligned());
+            table.AddColumn(new TableColumn("[bold green]Download Size[/]").RightAligned());
+
+            long totalDownloadSize = 0;
+            long totalNetChange = 0;
+            long totalInstalledSize = 0;
+
+            foreach (var pkg in packagesNeedingUpdate)
             {
-                AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                return 0;
+                long netChangeBytes = pkg.SizeDifference;
+
+                totalDownloadSize += pkg.DownloadSize;
+                totalNetChange += netChangeBytes;
+
+                table.AddRow(
+                    $"[green]{Markup.Escape(pkg.Name)}[/]",
+                    $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]",
+                    $"[green]{Markup.Escape(pkg.NewVersion)}[/]",
+                    $"[green]{SizeHelper.FormatSize(netChangeBytes, sizeDisplay)}[/]",
+                    $"[green]{SizeHelper.FormatSize(pkg.DownloadSize, sizeDisplay)}[/]"
+                );
             }
+
+            AnsiConsole.Write(table);
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {SizeHelper.FormatSize(totalDownloadSize, sizeDisplay),10}");
+            AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {SizeHelper.FormatSize(totalNetChange, sizeDisplay),10}");
+            AnsiConsole.WriteLine();
+
+            if (!settings.NoConfirm)
+            {
+                if (!AnsiConsole.Confirm("[bold green]:: Proceed with installation?[/]"))
+                {
+                    AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+                    return 0;
+                }
+            }
+
+            AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
+            var upgradeResult = await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
+            manager.Dispose();
+            if (!upgradeResult)
+            {
+                AnsiConsole.MarkupLine("[red]System upgrade failed. See errors above.[/]");
+                return 1;
+            }
+
+            AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         }
 
-        AnsiConsole.MarkupLine("[yellow] Starting System Upgrade...[/]");
-        var upgradeResult = await SplitOutput.Output(manager, x => x.SyncSystemUpdate(), settings.NoConfirm);
-        manager.Dispose();
-        if (!upgradeResult)
-        {
-            AnsiConsole.MarkupLine("[red]System upgrade failed. See errors above.[/]");
-            return 1;
-        }
-
-        AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         if (settings.Aur || settings.All)
         {
             var aurCommand = new AurUpgradeCommand();
@@ -107,7 +110,11 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             {
                 NoConfirm = settings.NoConfirm
             };
-            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+            var aurResult = await aurCommand.ExecuteAsync(context, aurSettings);
+            if (aurResult != 0)
+            {
+                AnsiConsole.MarkupLine("[red]AUR upgrade failed.[/]");
+            }
         }
 
         if (settings.Flatpak || settings.All)
@@ -172,45 +179,47 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         var packagesNeedingUpdate = manager.GetPackagesNeedingUpdate();
         if (packagesNeedingUpdate.Count == 0)
         {
-            await Console.Error.WriteLineAsync("System is up to date!");
-            return 0;
+            await Console.Error.WriteLineAsync("Standard Packages are up to date!");
         }
 
-        await Console.Error.WriteLineAsync($"{packagesNeedingUpdate.Count} packages need updates:");
-        foreach (var pkg in packagesNeedingUpdate)
+        if (packagesNeedingUpdate.Count > 0)
         {
-            await Console.Error.WriteLineAsync(
-                $"  {pkg.Name}: {pkg.CurrentVersion} -> {pkg.NewVersion} ({pkg.DownloadSize} bytes)");
-        }
-
-        await Console.Error.WriteLineAsync(" Starting System Upgrade...");
-
-        manager.Progress += (_, args) =>
-        {
-            lock (renderLock)
+            await Console.Error.WriteLineAsync($"{packagesNeedingUpdate.Count} packages need updates:");
+            foreach (var pkg in packagesNeedingUpdate)
             {
-                var name = args.PackageName ?? "unknown";
-                var pct = args.Percent ?? 0;
-                var actionType = args.ProgressType;
-                Console.Error.WriteLine($"{name}: {pct}% - {actionType}");
+                await Console.Error.WriteLineAsync(
+                    $"  {pkg.Name}: {pkg.CurrentVersion} -> {pkg.NewVersion} ({pkg.DownloadSize} bytes)");
             }
-        };
 
-        manager.HookRun += (_, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
+            await Console.Error.WriteLineAsync(" Starting System Upgrade...");
 
-        bool hadError = false;
-        manager.ErrorEvent += (_, e) =>
-        {
-            Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
-            hadError = true;
-        };
+            manager.Progress += (_, args) =>
+            {
+                lock (renderLock)
+                {
+                    var name = args.PackageName ?? "unknown";
+                    var pct = args.Percent ?? 0;
+                    var actionType = args.ProgressType;
+                    Console.Error.WriteLine($"{name}: {pct}% - {actionType}");
+                }
+            };
 
-        var result = await manager.SyncSystemUpdate();
-        manager.Dispose();
-        if (!result || hadError)
-        {
-            await Console.Error.WriteLineAsync("System upgrade failed.");
-            return 1;
+            manager.HookRun += (_, args) => { Console.Error.WriteLine($"[ALPM_HOOK]{args.Description}"); };
+
+            bool hadError = false;
+            manager.ErrorEvent += (_, e) =>
+            {
+                Console.Error.WriteLine($"[ALPM_ERROR]{e.Error}");
+                hadError = true;
+            };
+
+            var result = await manager.SyncSystemUpdate();
+            manager.Dispose();
+            if (!result || hadError)
+            {
+                await Console.Error.WriteLineAsync("System upgrade failed.");
+                return 1;
+            }
         }
 
         if (settings.Aur || settings.All)
@@ -220,7 +229,11 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             {
                 NoConfirm = settings.NoConfirm,
             };
-            aurCommand.ExecuteAsync(context, aurSettings).GetAwaiter().GetResult();
+            var aurResult = await aurCommand.ExecuteAsync(context, aurSettings);
+            if (aurResult != 0)
+            {
+                await Console.Error.WriteLineAsync("AUR upgrade failed.");
+            }
         }
 
         if (settings.Flatpak || settings.All)
@@ -253,7 +266,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
     private static string ExecuteFlatpakUpdate()
     {
         var sudoUser = Environment.GetEnvironmentVariable("SUDO_USER");
-        
+
         var exe = Environment.ProcessPath ?? Environment.GetCommandLineArgs()[0];
 
         var startInfo = new ProcessStartInfo

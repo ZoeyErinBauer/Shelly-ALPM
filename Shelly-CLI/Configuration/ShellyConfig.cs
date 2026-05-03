@@ -1,4 +1,5 @@
 using Shelly.Utilities;
+using Shelly_CLI.Enums;
 
 namespace Shelly_CLI.Configuration;
 
@@ -15,6 +16,7 @@ public class ShellyConfig
     public string? Culture { get; set; }
     public bool DarkMode { get; set; } = true;
     public bool AurEnabled { get; set; } = false;
+    public bool ShellySearchEnabled { get; set; } = false;
     public bool AurWarningConfirmed { get; set; } = false;
     public bool FlatPackEnabled { get; set; } = false;
     public bool ConsoleEnabled { get; set; } = false;
@@ -36,6 +38,8 @@ public class ShellyConfig
     public bool AppImageEnabled { get; set; } = false;
     public bool NewInstallInitSettings { get; set; } = false;
     public bool UseSymbolicTray { get; set; } = true;
+    
+    public ShellyTabs DefaultPageDropDown { get; set; } = ShellyTabs.Packages;
     
     public string ProgressBarStyle { get; set; } = nameof(ProgressBarStyleKind.Blocks);
     public int ProgressBarFps { get; set; } = 7;

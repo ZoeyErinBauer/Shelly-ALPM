@@ -16,7 +16,7 @@
                         <property name="halign">start</property>
                         <property name="label">Remove Selected</property>
                         <style>
-                            <class name="suggested-action"/>
+                            <class name="destructive-action"/>
                         </style>
                     </object>
                 </child>
@@ -86,6 +86,11 @@
                                 <property name="hexpand">true</property>
                                 <property name="vexpand">true</property>
                                 <child>
+                                    <object class="GtkColumnViewColumn" id="check_column">
+                                        <property name="title"></property>
+                                    </object>
+                                </child>
+                                <child>
                                     <object class="GtkColumnViewColumn" id="name_column">
                                         <property name="title">Package Name</property>
                                         <property name="expand">true</property>
@@ -99,11 +104,6 @@
                                 <child>
                                     <object class="GtkColumnViewColumn" id="version_column">
                                         <property name="title">Version</property>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkColumnViewColumn" id="check_column">
-                                        <property name="title"></property>
                                     </object>
                                 </child>
                             </object>

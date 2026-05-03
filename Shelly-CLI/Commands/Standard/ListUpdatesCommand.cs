@@ -22,7 +22,7 @@ public class ListUpdatesCommand : Command<ListSettings>
 
         using var manager = new AlpmManager();
         var dbPath = XdgPaths.ShellyCache("db");
-        Directory.CreateDirectory(dbPath);
+        XdgPaths.EnsureDirectory(dbPath);
         if (!settings.JsonOutput)
         {
             AnsiConsole.Status()
@@ -86,7 +86,7 @@ public class ListUpdatesCommand : Command<ListSettings>
     {
         using var manager = new AlpmManager();
         var dbPath = XdgPaths.ShellyCache("db");
-        Directory.CreateDirectory(dbPath);
+        XdgPaths.EnsureDirectory(dbPath);
         manager.Initialize(false, int.Parse(ConfigManager.GetConfigValue("ParallelDownloadCount")!),true, dbPath, showHiddenPackages: settings.ShowHidden);
         manager.Sync();
         var updates = manager.GetPackagesNeedingUpdate();
