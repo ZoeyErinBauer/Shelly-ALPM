@@ -90,7 +90,6 @@
                         <child>
                             <object class="GtkBox" id="SidebarBox">
                                 <property name="orientation">vertical</property>
-                                <property name="margin-end">6</property>
                                 <property name="visible">false</property>
                                 <property name="width-request">48</property>
                                 <style>

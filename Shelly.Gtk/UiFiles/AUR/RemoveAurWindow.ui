@@ -13,12 +13,23 @@
                 <property name="margin-end">10</property>
                 <property name="spacing">5</property>
                 <child>
-                    <object class="GtkButton" id="remove_button">
-                        <property name="halign">start</property>
-                        <property name="label">Remove Aur Package(s)</property>
+                    <object class="GtkSearchEntry" id="search_entry">
+                        <property name="placeholder-text">Search packages...</property>
+                        <property name="width-request">200</property>
                         <style>
-                            <class name="destructive-action"/>
+                            <class name="spaced-search"/>
                         </style>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkButton" id="search_button">
+                        <property name="icon-name">view-refresh-symbolic</property>
+                        <property name="tooltip-text">refresh</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkBox">
+                        <property name="hexpand">true</property>
                     </object>
                 </child>
                 <child>
@@ -36,22 +47,20 @@
                         <property name="active">false</property>
                     </object>
                 </child>
+              
                 <child>
-                    <object class="GtkSearchEntry" id="search_entry">
-                        <property name="placeholder-text">Search packages...</property>
-                        <property name="width-request">200</property>
+                    <object class="GtkButton" id="remove_button">
+                        <property name="halign">start</property>
+                        <property name="label">Remove Aur Package(s)</property>
                         <style>
-                            <class name="spaced-search"/>
+                            <class name="destructive-action"/>
                         </style>
                     </object>
                 </child>
-                <child>
-                    <object class="GtkButton" id="search_button">
-                        <property name="icon-name">view-refresh-symbolic</property>
-                        <property name="tooltip-text">refresh</property>
-                    </object>
-                </child>
             </object>
+        </child>
+        <child>
+            <object class="GtkSeparator"/>
         </child>
         <child>
             <object class="GtkBox" id="detail_hbox">
@@ -94,6 +103,7 @@
                         <property name="reveal-child">false</property>
                         <property name="transition-type">slide-left</property>
                         <property name="margin-start">10</property>
+                        <property name="margin-top">10</property>
                         <property name="margin-end">10</property>
                         <property name="margin-bottom">10</property>
                         <child>

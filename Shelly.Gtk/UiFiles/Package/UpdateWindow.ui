@@ -12,14 +12,18 @@
                 <property name="margin-end">10</property>
                 <property name="spacing">5</property>
                 <child>
-                    <object class="GtkButton" id="update_button">
-                        <property name="halign">start</property>
-                        <property name="label">Update Selected</property>
-                        <style>
-                            <class name="suggested-action"/>
-                        </style>
+                    <object class="GtkSearchEntry" id="search_entry">
+                        <property name="placeholder-text">Search packages...</property>
+                        <property name="width-request">200</property>
                     </object>
                 </child>
+                <child>
+                    <object class="GtkButton" id="sync_button">
+                        <property name="icon-name">view-refresh-symbolic</property>
+                        <property name="tooltip-text">Sync</property>
+                    </object>
+                </child>
+                
                 <child>
                     <object class="GtkBox">
                         <property name="hexpand">true</property>
@@ -34,18 +38,18 @@
                     </object>
                 </child>
                 <child>
-                    <object class="GtkSearchEntry" id="search_entry">
-                        <property name="placeholder-text">Search packages...</property>
-                        <property name="width-request">200</property>
-                    </object>
-                </child>
-                <child>
-                    <object class="GtkButton" id="sync_button">
-                        <property name="icon-name">view-refresh-symbolic</property>
-                        <property name="tooltip-text">Sync</property>
+                    <object class="GtkButton" id="update_button">
+                        <property name="halign">start</property>
+                        <property name="label">Update Selected</property>
+                        <style>
+                            <class name="suggested-action"/>
+                        </style>
                     </object>
                 </child>
             </object>
+        </child>
+        <child>
+            <object class="GtkSeparator"/>
         </child>
         <child>
             <object class="GtkBox" id="detail_hbox">
@@ -112,6 +116,7 @@
                             <object class="GtkFrame">
                                 <property name="margin-start">10</property>
                                 <property name="margin-end">10</property>
+                                <property name="margin-top">10</property>
                                 <property name="margin-bottom">10</property>
                                 <property name="width-request">300</property>
                                 <style>
