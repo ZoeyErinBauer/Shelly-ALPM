@@ -108,11 +108,6 @@
                                     </object>
                                 </child>
                                 <child>
-                                    <object class="GtkSeparator">
-                                        <property name="orientation">horizontal</property>
-                                    </object>
-                                </child>
-                                <child>
                                     <object class="GtkToggleButton" id="SidebarPackagesButton">
                                         <property name="has-frame">false</property>
                                         <property name="margin-top">3</property>
@@ -248,14 +243,10 @@
                                     </object>
                                 </child>
                                 <child>
-                                    <object class="GtkSeparator">
-                                        <property name="orientation">horizontal</property>
-                                    </object>
-                                </child>
-                                <child>
                                     <object class="GtkMenuButton" id="SidebarMenuButton">
                                         <property name="icon-name">open-menu-symbolic</property>
                                         <property name="menu-model">MainMenu</property>
+                                        <property name="direction">up</property>
                                         <property name="has-frame">false</property>
                                         <property name="margin-top">6</property>
                                         <property name="margin-bottom">6</property>
