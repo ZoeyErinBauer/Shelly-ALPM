@@ -533,7 +533,7 @@ public class AurInstall(
         pkgBuildButton.SetName("Package Build");
         pkgBuildButton.SetLabel("Preview Pkgbuild");
         pkgBuildButton.Halign = Align.BaselineFill;
-        pkgBuildButton.AddCssClass("label");
+        pkgBuildButton.AddCssClass("package-detail-expander");
         pkgBuildButton.TooltipText = "Displays Package Build";
         pkgBuildButton.OnClicked += (_, _) =>
         {
