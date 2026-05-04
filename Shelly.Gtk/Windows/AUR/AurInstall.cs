@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Xml;
 using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
@@ -526,7 +527,19 @@ public class AurInstall(
         {
             _detailBox.Remove(child);
         }
+        
+        // pkgbuild preview button
+        var pkgBuildButton = Button.New();
+        pkgBuildButton.SetName("Package Build");
+        pkgBuildButton.SetLabel("Preview Pkgbuild");
+        pkgBuildButton.Halign = Align.BaselineFill;
+        pkgBuildButton.AddCssClass("label");
+        pkgBuildButton.TooltipText = "Displays Package Build";
+        pkgBuildButton.OnClicked += (_, _) =>
+        {
 
+        };
+        
         var backButton = Button.New();
         backButton.SetIconName("go-next-symbolic");
         backButton.Halign = Align.Start;
@@ -564,7 +577,7 @@ public class AurInstall(
             row.Append(valueWidget);
             _detailBox.Append(row);
         }
-
+        
         var headerBox = Box.New(Orientation.Vertical, 4);
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
@@ -633,6 +646,8 @@ public class AurInstall(
             row.Append(valueWidget);
             _detailBox.Append(row);
         }
+        
+        _detailBox.Append(pkgBuildButton);
 
         if (pkg.Depends?.Count > 0)
         {
