@@ -115,7 +115,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         }
 
-        if (settings.Aur || settings.All)
+        if ((settings.Aur || settings.All) && ConfigManager.ReadConfig().AurEnabled)
         {
             var aurCommand = new AurUpgradeCommand();
             var aurSettings = new AurUpgradeSettings()
@@ -234,7 +234,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Aur || settings.All)
+        if ((settings.Aur || settings.All) && ConfigManager.ReadConfig().AurEnabled)
         {
             var aurCommand = new AurUpgradeCommand();
             var aurSettings = new AurUpgradeSettings()
