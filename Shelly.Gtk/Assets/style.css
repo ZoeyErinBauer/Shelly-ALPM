@@ -161,3 +161,17 @@ flowboxchild {
 flowboxchild:hover {
     background-color: alpha(currentColor, 0.1);
 }
+
+.sidebar-nav {
+    border-right: 1px solid alpha(currentColor, 0.1);
+    padding: 0;
+}
+
+.sidebar-nav button:checked {
+    background: alpha(currentColor, 0.12);
+    font-weight: bold;
+}
+
+.sidebar-nav button:hover {
+    background: alpha(currentColor, 0.06);
+}
