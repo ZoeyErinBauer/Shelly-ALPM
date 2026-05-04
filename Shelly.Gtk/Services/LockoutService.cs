@@ -10,9 +10,6 @@ public partial class LockoutService : ILockoutService
     private static readonly Regex AurProgressPattern =
         AurRegex();
 
-    private static readonly Regex MakepkgStatusPattern =
-        MakepkgStatusRegex();
-
     private static readonly Regex AlpmProgressPattern =
         AlpmRegex();
     
@@ -94,7 +91,6 @@ public partial class LockoutService : ILockoutService
 
         var matchFlatpak = FlatpakProgressPattern.Match(logLine);
         var matchAur = AurProgressPattern.Match(logLine);
-        var matchMakepkg = MakepkgStatusPattern.Match(logLine);
         var matchAlpm = AlpmProgressPattern.Match(logLine);
         var hooksMatch = RunningHooksPattern.Match(logLine);
 
@@ -110,11 +106,6 @@ public partial class LockoutService : ILockoutService
             var description = matchAur.Groups[2].Value;
             Update(description, double.Parse(progress), false);
         }
-        else if (matchMakepkg.Success)
-        {
-            var message = matchMakepkg.Groups[1].Value;
-            Update(message, null, true);
-        }
         else if (matchAlpm.Success)
         {
             var status = matchAlpm.Groups[1].Value;
@@ -123,11 +114,6 @@ public partial class LockoutService : ILockoutService
             {
                 Update($"{status} {pkg}", progress, false);
             }
-        }
-        else if (matchMakepkg.Success)
-        {
-            var status = matchMakepkg.Groups[1].Value;
-            Update(status, 100, true);
         }
         else if (hooksMatch.Success)
         {

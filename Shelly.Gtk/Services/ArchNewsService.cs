@@ -3,13 +3,14 @@ using Shelly.Gtk.UiModels;
 namespace Shelly.Gtk.Services;
 
 
-public partial class ArchNewsService(IUnprivilegedOperationService unprivilegedOperationService) : IArchNewsService
+public partial class ArchNewsService(IUnprivilegedOperationService unprivilegedOperationService, IDirtyService dirtyService) : IArchNewsService
 {
     public async Task<List<RssModel>> FetchNewsAsync(CancellationToken ct)
     {
         try
         {
             var items = await unprivilegedOperationService.GetArchNewsAsync(true);
+            dirtyService.MarkDirty(DirtyScopes.News);
             return items;
         }
         catch (Exception e)
@@ -24,6 +25,7 @@ public partial class ArchNewsService(IUnprivilegedOperationService unprivilegedO
         try
         {
             var items = await unprivilegedOperationService.GetArchNewsAsync();
+            dirtyService.MarkDirty(DirtyScopes.News);
             return items;
         }
         catch (Exception e)

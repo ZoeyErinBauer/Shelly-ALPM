@@ -101,6 +101,11 @@
                                         <property name="show-row-separators">false</property>
                                         <property name="vexpand">true</property>
                                         <child>
+                                            <object class="GtkColumnViewColumn" id="check_column">
+                                                <property name="title"/>
+                                            </object>
+                                        </child>
+                                        <child>
                                             <object class="GtkColumnViewColumn" id="name_column">
                                                 <property name="expand">true</property>
                                                 <property name="title">Name</property>
@@ -124,11 +129,7 @@
                                                 <property name="title">Repository</property>
                                             </object>
                                         </child>
-                                        <child>
-                                            <object class="GtkColumnViewColumn" id="check_column">
-                                                <property name="title"/>
-                                            </object>
-                                        </child>
+                                        
                                     </object>
                                 </child>
                             </object>
@@ -147,7 +148,7 @@
                                         <child>
                                             <object class="GtkScrolledWindow">
                                                 <property name="hscrollbar-policy">never</property>
-                                                <property name="overlay-scrolling">true</property>
+                                                <property name="overlay-scrolling">false</property>
                                                 <property name="propagate-natural-height">True</property>
                                                 <property name="propagate-natural-width">False</property>
                                                 <property name="vexpand">true</property>

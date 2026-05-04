@@ -1,12 +1,15 @@
 using System.Globalization;
-using System.Text;
 using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Enums;
+using static Shelly.Gtk.Helpers.AurColumnViewSorter;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AUR.GObjects;
 using Shelly.Gtk.Windows.Dialog;
+
+// ReSharper disable NotAccessedField.Local
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -16,10 +19,14 @@ public class AurInstall(
     IPrivilegedOperationService privilegedOperationService,
     ILockoutService lockoutService,
     IConfigService configService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.AurInstalled, DirtyScopes.Config];
     private Box _box = null!;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
+    private int _loadGeneration;
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
@@ -30,11 +37,13 @@ public class AurInstall(
     private SignalListItemFactory _votesFactory = null!;
     private SignalListItemFactory _popFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
+    private ColumnViewSorter _columnViewSorter = null!;
     private Box _detailBox = null!;
     private AurPackageGObject? _currentDetailPkg;
     private Revealer _detailRevealer = null!;
 
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
+        // ReSharper disable once FieldCanBeMadeReadOnly.Local
         _checkBinding = [];
 
     private readonly List<AurPackageGObject> _packageGObjectRefs = [];
@@ -46,7 +55,7 @@ public class AurInstall(
     private Button _installButton = null!;
     private CheckButton _chrootCheck = null!;
     private CheckButton _runChecksCheck = null!;
-    
+
     private Label _searchForPackageLabel = null!;
 
     public Widget CreateWindow()
@@ -70,7 +79,7 @@ public class AurInstall(
 
         _detailBox = (Box)builder.GetObject("detail_box")!;
         _detailRevealer = (Revealer)builder.GetObject("detail_revealer")!;
-        
+
         _versionColumn = (ColumnViewColumn)builder.GetObject("version_column")!;
         _versionColumn.Resizable = true;
         _installButton = (Button)builder.GetObject("install_button")!;
@@ -80,7 +89,7 @@ public class AurInstall(
         _listStore = Gio.ListStore.New(AurPackageGObject.GetGType());
         _selectionModel = SingleSelection.New(_listStore);
         _selectionModel.CanUnselect = true;
-        _selectionModel.Autoselect = false;
+        _selectionModel.Autoselect = true;
         _columnView.SetModel(_selectionModel);
         _searchForPackageLabel = (Label)builder.GetObject("search_overlay")!;
         _searchForPackageLabel.Label_ = "<span size='large'>Search for AUR packages</span>";
@@ -88,7 +97,37 @@ public class AurInstall(
 
         SetupColumns(_checkColumn, _nameColumn, _votesColumn, _popColumn, _versionColumn);
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        // Creating sorter
+        _nameColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        _versionColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        
+        _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
+
+        _columnViewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn =
+                _columnViewSorter.GetPrimarySortColumn();
+            
+            if (primaryColumn is null)
+                return;
+            
+            var sortColumn = GetSortColumn(primaryColumn);
+            
+            var order =
+                _columnViewSorter.GetPrimarySortOrder();
+            
+            if (sortColumn is null)
+                return;
+
+            Sort(
+                _listStore,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                order
+            );
+        };        
+        
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
 
@@ -116,15 +155,17 @@ public class AurInstall(
             {
                 if (!_installButton.GetSensitive()) return false;
                 if (OverlayHelper.HasActiveOverlay(_box)) return false;
-                
+
                 Task.Run(async () => await InstallSelectedAsync());
                 return true;
             });
             shortcutController.AddShortcut(Shortcut.New(ShortcutTrigger.ParseString(triggerStr), action));
         }
+
         _box.AddController(shortcutController);
 
-        _searchEntry.OnActivate += (_, _) => { _ = SearchAsync(_cts.Token); };
+        _searchEntry.OnActivate += (_, _) => { Interlocked.Increment(ref _loadGeneration); _ = SearchAsync(_cts.Token, _loadGeneration); };
+        _sub = DirtySubscription.Attach(dirtyService, this);
 
         _selectionModel.OnSelectionChanged += (_, _) =>
         {
@@ -140,9 +181,21 @@ public class AurInstall(
                 _currentDetailPkg = null;
             }
         };
-        
+
         return _box;
     }
+    
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+        
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
+    }
+
 
     private void SetupColumns(ColumnViewColumn checkColumn, ColumnViewColumn nameColumn,
         ColumnViewColumn votesColumn, ColumnViewColumn popColumn, ColumnViewColumn versionColumn)
@@ -151,7 +204,9 @@ public class AurInstall(
         checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
         };
 
@@ -268,7 +323,7 @@ public class AurInstall(
         versionColumn.SetFactory(versionFactory);
     }
 
-    private async Task SearchAsync(CancellationToken ct)
+    private async Task SearchAsync(CancellationToken ct, int generation = 0)
     {
         _searchText = _searchEntry.GetText();
 
@@ -283,12 +338,17 @@ public class AurInstall(
             result = result.OrderByDescending(x => x.NumVotes).ToList();
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested || _loadGeneration != generation) return false;
+
                 _listStore.RemoveAll();
+                foreach (var r in _packageGObjectRefs) r.Dispose();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in result.Select(dto => new AurPackageGObject
+                foreach (var gobject in result.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurPackageGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -314,7 +374,7 @@ public class AurInstall(
 
         if (selectedPackages.Count != 0)
         {
-            OperationResult? result = null;
+            OperationResult? result;
 
             try
             {
@@ -355,7 +415,8 @@ public class AurInstall(
                     }
                 }
 
-                result = await privilegedOperationService.InstallAurPackagesAsync(selectedPackages, _chrootCheck.GetActive(), _runChecksCheck.GetActive());
+                result = await privilegedOperationService.InstallAurPackagesAsync(selectedPackages,
+                    _chrootCheck.GetActive(), _runChecksCheck.GetActive());
                 if (!result.Success)
                 {
                     Console.WriteLine($"Failed to install packages: {result.Error}");
@@ -374,11 +435,6 @@ public class AurInstall(
             finally
             {
                 lockoutService.Hide();
-            }
-
-            if (result == null)
-            {
-                return;
             }
 
             if (result.Success)
@@ -445,7 +501,7 @@ public class AurInstall(
             return false;
         }
     }
-    
+
     private bool AnySelected()
     {
         for (uint i = 0; i < _listStore.GetNItems(); i++)
@@ -457,8 +513,8 @@ public class AurInstall(
 
         return false;
     }
-    
-     private void ShowPackageDetails(AurPackageGObject pkgObj)
+
+    private void ShowPackageDetails(AurPackageGObject pkgObj)
 
     {
         if (pkgObj.Package == null) return;
@@ -513,10 +569,13 @@ public class AurInstall(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
-      
-            iconImage.SetFromIconName("package-x-generic");
-        
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
+
+        iconImage.SetFromIconName("package-x-generic");
+
         headerBox.Append(iconImage);
 
         var nameLabel = Label.New(pkg.Name);
@@ -545,10 +604,11 @@ public class AurInstall(
             AddDetail("Popularity", pkg.Popularity.ToString("F2"));
         if (pkg.OutOfDate != null)
             AddDetail("Out of Date", DateTimeOffset.FromUnixTimeSeconds(pkg.OutOfDate.Value).ToString("yyyy-MM-dd"));
-        
+
         AddDetail("Maintainer", pkg.Maintainer ?? "Orphaned");
         AddDetail("Last Modified", DateTimeOffset.FromUnixTimeSeconds(pkg.LastModified).ToString("yyyy-MM-dd HH:mm"));
-        AddDetail("First Submitted", DateTimeOffset.FromUnixTimeSeconds(pkg.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
+        AddDetail("First Submitted",
+            DateTimeOffset.FromUnixTimeSeconds(pkg.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -603,7 +663,7 @@ public class AurInstall(
         {
             AddChipList("Keywords", pkg.Keywords);
         }
-        
+
 
         if (pkg.Provides?.Count > 0)
             AddChipList("Provides", pkg.Provides);
@@ -641,20 +701,19 @@ public class AurInstall(
 
         void AddChipList(string label, IReadOnlyList<string> items, bool isOptional = false)
         {
-            var expander = new Expander { Label = $"{label} ({items.Count})" };
+            var expander = Expander.New($"{label} ({items.Count})");
             expander.AddCssClass("package-detail-expander");
             expander.Hexpand = false;
 
-            var flowBox = new FlowBox
-            {
-                SelectionMode = SelectionMode.None,
-                ColumnSpacing = 6,
-                RowSpacing = 6,
-                Halign = Align.Start,
-                Valign = Align.Start,
-                MaxChildrenPerLine = isOptional ? 1u : 10u, 
-                MinChildrenPerLine = 1
-            };
+            var flowBox = FlowBox.New();
+            flowBox.SelectionMode = SelectionMode.None;
+            flowBox.ColumnSpacing = 6;
+            flowBox.RowSpacing = 6;
+            flowBox.Halign = Align.Start;
+            flowBox.Valign = Align.Start;
+            flowBox.MaxChildrenPerLine = isOptional ? 1u : 10u;
+            flowBox.MinChildrenPerLine = 1;
+
 
             foreach (var item in items)
             {
@@ -670,6 +729,7 @@ public class AurInstall(
                     chip.WrapMode = Pango.WrapMode.WordChar;
                     chip.Xalign = 0;
                 }
+
                 flowBox.Append(chip);
             }
 
@@ -678,11 +738,23 @@ public class AurInstall(
         }
     }
 
+    public void Reload()
+    {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+        Interlocked.Increment(ref _loadGeneration);
+        if (!string.IsNullOrEmpty(_searchText))
+            _ = SearchAsync(_cts.Token, _loadGeneration);
+    }
+
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();
+        foreach (var r in _packageGObjectRefs) r.Dispose();
         _packageGObjectRefs.Clear();
         _checkBinding.Clear();
     }

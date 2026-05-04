@@ -79,6 +79,11 @@
                                         <property name="hexpand">true</property>
                                         <property name="vexpand">true</property>
                                         <child>
+                                            <object class="GtkColumnViewColumn" id="check_column">
+                                                <property name="title"></property>
+                                            </object>
+                                        </child>
+                                        <child>
                                             <object class="GtkColumnViewColumn" id="name_column">
                                                 <property name="title">Name</property>
                                                 <property name="expand">true</property>
@@ -101,11 +106,7 @@
                                                 <property name="expand">true</property>
                                             </object>
                                         </child>
-                                        <child>
-                                            <object class="GtkColumnViewColumn" id="check_column">
-                                                <property name="title"></property>
-                                            </object>
-                                        </child>
+                                        
                                     </object>
                                 </child>
                             </object>

@@ -1,7 +1,9 @@
+using Shelly_CLI.Enums;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using PackageManager.Utilities;
+
 namespace Shelly_CLI.Configuration;
 
 public static class ConfigManager
@@ -31,11 +33,37 @@ public static class ConfigManager
             var configDir = Path.GetDirectoryName(configPath);
             if (!string.IsNullOrEmpty(configDir))
             {
-                Directory.CreateDirectory(configDir);
+                try
+                {
+                    Directory.CreateDirectory(configDir);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.Error.WriteLine($"Cannot create config dir '{configDir}': {ex.Message}");
+                    return new ShellyConfig();
+                }
+                catch (IOException ex)
+                {
+                    Console.Error.WriteLine($"Cannot create config dir '{configDir}': {ex.Message}");
+                    return new ShellyConfig();
+                }
             }
 
             var defaultConfig = new ShellyConfig();
-            WriteConfig(defaultConfig, configPath);
+            try
+            {
+                WriteConfig(defaultConfig, configPath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.Error.WriteLine($"Cannot write config '{configPath}': {ex.Message}");
+                return defaultConfig;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine($"Cannot write config '{configPath}': {ex.Message}");
+                return defaultConfig;
+            }
 
             if (IsRunningAsRoot() && !string.IsNullOrEmpty(configDir))
             {
@@ -142,7 +170,17 @@ public static class ConfigManager
                     {
                         return false;
                     }
+
                     convertedValue = parsed.ToString();
+                }
+                else if (property.Name == nameof(ShellyConfig.DefaultPageDropDown))
+                {
+                    if (!Enum.TryParse<ShellyTabs>(value, true, out var parsed))
+                    {
+                        return false;
+                    }
+
+                    convertedValue = parsed;
                 }
                 else
                 {
@@ -241,6 +279,16 @@ public static class ConfigManager
                 config.AurEnabled = aurEnabled.GetBoolean();
             }
 
+            if (root.TryGetProperty("ShellySearchEnabled", out var shellySearchEnabled))
+            {
+                config.ShellySearchEnabled = shellySearchEnabled.GetBoolean();
+            }
+            else if (root.TryGetProperty("MetaSearchEnabled", out var metaSearchEnabled))
+            {
+                // Backward compatibility: previously named MetaSearchEnabled
+                config.ShellySearchEnabled = metaSearchEnabled.GetBoolean();
+            }
+
             if (root.TryGetProperty("AurWarningConfirmed", out var aurWarning))
             {
                 config.AurWarningConfirmed = aurWarning.GetBoolean();
@@ -305,6 +353,11 @@ public static class ConfigManager
                 config.NewInstall = newInstall.GetBoolean();
             }
 
+            if (root.TryGetProperty("NewInstallInitSettings", out var initSettings))
+            {
+                config.NewInstallInitSettings = initSettings.GetBoolean();
+            }
+
             if (root.TryGetProperty("CurrentVersion", out var version) && version.ValueKind == JsonValueKind.String)
             {
                 config.CurrentVersion = version.GetString() ?? "0.0.0";
@@ -346,6 +399,21 @@ public static class ConfigManager
                     config.Time = t;
             }
 
+            if (root.TryGetProperty("DefaultPageDropDown", out var defaultPage))
+            {
+                config.DefaultPageDropDown = (ShellyTabs)defaultPage.GetInt32();
+            }
+            
+            if (root.TryGetProperty("TrayUpdatesIconPath", out var trayUpdatesIconPath))
+            {
+                config.TrayUpdatesIconPath =  trayUpdatesIconPath.GetString();
+            }
+            
+            if (root.TryGetProperty("TrayIconPath", out var trayIconPath))
+            {
+                config.TrayIconPath =  trayIconPath.GetString();
+            }
+            
             SaveConfig(config);
 
             // Rename old config to indicate migration

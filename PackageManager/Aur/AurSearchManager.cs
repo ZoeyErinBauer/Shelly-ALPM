@@ -138,6 +138,31 @@ public class AurSearchManager : IAurSearchManager, IDisposable
         };
     }
 
+    public async Task<string> GetPackageBaseAsync(string pkgname, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(pkgname))
+        {
+            return pkgname;
+        }
+
+        try
+        {
+            var response = await GetInfoAsync([pkgname], cancellationToken);
+            var first = response.Results?.FirstOrDefault();
+            if (first is not null && !string.IsNullOrEmpty(first.PackageBase))
+            {
+                return first.PackageBase;
+            }
+        }
+        catch (Exception ex)
+        {
+            await Console.Error.WriteLineAsync(
+                $"AUR RPC pkgbase lookup failed for '{pkgname}': {ex.Message}");
+        }
+
+        return pkgname;
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

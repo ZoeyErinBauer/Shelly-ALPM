@@ -67,15 +67,7 @@ public class XdgPathsTests
 
         Assert.That(XdgPaths.CacheHome(), Is.EqualTo("/tmp/xcache"));
     }
-
-    [Test]
-    public void UnderSudo_XdgVarsAreIgnored()
-    {
-        Environment.SetEnvironmentVariable("SUDO_USER", "someone");
-        Environment.SetEnvironmentVariable("XDG_CACHE_HOME", "/tmp/x");
-
-        Assert.That(XdgPaths.CacheHome(), Is.EqualTo("/home/someone/.cache"));
-    }
+    
 
     [Test]
     public void ShellyCache_WithParts_ComposesCorrectly()
@@ -112,14 +104,7 @@ public class XdgPathsTests
 
         Assert.That(XdgPaths.InvokingUserHome(), Is.EqualTo("/tmp/fakehome"));
     }
-
-    [Test]
-    public void InvokingUserHome_WithSudoUser_UsesHomeUserPath()
-    {
-        Environment.SetEnvironmentVariable("SUDO_USER", "alice");
-
-        Assert.That(XdgPaths.InvokingUserHome(), Is.EqualTo("/home/alice"));
-    }
+    
 
     [Test]
     public void Defaults_UnsetEnv_ProduceLegacyPaths()

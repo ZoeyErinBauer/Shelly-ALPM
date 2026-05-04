@@ -15,16 +15,21 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     private readonly IConfigService _configService;
     private readonly ILockoutService _lockoutService;
     private readonly ITrayDbus _trayDbus;
+    private readonly IPackageUpdateNotifier _packageUpdateNotifier;
+    private readonly IDirtyService _dirtyService;
     private bool _usedPassword = false;
 
     public PrivilegedOperationService(ICredentialManager credentialManager, IAlpmEventService alpmEventService,
-        IConfigService configService, ILockoutService lockoutService, ITrayDbus trayDbus)
+        IConfigService configService, ILockoutService lockoutService, ITrayDbus trayDbus,
+        IPackageUpdateNotifier packageUpdateNotifier, IDirtyService dirtyService)
     {
         _credentialManager = credentialManager;
         _alpmEventService = alpmEventService;
         _configService = configService;
         _lockoutService = lockoutService;
         _trayDbus = trayDbus;
+        _packageUpdateNotifier = packageUpdateNotifier;
+        _dirtyService = dirtyService;
         _cliPath = FindCliPath();
     }
 
@@ -129,19 +134,25 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             packageArgs += " -u";
         }
 
-        return await ExecutePrivilegedWithNoConfirmCheck("Install packages", "install", packageArgs);
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Install packages", "install", packageArgs);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Native);
+        return result;
     }
 
     public async Task<OperationResult> InstallLocalPackageAsync(string filePath)
     {
-        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location",
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-local", "--location",
             filePath);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Native);
+        return result;
     }
 
     public async Task<OperationResult> InstallAppImageAsync(string filePath)
     {
-        return await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-appimage", "--location",
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Install local package", "install-appimage", "--location",
             filePath);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.AppImage);
+        return result;
     }
 
     public async Task<OperationResult> RemovePackagesAsync(IEnumerable<string> packages, bool isCascade, bool isCleanup)
@@ -157,7 +168,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             packageArgs += " -r";
         }
 
-        return await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Remove packages", "remove", packageArgs);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Native);
+        return result;
     }
 
     public async Task<OperationResult> UpdatePackagesAsync(IEnumerable<string> packages)
@@ -166,6 +179,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
         var result = await ExecutePrivilegedWithNoConfirmCheck("Update packages", "update", packageArgs);
         SendDbusMessage(result);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Native);
         return result;
     }
 
@@ -212,7 +226,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             packageArgs += " --check";
         }
 
-        return await ExecutePrivilegedWithNoConfirmCheck("Install AUR packages", "aur", "install", packageArgs);
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Install AUR packages", "aur", "install", packageArgs);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Aur);
+        return result;
     }
 
     public async Task<OperationResult> RemoveAurPackagesAsync(IEnumerable<string> packages, bool isCascade = false)
@@ -223,7 +239,9 @@ public class PrivilegedOperationService : IPrivilegedOperationService
             packageArgs += " -c";
         }
 
-        return await ExecutePrivilegedWithNoConfirmCheck("Remove AUR packages", "aur", "remove", packageArgs);
+        var result = await ExecutePrivilegedWithNoConfirmCheck("Remove AUR packages", "aur", "remove", packageArgs);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Aur);
+        return result;
     }
 
     public async Task<OperationResult> UpdateAurPackagesAsync(IEnumerable<string> packages, bool runChecks = false)
@@ -236,6 +254,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
 
         var result = await ExecutePrivilegedWithNoConfirmCheck("Update AUR packages", "aur", "update", packageArgs);
         SendDbusMessage(result);
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Aur);
         return result;
     }
 
@@ -253,7 +272,6 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     {
         // Use privileged execution to sync databases and get updates
         var result = await ExecutePrivilegedCommandAsync("Check for Updates", "list-updates", "--json");
-        SendDbusMessage(result);
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -404,7 +422,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         var result = showHidden
             ? await ExecuteCommandAsync("aur list-updates", "--json", "--show-hidden")
             : await ExecuteCommandAsync("aur list-updates", "--json");
-        SendDbusMessage(result);
+        
         if (!result.Success || string.IsNullOrWhiteSpace(result.Output))
         {
             return [];
@@ -491,23 +509,32 @@ public class PrivilegedOperationService : IPrivilegedOperationService
     public async Task<OperationResult> AppImageInstallAsync(string filePath, string updateUrl = "",
         AppImageUpdateType updateType = AppImageUpdateType.None)
     {
+        OperationResult result;
         if (updateUrl != "" && updateType != AppImageUpdateType.None)
         {
-            return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-u",
+            result = await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-u",
                 updateUrl, "-t", updateType.ToString().ToLowerInvariant(), "-n");
         }
-
-        return await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-n");
+        else
+        {
+            result = await ExecutePrivilegedCommandAsync("Install AppImage", "appimage", "install", "-l", $"\"{filePath}\"", "-n");
+        }
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.AppImage);
+        return result;
     }
 
     public async Task<OperationResult> AppImageUpgradeAsync()
     {
-        return await ExecutePrivilegedCommandAsync("Upgrade AppImage's", "appimage", "upgrade", "-n");
+        var result = await ExecutePrivilegedCommandAsync("Upgrade AppImage's", "appimage", "upgrade", "-n");
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.AppImage);
+        return result;
     }
 
     public async Task<OperationResult> AppImageRemoveAsync(string name)
     {
-        return await ExecutePrivilegedCommandAsync("Remove AppImage's", "appimage", "remove", $"\"{name}\"", "-n");
+        var result = await ExecutePrivilegedCommandAsync("Remove AppImage's", "appimage", "remove", $"\"{name}\"", "-n");
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.AppImage);
+        return result;
     }
 
     public async Task<OperationResult> AppImageConfigureUpdatesAsync(string url, string name,
@@ -532,10 +559,17 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         return await ExecutePrivilegedCommandAsync("Delete corrupted packages", "purify");
     }
 
+    public async Task<OperationResult> FixXdgPermissionsAsync()
+    {
+        return await ExecutePrivilegedCommandAsync("Fix Shelly folder ownership", "fix-permissions");
+    }
+
     public async Task<OperationResult> FlatpakInstallFromBundle(string path)
     {
-        return await ExecutePrivilegedCommandAsync("Install Flatpak Bundle", "flatpak", "install-bundle", path,
+        var result = await ExecutePrivilegedCommandAsync("Install Flatpak Bundle", "flatpak", "install-bundle", path,
             "--system", "true");
+        if (result.Success) _dirtyService.MarkDirty(DirtyScopes.Flatpak);
+        return result;
     }
 
     private void SendDbusMessage(OperationResult result)
@@ -543,6 +577,7 @@ public class PrivilegedOperationService : IPrivilegedOperationService
         if (result.Success)
         {
             _ = Task.Run(() => _trayDbus.UpdatesMadeInUiAsync());
+            _packageUpdateNotifier.NotifyPackagesUpdated();
         }
     }
 

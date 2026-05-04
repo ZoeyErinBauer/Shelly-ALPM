@@ -12,4 +12,5 @@ public enum DefaultViewEnum
     InstallFlatpack,
     RemoveFlatpack,
     UpdateFlatpack,
+    ShellySearch,
 }

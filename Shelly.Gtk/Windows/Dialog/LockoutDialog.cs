@@ -25,8 +25,7 @@ public class LockoutDialog
             _background.SetHalign(Align.Fill);
             _background.SetValign(Align.Fill);
 
-            var baseFrame = new Frame();
-            baseFrame.SetLabel(null);
+            var baseFrame = Frame.New(null);
             baseFrame.SetHalign(Align.Center);
             baseFrame.SetValign(Align.Center);
             baseFrame.SetHexpand(true);
@@ -47,6 +46,10 @@ public class LockoutDialog
             _descriptionLabel = Label.New(description);
             _descriptionLabel.SetWrap(true);
             _descriptionLabel.SetHalign(Align.Center);
+            _descriptionLabel.SetWrap(true);
+            _descriptionLabel.SetWrapMode(Pango.WrapMode.WordChar);
+            _descriptionLabel.SetEllipsize(Pango.EllipsizeMode.None);
+            _descriptionLabel.MaxWidthChars = 35;
             box.Append(_descriptionLabel);
 
             _progressBar = ProgressBar.New();
@@ -119,15 +122,18 @@ public class LockoutDialog
     {
         if (_consoleOutput == null || !IsVisible) return;
         var buffer = _consoleOutput.Buffer;
+        if (buffer is null)
+        {
+            return;
+        }
+
         buffer.GetEndIter(out var endIter);
         buffer.Insert(endIter, logLine + "\n", -1);
-        if (_consoleOutput.GetRealized())
-        {
-            buffer.GetEndIter(out var newEnd);
-            buffer.PlaceCursor(newEnd);
-            var mark = buffer.GetInsert();
-            _consoleOutput.ScrollToMark(mark, 0, false, 0, 0);
-        }
+        if (!_consoleOutput.GetRealized()) return;
+        buffer.GetEndIter(out var newEnd);
+        buffer.PlaceCursor(newEnd);
+        var mark = buffer.GetInsert();
+        _consoleOutput.ScrollToMark(mark, 0, false, 0, 0);
     }
 
     public void ShowCloseButton()
@@ -144,7 +150,8 @@ public class LockoutDialog
         {
             _parentOverlay.RemoveOverlay(_background);
         }
-        _consoleOutput?.Buffer.SetText("", 0);
+
+        _consoleOutput?.Buffer?.SetText("", 0);
         _operationComplete = false;
         _closeButton?.SetVisible(false);
     }

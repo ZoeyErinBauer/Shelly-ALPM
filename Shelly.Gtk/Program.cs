@@ -1,4 +1,4 @@
-using System.Runtime;
+using Shelly.Gtk.Enums;
 using System.Reflection;
 using Gtk;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +9,8 @@ using Shelly.Gtk.Windows.AUR;
 using Shelly.Gtk.Windows.Dialog;
 using Shelly.Gtk.Windows.Flatpak;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Services.Icons;
+using Shelly.Gtk.UiModels;
 using Shelly.Gtk.Windows.Packages;
 using Settings = Shelly.Gtk.Windows.Settings;
 
@@ -183,97 +185,369 @@ sealed class Program
             var appMenu = (Gio.Menu)menuBuilder.GetObject("AppMenu")!;
             application.Menubar = appMenu;
 
+            Task.Run(async () =>
+            {
+                await serviceProvider.GetRequiredService<IIConDownloadService>().DownloadAndUnpackIcons();
+            });
+            
+            var settingsStack = (Stack)mainBuilder.GetObject("settings_stack")!;
+            var packagesPageBox = (Box)mainBuilder.GetObject("packages_page_box")!;
+            var aurPageBox = (Box)mainBuilder.GetObject("aur_page_box")!;
+            var flatpakPageBox = (Box)mainBuilder.GetObject("flatpak_page_box")!;
+            var appImagePageBox = (Box)mainBuilder.GetObject("appimage_page_box")!;
+            var shellySearchPageBox = (Box)mainBuilder.GetObject("shelly_search_page_box")!;
+            var settingsPageBox = (Box)mainBuilder.GetObject("settings_page_box")!;
+
+            var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
+
+            // Sidebar elements
+            var sidebarBox = (Box)mainBuilder.GetObject("SidebarBox")!;
+            var sidebarToggle = (ToggleButton)mainBuilder.GetObject("SidebarToggleButton")!;
+            var topHeaderBar = (HeaderBar)mainBuilder.GetObject("TopHeaderBar")!;
+            var sidebarPackagesBtn = (ToggleButton)mainBuilder.GetObject("SidebarPackagesButton")!;
+            var sidebarAurBtn = (ToggleButton)mainBuilder.GetObject("SidebarAurButton")!;
+            var sidebarFlatpakBtn = (ToggleButton)mainBuilder.GetObject("SidebarFlatpakButton")!;
+            var sidebarAppImageBtn = (ToggleButton)mainBuilder.GetObject("SidebarAppImageButton")!;
+            var sidebarSearchBtn = (ToggleButton)mainBuilder.GetObject("SidebarSearchButton")!;
+            var sidebarPackagesLabel = (Label)mainBuilder.GetObject("SidebarPackagesLabel")!;
+            var sidebarAurLabel = (Label)mainBuilder.GetObject("SidebarAurLabel")!;
+            var sidebarFlatpakLabel = (Label)mainBuilder.GetObject("SidebarFlatpakLabel")!;
+            var sidebarAppImageLabel = (Label)mainBuilder.GetObject("SidebarAppImageLabel")!;
+            var sidebarSearchLabel = (Label)mainBuilder.GetObject("SidebarSearchLabel")!;
+
             var quitAction = Gio.SimpleAction.New("quit", null);
             quitAction.OnActivate += (_, _) => application.Quit();
             application.AddAction(quitAction);
 
             var preferencesAction = Gio.SimpleAction.New("preferences", null);
-            preferencesAction.OnActivate += (_, _) => Console.WriteLine("Preferences clicked");
+            preferencesAction.OnActivate += (_, _) => settingsStack.SetVisibleChildName("settings_page");
             application.AddAction(preferencesAction);
+
+            var archNews = Gio.SimpleAction.New("news", null);
+            archNews.OnActivate += (_, _) =>
+            {
+                new ArchNewsDialog(serviceProvider.GetRequiredService<IArchNewsService>(), mainOverlay)
+                    .OpenArchNewsOverlay();
+            };
+            application.AddAction(archNews);
+
+            var cacheCleaner = Gio.SimpleAction.New("cacheclean", null);
+            cacheCleaner.OnActivate += (_, _) =>
+            {
+                new CacheCleanerDialog(serviceProvider.GetRequiredService<IGenericQuestionService>(),
+                    serviceProvider.GetRequiredService<IPrivilegedOperationService>(),
+                    serviceProvider.GetRequiredService<ILockoutService>(), mainOverlay).OpenCacheCleanDialog();
+            };
+            application.AddAction(cacheCleaner);
 
             var aboutAction = Gio.SimpleAction.New("about", null);
             aboutAction.OnActivate += (_, _) => Console.WriteLine("About clicked");
             application.AddAction(aboutAction);
 
-            var contentArea = (Box)mainBuilder.GetObject("ContentArea")!;
-            var mainBox = (Box)mainBuilder.GetObject("MainBox")!;
-            var sidebarBox = (Box)mainBuilder.GetObject("SidebarBox")!;
-            var collapseButton = (Button)mainBuilder.GetObject("CollapseButton")!;
-            
-            var sidebarLabels = new List<Widget>
-            {
-                (Widget)mainBuilder.GetObject("CollapseLabel")!,
-                (Widget)mainBuilder.GetObject("HomeLabel")!,
-                (Widget)mainBuilder.GetObject("PackagesHeader")!,
-                (Widget)mainBuilder.GetObject("InstallPackagesLabel")!,
-                (Widget)mainBuilder.GetObject("UpdatePackagesLabel")!,
-                (Widget)mainBuilder.GetObject("ManagePackagesLabel")!,
-                (Widget)mainBuilder.GetObject("AurHeader")!,
-                (Widget)mainBuilder.GetObject("InstallAurLabel")!,
-                (Widget)mainBuilder.GetObject("UpdateAurLabel")!,
-                (Widget)mainBuilder.GetObject("RemoveAurLabel")!,
-                (Widget)mainBuilder.GetObject("FlatpakHeader")!,
-                (Widget)mainBuilder.GetObject("InstallFlatpakLabel")!,
-                (Widget)mainBuilder.GetObject("UpdateFlatpakLabel")!,
-                (Widget)mainBuilder.GetObject("RemoveFlatpakLabel")!,
-                (Widget)mainBuilder.GetObject("AppImageHeader")!,
-                (Widget)mainBuilder.GetObject("ManageAppImageLabel")!,
-                (Widget)mainBuilder.GetObject("SettingsLabel")!
-            };
-
-            var isSidebarCollapsed = false;
-            collapseButton.OnClicked += (_, _) =>
-            {
-                isSidebarCollapsed = !isSidebarCollapsed;
-                foreach (var label in sidebarLabels)
-                {
-                    label.Visible = !isSidebarCollapsed;
-                }
-                sidebarBox.WidthRequest = isSidebarCollapsed ? 50 : 180;
-                collapseButton.TooltipText = isSidebarCollapsed ? "Expand" : "Collapse";
-                
-                foreach (var buttonId in new[] { 
-                    "CollapseButton", "HomeButton", "InstallPackagesButton", "UpdatePackagesButton", "ManagePackagesButton",
-                    "InstallAurButton", "UpdateAurButton", "RemoveAurButton",
-                    "InstallFlatpakButton", "UpdateFlatpakButton", "RemoveFlatpakButton",
-                    "ManageAppImageButton",
-                    "SettingsButton" 
-                })
-                {
-                    var button = (Button)mainBuilder.GetObject(buttonId)!;
-                    if (button.Child is Box buttonBox)
-                    {
-                        buttonBox.Halign = isSidebarCollapsed ? Align.Center : Align.Start;
-                    }
-                }
-            };
-
-            var homeButton = (Button)mainBuilder.GetObject("HomeButton")!;
-            var settingsButton = (Button)mainBuilder.GetObject("SettingsButton")!;
-            
-            var installPackagesButton = (Button)mainBuilder.GetObject("InstallPackagesButton")!;
-            var updatePackagesButton = (Button)mainBuilder.GetObject("UpdatePackagesButton")!;
-            var managePackagesButton = (Button)mainBuilder.GetObject("ManagePackagesButton")!;
-            
-            var aurBox = (Box)mainBuilder.GetObject("AurBox")!;
-            var installAurButton = (Button)mainBuilder.GetObject("InstallAurButton")!;
-            var updateAurButton = (Button)mainBuilder.GetObject("UpdateAurButton")!;
-            var removeAurButton = (Button)mainBuilder.GetObject("RemoveAurButton")!;
-            
-            var flatpakBox = (Box)mainBuilder.GetObject("FlatpakBox")!;
-            var installFlatpakButton = (Button)mainBuilder.GetObject("InstallFlatpakButton")!;
-            var updateFlatpakButton = (Button)mainBuilder.GetObject("UpdateFlatpakButton")!;
-            var removeFlatpakButton = (Button)mainBuilder.GetObject("RemoveFlatpakButton")!;
-            
-            var appImageBox = (Box)mainBuilder.GetObject("AppImageBox")!;
-            var manageAppImageButton = (Button)mainBuilder.GetObject("ManageAppImageButton")!;
-
             var configService = serviceProvider.GetRequiredService<IConfigService>();
             var initialConfig = configService.LoadConfig();
 
-            aurBox.Visible = initialConfig.AurEnabled;
-            flatpakBox.Visible = initialConfig.FlatPackEnabled;
-            appImageBox.Visible = initialConfig.AppImageEnabled;
+            List<IShellyWindow> currentPackagesWindows = [];
+            List<IShellyWindow> currentAurWindows = [];
+            IShellyWindow? currentFlatpakWindow = null;
+            IShellyWindow? currentAppImageWindow = null;
+            IShellyWindow? currentShellySearchWindow = null;
+
+            void UnloadPage(Box pageBox, IEnumerable<IShellyWindow> windows)
+            {
+                while (pageBox.GetFirstChild() is { } child)
+                {
+                    pageBox.Remove(child);
+                    child.Unparent();
+                }
+
+                foreach (var w in windows)
+                    w.Dispose();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            void LoadPackagesPage()
+            {
+                var nb = Notebook.New();
+                nb.Hexpand = true;
+                nb.Vexpand = true;
+                var w1 = serviceProvider.GetRequiredService<PackageInstall>();
+                nb.AppendPage(w1.CreateWindow(), Label.New("Install"));
+                var w2 = serviceProvider.GetRequiredService<PackageUpdate>();
+                nb.AppendPage(w2.CreateWindow(), Label.New("Updates"));
+                var w3 = serviceProvider.GetRequiredService<PackageManagement>();
+                nb.AppendPage(w3.CreateWindow(), Label.New("Manage"));
+                packagesPageBox.Append(nb);
+                currentPackagesWindows = [w1, w2, w3];
+            }
+
+            void LoadAurPage()
+            {
+                var nb = Notebook.New();
+                nb.Hexpand = true;
+                nb.Vexpand = true;
+                var w1 = serviceProvider.GetRequiredService<AurInstall>();
+                nb.AppendPage(w1.CreateWindow(), Label.New("Install"));
+                var w2 = serviceProvider.GetRequiredService<AurUpdate>();
+                nb.AppendPage(w2.CreateWindow(), Label.New("Updates"));
+                var w3 = serviceProvider.GetRequiredService<AurRemove>();
+                nb.AppendPage(w3.CreateWindow(), Label.New("Remove"));
+                aurPageBox.Append(nb);
+                currentAurWindows = [w1, w2, w3];
+            }
+
+            void LoadFlatpakPage()
+            {
+                var w = serviceProvider.GetRequiredService<FlatpakInstall>();
+                flatpakPageBox.Append(w.CreateWindow());
+                currentFlatpakWindow = w;
+            }
+
+            void LoadAppImagePage()
+            {
+                var w = serviceProvider.GetRequiredService<AppImage>();
+                appImagePageBox.Append(w.CreateWindow());
+                currentAppImageWindow = w;
+            }
+
+            void LoadShellySearchPage()
+            {
+                var w = serviceProvider.GetRequiredService<ShellySearch>();
+                shellySearchPageBox.Append(w.CreateWindow());
+                currentShellySearchWindow = w;
+            }
+
+            var settingsWindow = serviceProvider.GetRequiredService<Settings>();
+            settingsPageBox.Append(settingsWindow.CreateWindow());
+
+            settingsStack.GetPage(aurPageBox).Visible = initialConfig.AurEnabled;
+            settingsStack.GetPage(flatpakPageBox).Visible = initialConfig.FlatPackEnabled;
+            settingsStack.GetPage(appImagePageBox).Visible = initialConfig.AppImageEnabled;
+            settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
+
+            // Sidebar setup - controlled by UseOldMenu config
+            if (initialConfig.UseOldMenu)
+            {
+                sidebarBox.Visible = true;
+                topHeaderBar.Visible = false;
+
+                sidebarAurBtn.Visible = initialConfig.AurEnabled;
+                sidebarFlatpakBtn.Visible = initialConfig.FlatPackEnabled;
+                sidebarAppImageBtn.Visible = initialConfig.AppImageEnabled;
+                sidebarSearchBtn.Visible = initialConfig.ShellySearchEnabled;
+                
+                var aurChild = sidebarAurBtn.GetChild();
+                if (aurChild != null)
+                {
+                    var aurBox = (Box)aurChild;
+                    var aurImage = (Image)aurBox.GetFirstChild()!;
+                    aurImage.IconName = ImageHelper.GetIconWithFallback("arch-symbolic", "distributor-logo-arch", "distributor-logo-archlinux");
+                }
+                var flatpakChild = sidebarFlatpakBtn.GetChild();
+                if (flatpakChild != null)
+                {
+                    var flatpakBox = (Box)flatpakChild;
+                    var flatpakImage = (Image)flatpakBox.GetFirstChild()!;
+                    flatpakImage.IconName = ImageHelper.GetIconWithFallback("flatpak-symbolic", "flatpak", "flatpak-logo", "folder-flatpak-symbolic", "application-vnd.flatpak");
+                }
+                
+                sidebarToggle.OnToggled += (_, _) =>
+                {
+                    var expanded = sidebarToggle.Active;
+                    sidebarBox.WidthRequest = expanded ? 180 : 48;
+                    sidebarPackagesLabel.Visible = expanded;
+                    sidebarAurLabel.Visible = expanded;
+                    sidebarFlatpakLabel.Visible = expanded;
+                    sidebarAppImageLabel.Visible = expanded;
+                    sidebarSearchLabel.Visible = expanded;
+                };
+                
+                var sidebarButtons = new (ToggleButton btn, string page)[]
+                {
+                    (sidebarPackagesBtn, "packages_page"),
+                    (sidebarAurBtn, "aur_page"),
+                    (sidebarFlatpakBtn, "flatpak_page"),
+                    (sidebarAppImageBtn, "appimage_page"),
+                    (sidebarSearchBtn, "shelly_search_page"),
+                };
+
+                var suppressSidebarToggle = false;
+
+                void SetActiveSidebarButton(string pageName)
+                {
+                    suppressSidebarToggle = true;
+                    foreach (var (btn, page) in sidebarButtons)
+                        btn.Active = page == pageName;
+                    suppressSidebarToggle = false;
+                }
+
+                foreach (var (btn, page) in sidebarButtons)
+                {
+                    var capturedPage = page;
+                    btn.OnToggled += (_, _) =>
+                    {
+                        if (suppressSidebarToggle) return;
+                        if (btn.Active)
+                        {
+                            settingsStack.SetVisibleChildName(capturedPage);
+                            SetActiveSidebarButton(capturedPage);
+                        }
+                        else
+                        {
+                            suppressSidebarToggle = true;
+                            btn.Active = true;
+                            suppressSidebarToggle = false;
+                        }
+                    };
+                }
+            }
+
+            var initialPageEnum = initialConfig.DefaultPageDropDown;
+            
+            // Safeguard: if the saved default page is disabled, fall back to packages
+            if (initialPageEnum == ShellyTabs.Aur && !initialConfig.AurEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.Flatpak && !initialConfig.FlatPackEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.AppImage && !initialConfig.AppImageEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.ShellySearch && !initialConfig.ShellySearchEnabled) initialPageEnum = ShellyTabs.Packages;
+
+            string initialPageName;
+            switch (initialPageEnum)
+            {
+                case ShellyTabs.Aur:
+                    LoadAurPage();
+                    initialPageName = "aur_page";
+                    break;
+                case ShellyTabs.Flatpak:
+                    LoadFlatpakPage();
+                    initialPageName = "flatpak_page";
+                    break;
+                case ShellyTabs.AppImage:
+                    LoadAppImagePage();
+                    initialPageName = "appimage_page";
+                    break;
+                case ShellyTabs.ShellySearch:
+                    LoadShellySearchPage();
+                    initialPageName = "shelly_search_page";
+                    break;
+                case ShellyTabs.Packages:
+                default:
+                    LoadPackagesPage();
+                    initialPageName = "packages_page";
+                    break;
+            }
+            
+            settingsStack.SetVisibleChildName(initialPageName);
+            
+            if (initialConfig.UseOldMenu)
+            {
+                sidebarPackagesBtn.Active = initialPageName == "packages_page";
+                sidebarAurBtn.Active = initialPageName == "aur_page";
+                sidebarFlatpakBtn.Active = initialPageName == "flatpak_page";
+                sidebarAppImageBtn.Active = initialPageName == "appimage_page";
+                sidebarSearchBtn.Active = initialPageName == "shelly_search_page";
+            }
+
+            settingsWindow.ConfigChanged += (config) =>
+            {
+                settingsStack.GetPage(aurPageBox).Visible = config.AurEnabled;
+                settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
+                settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
+                settingsStack.GetPage(shellySearchPageBox).Visible = config.ShellySearchEnabled;
+                if (!initialConfig.UseOldMenu) return;
+                sidebarAurBtn.Visible = config.AurEnabled;
+                sidebarFlatpakBtn.Visible = config.FlatPackEnabled;
+                sidebarAppImageBtn.Visible = config.AppImageEnabled;
+                sidebarSearchBtn.Visible = config.ShellySearchEnabled;
+            };
+            settingsWindow.NavigationToPackages += () =>
+            {
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    settingsStack.SetVisibleChildName("packages_page");
+                    return false;
+                });
+            };
+
+            var dirtyService = serviceProvider.GetRequiredService<IDirtyService>();
+            dirtyService.Dirtied += (_, e) =>
+            {
+                if (!e.Matches(DirtyScopes.Config)) return;
+                GLib.Functions.IdleAdd(0, () =>
+                {
+                    var c = configService.LoadConfig();
+                    settingsStack.GetPage(aurPageBox).Visible = c.AurEnabled;
+                    settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
+                    settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
+                    settingsStack.GetPage(shellySearchPageBox).Visible = c.ShellySearchEnabled;
+                    if (initialConfig.UseOldMenu)
+                    {
+                        sidebarAurBtn.Visible = c.AurEnabled;
+                        sidebarFlatpakBtn.Visible = c.FlatPackEnabled;
+                        sidebarAppImageBtn.Visible = c.AppImageEnabled;
+                        sidebarSearchBtn.Visible = c.ShellySearchEnabled;
+                    }
+                    dirtyService.Clear(DirtyScopes.Config);
+                    return false;
+                });
+            };
+
+            var previousPage = initialPageName;
+
+            settingsStack.OnNotify += (_, notifySignalArgs) =>
+            {
+                if (notifySignalArgs.Pspec.GetName() != "visible-child-name") return;
+                var currentPage = settingsStack.GetVisibleChildName();
+                if (currentPage == previousPage) return;
+
+                switch (previousPage)
+                {
+                    case "packages_page":
+                        UnloadPage(packagesPageBox, currentPackagesWindows);
+                        currentPackagesWindows = [];
+                        break;
+                    case "aur_page":
+                        UnloadPage(aurPageBox, currentAurWindows);
+                        currentAurWindows = [];
+                        break;
+                    case "flatpak_page":
+                        if (currentFlatpakWindow != null)
+                        {
+                            UnloadPage(flatpakPageBox, [currentFlatpakWindow]);
+                            currentFlatpakWindow = null;
+                        }
+
+                        break;
+                    case "appimage_page":
+                        if (currentAppImageWindow != null)
+                        {
+                            UnloadPage(appImagePageBox, [currentAppImageWindow]);
+                            currentAppImageWindow = null;
+                        }
+
+                        break;
+                    case "shelly_search_page":
+                        if (currentShellySearchWindow != null)
+                        {
+                            UnloadPage(shellySearchPageBox, [currentShellySearchWindow]);
+                            currentShellySearchWindow = null;
+                        }
+
+                        break;
+                }
+
+                switch (currentPage)
+                {
+                    case "packages_page": LoadPackagesPage(); break;
+                    case "aur_page": LoadAurPage(); break;
+                    case "flatpak_page": LoadFlatpakPage(); break;
+                    case "appimage_page": LoadAppImagePage(); break;
+                    case "shelly_search_page": LoadShellySearchPage(); break;
+                }
+
+                previousPage = currentPage;
+            };
+
 
             //Setting window height
             window.DefaultHeight = double.ConvertToInteger<int>(initialConfig.WindowHeight);
@@ -297,181 +571,7 @@ sealed class Program
                 });
             };
 
-            var horizontalActionBar = (ActionBar)mainBuilder.GetObject("HorizontalActionBar")!;
-            
-            configService.ConfigSaved += (_, updatedConfig) =>
-            {
-                GLib.Functions.IdleAdd(0, () =>
-                {
-                    aurBox.Visible = updatedConfig.AurEnabled;
-                    flatpakBox.Visible = updatedConfig.FlatPackEnabled;
-                    appImageBox.Visible = updatedConfig.AppImageEnabled;
-
-                    horizontalActionBar.Visible = updatedConfig.UseOldMenu;
-                    sidebarBox.Visible = !updatedConfig.UseOldMenu;
-
-                    if (mainBuilder.GetObject("AurMenuButton") is MenuButton aurMenuButton)
-                        aurMenuButton.Visible = updatedConfig.AurEnabled;
-                    if (mainBuilder.GetObject("FlatpakMenuButton") is MenuButton flatpakMenuButton)
-                        flatpakMenuButton.Visible = updatedConfig.FlatPackEnabled;
-                    if (mainBuilder.GetObject("AppImageMenuButton") is MenuButton appImageMenuButton)
-                        appImageMenuButton.Visible = updatedConfig.AppImageEnabled;
-
-                    return false;
-                });
-            };
-
-            var sidebarButtons = new Dictionary<string, Button>
-            {
-                { "HomeButton", homeButton },
-                { "SettingsButton", settingsButton },
-                { "InstallPackagesButton", installPackagesButton },
-                { "UpdatePackagesButton", updatePackagesButton },
-                { "ManagePackagesButton", managePackagesButton },
-                { "InstallAurButton", installAurButton },
-                { "UpdateAurButton", updateAurButton },
-                { "RemoveAurButton", removeAurButton },
-                { "InstallFlatpakButton", installFlatpakButton },
-                { "UpdateFlatpakButton", updateFlatpakButton },
-                { "RemoveFlatpakButton", removeFlatpakButton },
-                { "ManageAppImageButton", manageAppImageButton }
-            };
-
-            IShellyWindow? currentPage = null;
-
-            homeButton.OnClicked += (_, _) => NavigateTo<HomeWindow>("HomeButton");
-            settingsButton.OnClicked += (_, _) => NavigateTo<Settings>("SettingsButton");
-            
-            installPackagesButton.OnClicked += (_, _) => NavigateTo<PackageInstall>("InstallPackagesButton");
-            updatePackagesButton.OnClicked += (_, _) => NavigateTo<PackageUpdate>("UpdatePackagesButton");
-            managePackagesButton.OnClicked += (_, _) => NavigateTo<PackageManagement>("ManagePackagesButton");
-            
-            installAurButton.OnClicked += (_, _) => NavigateTo<AurInstall>("InstallAurButton");
-            updateAurButton.OnClicked += (_, _) => NavigateTo<AurUpdate>("UpdateAurButton");
-            removeAurButton.OnClicked += (_, _) => NavigateTo<AurRemove>("RemoveAurButton");
-            
-            installFlatpakButton.OnClicked += (_, _) => NavigateTo<FlatpakInstall>("InstallFlatpakButton");
-            updateFlatpakButton.OnClicked += (_, _) => NavigateTo<FlatpakUpdate>("UpdateFlatpakButton");
-            removeFlatpakButton.OnClicked += (_, _) => NavigateTo<FlatpakRemove>("RemoveFlatpakButton");
-            
-            manageAppImageButton.OnClicked += (_, _) => NavigateTo<AppImage>("ManageAppImageButton");
-
-            horizontalActionBar.Visible = initialConfig.UseOldMenu;
-            sidebarBox.Visible = !initialConfig.UseOldMenu;
-
-            // Always wire horizontal menu events regardless of initial visibility
-            var homeButtonHoriz = (Button)mainBuilder.GetObject("HomeButtonHorizontal")!;
-            var settingsButtonHoriz = (Button)mainBuilder.GetObject("SettingsButtonHorizontal")!;
-            var aurMenuButton = (MenuButton)mainBuilder.GetObject("AurMenuButton")!;
-            var flatpakMenuButton = (MenuButton)mainBuilder.GetObject("FlatpakMenuButton")!;
-            var appImageMenuButton = (MenuButton)mainBuilder.GetObject("AppImageMenuButton")!;
-
-            aurMenuButton.Visible = initialConfig.AurEnabled;
-            flatpakMenuButton.Visible = initialConfig.FlatPackEnabled;
-            appImageMenuButton.Visible = initialConfig.AppImageEnabled;
-
-            homeButtonHoriz.OnClicked += (_, _) => NavigateTo<HomeWindow>("HomeButton");
-            settingsButtonHoriz.OnClicked += (_, _) => NavigateTo<Settings>("SettingsButton");
-
-            AddAction("install-packages", () => NavigateTo<PackageInstall>("InstallPackagesButton"));
-            AddAction("update-packages", () => NavigateTo<PackageUpdate>("UpdatePackagesButton"));
-            AddAction("manage-packages", () => NavigateTo<PackageManagement>("ManagePackagesButton"));
-            AddAction("install-aur", () => NavigateTo<AurInstall>("InstallAurButton"));
-            AddAction("update-aur", () => NavigateTo<AurUpdate>("UpdateAurButton"));
-            AddAction("remove-aur", () => NavigateTo<AurRemove>("RemoveAurButton"));
-            AddAction("install-flatpak", () => NavigateTo<FlatpakInstall>("InstallFlatpakButton"));
-            AddAction("update-flatpak", () => NavigateTo<FlatpakUpdate>("UpdateFlatpakButton"));
-            AddAction("remove-flatpak", () => NavigateTo<FlatpakRemove>("RemoveFlatpakButton"));
-            AddAction("manage-appimage", () => NavigateTo<AppImage>("ManageAppImageButton"));
-
-            var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
-
-            if (!initialConfig.NewInstallInitSettings)
-            {
-                sidebarBox.Visible = false;
-                horizontalActionBar.Visible = false;
-
-                var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
-                var setupWidget = setupWindow.CreateWindow();
-                
-                contentArea.Append(setupWidget);
-                currentPage = setupWindow;
-
-                setupWindow.SetupFinished += (_, _) =>
-                {
-                    GLib.Functions.IdleAdd(0, () =>
-                    {
-                        var updatedConfig = configService.LoadConfig();
-                        sidebarBox.Visible = !updatedConfig.UseOldMenu;
-                        horizontalActionBar.Visible = updatedConfig.UseOldMenu;
-
-                        contentArea.Remove(setupWidget);
-                        setupWindow.Dispose();
-
-                        var homeWindow = serviceProvider.GetRequiredService<HomeWindow>();
-                        contentArea.Append(homeWindow.CreateWindow());
-                        currentPage = homeWindow;
-                        UpdateSelectedButton("HomeButton");
-                        return false;
-                    });
-                };
-            }
-            else
-            {
-                var initialHomeWindow = serviceProvider.GetRequiredService<HomeWindow>();
-                contentArea.Append(initialHomeWindow.CreateWindow());
-                currentPage = initialHomeWindow;
-                UpdateSelectedButton("HomeButton");
-            }
-
-            // Navigate to requested page from CLI args (ignored during first-launch setup)
-            if (_requestedPage != null && currentPage is not SetupWindow)
-            {
-                switch (_requestedPage)
-                {
-                    case "flatpak-install":
-                        NavigateTo<FlatpakInstall>("InstallFlatpakButton");
-                        break;
-                    case "flatpak-update":
-                        NavigateTo<FlatpakUpdate>("UpdateFlatpakButton");
-                        break;
-                    case "flatpak-remove":
-                        NavigateTo<FlatpakRemove>("RemoveFlatpakButton");
-                        break;
-                    case "aur-install":
-                        NavigateTo<AurInstall>("InstallAurButton");
-                        break;
-                    case "aur-update":
-                        NavigateTo<AurUpdate>("UpdateAurButton");
-                        break;
-                    case "aur-remove":
-                        NavigateTo<AurRemove>("RemoveAurButton");
-                        break;
-                    case "install-packages":
-                        NavigateTo<PackageInstall>("InstallPackagesButton");
-                        break;
-                    case "update-packages":
-                        NavigateTo<PackageUpdate>("UpdatePackagesButton");
-                        break;
-                    case "manage-packages":
-                        NavigateTo<PackageManagement>("ManagePackagesButton");
-                        break;
-                }
-            }
-
             var lockoutDialog = serviceProvider.GetRequiredService<LockoutDialog>();
-
-            var keyController = EventControllerKey.New();
-            keyController.OnKeyPressed += (_, args) =>
-            {
-                if (!ShouldHandleNavigationShortcut())
-                {
-                    return false;
-                }
-
-                return TryHandleNavigationShortcut(args.Keyval, args.State);
-            };
-            window.AddController(keyController);
 
             //Subscribing to credential required to trigger the password dialog
             var credentialManager = serviceProvider.GetRequiredService<ICredentialManager>();
@@ -486,7 +586,7 @@ sealed class Program
             };
 
             var alpmEventService = serviceProvider.GetRequiredService<IAlpmEventService>();
-            
+
             alpmEventService.Question += (s, e) =>
             {
                 GLib.Functions.IdleAdd(0, () =>
@@ -515,7 +615,7 @@ sealed class Program
                     return false;
                 });
             };
-            
+
             genericQuestionService.ToastMessageRequested += (s, e) =>
             {
                 GLib.Functions.IdleAdd(0, () =>
@@ -524,7 +624,7 @@ sealed class Program
                     return false;
                 });
             };
-            
+
             genericQuestionService.Dialog += (s, e) =>
             {
                 GLib.Functions.IdleAdd(0, () =>
@@ -537,6 +637,24 @@ sealed class Program
 
             window.Show();
 
+            if (initialConfig.NewInstall && !initialConfig.NewInstallInitSettings)
+            {
+                var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
+                var setupWidget = setupWindow.CreateWindow();
+
+                mainOverlay.AddOverlay(setupWidget);
+
+                setupWindow.SetupFinished += (_, _) =>
+                {
+                    GLib.Functions.IdleAdd(0, () =>
+                    {
+                        mainOverlay.RemoveOverlay(setupWidget);
+                        setupWindow.Dispose();
+                        return false;
+                    });
+                };
+            }
+
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
             if (assemblyVersion != configService.LoadConfig().CurrentVersion)
             {
@@ -544,7 +662,7 @@ sealed class Program
                 {
                     var notes = new GitHubUpdateService().PullReleaseNotesAsync();
                     ReleaseNotesDialog.ShowReleaseNotesDialog(mainOverlay, notes.Result);
-                    
+
                     var config = configService.LoadConfig();
                     config.CurrentVersion = assemblyVersion;
                     configService.SaveConfig(config);
@@ -552,7 +670,6 @@ sealed class Program
                 else
                 {
                     var config = configService.LoadConfig();
-                    config.NewInstall = false;
                     config.CurrentVersion = assemblyVersion;
                     configService.SaveConfig(config);
                 }
@@ -581,6 +698,7 @@ sealed class Program
                     {
                         lockoutDialog.ShowCloseButton();
                     }
+
                     return false;
                 });
             };
@@ -594,178 +712,121 @@ sealed class Program
                 });
             };
 
+            var historyMenuButton = (MenuButton)mainBuilder.GetObject("history_menu_button")!;
+            var historyListBox = (ListBox)mainBuilder.GetObject("history_list_box")!;
+            var historyPopoverTitle = (Label)mainBuilder.GetObject("history_popover_title")!;
+
+            BottomBarExtensions.SetupHistoryButton(
+                historyMenuButton,
+                historyListBox,
+                historyPopoverTitle,
+                serviceProvider,
+                genericQuestionService,
+                mainOverlay);
+
+            var updatesMenuButton = (MenuButton)mainBuilder.GetObject("updates_menu_button")!;
+            var updatesListBox = (ListBox)mainBuilder.GetObject("updates_list_box")!;
+            var updatesPopoverTitle = (Label)mainBuilder.GetObject("updates_popover_title")!;
+            var packageUpdateNotifier = serviceProvider.GetRequiredService<IPackageUpdateNotifier>();
+
+            BottomBarExtensions.SetupUpdatesButton(
+                updatesMenuButton,
+                updatesListBox,
+                updatesPopoverTitle,
+                serviceProvider,
+                packageUpdateNotifier);
+
+            var upgradeAllButton = (Button)mainBuilder.GetObject("upgrade_all_button")!;
+            upgradeAllButton.OnClicked += async (_, _) => { await UpgradeAllAsync(); };
             return;
 
-            void UpdateSelectedButton(string selectedId)
+            async Task UpgradeAllAsync()
             {
-                foreach (var kvp in sidebarButtons)
+                upgradeAllButton.Sensitive = false;
+                var unprivilegedOperationService = serviceProvider.GetRequiredService<IUnprivilegedOperationService>();
+                var privilegedOperationService = serviceProvider.GetRequiredService<IPrivilegedOperationService>();
+                try
                 {
-                    if (kvp.Key == selectedId)
+                    var packagesNeedingUpdate = await unprivilegedOperationService.CheckForApplicationUpdates();
+
+                    if (packagesNeedingUpdate.Aur.Count == 0 && packagesNeedingUpdate.Packages.Count == 0 &&
+                        packagesNeedingUpdate.Flatpaks.Count == 0)
                     {
-                        kvp.Value.AddCssClass("selected");
-                    }
-                    else
-                    {
-                        kvp.Value.RemoveCssClass("selected");
-                    }
-                }
-            }
-
-            void NavigateTo<T>(string? buttonId = null) where T : IShellyWindow
-            {
-                NavigateWithQuery<T>(null, buttonId);
-            }
-
-            void NavigateWithQuery<T>(string? query, string? buttonId = null) where T : IShellyWindow
-            {
-                if (currentPage is SetupWindow)
-                {
-                    return;
-                }
-
-                if (buttonId != null)
-                {
-                    UpdateSelectedButton(buttonId);
-                }
-
-                while (contentArea.GetFirstChild() is { } child)
-                {
-                    contentArea.Remove(child);
-                    child.Unparent();
-                }
-                
-
-                currentPage?.Dispose();
-                currentPage = null;
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                var page = serviceProvider.GetRequiredService<T>();
-                if (page is Settings settings)
-                {
-                    settings.NavigationToHomeRequested += () => NavigateTo<HomeWindow>("HomeButton");
-                }
-
-                if (page is MetaSearch metaSearch && query != null)
-                {
-                    contentArea.Append(metaSearch.CreateWindow(query));
-                }
-                else
-                {
-                    contentArea.Append(page.CreateWindow());
-                }
-
-                currentPage = page;
-            }
-
-            void AddAction(string name, Action onActivate)
-            {
-                var action = Gio.SimpleAction.New(name, null);
-                action.OnActivate += (_, _) => { onActivate(); };
-                application.AddAction(action);
-            }
-
-            bool ShouldHandleNavigationShortcut()
-            {
-                if (lockoutDialog.IsVisible)
-                {
-                    return false;
-                }
-
-                if (HasBlockingOverlay())
-                {
-                    return false;
-                }
-
-                var focus = window.GetFocus();
-                if (focus == null)
-                {
-                    return true;
-                }
-
-                if (!IsDescendantOf(focus, mainBox))
-                {
-                    return false;
-                }
-
-                return !IsEditableWidget(focus);
-            }
-
-            bool HasBlockingOverlay()
-            {
-                for (Widget? child = mainOverlay.GetFirstChild(); child != null; child = child.GetNextSibling())
-                {
-                    if (child == mainBox || !child.Visible)
-                    {
-                        continue;
+                        var toastArgs = new ToastMessageEventArgs("No packages need to be upgraded");
+                        genericQuestionService.RaiseToastMessage(toastArgs);
+                        return;
                     }
 
-                    if (child.HasCssClass("toast-message"))
+                    if (!configService.LoadConfig().NoConfirm)
                     {
-                        continue;
+                        var confirmArgs = new GenericQuestionEventArgs(
+                            "Upgrade All Packages?",
+                            BottomBarExtensions.BuildUpgradeConfirmationMessage(packagesNeedingUpdate),
+                            true
+                        );
+
+                        genericQuestionService.RaiseQuestion(confirmArgs);
+                        if (!await confirmArgs.ResponseTask)
+                        {
+                            return;
+                        }
                     }
 
-                    return true;
-                }
-
-                return false;
-            }
-
-            bool TryHandleNavigationShortcut(uint keyval, Gdk.ModifierType state)
-            {
-                var relevantModifiers = state & (Gdk.ModifierType.ControlMask | Gdk.ModifierType.AltMask |
-                                                Gdk.ModifierType.ShiftMask | Gdk.ModifierType.SuperMask |
-                                                Gdk.ModifierType.MetaMask);
-                if (relevantModifiers != (Gdk.ModifierType.ControlMask | Gdk.ModifierType.AltMask))
-                {
-                    return false;
-                }
-
-                var key = char.ToLowerInvariant((char)keyval);
-                switch (key)
-                {
-                    case 'i':
-                        NavigateTo<PackageInstall>();
-                        return true;
-                    case 'u':
-                        NavigateTo<PackageUpdate>();
-                        return true;
-                    case 'm':
-                        NavigateTo<PackageManagement>();
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
-            static bool IsEditableWidget(Widget? widget)
-            {
-                while (widget != null)
-                {
-                    if (widget is Entry or SearchEntry or PasswordEntry or TextView or SpinButton)
+                    lockoutService.Show("Upgrading all packages...");
+                    var aurUpdates = packagesNeedingUpdate.Aur;
+                    if (aurUpdates.Count != 0)
                     {
-                        return true;
+                        var aurPackageNames = aurUpdates.Select(p => p.Name).ToList();
+                        var packageBuilds = await privilegedOperationService.GetAurPackageBuild(aurPackageNames);
+                        foreach (var pkgbuild in packageBuilds)
+                        {
+                            if (pkgbuild.PkgBuild == null) continue;
+                            var buildArgs = new PackageBuildEventArgs($"Displaying Package Build {pkgbuild.Name}",
+                                pkgbuild.PkgBuild);
+                            genericQuestionService.RaisePackageBuild(buildArgs);
+                            if (!await buildArgs.ResponseTask)
+                            {
+                                return;
+                            }
+                        }
                     }
 
-                    widget = widget.GetParent();
-                }
-
-                return false;
-            }
-
-            static bool IsDescendantOf(Widget widget, Widget ancestor)
-            {
-                Widget? current = widget;
-                while (current != null)
-                {
-                    if (current == ancestor)
+                    var upgradeResult = await privilegedOperationService.UpgradeAllAsync();
+                    if (upgradeResult.NeedsReboot)
                     {
-                        return true;
+                        var rebootArgs = new GenericQuestionEventArgs(
+                            "Reboot Required",
+                            "A full system reboot is required for updates to take effect.\n\nWould you like to reboot now?",
+                            true
+                        );
+                        genericQuestionService.RaiseQuestion(rebootArgs);
+                        if (await rebootArgs.ResponseTask)
+                        {
+                            System.Diagnostics.Process.Start("systemctl", "reboot");
+                        }
                     }
-
-                    current = current.GetParent();
+                    else if (upgradeResult.FailedServiceRestarts.Count > 0)
+                    {
+                        var failureList = string.Join("\n", upgradeResult.FailedServiceRestarts
+                            .Select(f => $"  • {f.Service}: {f.Error}"));
+                        var failArgs = new GenericQuestionEventArgs(
+                            "Service Restart Failures",
+                            $"The following services failed to restart automatically:\n{failureList}",
+                            false
+                        );
+                        genericQuestionService.RaiseQuestion(failArgs);
+                        await failArgs.ResponseTask;
+                    }
                 }
-
-                return false;
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+                finally
+                {
+                    lockoutService.Hide();
+                    upgradeAllButton.Sensitive = true;
+                }
             }
         };
 

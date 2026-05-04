@@ -1,9 +1,12 @@
 using GObject;
 using Gtk;
 using Shelly.Gtk.Helpers;
+using Shelly.Gtk.Enums;
+using static Shelly.Gtk.Helpers.AurColumnViewSorter;
 using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.AUR.GObjects;
+// ReSharper disable NotAccessedField.Local
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -13,10 +16,14 @@ public class AurUpdate(
     IPrivilegedOperationService privilegedOperationService,
     ILockoutService lockoutService,
     IConfigService configService,
-    IGenericQuestionService genericQuestionService) : IShellyWindow
+    IGenericQuestionService genericQuestionService,
+    IDirtyService dirtyService) : IShellyWindow, IReloadable
 {
+    private DirtySubscription? _sub;
+    public string[] ListensTo => [DirtyScopes.AurUpdates, DirtyScopes.AurInstalled];
     private Box _box = null!;
-    private readonly CancellationTokenSource _cts = new();
+    private CancellationTokenSource _cts = new();
+    private int _loadGeneration;
     private ColumnView _columnView = null!;
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
@@ -26,6 +33,7 @@ public class AurUpdate(
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _versionFactory = null!;
+    private ColumnViewSorter _columnViewSorter = null!;
     private Box _detailBox = null!;
     private AurUpdateGObject? _currentDetailPkg;
     private Revealer _detailRevealer = null!;
@@ -70,18 +78,49 @@ public class AurUpdate(
         _updateButton.SetSensitive(false);
 
         _listStore = Gio.ListStore.New(AurUpdateGObject.GetGType());
-        _filter = CustomFilter.New(FilterPackage);
+        _filter = PackageSearch.CreateSafeFilter(FilterPackage);
         _filterListModel = FilterListModel.New(_listStore, _filter);
         _selectionModel = SingleSelection.New(_filterListModel);
         _selectionModel.CanUnselect = true;
-        _selectionModel.Autoselect = false;
+        _selectionModel.Autoselect = true;
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _versionColumn);
+        
+        // Creating sorter
+        _nameColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        _versionColumn.Sorter = CustomSorter.New<AurPackageGObject>((a, b) => 0);
+        
+        _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
 
-        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.End);
+        _columnViewSorter.OnChanged += (_, _) =>
+        {
+            var primaryColumn =
+                _columnViewSorter.GetPrimarySortColumn();
+            
+            if (primaryColumn is null)
+                return;
+            
+            var sortColumn = GetSortColumn(primaryColumn);
+            
+            var order =
+                _columnViewSorter.GetPrimarySortOrder();
+            
+            if (sortColumn is null)
+                return;
 
-        _columnView.OnRealize += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+            Sort(
+                _listStore,
+                _packageGObjectRefs,
+                sortColumn.Value,
+                order
+            );
+        };        
+
+
+        ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
+
+        _columnView.OnRealize += (_, _) => { Reload(); };
         _columnView.OnActivate += (_, _) =>
         {
             var item = _selectionModel.GetSelectedItem();
@@ -96,7 +135,8 @@ public class AurUpdate(
             ApplyFilter();
         };
         _updateButton.OnClicked += (_, _) => { _ = RemovePackagesAsync(); };
-        _showHiddenCheck.OnToggled += (_, _) => { _ = LoadDataAsync(_cts.Token); };
+        _showHiddenCheck.OnToggled += (_, _) => { Reload(); };
+        _sub = DirtySubscription.Attach(dirtyService, this);
 
         _selectionModel.OnSelectionChanged += (_, _) =>
         {
@@ -116,14 +156,25 @@ public class AurUpdate(
 
         return _box;
     }
+    
+    private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
+    {
+        if (column == _nameColumn)
+            return PackageSortColumn.Name;
+        
+        if (column == _versionColumn)
+            return PackageSortColumn.Version;
+
+        return null;
+    }
+
 
     private bool FilterPackage(GObject.Object obj)
     {
-        if (obj is not AurUpdateGObject pkgObj || pkgObj.Package == null)
+        if (obj is not AurUpdateGObject { Package: { } pkg })
             return false;
 
-        return string.IsNullOrWhiteSpace(_searchText) ||
-               pkgObj.Package.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return PackageSearch.MatchesName(pkg.Name, _searchText);
     }
 
     private void ApplyFilter()
@@ -137,7 +188,9 @@ public class AurUpdate(
         _checkFactory.OnSetup += (_, args) =>
         {
             if (args.Object is not ColumnViewCell listItem) return;
-            var check = new CheckButton { MarginStart = 10, MarginEnd = 10 };
+            var check = CheckButton.New();
+            check.MarginStart = 10;
+            check.MarginEnd = 10;
             listItem.SetChild(check);
         };
 
@@ -219,7 +272,7 @@ public class AurUpdate(
         versionColumn.SetFactory(_versionFactory);
     }
 
-    private async Task LoadDataAsync(CancellationToken ct = default)
+    private async Task LoadDataAsync(CancellationToken ct = default, int generation = 0)
     {
         try
         {
@@ -229,12 +282,22 @@ public class AurUpdate(
 
             GLib.Functions.IdleAdd(0, () =>
             {
+                if (ct.IsCancellationRequested || _loadGeneration != generation) return false;
+
+                _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
+                foreach (var r in _packageGObjectRefs) r.Dispose();
                 _packageGObjectRefs.Clear();
-                foreach (var gobject in packages.Select(dto => new AurUpdateGObject()
+                _filterListModel.SetFilter(_filter);
+                _detailRevealer.SetRevealChild(false);
+                _currentDetailPkg = null;
+
+                foreach (var gobject in packages.Select(dto =>
                          {
-                             Package = dto,
-                             IsSelected = false
+                             var o = AurUpdateGObject.NewWithProperties([]);
+                             o.Package = dto;
+                             o.IsSelected = false;
+                             return o;
                          }))
                 {
                     _packageGObjectRefs.Add(gobject);
@@ -302,15 +365,17 @@ public class AurUpdate(
                     }
                 }
 
-                var result = await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages, _runChecksCheck.GetActive());
-                
+                var result =
+                    await privilegedOperationService.UpdateAurPackagesAsync(selectedPackages,
+                        _runChecksCheck.GetActive());
+
                 if (result.Success)
                     genericQuestionService.RaiseToastMessage(new ToastMessageEventArgs(
                         $"Updated {selectedPackages.Count} Package(s)"));
                 else
                     Console.WriteLine($"Failed to remove packages: {result.Error}");
 
-                await LoadDataAsync();
+                Reload();
             }
             catch (Exception e)
             {
@@ -389,8 +454,11 @@ public class AurUpdate(
         headerBox.MarginBottom = 16;
         headerBox.MarginTop = 8;
 
-        var iconImage = new Image { PixelSize = 64, Halign = Align.Center, MarginBottom = 8 };
-
+        var iconImage = Image.New();
+        iconImage.PixelSize = 64;
+        iconImage.Halign = Align.Center;
+        iconImage.MarginBottom = 8;
+        
         iconImage.SetFromIconName("package-x-generic");
 
         headerBox.Append(iconImage);
@@ -415,7 +483,7 @@ public class AurUpdate(
         _detailBox.Append(separator);
 
         AddDetail("Version", pkg.Version);
-      
+
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -442,14 +510,24 @@ public class AurUpdate(
         }
 
         _detailRevealer.SetRevealChild(true);
-        
+    }
+
+    public void Reload()
+    {
+        var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+        Interlocked.Increment(ref _loadGeneration);
+        _ = LoadDataAsync(_cts.Token, _loadGeneration);
     }
 
     public void Dispose()
     {
+        _sub?.Dispose();
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();
+        foreach (var r in _packageGObjectRefs) r.Dispose();
         _packageGObjectRefs.Clear();
         _checkBinding.Clear();
     }

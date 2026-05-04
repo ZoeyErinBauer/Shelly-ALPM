@@ -12,8 +12,7 @@ public class PasswordDialog(ICredentialManager credentialManager)
         background.SetHalign(Align.Fill);
         background.SetValign(Align.Fill);
 
-        var baseFrame = new Frame();
-        baseFrame.SetLabel(null);
+        var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
         baseFrame.SetHexpand(true);
@@ -54,13 +53,13 @@ public class PasswordDialog(ICredentialManager credentialManager)
         var submitButton = Button.NewWithLabel("Authenticate");
         submitButton.AddCssClass("suggested-action");
 
-        cancelButton.OnClicked += async (s, e) =>
+        cancelButton.OnClicked += async (_,_) =>
         {
             await credentialManager.CompleteCredentialRequestAsync(false);
             parentOverlay.RemoveOverlay(background);
         };
 
-        submitButton.OnClicked += async (s, e) =>
+        submitButton.OnClicked += async (_,_) =>
         {
             var password = passwordEntry.GetText();
             credentialManager.StorePassword(password);
@@ -78,7 +77,7 @@ public class PasswordDialog(ICredentialManager credentialManager)
         };
 
         // Allow Enter key to submit
-        passwordEntry.OnActivate += (s, e) => submitButton.Activate();
+        passwordEntry.OnActivate += (_,_) => submitButton.Activate();
 
         buttonBox.Append(cancelButton);
         buttonBox.Append(submitButton);

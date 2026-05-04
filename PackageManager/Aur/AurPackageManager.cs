@@ -269,7 +269,10 @@ public class AurPackageManager(string? configPath = null)
     {
         try
         {
-            var url = $"https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h={packageName}";
+            // Resolve pkgname -> pkgbase: split AUR packages live under their pkgbase repo
+            var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+            Console.Error.WriteLine($"pkgbase {pkgbase}");
+            var url = $"https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h={pkgbase}";
             var response = await _httpClient.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
@@ -310,7 +313,8 @@ public class AurPackageManager(string? configPath = null)
             return;
         }
 
-        var tempPath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var tempPath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildInfo = PkgbuildParser.Parse(System.IO.Path.Combine(tempPath, "PKGBUILD"));
 
         var depends = pkgbuildInfo.ParsedDepends;
@@ -416,7 +420,8 @@ public class AurPackageManager(string? configPath = null)
 
             // Build the package using makepkg
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var tempPath = XdgPaths.ShellyCache(packageName);
+            var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+            var tempPath = XdgPaths.ShellyCache(pkgbase);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -572,9 +577,8 @@ public class AurPackageManager(string? configPath = null)
                 continue;
             }
 
-            // Find the built package file
-            var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
-            if (pkgFiles.Length == 0)
+            var pkgFile = SelectBuiltPackageFile(tempPath, packageName);
+            if (pkgFile is null)
             {
                 PackageProgress?.Invoke(this, new PackageProgressEventArgs
                 {
@@ -582,7 +586,7 @@ public class AurPackageManager(string? configPath = null)
                     CurrentIndex = i + 1,
                     TotalCount = totalCount,
                     Status = PackageProgressStatus.Failed,
-                    Message = "No package file found after build"
+                    Message = $"No package file matching '{packageName}' produced by makepkg"
                 });
                 continue;
             }
@@ -598,7 +602,7 @@ public class AurPackageManager(string? configPath = null)
 
             try
             {
-                _ = _alpm.InstallLocalPackage(pkgFiles[0]).Result;
+                _ = _alpm.InstallLocalPackage(pkgFile).Result;
                 _alpm.Refresh();
 
                 // Update VCS info store with current commit SHAs after successful install
@@ -707,6 +711,34 @@ public class AurPackageManager(string? configPath = null)
         _alpm?.Dispose();
     }
 
+    private static string? SelectBuiltPackageFile(string tempPath, string packageName)
+    {
+        if (!System.IO.Directory.Exists(tempPath))
+        {
+            return null;
+        }
+
+        var allPkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*")
+            .Where(p => !p.EndsWith(".sig", StringComparison.Ordinal))
+            .ToList();
+
+        if (allPkgFiles.Count == 0)
+        {
+            return null;
+        }
+
+        var prefix = packageName + "-";
+        var match = allPkgFiles.FirstOrDefault(p =>
+            System.IO.Path.GetFileName(p).StartsWith(prefix, StringComparison.Ordinal));
+
+        if (match is not null)
+        {
+            return match;
+        }
+
+        return allPkgFiles.Count == 1 ? allPkgFiles[0] : null;
+    }
+
     public async Task InstallPackageVersion(string packageName, string commit)
     {
         PackageProgress?.Invoke(this, new PackageProgressEventArgs
@@ -733,8 +765,8 @@ public class AurPackageManager(string? configPath = null)
         }
 
         var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-        var home = $"/home/{user}";
-        var tempPath = System.IO.Path.Combine(home, ".cache", "Shelly", packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var tempPath = XdgPaths.ShellyCache(pkgbase);
 
         PackageProgress?.Invoke(this, new PackageProgressEventArgs
         {
@@ -829,8 +861,8 @@ public class AurPackageManager(string? configPath = null)
             throw new Exception($"Failed to build package {packageName}");
         }
 
-        var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
-        if (pkgFiles.Length == 0)
+        var pkgFile = SelectBuiltPackageFile(tempPath, packageName);
+        if (pkgFile is null)
         {
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
@@ -838,9 +870,9 @@ public class AurPackageManager(string? configPath = null)
                 CurrentIndex = 1,
                 TotalCount = 1,
                 Status = PackageProgressStatus.Failed,
-                Message = "No package file found after build"
+                Message = $"No package file matching '{packageName}' produced by makepkg"
             });
-            throw new Exception($"No package file found after building {packageName}");
+            throw new Exception($"No package file matching '{packageName}' produced by makepkg");
         }
 
         PackageProgress?.Invoke(this, new PackageProgressEventArgs
@@ -851,7 +883,7 @@ public class AurPackageManager(string? configPath = null)
             Status = PackageProgressStatus.Installing
         });
 
-        _ = _alpm.InstallLocalPackage(pkgFiles[0]).Result;
+        _ = _alpm.InstallLocalPackage(pkgFile).Result;
         _alpm.Refresh();
 
         // Remove build-only dependencies (makedepends/checkdepends) that were installed for this build
@@ -902,80 +934,92 @@ public class AurPackageManager(string? configPath = null)
         });
     }
 
+    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunProcessAsync(
+        string fileName, string arguments, string? workingDirectory = null)
+    {
+        var process = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory ?? string.Empty,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, await stdoutTask, await stderrTask);
+    }
+
+    private static async Task<bool> RemoveCacheDirAsync(string user, string tempPath)
+    {
+        if (!System.IO.Directory.Exists(tempPath))
+        {
+            return true;
+        }
+
+        var (rc, _, rerr) = await RunProcessAsync("sudo", $"-u {user} rm -rf {tempPath}");
+        if (rc == 0)
+        {
+            return true;
+        }
+
+        var (rc2, _, rerr2) = await RunProcessAsync("rm", $"-rf {tempPath}");
+        if (rc2 != 0)
+        {
+            await Console.Error.WriteLineAsync(
+                $"[Shelly] could not clean cache dir {tempPath}: {rerr2.Trim()} / {rerr.Trim()}");
+            return false;
+        }
+
+        return true;
+    }
+
     private async Task<bool> DownloadPackageAtCommit(string packageName, string commit)
     {
         try
         {
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var tempPath = XdgPaths.ShellyCache(packageName);
-            // Remove existing directory if it exists
-            if (System.IO.Directory.Exists(tempPath))
-            {
-                var rmProcess = new System.Diagnostics.Process
-                {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "rm",
-                        Arguments = $"-rf {tempPath}",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                rmProcess.Start();
-                await rmProcess.WaitForExitAsync();
-            }
+            var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+            var tempPath = XdgPaths.ShellyCache(pkgbase);
+            var expectedRemote = $"https://aur.archlinux.org/{pkgbase}.git";
 
-            // Clone the AUR git repository
-            var cloneProcess = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "sudo",
-                    Arguments = $"-u {user} git clone https://aur.archlinux.org/{packageName}.git {tempPath}",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            cloneProcess.Start();
-            await cloneProcess.WaitForExitAsync();
-
-            if (cloneProcess.ExitCode != 0)
+            if (!await RemoveCacheDirAsync(user, tempPath))
             {
                 return false;
             }
 
-            // Checkout the specific commit
-            var checkoutProcess = new System.Diagnostics.Process
+            var (cc, _, cerr) = await RunProcessAsync(
+                "sudo", $"-u {user} git clone {expectedRemote} {tempPath}");
+            if (cc != 0)
             {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "sudo",
-                    Arguments = $"-u {user} git checkout {commit}",
-                    WorkingDirectory = tempPath,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            checkoutProcess.Start();
-            await checkoutProcess.WaitForExitAsync();
-
-            if (checkoutProcess.ExitCode != 0)
-            {
+                await Console.Error.WriteLineAsync(
+                    $"[Shelly] git clone failed for {pkgbase}: {cerr.Trim()}");
                 return false;
             }
 
-            // Verify PKGBUILD exists
+            var (xc, _, xerr) = await RunProcessAsync(
+                "sudo", $"-u {user} git checkout {commit}", tempPath);
+            if (xc != 0)
+            {
+                await Console.Error.WriteLineAsync(
+                    $"[Shelly] git checkout {commit} failed for {pkgbase}: {xerr.Trim()}");
+                return false;
+            }
+
             var pkgbuildSource = System.IO.Path.Combine(tempPath, "PKGBUILD");
             return System.IO.File.Exists(pkgbuildSource);
         }
-        catch
+        catch (Exception ex)
         {
+            await Console.Error.WriteLineAsync(
+                $"[Shelly] DownloadPackageAtCommit failed for {packageName}: {ex.Message}");
             return false;
         }
     }
@@ -985,78 +1029,62 @@ public class AurPackageManager(string? configPath = null)
         try
         {
             var user = Environment.GetEnvironmentVariable("SUDO_USER") ?? Environment.UserName;
-            var tempPath = XdgPaths.ShellyCache(packageName);
-            if (System.IO.Directory.Exists(System.IO.Path.Combine(tempPath, ".git")))
+            var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+            var tempPath = XdgPaths.ShellyCache(pkgbase);
+            var expectedRemote = $"https://aur.archlinux.org/{pkgbase}.git";
+            Console.Error.WriteLine($"Downloading {pkgbase} from AUR");
+
+            var hasGit = System.IO.Directory.Exists(System.IO.Path.Combine(tempPath, ".git"));
+            var remoteOk = false;
+            if (hasGit)
             {
-                // Already cloned — pull latest
-                var pullProcess = new System.Diagnostics.Process
+                var (rgc, rgout, _) = await RunProcessAsync(
+                    "sudo", $"-u {user} git -C {tempPath} remote get-url origin");
+                remoteOk = rgc == 0 && string.Equals(rgout.Trim(), expectedRemote, StringComparison.Ordinal);
+            }
+
+            var needsClone = false;
+
+            if (hasGit && remoteOk)
+            {
+                var (pc, _, perr) = await RunProcessAsync(
+                    "sudo", $"-u {user} git -C {tempPath} pull --ff-only");
+                if (pc != 0)
                 {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "sudo",
-                        Arguments = $"-u {user} git pull",
-                        WorkingDirectory = tempPath,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                pullProcess.Start();
-                await pullProcess.WaitForExitAsync();
-                if (pullProcess.ExitCode != 0)
-                {
-                    return false;
+                    await Console.Error.WriteLineAsync(
+                        $"[Shelly] git pull failed for {pkgbase} (likely divergent history). Attempting fresh clone...");
+                    needsClone = true;
                 }
             }
             else
             {
-                // Remove directory if it exists but isn't a git repo
-                if (System.IO.Directory.Exists(tempPath))
+                needsClone = true;
+            }
+
+            if (needsClone)
+            {
+                if (!await RemoveCacheDirAsync(user, tempPath))
                 {
-                    var rmProcess = new System.Diagnostics.Process
-                    {
-                        StartInfo = new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = "rm",
-                            Arguments = $"-rf {tempPath}",
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-                    rmProcess.Start();
-                    await rmProcess.WaitForExitAsync();
+                    return false;
                 }
 
-                // Clone the AUR git repository
-                var cloneProcess = new System.Diagnostics.Process
+                var (cc, _, cerr) = await RunProcessAsync(
+                    "sudo", $"-u {user} git clone {expectedRemote} {tempPath}");
+                if (cc != 0)
                 {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "sudo",
-                        Arguments = $"-u {user} git clone https://aur.archlinux.org/{packageName}.git {tempPath}",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                cloneProcess.Start();
-                await cloneProcess.WaitForExitAsync();
-                if (cloneProcess.ExitCode != 0)
-                {
+                    await Console.Error.WriteLineAsync(
+                        $"[Shelly] git clone failed for {pkgbase}: {cerr.Trim()}");
                     return false;
                 }
             }
 
-            // Verify PKGBUILD exists
             var pkgbuildSource = System.IO.Path.Combine(tempPath, "PKGBUILD");
             return System.IO.File.Exists(pkgbuildSource);
         }
-        catch
+        catch (Exception ex)
         {
+            await Console.Error.WriteLineAsync(
+                $"[Shelly] DownloadPackage failed for {packageName}: {ex.Message}");
             return false;
         }
     }
@@ -1301,7 +1329,8 @@ public class AurPackageManager(string? configPath = null)
 
         try
         {
-            var tempPath = XdgPaths.ShellyCache(packageName);
+            var pkgbase = _aurSearchManager.GetPackageBaseAsync(packageName).GetAwaiter().GetResult();
+            var tempPath = XdgPaths.ShellyCache(pkgbase);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -1372,14 +1401,14 @@ public class AurPackageManager(string? configPath = null)
                 return;
             }
 
-            var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
-            if (pkgFiles.Length == 0)
+            var pkgFile = SelectBuiltPackageFile(tempPath, packageName);
+            if (pkgFile is null)
             {
-                Console.Error.WriteLine($"[Shelly] No package file found after building: {packageName}");
+                Console.Error.WriteLine($"[Shelly] No package file matching '{packageName}' produced by makepkg");
                 return;
             }
 
-            _alpm.InstallLocalPackage(pkgFiles[0], AlpmTransFlag.AllDeps);
+            _alpm.InstallLocalPackage(pkgFile, AlpmTransFlag.AllDeps);
             _alpm.Refresh();
             _availablePackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
         }
@@ -1435,7 +1464,8 @@ public class AurPackageManager(string? configPath = null)
                 return;
             }
 
-            var tempPath = XdgPaths.ShellyCache(packageName);
+            var pkgbase = _aurSearchManager.GetPackageBaseAsync(packageName).GetAwaiter().GetResult();
+            var tempPath = XdgPaths.ShellyCache(pkgbase);
             PackageProgress?.Invoke(this, new PackageProgressEventArgs
             {
                 PackageName = packageName,
@@ -1529,14 +1559,14 @@ public class AurPackageManager(string? configPath = null)
                 return;
             }
 
-            var pkgFiles = System.IO.Directory.GetFiles(tempPath, "*.pkg.tar.*");
-            if (pkgFiles.Length == 0)
+            var pkgFile = SelectBuiltPackageFile(tempPath, packageName);
+            if (pkgFile is null)
             {
-                Console.Error.WriteLine($"[Shelly] No package file found after building: {packageName}");
+                Console.Error.WriteLine($"[Shelly] No package file matching '{packageName}' produced by makepkg");
                 return;
             }
 
-            _alpm.InstallLocalPackage(pkgFiles[0], AlpmTransFlag.AllDeps);
+            _alpm.InstallLocalPackage(pkgFile, AlpmTransFlag.AllDeps);
             _alpm.Refresh();
             _availablePackages = _alpm.GetAvailablePackages().Select(x => x.Name).ToList();
         }
@@ -1697,7 +1727,8 @@ public class AurPackageManager(string? configPath = null)
     /// </summary>
     private async Task<List<VcsSourceEntry>?> GetVcsSourceEntriesForPackage(string packageName)
     {
-        var cachePath = XdgPaths.ShellyCache(packageName);
+        var pkgbase = await _aurSearchManager.GetPackageBaseAsync(packageName);
+        var cachePath = XdgPaths.ShellyCache(pkgbase);
         var pkgbuildPath = Path.Combine(cachePath, "PKGBUILD");
 
         if (!File.Exists(pkgbuildPath))
@@ -1794,7 +1825,7 @@ public class AurPackageManager(string? configPath = null)
         }
     }
 
-    private static readonly string[] VcsSuffixes = ["-git"];
+    private static readonly string[] VcsSuffixes = ["-git", "-svn", "-hg", "-bzr", "-darcs", "-cvs"];
 
     private static bool IsVcsPackage(string packageName)
     {

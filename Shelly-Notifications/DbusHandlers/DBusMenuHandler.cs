@@ -265,7 +265,7 @@ public class DBusMenuHandler(Connection connection) : IPathMethodHandler
                 }
                 break;
             case MenuEnum.OpenShelly:
-                AppRunner.LaunchAppIfNotRunning("");
+                AppRunner.LaunchAppIfNotRunning("%U");
                 break;
             case MenuEnum.UpdatePackages:
                 await AppRunner.SpawnTerminalWithCommandAsync("shelly -a");
