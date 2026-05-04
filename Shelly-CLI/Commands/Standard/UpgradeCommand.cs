@@ -115,7 +115,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             AnsiConsole.MarkupLine("[green]System upgraded successfully![/]");
         }
 
-        if (settings.Aur || settings.All)
+        if ((settings.Aur || settings.All) && ConfigManager.ReadConfig().AurEnabled)
         {
             var aurCommand = new AurUpgradeCommand();
             var aurSettings = new AurUpgradeSettings()
@@ -129,7 +129,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Flatpak || settings.All)
+        if ((settings.Flatpak || settings.All) && ConfigManager.ReadConfig().FlatPackEnabled)
         {
             var flatpakResult = ExecuteFlatpakUpdate();
             AnsiConsole.MarkupLine($"[yellow]{flatpakResult.EscapeMarkup()}[/]");
@@ -234,7 +234,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Aur || settings.All)
+        if ((settings.Aur || settings.All) && ConfigManager.ReadConfig().AurEnabled)
         {
             var aurCommand = new AurUpgradeCommand();
             var aurSettings = new AurUpgradeSettings()
@@ -248,7 +248,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Flatpak || settings.All)
+        if ((settings.Flatpak || settings.All) && ConfigManager.ReadConfig().FlatPackEnabled)
         {
             var flatpakResult = ExecuteFlatpakUpdate();
             if (!string.IsNullOrEmpty(flatpakResult))

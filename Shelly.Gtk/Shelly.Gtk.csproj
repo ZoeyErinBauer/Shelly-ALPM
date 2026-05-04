@@ -8,7 +8,6 @@
         <PublishAot>true</PublishAot>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
-        <InvariantGlobalization>true</InvariantGlobalization>
         <StripSymbols>true</StripSymbols>
         <TrimMode>full</TrimMode>
         <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>

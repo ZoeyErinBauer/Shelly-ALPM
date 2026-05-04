@@ -1,6 +1,6 @@
 .rounded-card {
     border-radius: 12px;
-    border: 1px solid alpha(currentColor, 0.15);
+    border: 1px solid alpha(@theme_selected_bg_color, 0.15);
 }
 
 .rounded-card viewport,
@@ -24,19 +24,19 @@
 
 .nav-button:hover,
 .nav-button button:hover {
-    background: alpha(currentColor, 0.05);
+    background: alpha(@theme_selected_bg_color, 0.05);
 }
 
 .nav-button:active,
 .nav-button button:active {
-    background: alpha(currentColor, 0.1);
+    background: alpha(@theme_selected_bg_color, 0.1);
 }
 
 .nav-button.selected,
 .nav-button.selected button {
-    background: alpha(currentColor, 0.1);
+    background: alpha(@theme_selected_bg_color, 0.1);
     font-weight: bold;
-    border-left: 3px solid currentColor;
+    border-left: 3px solid @theme_selected_bg_color;
 }
 
 .sidebar {
@@ -50,7 +50,7 @@
 .heading {
     font-size: 0.85em;
     font-weight: bold;
-    color: alpha(currentColor, 0.5);
+    color: alpha(@theme_selected_bg_color, 0.5);
     margin-left: 12px;
     margin-top: 15px;
     margin-bottom: 5px;
@@ -59,13 +59,13 @@
 }
 
 .lockout-overlay {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: alpha(@theme_bg_color, 0.7);
 }
 
 .lockout-description {
     font-size: 1.2em;
     font-weight: bold;
-    color: white;
+    color: @theme_fg_color;
 }
 
 #LockoutProgressBar {
@@ -82,12 +82,12 @@ columnview header > button {
 
 columnview header:hover,
 columnview header > button:hover {
-    background-color: alpha(currentColor, 0.1);
+    background-color: alpha(@theme_selected_bg_color, 0.1);
 }
 
 columnview header:checked,
 columnview header > button:checked {
-    background-color: alpha(currentColor, 0.2);
+    background-color: alpha(@theme_selected_bg_color, 0.2);
 }
 
 .spaced-search text {
@@ -95,7 +95,7 @@ columnview header > button:checked {
 }
 
 .dialog-overlay {
-    border: 1px solid alpha(currentColor, 0.15);
+    border: 1px solid alpha(@theme_selected_bg_color, 0.15);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     padding: 24px;
@@ -112,7 +112,7 @@ scrolledwindow > scrollbar {
 }
 
 .toast-message {
-    border: 1px solid alpha(currentColor, 0.15);
+    border: 1px solid alpha(@theme_selected_bg_color, 0.15);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     padding: 10px 16px;
@@ -120,20 +120,20 @@ scrolledwindow > scrollbar {
 
 .package-detail-expander {
     margin-top: 8px;
-    border: 1px solid alpha(currentColor, 0.1);
+    border: 1px solid alpha(@theme_selected_bg_color, 0.1);
     border-radius: 8px;
-    background-color: alpha(currentColor, 0.02);
+    background-color: alpha(@theme_selected_bg_color, 0.02);
 }
 
 .package-detail-expander:hover {
-    background-color: alpha(currentColor, 0.05);
+    background-color: alpha(@theme_selected_bg_color, 0.05);
 }
 
 .package-detail-expander > box:first-child,
 button.package-detail-expander {
     padding: 8px 12px;
     font-weight: bold;
-    color: alpha(currentColor, 0.8);
+    color: alpha(@theme_selected_bg_color, 0.8);
     background-color: alpha(currentColor, 0.02);
     box-shadow: none;
     border-radius: 8px;
@@ -144,8 +144,8 @@ button.package-detail-expander {
 }
 
 .package-chip {
-    background-color: transparent;
-    border: 1px solid alpha(currentColor, 0.1);
+    background-color: alpha(@theme_selected_bg_color, 0.05);
+    border: 1px solid alpha(@theme_selected_bg_color, 0.1);
     border-radius: 6px;
     padding: 2px 8px;
     font-size: 0.9em;
@@ -163,19 +163,14 @@ flowboxchild {
 }
 
 flowboxchild:hover {
-    background-color: alpha(currentColor, 0.1);
-}
-
-.sidebar-nav {
-    border-right: 1px solid alpha(currentColor, 0.1);
-    padding: 0;
+    background-color: alpha(@theme_selected_bg_color, 0.1);
 }
 
 .sidebar-nav button:checked {
-    background: alpha(currentColor, 0.12);
+    background: alpha(@theme_selected_bg_color, 0.12);
     font-weight: bold;
 }
 
 .sidebar-nav button:hover {
-    background: alpha(currentColor, 0.06);
+    background: alpha(@theme_selected_bg_color, 0.06);
 }
