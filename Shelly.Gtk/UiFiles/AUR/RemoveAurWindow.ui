@@ -22,11 +22,6 @@
                     </object>
                 </child>
                 <child>
-                    <object class="GtkBox">
-                        <property name="hexpand">true</property>
-                    </object>
-                </child>
-                <child>
                     <object class="GtkCheckButton" id="cascade_delete_check">
                         <property name="halign">start</property>
                         <property name="label">Clean Uninstall</property>
@@ -63,17 +58,11 @@
                 <property name="hexpand">true</property>
                 <property name="orientation">horizontal</property>
                 <property name="vexpand">true</property>
-                <property name="margin-start">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-bottom">10</property>
                 <child>
                     <object class="GtkScrolledWindow">
                         <property name="hexpand">true</property>
                         <property name="overlay-scrolling">false</property>
                         <property name="vexpand">true</property>
-                        <style>
-                            <class name="rounded-card"/>
-                        </style>
                         <child>
                             <object class="GtkColumnView" id="package_grid">
                                 <property name="hexpand">true</property>
@@ -104,6 +93,9 @@
                     <object class="GtkRevealer" id="detail_revealer">
                         <property name="reveal-child">false</property>
                         <property name="transition-type">slide-left</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-bottom">10</property>
                         <child>
                             <object class="GtkFrame">
                                 <property name="width-request">300</property>

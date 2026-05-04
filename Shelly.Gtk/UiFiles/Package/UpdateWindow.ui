@@ -52,9 +52,6 @@
                 <property name="hexpand">true</property>
                 <property name="orientation">horizontal</property>
                 <property name="vexpand">true</property>
-                <property name="margin-start">10</property>
-                <property name="margin-end">10</property>
-                <property name="margin-bottom">10</property>
                 <child>
                     <object class="GtkOverlay">
                         <child>
@@ -62,9 +59,6 @@
                                 <property name="hexpand">true</property>
                                 <property name="overlay-scrolling">false</property>
                                 <property name="vexpand">true</property>
-                                <style>
-                                    <class name="rounded-card"/>
-                                </style>
                                 <child>
                                     <object class="GtkColumnView" id="package_grid">
                                         <property name="hexpand">true</property>
@@ -116,7 +110,9 @@
                         <property name="transition-type">slide-left</property>
                         <child>
                             <object class="GtkFrame">
-                                <property name="margin-start">12</property>
+                                <property name="margin-start">10</property>
+                                <property name="margin-end">10</property>
+                                <property name="margin-bottom">10</property>
                                 <property name="width-request">300</property>
                                 <style>
                                     <class name="rounded-card"/>
