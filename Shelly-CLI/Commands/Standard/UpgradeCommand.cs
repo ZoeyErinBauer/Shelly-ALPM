@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using PackageManager.Alpm;
-using PackageManager.Flatpak;
 using PackageManager.Utilities;
 using Shelly_CLI.Commands.Aur;
 using Shelly_CLI.Configuration;
 using Shelly_CLI.ConsoleLayouts;
 using Shelly_CLI.Utility;
+using Shelly.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using static System.Enum;
@@ -42,7 +42,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
         if (packagesNeedingUpdate.Count > 0)
         {
             var config = ConfigManager.ReadConfig();
-            var parsed =
+            var sizeDisplay =
                 (SizeDisplay)Parse(typeof(SizeDisplay),
                     config.FileSizeDisplay);
 
@@ -71,28 +71,16 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
                     $"[green]{Markup.Escape(pkg.Name)}[/]",
                     $"[green]{Markup.Escape(pkg.CurrentVersion)}[/]",
                     $"[green]{Markup.Escape(pkg.NewVersion)}[/]",
-                    $"[green]{FormatSize(parsed, netChangeBytes)}[/]",
-                    $"[green]{FormatSize(parsed, pkg.DownloadSize)}[/]"
+                    $"[green]{SizeHelper.FormatSize(netChangeBytes, sizeDisplay)}[/]",
+                    $"[green]{SizeHelper.FormatSize(pkg.DownloadSize, sizeDisplay)}[/]"
                 );
             }
 
             AnsiConsole.Write(table);
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {FormatSize(parsed, totalDownloadSize),10}");
-            AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {FormatSize(parsed, totalNetChange),10}");
+            AnsiConsole.MarkupLine($"[bold green]Total Download Size:[/]  {SizeHelper.FormatSize(totalDownloadSize, sizeDisplay),10}");
+            AnsiConsole.MarkupLine($"[bold green]Net Upgrade Size:[/]     {SizeHelper.FormatSize(totalNetChange, sizeDisplay),10}");
             AnsiConsole.WriteLine();
-
-
-            string FormatSize(SizeDisplay size, double bytes)
-            {
-                return size switch
-                {
-                    SizeDisplay.Bytes => $"{bytes:0} B",
-                    SizeDisplay.Megabytes => $"{(bytes / 1048576.0):F2} MiB",
-                    SizeDisplay.Gigabytes => $"{(bytes / 1073741824.0):F2} GiB",
-                    _ => $"{bytes:0} B"
-                };
-            }
 
             if (!settings.NoConfirm)
             {

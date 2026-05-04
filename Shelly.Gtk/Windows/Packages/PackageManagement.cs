@@ -8,6 +8,7 @@ using static Shelly.Gtk.Helpers.PackageColumnViewSorter;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
+using Shelly.Utilities;
 
 // ReSharper disable NotAccessedField.Local
 // ReSharper disable CollectionNeverUpdated.Local
@@ -287,7 +288,7 @@ public class PackageManagement(
         _detailBox.Append(separator);
 
         AddDetail("Version", pkg.Version);
-        AddDetail("Size", SizeHelpers.FormatSize(pkg.InstalledSize));
+        AddDetail("Size", SizeHelper.FormatSize(pkg.InstalledSize));
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -619,7 +620,7 @@ public class PackageManagement(
             if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not Label label) return;
             if (pkgObj.Index < 0 || pkgObj.Index >= _packageData.Count) return;
-            label.SetText(SizeHelpers.FormatSize(_packageData[pkgObj.Index].InstalledSize));
+            label.SetText(SizeHelper.FormatSize(_packageData[pkgObj.Index].InstalledSize));
             label.Halign = Align.End;
         };
         sizeColumn.SetFactory(_sizeFactory);

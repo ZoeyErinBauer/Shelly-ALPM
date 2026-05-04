@@ -5,6 +5,7 @@ using PackageManager.Alpm;
 using PackageManager.Utilities;
 using Shelly_CLI.Configuration;
 using Shelly_CLI.Utility;
+using Shelly.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -71,28 +72,14 @@ public class ListUpdatesCommand : Command<ListSettings>
                 pkg.Name,
                 pkg.CurrentVersion,
                 pkg.NewVersion,
-                FormatSize(pkg.DownloadSize),
-                FormatSize(pkg.SizeDifference)
+                SizeHelper.FormatSize(pkg.DownloadSize),
+                SizeHelper.FormatSize(pkg.SizeDifference)
             );
         }
 
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine($"[yellow]{updates.Count} packages can be updated[/]");
         return 0;
-    }
-
-    private static string FormatSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        int order = 0;
-        double size = bytes;
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
     }
 
     private static int HandleUiModeListUpdates(ListSettings settings)
@@ -122,7 +109,7 @@ public class ListUpdatesCommand : Command<ListSettings>
 
         foreach (var pkg in updates.OrderBy(p => p.Name))
         {
-            Console.WriteLine($"{pkg.Name} {pkg.CurrentVersion} -> {pkg.NewVersion} ({FormatSize(pkg.DownloadSize)})");
+            Console.WriteLine($"{pkg.Name} {pkg.CurrentVersion} -> {pkg.NewVersion} ({SizeHelper.FormatSize(pkg.DownloadSize)})");
         }
 
         Console.Error.WriteLine($"{updates.Count} packages can be updated");

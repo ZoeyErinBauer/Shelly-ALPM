@@ -1,3 +1,4 @@
+using Shelly.Utilities;
 using Shelly_CLI.Enums;
 
 namespace Shelly_CLI.Configuration;

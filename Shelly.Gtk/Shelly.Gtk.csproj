@@ -65,5 +65,8 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Shelly.Utilities\Shelly.Utilities.csproj" />
+    </ItemGroup>
   
 </Project>

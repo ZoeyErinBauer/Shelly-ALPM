@@ -6,6 +6,7 @@ using Shelly.Gtk.Services;
 using Shelly.Gtk.Services.FlatHub;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
+using Shelly.Utilities;
 
 // ReSharper disable NotAccessedField.Local
 
@@ -490,7 +491,7 @@ public class FlatpakInstall(
                 _overlayInstallButton.Label = "Install";
             }
 
-            _overlaySizeLabel.SetText("Size: " + SizeHelpers.FormatSize((long)result));
+            _overlaySizeLabel.SetText("Size: " + SizeHelper.FormatSize((long)result));
 
             SetUrlLinks(obj.Urls);
 

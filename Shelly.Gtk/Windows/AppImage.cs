@@ -4,6 +4,7 @@ using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels.AppImage;
 using Shelly.Gtk.Enums;
 using Shelly.Gtk.UiModels;
+using Shelly.Utilities;
 
 namespace Shelly.Gtk.Windows;
 
@@ -324,7 +325,7 @@ public class AppImage(
         _detailTitleLabel.SetText(app.DesktopName);
         _detailVersionLabel.SetText($"Version {app.Version}");
         _detailDescriptionLabel.SetText(app.Description);
-        _detailSizeLabel.SetText(SizeHelpers.FormatSize(app.SizeOnDisk));
+        _detailSizeLabel.SetText(SizeHelper.FormatSize(app.SizeOnDisk));
         var detailIconFilePath = ResolveIconFilePath(app.IconName);
         if (detailIconFilePath != null)
         {

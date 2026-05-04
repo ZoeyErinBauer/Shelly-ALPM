@@ -1,4 +1,5 @@
 using PackageManager.Alpm;
+using Shelly.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -59,9 +60,9 @@ public class CacheClean : AsyncCommand<CacheCleanSettings>
             AnsiConsole.MarkupLine("[blue]Dry run — the following files would be removed:[/]");
             foreach (var entry in candidates)
             {
-                AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({CacheCleanHelper.FormatSize(entry.FileSize)})[/]");
+                AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({SizeHelper.FormatSize(entry.FileSize)})[/]");
             }
-            AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {CacheCleanHelper.FormatSize(totalSize)}[/]");
+            AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {SizeHelper.FormatSize(totalSize)}[/]");
             return Task.FromResult(0);
         }
 
@@ -74,7 +75,7 @@ public class CacheClean : AsyncCommand<CacheCleanSettings>
                 File.Delete(entry.FullPath);
             }
 
-            AnsiConsole.MarkupLine($"[green]Removed {candidates.Count} files, freed {CacheCleanHelper.FormatSize(totalSize)}[/]");
+            AnsiConsole.MarkupLine($"[green]Removed {candidates.Count} files, freed {SizeHelper.FormatSize(totalSize)}[/]");
             return Task.FromResult(0);
         }
 
@@ -82,9 +83,9 @@ public class CacheClean : AsyncCommand<CacheCleanSettings>
         AnsiConsole.MarkupLine("[blue]Candidates for removal:[/]");
         foreach (var entry in candidates)
         {
-            AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({CacheCleanHelper.FormatSize(entry.FileSize)})[/]");
+            AnsiConsole.MarkupLine($"  {entry.FullPath.EscapeMarkup()} [dim]({SizeHelper.FormatSize(entry.FileSize)})[/]");
         }
-        AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {CacheCleanHelper.FormatSize(totalSize)}[/]");
+        AnsiConsole.MarkupLine($"\n[blue]Total: {candidates.Count} files, {SizeHelper.FormatSize(totalSize)}[/]");
         AnsiConsole.MarkupLine("[dim]Use -r/--remove to delete these files, or -d/--dry-run to preview.[/]");
 
         return Task.FromResult(0);

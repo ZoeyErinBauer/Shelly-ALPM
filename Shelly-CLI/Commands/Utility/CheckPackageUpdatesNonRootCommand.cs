@@ -4,6 +4,7 @@ using PackageManager.Aur;
 using PackageManager.Utilities;
 using PackageManager.Aur.Models;
 using PackageManager.Flatpak;
+using Shelly.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -36,7 +37,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
             List<SyncPackageModel> syncPackageModels = [];
             syncPackageModels.AddRange(alpmPackages.Select(pkg => new SyncPackageModel()
             {
-                Name = pkg.Name, DownloadSize = FormatSize(pkg.DownloadSize), OldVersion = pkg.CurrentVersion,
+                Name = pkg.Name, DownloadSize = SizeHelper.FormatSize(pkg.DownloadSize), OldVersion = pkg.CurrentVersion,
                 Version = pkg.NewVersion
             }));
 
@@ -103,12 +104,12 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         foreach (var alpm in alpmPackages)
         {
             table.AddRow(alpm.Name, "Standard", alpm.NewVersion, alpm.CurrentVersion,
-                FormatSize(alpm.DownloadSize));
+                SizeHelper.FormatSize(alpm.DownloadSize));
         }
 
         foreach (var pkg in aurPackages)
         {
-            table.AddRow(pkg.Name, "AUR", pkg.NewVersion, pkg.Version, FormatSize(pkg.DownloadSize));
+            table.AddRow(pkg.Name, "AUR", pkg.NewVersion, pkg.Version, SizeHelper.FormatSize(pkg.DownloadSize));
         }
 
         foreach (var pkg in flatpakPackages)
@@ -120,20 +121,6 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
 
 
         return 0;
-    }
-
-    private static string FormatSize(long bytes)
-    {
-        string[] sizes = ["B", "KB", "MB", "GB"];
-        int order = 0;
-        double size = bytes;
-        while (size >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            size /= 1024;
-        }
-
-        return $"{size:0.##} {sizes[order]}";
     }
 
     private static async Task<int> HandleUiModeCheckUpdates(CheckPackageUpdatesNonRootSettings settings)
@@ -158,7 +145,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
             List<SyncPackageModel> syncPackageModels = [];
             syncPackageModels.AddRange(alpmPackages.Select(pkg => new SyncPackageModel()
             {
-                Name = pkg.Name, DownloadSize = FormatSize(pkg.DownloadSize), OldVersion = pkg.CurrentVersion,
+                Name = pkg.Name, DownloadSize = SizeHelper.FormatSize(pkg.DownloadSize), OldVersion = pkg.CurrentVersion,
                 Version = pkg.NewVersion
             }));
 
@@ -216,12 +203,12 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
 
         foreach (var alpm in alpmPackages)
         {
-            Console.WriteLine($"{alpm.Name} Standard {alpm.NewVersion} {alpm.CurrentVersion} {FormatSize(alpm.DownloadSize)}");
+            Console.WriteLine($"{alpm.Name} Standard {alpm.NewVersion} {alpm.CurrentVersion} {SizeHelper.FormatSize(alpm.DownloadSize)}");
         }
 
         foreach (var pkg in aurPackages)
         {
-            Console.WriteLine($"{pkg.Name} AUR {pkg.NewVersion} {pkg.Version} {FormatSize(pkg.DownloadSize)}");
+            Console.WriteLine($"{pkg.Name} AUR {pkg.NewVersion} {pkg.Version} {SizeHelper.FormatSize(pkg.DownloadSize)}");
         }
 
         foreach (var pkg in flatpakPackages)

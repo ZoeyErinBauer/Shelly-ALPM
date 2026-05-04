@@ -7,6 +7,7 @@ using Shelly.Gtk.Services.Icons;
 using Shelly.Gtk.UiModels;
 using Shelly.Gtk.UiModels.PackageManagerObjects;
 using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
+using Shelly.Utilities;
 
 // ReSharper disable CollectionNeverQueried.Local
 
@@ -290,10 +291,10 @@ public class PackageUpdate(
 
         AddDetail("Current", pkg.CurrentVersion);
         AddDetail("New", pkg.NewVersion);
-        AddDetail("Download", SizeHelpers.FormatSize(pkg.DownloadSize));
-        AddDetail("Size Diff", SizeHelpers.FormatSize(pkg.SizeDifference));
+        AddDetail("Download", SizeHelper.FormatSize(pkg.DownloadSize));
+        AddDetail("Size Diff", SizeHelper.FormatSize(pkg.SizeDifference));
         AddDetail("Repository", pkg.Repository);
-        AddDetail("Size", SizeHelpers.FormatSize(pkg.InstalledSize));
+        AddDetail("Size", SizeHelper.FormatSize(pkg.InstalledSize));
         if (!string.IsNullOrEmpty(pkg.Url))
         {
             var row = Box.New(Orientation.Horizontal, 12);
@@ -548,7 +549,7 @@ public class PackageUpdate(
             if (args.Object is not ColumnViewCell listItem) return;
             if (listItem.GetItem() is not AlpmUpdateGObject { Package: { } pkg } ||
                 listItem.GetChild() is not Label label) return;
-            label.SetText(SizeHelpers.FormatSize(pkg.SizeDifference));
+            label.SetText(SizeHelper.FormatSize(pkg.SizeDifference));
             label.Halign = Align.End;
         };
         sizeDiffColumn.SetFactory(_sizeDiffFactory);

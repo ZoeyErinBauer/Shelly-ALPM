@@ -1,4 +1,5 @@
 using Gtk;
+using Shelly.Utilities;
 
 namespace Shelly.Gtk.Windows.Dialog;
 
@@ -26,7 +27,7 @@ public static class CacheCleanDialog
         var entries = ScanCache(cacheDir);
         var totalCacheSize = entries.Sum(e => e.FileSize);
 
-        var infoLabel = Label.New($"Cache directory: {cacheDir}\nTotal cached files: {entries.Count} ({FormatSize(totalCacheSize)})");
+        var infoLabel = Label.New($"Cache directory: {cacheDir}\nTotal cached files: {entries.Count} ({SizeHelper.FormatSize(totalCacheSize)})");
         infoLabel.Xalign = 0;
         infoLabel.Wrap = true;
         container.Append(infoLabel);
@@ -124,7 +125,7 @@ public static class CacheCleanDialog
             nameLabel.Ellipsize = Pango.EllipsizeMode.End;
             hbox.Append(nameLabel);
 
-            var sizeLabel = Label.New(FormatSize(entry.FileSize));
+            var sizeLabel = Label.New(SizeHelper.FormatSize(entry.FileSize));
             sizeLabel.AddCssClass("dim-label");
             hbox.Append(sizeLabel);
 
@@ -133,7 +134,7 @@ public static class CacheCleanDialog
         }
 
         var totalSize = candidates.Sum(c => c.FileSize);
-        summaryLabel.SetText($"{candidates.Count} files, {FormatSize(totalSize)} would be freed");
+        summaryLabel.SetText($"{candidates.Count} files, {SizeHelper.FormatSize(totalSize)} would be freed");
     }
 
     private static List<CacheFileEntry> ComputeCandidates(
@@ -235,14 +236,6 @@ public static class CacheCleanDialog
 
         return new CacheFileEntry(name, version, arch, fileSize);
     }
-
-    private static string FormatSize(long bytes) => bytes switch
-    {
-        >= 1L << 30 => $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GiB",
-        >= 1L << 20 => $"{bytes / (1024.0 * 1024.0):F2} MiB",
-        >= 1L << 10 => $"{bytes / 1024.0:F2} KiB",
-        _ => $"{bytes} B"
-    };
 
     private record CacheFileEntry(string Name, string Version, string Arch, long FileSize);
 }

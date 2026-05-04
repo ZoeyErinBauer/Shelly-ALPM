@@ -1,5 +1,6 @@
 using PackageManager.AppImage;
 using Shelly_CLI.Commands.Standard;
+using Shelly.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -59,7 +60,7 @@ public class AppImageSearchCommand : AsyncCommand<AppImageSearchSettings>
                 table.AddRow(
                     app.Name,
                     app.Version,
-                    FormatSize(app.SizeOnDisk),
+                    SizeHelper.FormatSize(app.SizeOnDisk),
                     app.UpdateURl
                 );
             }
@@ -68,19 +69,5 @@ public class AppImageSearchCommand : AsyncCommand<AppImageSearchSettings>
         }
 
         return 0;
-    }
-
-    private static string FormatSize(long bytes)
-    {
-        string[] units = { "B", "KB", "MB", "GB", "TB" };
-        double size = bytes;
-        var unitIndex = 0;
-        while (size >= 1024 && unitIndex < units.Length - 1)
-        {
-            size /= 1024;
-            unitIndex++;
-        }
-
-        return $"{size:N2} {units[unitIndex]}";
     }
 }
