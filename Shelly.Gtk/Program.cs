@@ -200,6 +200,21 @@ sealed class Program
 
             var mainOverlay = (Overlay)mainBuilder.GetObject("MainOverlay")!;
 
+            // Sidebar elements
+            var sidebarBox = (Box)mainBuilder.GetObject("SidebarBox")!;
+            var sidebarToggle = (ToggleButton)mainBuilder.GetObject("SidebarToggleButton")!;
+            var topHeaderBar = (HeaderBar)mainBuilder.GetObject("TopHeaderBar")!;
+            var sidebarPackagesBtn = (ToggleButton)mainBuilder.GetObject("SidebarPackagesButton")!;
+            var sidebarAurBtn = (ToggleButton)mainBuilder.GetObject("SidebarAurButton")!;
+            var sidebarFlatpakBtn = (ToggleButton)mainBuilder.GetObject("SidebarFlatpakButton")!;
+            var sidebarAppImageBtn = (ToggleButton)mainBuilder.GetObject("SidebarAppImageButton")!;
+            var sidebarSearchBtn = (ToggleButton)mainBuilder.GetObject("SidebarSearchButton")!;
+            var sidebarPackagesLabel = (Label)mainBuilder.GetObject("SidebarPackagesLabel")!;
+            var sidebarAurLabel = (Label)mainBuilder.GetObject("SidebarAurLabel")!;
+            var sidebarFlatpakLabel = (Label)mainBuilder.GetObject("SidebarFlatpakLabel")!;
+            var sidebarAppImageLabel = (Label)mainBuilder.GetObject("SidebarAppImageLabel")!;
+            var sidebarSearchLabel = (Label)mainBuilder.GetObject("SidebarSearchLabel")!;
+
             var quitAction = Gio.SimpleAction.New("quit", null);
             quitAction.OnActivate += (_, _) => application.Quit();
             application.AddAction(quitAction);
@@ -311,6 +326,83 @@ sealed class Program
             settingsStack.GetPage(appImagePageBox).Visible = initialConfig.AppImageEnabled;
             settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
 
+            // Sidebar setup - controlled by UseOldMenu config
+            if (initialConfig.UseOldMenu)
+            {
+                sidebarBox.Visible = true;
+                topHeaderBar.Visible = false;
+
+                sidebarAurBtn.Visible = initialConfig.AurEnabled;
+                sidebarFlatpakBtn.Visible = initialConfig.FlatPackEnabled;
+                sidebarAppImageBtn.Visible = initialConfig.AppImageEnabled;
+                sidebarSearchBtn.Visible = initialConfig.ShellySearchEnabled;
+                
+                var aurChild = sidebarAurBtn.GetChild();
+                if (aurChild != null)
+                {
+                    var aurBox = (Box)aurChild;
+                    var aurImage = (Image)aurBox.GetFirstChild()!;
+                    aurImage.IconName = ImageHelper.GetIconWithFallback("arch-symbolic", "distributor-logo-arch", "distributor-logo-archlinux");
+                }
+                var flatpakChild = sidebarFlatpakBtn.GetChild();
+                if (flatpakChild != null)
+                {
+                    var flatpakBox = (Box)flatpakChild;
+                    var flatpakImage = (Image)flatpakBox.GetFirstChild()!;
+                    flatpakImage.IconName = ImageHelper.GetIconWithFallback("flatpak-symbolic", "flatpak", "flatpak-logo", "folder-flatpak-symbolic", "application-vnd.flatpak");
+                }
+                
+                sidebarToggle.OnToggled += (_, _) =>
+                {
+                    var expanded = sidebarToggle.Active;
+                    sidebarBox.WidthRequest = expanded ? 180 : 48;
+                    sidebarPackagesLabel.Visible = expanded;
+                    sidebarAurLabel.Visible = expanded;
+                    sidebarFlatpakLabel.Visible = expanded;
+                    sidebarAppImageLabel.Visible = expanded;
+                    sidebarSearchLabel.Visible = expanded;
+                };
+                
+                var sidebarButtons = new (ToggleButton btn, string page)[]
+                {
+                    (sidebarPackagesBtn, "packages_page"),
+                    (sidebarAurBtn, "aur_page"),
+                    (sidebarFlatpakBtn, "flatpak_page"),
+                    (sidebarAppImageBtn, "appimage_page"),
+                    (sidebarSearchBtn, "shelly_search_page"),
+                };
+
+                var suppressSidebarToggle = false;
+
+                void SetActiveSidebarButton(string pageName)
+                {
+                    suppressSidebarToggle = true;
+                    foreach (var (btn, page) in sidebarButtons)
+                        btn.Active = page == pageName;
+                    suppressSidebarToggle = false;
+                }
+
+                foreach (var (btn, page) in sidebarButtons)
+                {
+                    var capturedPage = page;
+                    btn.OnToggled += (_, _) =>
+                    {
+                        if (suppressSidebarToggle) return;
+                        if (btn.Active)
+                        {
+                            settingsStack.SetVisibleChildName(capturedPage);
+                            SetActiveSidebarButton(capturedPage);
+                        }
+                        else
+                        {
+                            suppressSidebarToggle = true;
+                            btn.Active = true;
+                            suppressSidebarToggle = false;
+                        }
+                    };
+                }
+            }
+
             var initialPageEnum = initialConfig.DefaultPageDropDown;
             
             // Safeguard: if the saved default page is disabled, fall back to packages
@@ -346,6 +438,15 @@ sealed class Program
             }
             
             settingsStack.SetVisibleChildName(initialPageName);
+            
+            if (initialConfig.UseOldMenu)
+            {
+                sidebarPackagesBtn.Active = initialPageName == "packages_page";
+                sidebarAurBtn.Active = initialPageName == "aur_page";
+                sidebarFlatpakBtn.Active = initialPageName == "flatpak_page";
+                sidebarAppImageBtn.Active = initialPageName == "appimage_page";
+                sidebarSearchBtn.Active = initialPageName == "shelly_search_page";
+            }
 
             settingsWindow.ConfigChanged += (config) =>
             {
@@ -353,6 +454,11 @@ sealed class Program
                 settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
                 settingsStack.GetPage(shellySearchPageBox).Visible = config.ShellySearchEnabled;
+                if (!initialConfig.UseOldMenu) return;
+                sidebarAurBtn.Visible = config.AurEnabled;
+                sidebarFlatpakBtn.Visible = config.FlatPackEnabled;
+                sidebarAppImageBtn.Visible = config.AppImageEnabled;
+                sidebarSearchBtn.Visible = config.ShellySearchEnabled;
             };
             settingsWindow.NavigationToPackages += () =>
             {
@@ -374,6 +480,13 @@ sealed class Program
                     settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
                     settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
                     settingsStack.GetPage(shellySearchPageBox).Visible = c.ShellySearchEnabled;
+                    if (initialConfig.UseOldMenu)
+                    {
+                        sidebarAurBtn.Visible = c.AurEnabled;
+                        sidebarFlatpakBtn.Visible = c.FlatPackEnabled;
+                        sidebarAppImageBtn.Visible = c.AppImageEnabled;
+                        sidebarSearchBtn.Visible = c.ShellySearchEnabled;
+                    }
                     dirtyService.Clear(DirtyScopes.Config);
                     return false;
                 });
