@@ -383,7 +383,7 @@
                                                                 <property name="orientation">horizontal</property>
                                                                 <child>
                                                                     <object class="GtkLabel">
-                                                                        <property name="label">Use Sidebar Navigation (requires restart)</property>
+                                                                        <property name="label">Use Sidebar Navigation</property>
                                                                         <property name="hexpand">true</property>
                                                                         <property name="halign">start</property>
                                                                     </object>
