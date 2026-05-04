@@ -39,13 +39,11 @@ public static class PkgbuildPreview
 
         var closeButton = Button.New();
         closeButton.SetIconName("window-close-symbolic");
-        closeButton.AddCssClass("flat"); 
         closeButton.TooltipText = "Close Preview";
         closeButton.OnClicked += (_, _) => Close();
         
         var copyButton = Button.New();
         copyButton.SetIconName("edit-copy-symbolic"); 
-        copyButton.AddCssClass("flat");
         copyButton.TooltipText = "Copy PKGBUILD to clipboard";
         copyButton.OnClicked += (_, _) =>
         {
