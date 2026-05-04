@@ -129,7 +129,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Flatpak || settings.All)
+        if ((settings.Flatpak || settings.All) && ConfigManager.ReadConfig().FlatPackEnabled)
         {
             var flatpakResult = ExecuteFlatpakUpdate();
             AnsiConsole.MarkupLine($"[yellow]{flatpakResult.EscapeMarkup()}[/]");
@@ -248,7 +248,7 @@ public class UpgradeCommand : AsyncCommand<UpgradeSettings>
             }
         }
 
-        if (settings.Flatpak || settings.All)
+        if ((settings.Flatpak || settings.All) && ConfigManager.ReadConfig().FlatPackEnabled)
         {
             var flatpakResult = ExecuteFlatpakUpdate();
             if (!string.IsNullOrEmpty(flatpakResult))
