@@ -162,11 +162,6 @@ flowboxchild:hover {
     background-color: alpha(@theme_selected_bg_color, 0.1);
 }
 
-.sidebar-nav {
-    border-right: 1px solid alpha(@theme_selected_bg_color, 0.1);
-    padding: 0;
-}
-
 .sidebar-nav button:checked {
     background: alpha(@theme_selected_bg_color, 0.12);
     font-weight: bold;
