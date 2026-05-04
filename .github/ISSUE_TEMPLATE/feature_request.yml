@@ -11,7 +11,7 @@ body:
         - label: I have searched existing issues and pull requests and this has not been requested before.
           required: true
         - label: I have/will fill this template with the required information to the best of my ability.
-          required: optional
+          required: false
         - label: I have read the Contributing Guidelines.
           required: true
   - type: checkboxes
