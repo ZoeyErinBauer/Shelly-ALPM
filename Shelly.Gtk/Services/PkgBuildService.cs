@@ -8,7 +8,7 @@ public class PkgBuildService : IPkgBuildService
 {
     private readonly HttpClient _httpClient = new();
 
-    public async Task ShowPreviewAsync(Overlay parentOverlay, string packageName)
+    public async Task ShowPreviewAsync(Overlay parentOverlay, string packageName, IGenericQuestionService questionService)
     {
         try
         {
@@ -19,7 +19,7 @@ public class PkgBuildService : IPkgBuildService
             {
                 var args = new PackageBuildEventArgs($"PKGBUILD: {packageName}", content);
             
-                PkgbuildPreview.ShowPackageBuildPreview(parentOverlay, args);
+                PkgbuildPreview.ShowPackageBuildPreview(parentOverlay, args, questionService);
             
                 return false; 
             });

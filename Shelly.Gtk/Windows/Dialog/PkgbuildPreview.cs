@@ -1,5 +1,6 @@
 using Gtk;
 using Pango;
+using Shelly.Gtk.Services;
 using Shelly.Gtk.UiModels;
 using WrapMode = Gtk.WrapMode;
 
@@ -7,7 +8,7 @@ namespace Shelly.Gtk.Windows.Dialog;
 
 public static class PkgbuildPreview
 {
-    public static void ShowPackageBuildPreview(Overlay parentOverlay, PackageBuildEventArgs e)
+    public static void ShowPackageBuildPreview(Overlay parentOverlay, PackageBuildEventArgs e, IGenericQuestionService questionService)
     {
         var background = Box.New(Orientation.Horizontal, 0);
         background.AddCssClass("lockout-overlay");
@@ -50,6 +51,7 @@ public static class PkgbuildPreview
         {
             var clipboard = copyButton.GetClipboard();
             clipboard.SetText(e.PkgBuild);
+            questionService.RaiseToastMessage(new ToastMessageEventArgs("PKGBUILD copied to clipboard"));
         };
 
         var titleLabel = Label.New(e.Title);

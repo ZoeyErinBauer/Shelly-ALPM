@@ -766,7 +766,7 @@ public class AurInstall(
             
             var package = _currentDetailPkg?.Package?.Name;
 
-            await pkgBuildService.ShowPreviewAsync(_mainOverlay!, package!);
+            await pkgBuildService.ShowPreviewAsync(_mainOverlay!, package!, genericQuestionService);
         }
         finally 
         {
