@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using Gtk;
+using Shelly.Gtk.DataStores;
 using Shelly.Gtk.Enums;
 using Shelly.Gtk.Helpers;
 using static Shelly.Gtk.Helpers.PackageColumnViewSorter;
@@ -66,6 +68,7 @@ public class PackageInstall(
     private Box _detailBox = null!;
     private AlpmPackageGObject? _currentDetailPkg;
     private HashSet<string> _installedPackageNames = [];
+    private static readonly ConditionalWeakTable<CheckButton, BindState> _checkState = new();
 
     public Widget CreateWindow()
     {
@@ -102,27 +105,27 @@ public class PackageInstall(
         _columnView.SetModel(_selectionModel);
 
         SetupColumns(_checkColumn, _nameColumn, _sizeColumn, _versionColumn, _repositoryColumn);
-        
+
         // Creating sorter
         _nameColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
         _repositoryColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
         _versionColumn.Sorter = CustomSorter.New<AlpmPackageGObject>((a, b) => 0);
-        
+
         _columnViewSorter = (ColumnViewSorter)_columnView.GetSorter()!;
 
         _columnViewSorter.OnChanged += (_, _) =>
         {
             var primaryColumn =
                 _columnViewSorter.GetPrimarySortColumn();
-            
+
             if (primaryColumn is null)
                 return;
-            
+
             var sortColumn = GetSortColumn(primaryColumn);
-            
+
             var order =
                 _columnViewSorter.GetPrimarySortOrder();
-            
+
             if (sortColumn is null)
                 return;
 
@@ -133,9 +136,8 @@ public class PackageInstall(
                 sortColumn.Value,
                 order
             );
-            
-        };        
-        
+        };
+
         ColumnViewHelper.AlignColumnHeader(_columnView, 1, Align.Start);
         ColumnViewHelper.AlignColumnHeader(_columnView, 2, Align.End);
         ColumnViewHelper.AlignColumnHeader(_columnView, 3, Align.End);
@@ -225,7 +227,7 @@ public class PackageInstall(
 
         return null;
     }
-    
+
     public void Reload()
     {
         var old = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
@@ -487,22 +489,55 @@ public class PackageInstall(
             if (listItem.GetItem() is not AlpmPackageGObject pkgObj ||
                 listItem.GetChild() is not CheckButton checkButton) return;
 
+            var syncing = false;
+
+            syncing = true;
             checkButton.SetActive(pkgObj.IsSelected);
+            syncing = false;
 
+            checkButton.OnToggled += OnToggled;
             pkgObj.OnSelectionToggled += OnExternalToggle;
-
+            _checkState.Add(checkButton, new BindState()
+            {
+                Pkg = pkgObj,
+                Toggled = OnToggled,
+                External = OnExternalToggle
+            });
             return;
+
+            void OnToggled(CheckButton sender, EventArgs e)
+            {
+                if (syncing) return;
+                pkgObj.IsSelected = sender.Active;
+                if (sender.Active)
+                {
+                    ShowPackageDetails(pkgObj);
+                }
+            }
+
 
             void OnExternalToggle(object? s, EventArgs e)
             {
-                if (listItem.GetItem() == pkgObj)
-                {
-                    checkButton.SetActive(pkgObj.IsSelected);
-                }
+                if (listItem.GetItem() != pkgObj) return;
+                syncing = true;
+                checkButton.SetActive(pkgObj.IsSelected);
+                syncing = false;
             }
         };
 
-        _checkFactory.OnUnbind += (_, _) => { };
+        _checkFactory.OnUnbind += (_, args) =>
+        {
+            if (args.Object is not ColumnViewCell listItem) return;
+            if (listItem.GetChild() is not CheckButton checkButton) return;
+            if (!_checkState.TryGetValue(checkButton, out var state)) return;
+            if (state.Toggled is not null) checkButton.OnToggled -= state.Toggled;
+            if (state.Pkg is not null && state.External is not null)
+            {
+                state.Pkg.OnSelectionToggled -= state.External;
+            }
+
+            _checkState.Remove(checkButton);
+        };
 
         _checkFactory.OnTeardown += (_, args) =>
         {
@@ -630,10 +665,16 @@ public class PackageInstall(
                     cleared.TrySetResult();
                     return false;
                 }
+
                 _filterListModel.SetFilter(null);
                 _listStore.RemoveAll();
                 _filterListModel.SetFilter(_filter);
-                foreach (var r in _packageGObjectRefs) { r.Index = -1; r.Dispose(); }
+                foreach (var r in _packageGObjectRefs)
+                {
+                    r.Index = -1;
+                    r.Dispose();
+                }
+
                 _packageGObjectRefs.Clear();
                 _packageGObjectRefs.TrimExcess();
                 _packageData.Clear();
@@ -701,7 +742,6 @@ public class PackageInstall(
                 packages.Clear();
                 packages.TrimExcess();
                 return false;
-
             });
         }
         catch (OperationCanceledException)
@@ -724,7 +764,8 @@ public class PackageInstall(
         if (pkgObj.Index < 0 || pkgObj.Index >= _packageData.Count) return false;
         var pkg = _packageData[pkgObj.Index];
 
-        return PackageSearch.MatchesGroup(pkg.Groups, _selectedGroup) && PackageSearch.MatchesNameOrDescription(pkg.Name, pkg.Description, _searchText);
+        return PackageSearch.MatchesGroup(pkg.Groups, _selectedGroup) &&
+               PackageSearch.MatchesNameOrDescription(pkg.Name, pkg.Description, _searchText);
     }
 
 
@@ -920,7 +961,12 @@ public class PackageInstall(
         _cts.Cancel();
         _cts.Dispose();
         _listStore.RemoveAll();
-        foreach (var r in _packageGObjectRefs) { r.Index = -1; r.Dispose(); }
+        foreach (var r in _packageGObjectRefs)
+        {
+            r.Index = -1;
+            r.Dispose();
+        }
+
         _packageGObjectRefs.Clear();
         _packageData.Clear();
         _groups.Clear();
