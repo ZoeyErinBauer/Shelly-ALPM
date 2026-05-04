@@ -19,6 +19,7 @@ namespace Shelly.Gtk.Windows.AUR;
 public class AurInstall(
     IPrivilegedOperationService privilegedOperationService,
     ILockoutService lockoutService,
+    IPkgBuildService pkgBuildService,
     IConfigService configService,
     IGenericQuestionService genericQuestionService,
     IDirtyService dirtyService) : IShellyWindow, IReloadable
@@ -42,6 +43,7 @@ public class AurInstall(
     private Box _detailBox = null!;
     private AurPackageGObject? _currentDetailPkg;
     private Revealer _detailRevealer = null!;
+    private Overlay? _mainOverlay = null!;
 
     private Dictionary<ColumnViewCell, (SignalHandler<CheckButton> OnToggled, EventHandler OnExternalToggle)>
         // ReSharper disable once FieldCanBeMadeReadOnly.Local
@@ -62,10 +64,14 @@ public class AurInstall(
     public Widget CreateWindow()
     {
         var builder = Builder.NewFromString(ResourceHelper.LoadUiFile("UiFiles/AUR/AurWindow.ui"), -1);
+        var rootOverlay = (Overlay)builder.GetObject("main_overlay")!;
+        _mainOverlay = rootOverlay;
         _box = (Box)builder.GetObject("AurInstallWindow")!;
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
         _searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
 
+        _mainOverlay = (Overlay)builder.GetObject("main_overlay")!;
+        
         _checkColumn = (ColumnViewColumn)builder.GetObject("check_column")!;
         _checkColumn.Resizable = true;
 
@@ -183,7 +189,7 @@ public class AurInstall(
             }
         };
 
-        return _box;
+        return _mainOverlay;
     }
     
     private PackageSortColumn? GetSortColumn(ColumnViewColumn column)
@@ -535,10 +541,7 @@ public class AurInstall(
         pkgBuildButton.Halign = Align.BaselineFill;
         pkgBuildButton.AddCssClass("package-detail-expander");
         pkgBuildButton.TooltipText = "Displays Package Build";
-        pkgBuildButton.OnClicked += (_, _) =>
-        {
-
-        };
+        pkgBuildButton.OnClicked += OnPkgBuildClicked;
         
         var backButton = Button.New();
         backButton.SetIconName("go-next-symbolic");
@@ -752,6 +755,25 @@ public class AurInstall(
             _detailBox.Append(expander);
         }
     }
+    
+    private async void OnPkgBuildClicked(object? sender, EventArgs e)
+    {
+        if (_currentDetailPkg == null) return;
+
+        try 
+        {
+            ((Button)sender!).Sensitive = false;
+            
+            var package = _currentDetailPkg?.Package?.Name;
+
+            await pkgBuildService.ShowPreviewAsync(_mainOverlay!, package!);
+        }
+        finally 
+        {
+            ((Button)sender!).Sensitive = true;
+        }
+    }
+    
 
     public void Reload()
     {
