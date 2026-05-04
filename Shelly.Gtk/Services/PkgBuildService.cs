@@ -13,7 +13,27 @@ public class PkgBuildService : IPkgBuildService
         try
         {
             string url = $"https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h={packageName}";
-            string content = await _httpClient.GetStringAsync(url);
+            using var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                GLib.Functions.IdleAdd(0, () => {
+                    questionService.RaiseToastMessage(new ToastMessageEventArgs($"PKGBUILD for '{packageName}' not found."));
+                    return false;
+                });      
+                return;
+            }
+            
+            var content = await response.Content.ReadAsStringAsync();
+            
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                GLib.Functions.IdleAdd(0, () => {
+                    questionService.RaiseToastMessage(new ToastMessageEventArgs("The PKGBUILD is empty."));
+                    return false;
+                });                
+                return;
+            }
             
             GLib.Functions.IdleAdd(0, () => 
             {
