@@ -20,7 +20,7 @@ public static class PkgbuildPreview
         var baseFrame = Frame.New(null);
         baseFrame.SetHalign(Align.Center);
         baseFrame.SetValign(Align.Center);
-        baseFrame.SetSizeRequest(800, 720); 
+        baseFrame.SetSizeRequest(900, 600); 
         baseFrame.SetMarginTop(20);
         baseFrame.SetMarginBottom(20);
         baseFrame.SetMarginStart(20);
