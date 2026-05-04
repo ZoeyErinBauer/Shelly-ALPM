@@ -134,7 +134,7 @@ button.package-detail-expander {
     padding: 8px 12px;
     font-weight: bold;
     color: alpha(@theme_selected_bg_color, 0.8);
-    background-color: alpha(currentColor, 0.02);
+    background-color: alpha(@theme_selected_bg_color, 0.02);
     box-shadow: none;
     border-radius: 8px;
 }
