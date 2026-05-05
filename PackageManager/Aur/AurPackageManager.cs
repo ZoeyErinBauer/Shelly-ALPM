@@ -402,6 +402,15 @@ public class AurPackageManager(string? configPath = null)
                 TotalCount = totalCount,
                 Status = PackageProgressStatus.Downloading
             });
+            var newPkgbuild = await FetchPkgbuildAsync(packageName);
+            PkgbuildDiffRequest?.Invoke(this,new PkgbuildDiffRequestEventArgs()
+            {
+                PackageName = packageName,
+                OldPkgbuild = string.Empty,
+                NewPkgbuild = newPkgbuild,
+                ShowDiff = false,
+                ProceedWithUpdate = true
+            });
 
             var success = await DownloadPackage(packageName);
 
