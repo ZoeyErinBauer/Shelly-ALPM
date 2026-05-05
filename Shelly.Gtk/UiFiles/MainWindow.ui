@@ -97,7 +97,7 @@
                                 </style>
                                 <child>
                                     <object class="GtkToggleButton" id="SidebarToggleButton">
-                                        <property name="icon-name">view-sidebar-symbolic</property>
+                                        <property name="icon-name">go-next-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="margin-top">6</property>
                                         <property name="margin-bottom">6</property>
