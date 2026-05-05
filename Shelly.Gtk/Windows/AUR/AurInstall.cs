@@ -33,7 +33,7 @@ public class AurInstall(
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
     private string _searchText = string.Empty;
-    private SearchEntry _searchEntry = null!;
+    private Entry _searchEntry = null!;
     private Button _buttonSearch = null!;
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
@@ -69,7 +69,7 @@ public class AurInstall(
         _mainOverlay = rootOverlay;
         _box = (Box)builder.GetObject("AurInstallWindow")!;
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
-        _searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
+        _searchEntry = (Entry)builder.GetObject("search_entry")!;
         _buttonSearch = (Button)builder.GetObject("button_search")!;
 
         _mainOverlay = (Overlay)builder.GetObject("main_overlay")!;
