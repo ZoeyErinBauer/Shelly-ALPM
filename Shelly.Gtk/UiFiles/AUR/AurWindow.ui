@@ -14,12 +14,29 @@
                         <property name="margin-end">10</property>
                         <property name="spacing">5</property>
                         <child>
-                            <object class="GtkSearchEntry" id="search_entry">
+                            <object class="GtkEntry" id="search_entry">
                                 <property name="placeholder-text">Search packages...</property>
                                 <property name="width-request">200</property>
                                 <style>
                                     <class name="spaced-search"/>
                                 </style>
+                            </object>
+                        </child>
+                        <child>
+                            <object class="GtkButton" id="button_search">
+                                <property name="label" translatable="yes">Search</property>
+                                <property name="visible">True</property>
+                                <style>
+                                    <class name="spaced-search"/>
+                                    <class name="image-button"/>
+                                </style>
+                                <child>
+                                    <object class="GtkImage" id="search_image">
+                                      <property name="visible">True</property>
+                                      <property name="icon-name">edit-find-symbolic</property>
+                                      <property name="icon-size">1</property> <!-- 1=menu/small, 2=button, 3=large toolbar -->
+                                    </object>
+                                </child>
                             </object>
                         </child>
                         <child>

@@ -33,7 +33,8 @@ public class AurInstall(
     private SingleSelection _selectionModel = null!;
     private Gio.ListStore _listStore = null!;
     private string _searchText = string.Empty;
-    private SearchEntry _searchEntry = null!;
+    private Entry _searchEntry = null!;
+    private Button _buttonSearch = null!;
     private SignalListItemFactory _checkFactory = null!;
     private SignalListItemFactory _nameFactory = null!;
     private SignalListItemFactory _votesFactory = null!;
@@ -68,7 +69,8 @@ public class AurInstall(
         _mainOverlay = rootOverlay;
         _box = (Box)builder.GetObject("AurInstallWindow")!;
         _columnView = (ColumnView)builder.GetObject("package_grid")!;
-        _searchEntry = (SearchEntry)builder.GetObject("search_entry")!;
+        _searchEntry = (Entry)builder.GetObject("search_entry")!;
+        _buttonSearch = (Button)builder.GetObject("button_search")!;
 
         _mainOverlay = (Overlay)builder.GetObject("main_overlay")!;
         
@@ -173,6 +175,7 @@ public class AurInstall(
         _box.AddController(shortcutController);
 
         _searchEntry.OnActivate += (_, _) => { Interlocked.Increment(ref _loadGeneration); _ = SearchAsync(_cts.Token, _loadGeneration); };
+        _buttonSearch.OnClicked += (_, _) => { Interlocked.Increment(ref _loadGeneration); _ = SearchAsync(_cts.Token, _loadGeneration); };
         _sub = DirtySubscription.Attach(dirtyService, this);
 
         _selectionModel.OnSelectionChanged += (_, _) =>
