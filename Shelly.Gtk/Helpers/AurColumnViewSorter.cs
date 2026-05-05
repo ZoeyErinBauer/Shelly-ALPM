@@ -2,6 +2,8 @@ using Gtk;
 using Gio;
 using Shelly.Gtk.Enums;
 using Shelly.Gtk.UiModels.AUR.GObjects;
+using Shelly.Gtk.UiModels.PackageManagerObjects;
+using Shelly.Gtk.UiModels.PackageManagerObjects.GObjects;
 
 namespace Shelly.Gtk.Helpers;
 
@@ -9,6 +11,7 @@ public static class AurColumnViewSorter
 {
     public static void Sort(
         Gio.ListStore listStore,
+        List<AurPackageDto> packageData,
         List<AurPackageGObject> items,
         PackageSortColumn column,
         SortType order)
@@ -18,14 +21,14 @@ public static class AurColumnViewSorter
             {
                 PackageSortColumn.Name =>
                     (a, b) => Compare(
-                        a.Package?.Name,
-                        b.Package?.Name
+                        packageData[a.Index].Name,
+                        packageData[b.Index].Name
                     ),
 
                 PackageSortColumn.Version =>
                     (a, b) => Compare(
-                        a.Package?.Version,
-                        b.Package?.Version
+                        packageData[a.Index].Version,
+                        packageData[b.Index].Version
                     ),
 
                 _ => (_, _) => 0
