@@ -23,6 +23,15 @@
                             </object>
                         </child>
                         <child>
+                            <object class="GtkButton" id="button_search">
+                                <property name="label" translatable="yes">Search</property>
+                                <property name="visible">True</property>
+                                <style>
+                                    <class name="spaced-search"/>
+                                </style>
+                            </object>
+                        </child>
+                        <child>
                             <object class="GtkBox">
                                 <property name="hexpand">true</property>
                             </object>
