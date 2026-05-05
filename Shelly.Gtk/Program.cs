@@ -329,17 +329,17 @@ sealed class Program
             // Sidebar setup - controlled by UseOldMenu config
             void ApplyNavigationStyle(bool useOldMenu, ShellyConfig config)
             {
-                sidebarBox.Visible = !useOldMenu;
-                topHeaderBar.Visible = useOldMenu;
+                sidebarBox.Visible = useOldMenu;
+                topHeaderBar.Visible = !useOldMenu;
 
-                if (useOldMenu) return;
+                if (!useOldMenu) return;
                 sidebarAurBtn.Visible = config.AurEnabled;
                 sidebarFlatpakBtn.Visible = config.FlatPackEnabled;
                 sidebarAppImageBtn.Visible = config.AppImageEnabled;
                 sidebarSearchBtn.Visible = config.ShellySearchEnabled;
             }
 
-            ApplyNavigationStyle(initialConfig.UseOldMenu, initialConfig);
+            ApplyNavigationStyle(!initialConfig.UseOldMenu, initialConfig);
 
             var aurChild = sidebarAurBtn.GetChild();
             if (aurChild != null)
@@ -446,7 +446,7 @@ sealed class Program
             
             settingsStack.SetVisibleChildName(initialPageName);
             
-            if (!initialConfig.UseOldMenu)
+            if (initialConfig.UseOldMenu)
             {
                 SetActiveSidebarButton(initialPageName);
             }
@@ -457,8 +457,8 @@ sealed class Program
                 settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
                 settingsStack.GetPage(shellySearchPageBox).Visible = config.ShellySearchEnabled;
-                ApplyNavigationStyle(config.UseOldMenu, config);
-                if (!config.UseOldMenu)
+                ApplyNavigationStyle(!config.UseOldMenu, config);
+                if (config.UseOldMenu)
                 {
                     SetActiveSidebarButton(settingsStack.GetVisibleChildName()!);
                 }
@@ -483,8 +483,8 @@ sealed class Program
                     settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
                     settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
                     settingsStack.GetPage(shellySearchPageBox).Visible = c.ShellySearchEnabled;
-                    ApplyNavigationStyle(c.UseOldMenu, c);
-                    if (!c.UseOldMenu)
+                    ApplyNavigationStyle(!c.UseOldMenu, c);
+                    if (c.UseOldMenu)
                     {
                         SetActiveSidebarButton(settingsStack.GetVisibleChildName()!);
                     }
