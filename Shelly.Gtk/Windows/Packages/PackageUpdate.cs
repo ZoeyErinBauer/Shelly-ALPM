@@ -738,6 +738,15 @@ public class PackageUpdate(
                     genericQuestionService.RaiseQuestion(failArgs);
                     await failArgs.ResponseTask;
                 }
+
+                if (upgradeResult.Success)
+                {
+                    var args = new ToastMessageEventArgs(
+                        $"Updated {selectedPackages.Count} Package(s)"
+                    );
+                    genericQuestionService.RaiseToastMessage(args);
+                }
+
             }
             catch (Exception e)
             {
@@ -746,11 +755,6 @@ public class PackageUpdate(
             finally
             {
                 lockoutService.Hide();
-
-                var args = new ToastMessageEventArgs(
-                    $"Updated {selectedPackages.Count} Package(s)"
-                );
-                genericQuestionService.RaiseToastMessage(args);
             }
         }
     }

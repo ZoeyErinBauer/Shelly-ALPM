@@ -58,6 +58,13 @@
     letter-spacing: 0.05em;
 }
 
+
+notebook > header > tabs > tab,
+notebook > header > tabs > tab:checked {
+    padding: 6px 12px;
+    margin: 0;
+}
+
 .lockout-overlay {
     background-color: alpha(@theme_bg_color, 0.9);
 }
