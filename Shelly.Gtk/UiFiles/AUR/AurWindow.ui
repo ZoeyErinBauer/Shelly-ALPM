@@ -28,7 +28,15 @@
                                 <property name="visible">True</property>
                                 <style>
                                     <class name="spaced-search"/>
+                                    <class name="image-button"/>
                                 </style>
+                                <child>
+                                    <object class="GtkImage" id="search_image">
+                                      <property name="visible">True</property>
+                                      <property name="icon-name">edit-find-symbolic</property>
+                                      <property name="icon-size">1</property> <!-- 1=menu/small, 2=button, 3=large toolbar -->
+                                    </object>
+                                </child>
                             </object>
                         </child>
                         <child>
