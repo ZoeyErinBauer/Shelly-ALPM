@@ -327,80 +327,87 @@ sealed class Program
             settingsStack.GetPage(shellySearchPageBox).Visible = initialConfig.ShellySearchEnabled;
 
             // Sidebar setup - controlled by UseOldMenu config
-            if (initialConfig.UseOldMenu)
+            void ApplyNavigationStyle(bool useOldMenu, ShellyConfig config)
             {
-                sidebarBox.Visible = true;
-                topHeaderBar.Visible = false;
+                sidebarBox.Visible = useOldMenu;
+                topHeaderBar.Visible = !useOldMenu;
 
-                sidebarAurBtn.Visible = initialConfig.AurEnabled;
-                sidebarFlatpakBtn.Visible = initialConfig.FlatPackEnabled;
-                sidebarAppImageBtn.Visible = initialConfig.AppImageEnabled;
-                sidebarSearchBtn.Visible = initialConfig.ShellySearchEnabled;
-                
-                var aurChild = sidebarAurBtn.GetChild();
-                if (aurChild != null)
-                {
-                    var aurBox = (Box)aurChild;
-                    var aurImage = (Image)aurBox.GetFirstChild()!;
-                    aurImage.IconName = ImageHelper.GetIconWithFallback("arch-symbolic", "distributor-logo-arch", "distributor-logo-archlinux");
-                }
-                var flatpakChild = sidebarFlatpakBtn.GetChild();
-                if (flatpakChild != null)
-                {
-                    var flatpakBox = (Box)flatpakChild;
-                    var flatpakImage = (Image)flatpakBox.GetFirstChild()!;
-                    flatpakImage.IconName = ImageHelper.GetIconWithFallback("flatpak-symbolic", "flatpak", "flatpak-logo", "folder-flatpak-symbolic", "application-vnd.flatpak");
-                }
-                
-                sidebarToggle.OnToggled += (_, _) =>
-                {
-                    var expanded = sidebarToggle.Active;
-                    sidebarBox.WidthRequest = expanded ? 180 : 48;
-                    sidebarPackagesLabel.Visible = expanded;
-                    sidebarAurLabel.Visible = expanded;
-                    sidebarFlatpakLabel.Visible = expanded;
-                    sidebarAppImageLabel.Visible = expanded;
-                    sidebarSearchLabel.Visible = expanded;
-                };
-                
-                var sidebarButtons = new (ToggleButton btn, string page)[]
-                {
-                    (sidebarPackagesBtn, "packages_page"),
-                    (sidebarAurBtn, "aur_page"),
-                    (sidebarFlatpakBtn, "flatpak_page"),
-                    (sidebarAppImageBtn, "appimage_page"),
-                    (sidebarSearchBtn, "shelly_search_page"),
-                };
+                if (!useOldMenu) return;
+                sidebarAurBtn.Visible = config.AurEnabled;
+                sidebarFlatpakBtn.Visible = config.FlatPackEnabled;
+                sidebarAppImageBtn.Visible = config.AppImageEnabled;
+                sidebarSearchBtn.Visible = config.ShellySearchEnabled;
+            }
 
-                var suppressSidebarToggle = false;
+            ApplyNavigationStyle(!initialConfig.UseOldMenu, initialConfig);
 
-                void SetActiveSidebarButton(string pageName)
-                {
-                    suppressSidebarToggle = true;
-                    foreach (var (btn, page) in sidebarButtons)
-                        btn.Active = page == pageName;
-                    suppressSidebarToggle = false;
-                }
+            var aurChild = sidebarAurBtn.GetChild();
+            if (aurChild != null)
+            {
+                var aurBox = (Box)aurChild;
+                var aurImage = (Image)aurBox.GetFirstChild()!;
+                aurImage.IconName = ImageHelper.GetIconWithFallback("arch-symbolic", "distributor-logo-arch",
+                    "distributor-logo-archlinux");
+            }
 
+            var flatpakChild = sidebarFlatpakBtn.GetChild();
+            if (flatpakChild != null)
+            {
+                var flatpakBox = (Box)flatpakChild;
+                var flatpakImage = (Image)flatpakBox.GetFirstChild()!;
+                flatpakImage.IconName = ImageHelper.GetIconWithFallback("flatpak-symbolic", "flatpak", "flatpak-logo",
+                    "folder-flatpak-symbolic", "application-vnd.flatpak");
+            }
+
+            sidebarToggle.OnToggled += (_, _) =>
+            {
+                var expanded = sidebarToggle.Active;
+                sidebarToggle.IconName = expanded ? "go-previous-symbolic" : "go-next-symbolic";
+                sidebarBox.WidthRequest = expanded ? 180 : 48;
+                sidebarPackagesLabel.Visible = expanded;
+                sidebarAurLabel.Visible = expanded;
+                sidebarFlatpakLabel.Visible = expanded;
+                sidebarAppImageLabel.Visible = expanded;
+                sidebarSearchLabel.Visible = expanded;
+            };
+
+            var sidebarButtons = new (ToggleButton btn, string page)[]
+            {
+                (sidebarPackagesBtn, "packages_page"),
+                (sidebarAurBtn, "aur_page"),
+                (sidebarFlatpakBtn, "flatpak_page"),
+                (sidebarAppImageBtn, "appimage_page"),
+                (sidebarSearchBtn, "shelly_search_page"),
+            };
+
+            var suppressSidebarToggle = false;
+
+            void SetActiveSidebarButton(string pageName)
+            {
+                suppressSidebarToggle = true;
                 foreach (var (btn, page) in sidebarButtons)
+                    btn.Active = page == pageName;
+                suppressSidebarToggle = false;
+            }
+
+            foreach (var (btn, page) in sidebarButtons)
+            {
+                var capturedPage = page;
+                btn.OnToggled += (_, _) =>
                 {
-                    var capturedPage = page;
-                    btn.OnToggled += (_, _) =>
+                    if (suppressSidebarToggle) return;
+                    if (btn.Active)
                     {
-                        if (suppressSidebarToggle) return;
-                        if (btn.Active)
-                        {
-                            settingsStack.SetVisibleChildName(capturedPage);
-                            SetActiveSidebarButton(capturedPage);
-                        }
-                        else
-                        {
-                            suppressSidebarToggle = true;
-                            btn.Active = true;
-                            suppressSidebarToggle = false;
-                        }
-                    };
-                }
+                        settingsStack.SetVisibleChildName(capturedPage);
+                        SetActiveSidebarButton(capturedPage);
+                    }
+                    else
+                    {
+                        suppressSidebarToggle = true;
+                        btn.Active = true;
+                        suppressSidebarToggle = false;
+                    }
+                };
             }
 
             var initialPageEnum = initialConfig.DefaultPageDropDown;
@@ -441,11 +448,7 @@ sealed class Program
             
             if (initialConfig.UseOldMenu)
             {
-                sidebarPackagesBtn.Active = initialPageName == "packages_page";
-                sidebarAurBtn.Active = initialPageName == "aur_page";
-                sidebarFlatpakBtn.Active = initialPageName == "flatpak_page";
-                sidebarAppImageBtn.Active = initialPageName == "appimage_page";
-                sidebarSearchBtn.Active = initialPageName == "shelly_search_page";
+                SetActiveSidebarButton(initialPageName);
             }
 
             settingsWindow.ConfigChanged += (config) =>
@@ -454,11 +457,11 @@ sealed class Program
                 settingsStack.GetPage(flatpakPageBox).Visible = config.FlatPackEnabled;
                 settingsStack.GetPage(appImagePageBox).Visible = config.AppImageEnabled;
                 settingsStack.GetPage(shellySearchPageBox).Visible = config.ShellySearchEnabled;
-                if (!initialConfig.UseOldMenu) return;
-                sidebarAurBtn.Visible = config.AurEnabled;
-                sidebarFlatpakBtn.Visible = config.FlatPackEnabled;
-                sidebarAppImageBtn.Visible = config.AppImageEnabled;
-                sidebarSearchBtn.Visible = config.ShellySearchEnabled;
+                ApplyNavigationStyle(!config.UseOldMenu, config);
+                if (config.UseOldMenu)
+                {
+                    SetActiveSidebarButton(settingsStack.GetVisibleChildName()!);
+                }
             };
             settingsWindow.NavigationToPackages += () =>
             {
@@ -480,13 +483,12 @@ sealed class Program
                     settingsStack.GetPage(flatpakPageBox).Visible = c.FlatPackEnabled;
                     settingsStack.GetPage(appImagePageBox).Visible = c.AppImageEnabled;
                     settingsStack.GetPage(shellySearchPageBox).Visible = c.ShellySearchEnabled;
-                    if (initialConfig.UseOldMenu)
+                    ApplyNavigationStyle(!c.UseOldMenu, c);
+                    if (c.UseOldMenu)
                     {
-                        sidebarAurBtn.Visible = c.AurEnabled;
-                        sidebarFlatpakBtn.Visible = c.FlatPackEnabled;
-                        sidebarAppImageBtn.Visible = c.AppImageEnabled;
-                        sidebarSearchBtn.Visible = c.ShellySearchEnabled;
+                        SetActiveSidebarButton(settingsStack.GetVisibleChildName()!);
                     }
+
                     dirtyService.Clear(DirtyScopes.Config);
                     return false;
                 });
@@ -637,7 +639,7 @@ sealed class Program
 
             window.Show();
 
-            if (initialConfig.NewInstall && !initialConfig.NewInstallInitSettings)
+            if (!initialConfig.NewInstallInitSettings)
             {
                 var setupWindow = serviceProvider.GetRequiredService<SetupWindow>();
                 var setupWidget = setupWindow.CreateWindow();
