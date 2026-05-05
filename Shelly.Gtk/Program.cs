@@ -29,12 +29,12 @@ sealed class Program
         var uid = getuid();
 
         // 1. XDG_RUNTIME_DIR — required for the session bus socket path
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR")))
-        {
-            var runtime = $"/run/user/{uid}";
-            if (Directory.Exists(runtime))
-                Environment.SetEnvironmentVariable("XDG_RUNTIME_DIR", runtime);
-        }
+        // if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR")))
+        // {
+        //     var runtime = $"/run/user/{uid}";
+        //     if (Directory.Exists(runtime))
+        //         Environment.SetEnvironmentVariable("XDG_RUNTIME_DIR", runtime);
+        // }
 
         // 2. DBUS_SESSION_BUS_ADDRESS — dconf needs this to read GSettings
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS")))
@@ -57,9 +57,11 @@ sealed class Program
                 "/usr/local/share:/usr/share" + (string.IsNullOrEmpty(dataDirs) ? "" : ":" + dataDirs));
         }
 
-        // 4. XDG_CURRENT_DESKTOP — some theme bits key off this
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP")))
-            Environment.SetEnvironmentVariable("XDG_CURRENT_DESKTOP", "KDE");
+        {
+            Environment.SetEnvironmentVariable("XDG_CURRENT_DESKTOP", DesktopDetector.DetectDesktop());
+        }
+
 
         // 5. Make GIO use dconf instead of falling back to memory backend
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GSETTINGS_BACKEND")))
@@ -130,7 +132,12 @@ sealed class Program
     public static int Main(string[] args)
     {
         EnsureSessionEnvironment();
-        ApplyKdeGtkTheme();
+        if (DesktopDetector.DetectDesktop() == "KDE")
+        {
+            ApplyKdeGtkTheme();
+        }
+
+
         //GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
         // Parse --page argument
@@ -189,7 +196,7 @@ sealed class Program
             {
                 await serviceProvider.GetRequiredService<IIConDownloadService>().DownloadAndUnpackIcons();
             });
-            
+
             var settingsStack = (Stack)mainBuilder.GetObject("settings_stack")!;
             var packagesPageBox = (Box)mainBuilder.GetObject("packages_page_box")!;
             var aurPageBox = (Box)mainBuilder.GetObject("aur_page_box")!;
@@ -411,12 +418,15 @@ sealed class Program
             }
 
             var initialPageEnum = initialConfig.DefaultPageDropDown;
-            
+
             // Safeguard: if the saved default page is disabled, fall back to packages
             if (initialPageEnum == ShellyTabs.Aur && !initialConfig.AurEnabled) initialPageEnum = ShellyTabs.Packages;
-            if (initialPageEnum == ShellyTabs.Flatpak && !initialConfig.FlatPackEnabled) initialPageEnum = ShellyTabs.Packages;
-            if (initialPageEnum == ShellyTabs.AppImage && !initialConfig.AppImageEnabled) initialPageEnum = ShellyTabs.Packages;
-            if (initialPageEnum == ShellyTabs.ShellySearch && !initialConfig.ShellySearchEnabled) initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.Flatpak && !initialConfig.FlatPackEnabled)
+                initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.AppImage && !initialConfig.AppImageEnabled)
+                initialPageEnum = ShellyTabs.Packages;
+            if (initialPageEnum == ShellyTabs.ShellySearch && !initialConfig.ShellySearchEnabled)
+                initialPageEnum = ShellyTabs.Packages;
 
             string initialPageName;
             switch (initialPageEnum)
@@ -443,9 +453,9 @@ sealed class Program
                     initialPageName = "packages_page";
                     break;
             }
-            
+
             settingsStack.SetVisibleChildName(initialPageName);
-            
+
             if (initialConfig.UseOldMenu)
             {
                 SetActiveSidebarButton(initialPageName);
