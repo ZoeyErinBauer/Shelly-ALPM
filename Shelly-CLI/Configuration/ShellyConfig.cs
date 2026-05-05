@@ -46,4 +46,8 @@ public class ShellyConfig
     public string ProgressBarStyle { get; set; } = nameof(ProgressBarStyleKind.Blocks);
     public int ProgressBarFps { get; set; } = 7;
     public int ProgressBarWidth { get; set; } = 24;
+    
+    public string OutputMode { get; set; } = "singlepane";
+    
+    public int SinglePaneMaxStickies { get; set; } = 6;
 }
