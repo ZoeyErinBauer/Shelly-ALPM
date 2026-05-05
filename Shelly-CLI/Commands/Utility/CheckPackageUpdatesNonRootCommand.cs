@@ -27,7 +27,7 @@ public class CheckPackageUpdatesNonRootCommand : AsyncCommand<CheckPackageUpdate
         var dbPath = XdgPaths.ShellyCache("db");
         Directory.CreateDirectory(dbPath);
         AnsiConsole.WriteLine(dbPath);
-        if (settings.Count || !settings.JsonOutput)
+        if (settings.Count && !settings.JsonOutput)
         {
             alpmManager.Initialize(false, useTempPath: true, tempPath: dbPath);
             alpmManager.Sync();

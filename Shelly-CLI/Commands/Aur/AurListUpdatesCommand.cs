@@ -25,7 +25,7 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
             manager = new AurPackageManager();
             await manager.Initialize(showHiddenPackages: settings.ShowHidden, tempPath:dbPath, useTempPath:true);
 
-            var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
+            var updates = await manager.GetPackagesNeedingUpdate();
 
             // Apply filter if specified
             if (!string.IsNullOrWhiteSpace(settings.Filter))
@@ -111,7 +111,7 @@ public class AurListUpdatesCommand : AsyncCommand<ListSettings>
             manager = new AurPackageManager();
             await manager.Initialize(showHiddenPackages: settings.ShowHidden, tempPath:dbPath, useTempPath:true);
 
-            var updates = manager.GetPackagesNeedingUpdate().GetAwaiter().GetResult();
+            var updates = await manager.GetPackagesNeedingUpdate();
 
             // Apply filter if specified
             if (!string.IsNullOrWhiteSpace(settings.Filter))
