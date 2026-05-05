@@ -589,6 +589,30 @@ public class AurInstall(
             row.Append(valueWidget);
             _detailBox.Append(row);
         }
+        
+        void AddUrl(string labelUrl, string value)
+        {
+            var row = Box.New(Orientation.Horizontal, 12);
+            row.MarginBottom = 4;
+            var labelWidget = Label.New(labelUrl);
+            labelWidget.AddCssClass("dim-label");
+            labelWidget.Halign = Align.Start;
+            labelWidget.Valign = Align.Start;
+            labelWidget.Xalign = 0;
+
+            var valueWidget = Label.New(null);
+            var escaped = GLib.Functions.MarkupEscapeText(value, -1);
+            valueWidget.SetMarkup($"<a href=\"{escaped}\">{escaped}</a>");
+            valueWidget.Halign = Align.Start;
+            valueWidget.Wrap = true;
+            valueWidget.WrapMode = Pango.WrapMode.WordChar;
+            valueWidget.MaxWidthChars = 30;
+            valueWidget.Xalign = 0;
+
+            row.Append(labelWidget);
+            row.Append(valueWidget);
+            _detailBox.Append(row);
+        }
 
         var headerBox = Box.New(Orientation.Vertical, 4);
         headerBox.MarginBottom = 16;
@@ -637,29 +661,10 @@ public class AurInstall(
             DateTimeOffset.FromUnixTimeSeconds(pkgObj.FirstSubmitted).ToString("yyyy-MM-dd HH:mm"));
         if (!string.IsNullOrEmpty(pkgObj.Url))
         {
-            var row = Box.New(Orientation.Horizontal, 12);
-            row.MarginBottom = 4;
-            var labelWidget = Label.New("URL:");
-            labelWidget.AddCssClass("dim-label");
-            labelWidget.Halign = Align.Start;
-            labelWidget.Valign = Align.Start;
-            labelWidget.WidthRequest = 80;
-            labelWidget.Xalign = 0;
-
-            var valueWidget = Label.New(null);
-            var escaped = GLib.Functions.MarkupEscapeText(pkgObj.Url, -1);
-            valueWidget.SetMarkup($"<a href=\"{escaped}\">{escaped}</a>");
-            valueWidget.Halign = Align.Start;
-            valueWidget.Wrap = true;
-            valueWidget.WrapMode = Pango.WrapMode.WordChar;
-            valueWidget.MaxWidthChars = 30;
-            valueWidget.Xalign = 0;
-
-            row.Append(labelWidget);
-            row.Append(valueWidget);
-            _detailBox.Append(row);
+            AddUrl("Url:", pkgObj.Url);
         }
-
+        AddUrl("AUR:", $"https://aur.archlinux.org/packages/{pkgObj.Name}/");
+        
         _detailBox.Append(pkgBuildButton);
 
         if (pkgObj.Depends?.Count > 0)
@@ -691,8 +696,7 @@ public class AurInstall(
         {
             AddChipList("Keywords", pkgObj.Keywords);
         }
-
-
+        
         if (pkgObj.Provides?.Count > 0)
             AddChipList("Provides", pkgObj.Provides);
         if (pkgObj.Conflicts?.Count > 0)
